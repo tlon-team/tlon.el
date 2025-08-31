@@ -397,11 +397,11 @@ the same BACKEND+MODEL by setting them buffer-locally before dispatch."
                     (cons (gptel-backend-name gptel-backend) gptel-model))))
          (backend-obj (car pair))
          (model-sym   (cdr pair))
-         ;; normalize tools to structs if provided
-         (tool-structs (when tools
-                         (mapcar #'gptel-get-tool tools)))
          ;; ensure specified MCP servers are running and connected
          (_ (tlon--ensure-mcp-servers mcp-servers))
+         ;; normalize tools to structs if provided (after servers are ready)
+         (tool-structs (when tools
+                         (mapcar #'gptel-get-tool tools)))
          (full-prompt (if printf-arg (format prompt printf-arg) prompt)))
     (with-current-buffer buf
       ;; Pin scope for initial request *and* tool follow-ups.
