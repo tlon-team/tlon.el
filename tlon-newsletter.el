@@ -170,6 +170,21 @@ response INFO."
   (unless (file-exists-p tlon-newsletter-sample-issue-file)
     (user-error "Sample issue file not found: %s" tlon-newsletter-sample-issue-file)))
 
+;;;;;; Helpers
+
+(defun tlon-newsletter-get-spanish-month (mm)
+  "Return the Spanish name of month MM.
+  
+MM is a two-digit string representing the month, e.g., \"08\" for August.
+Return the lowercase Spanish month name.  Signal an error if MM is invalid."
+  (let* ((num (if (stringp mm) (string-to-number mm) mm))
+         (months '("enero" "febrero" "marzo" "abril" "mayo" "junio"
+                   "julio" "agosto" "septiembre" "octubre" "noviembre"
+                   "diciembre")))
+    (if (and (integerp num) (>= num 1) (<= num 12))
+        (nth (1- num) months)
+      (error "Invalid month value")))
+
 ;;;;; Menu
 
 (transient-define-infix tlon-newsletter-infix-select-model ()
