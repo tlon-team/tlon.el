@@ -91,20 +91,24 @@ news. The original input file is then overwritten with this new draft."
                (sample-issue-content (with-temp-buffer
 				       (insert-file-contents tlon-newsletter-sample-issue-file)
 				       (buffer-string)))
-	       (month (tlon-newsletter-get-month-from-date (file-name-base input-file-path)))
+	       (issue-month (tlon-newsletter-get-issue-month (file-name-base input-file-path)))
+	       (content-year (tlon-newsletter-get-content-year (file-name-base input-file-path)))
+	       (content-month (tlon-newsletter-get-previous-month issue-month))
+	       (content-month-year (format "%s de %s" content-month content-year))
                (final-prompt (tlon-ai-maybe-edit-prompt
-			      (format raw-prompt month sample-issue-content content))))
-          (message "Requesting AI to draft newsletter issue (input: %s, prompt: %s)..."
-		   input-file-path tlon-newsletter-prompt-file)
+			      (format raw-prompt content-month-year issue-month sample-issue-content content))))
           (tlon-make-gptel-request final-prompt
                                    nil
                                    #'tlon-newsletter--create-issue-callback
                                    tlon-newsletter-model
 				   'skip-content-check
-                                   nil ; Request buffer
+                                   nil
                                    (list "search" "fetch_content" "slack_list_channels" "slack_get_channel_history")
-                                   input-file-path)))
-    (message "Could not create newsletter issue due to previous errors.")))
+                                   input-file-path
+				   (list "ddg-search" "slack-ae-racionalidad"))
+          (message "Requesting AI to draft newsletter issue (input: %s, prompt: %s)..."
+		   input-file-path tlon-newsletter-prompt-file)))
+    (user-error "Could not create newsletter issue due to previous errors")))
 
 (defun tlon-newsletter--get-latest-input-content ()
   "Prompt for an issue file defaulting to the most recent one."
@@ -126,7 +130,7 @@ news. The original input file is then overwritten with this new draft."
                                  (string> (file-name-base (car a))
                                           (file-name-base (car b)))))
 	    latest-file-path (caar sorted-files)
-	    selected-file (read-file-name "Select input file (default %s): "
+	    selected-file (read-file-name "File of current issue: "
 					  tlon-newsletter-numeros-subdir nil t
 					  (file-name-nondirectory latest-file-path))))
     (cons (with-temp-buffer
@@ -177,9 +181,32 @@ response INFO."
 
 ;;;;;; Helpers
 
-(defun tlon-newsletter-get-month-from-date (date)
+(defun tlon-newsletter-get-issue-month (date)
   "Return the lowercase month name for date string DATE.
 DATE must be in format \"yyyy-mm\"."
+  (let* ((parsed (tlon-newsletter--validate-date-format date))
+         (year (car parsed))
+         (month (cdr parsed)))
+    (let ((system-time-locale "es_ES.UTF-8"))
+      (downcase
+       (format-time-string "%B" (encode-time 0 0 0 1 month year))))))
+
+(defun tlon-newsletter-get-content-year (date)
+  "Return the year of the content period from date string DATE.
+DATE is the publication date, in format \"yyyy-mm\". Since the newsletter is
+published on the first day of the month, the content period is the previous
+month. For example, if DATE is \"2025-01\", the content period is December 2024,
+so this function returns 2024."
+  (let* ((parsed (tlon-newsletter--validate-date-format date))
+         (year (car parsed))
+         (month (cdr parsed)))
+    (if (= month 1)
+        (1- year)
+      year)))
+
+(defun tlon-newsletter--validate-date-format (date)
+  "Validate that DATE is in format \"yyyy-mm\" and return parsed components.
+Returns a cons cell (YEAR . MONTH) with numeric values, or signals an error."
   (unless (and (stringp date) (string-match "^[0-9]\\{4\\}-[0-9]\\{2\\}$" date))
     (error "Invalid date format, expected yyyy-mm"))
   (let* ((parts (split-string date "-"))
@@ -187,9 +214,14 @@ DATE must be in format \"yyyy-mm\"."
          (month (string-to-number (nth 1 parts))))
     (unless (and (>= month 1) (<= month 12))
       (error "Invalid month value"))
-    (let ((system-time-locale "es_ES.UTF-8"))
-      (downcase
-       (format-time-string "%B" (encode-time 0 0 0 1 month year))))))
+    (cons year month)))
+
+(defun tlon-newsletter-get-previous-month (month-name)
+  "Return the previous month name given MONTH-NAME."
+  (let* ((months '("enero" "febrero" "marzo" "abril" "mayo" "junio"
+                   "julio" "agosto" "septiembre" "octubre" "noviembre" "diciembre"))
+         (pos (cl-position month-name months :test 'string-equal-ignore-case)))
+    (nth (mod (1- pos) 12) months)))
 
 ;;;;; Menu
 
