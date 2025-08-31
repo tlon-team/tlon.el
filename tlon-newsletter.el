@@ -104,26 +104,6 @@ news. The original input file is then overwritten with this new draft."
                                    input-file-path))) ; Pass input-file-path as context-data
     (message "Could not create newsletter issue due to previous errors.")))
 
-(defun tlon-newsletter-ensure-repo-dir-exists ()
-  "Ensure the newsletter repository directory exists."
-  (unless (file-exists-p tlon-newsletter-repo-dir)
-    (user-error "Newsletter repo not found: %s" tlon-newsletter-prompt-file)))
-
-(defun tlon-newsletter-ensure-numeros-subdir-exists ()
-  "Ensure the \"numeros\" subdirectory in the newsletter repository exists."
-  (unless (file-exists-p tlon-newsletter-numeros-subdir)
-    (user-error "\"numeros\" subdirectory not found: %s" tlon-newsletter-numeros-subdir)))
-
-(defun tlon-newsletter-ensure-prompt-file-exists ()
-  "Ensure the prompt file for creating newsletter issues exists."
-  (unless (file-exists-p tlon-newsletter-prompt-file)
-    (user-error "Prompt file not found: %s" tlon-newsletter-prompt-file)))
-
-(defun tlon-newsletter-ensure-sample-issue-file-exists ()
-  "Ensure the sample issue file exists."
-  (unless (file-exists-p tlon-newsletter-sample-issue-file)
-    (user-error "Sample issue file not found: %s" tlon-newsletter-sample-issue-file)))
-
 (defun tlon-newsletter--create-issue-callback (response info)
   "Callback for `tlon-newsletter-create-issue'.
 Writes the AI-generated newsletter draft to the original input file, replacing
@@ -196,6 +176,28 @@ recipient `deepl-api'."
       (progn
         (message "Warning: Glossary data could not be parsed for newsletter. Proceeding without glossary.")
         ""))))
+
+;;;;;; Ensure dirs/files exist
+
+(defun tlon-newsletter-ensure-repo-dir-exists ()
+  "Ensure the newsletter repository directory exists."
+  (unless (file-exists-p tlon-newsletter-repo-dir)
+    (user-error "Newsletter repo not found: %s" tlon-newsletter-prompt-file)))
+
+(defun tlon-newsletter-ensure-numeros-subdir-exists ()
+  "Ensure the \"numeros\" subdirectory in the newsletter repository exists."
+  (unless (file-exists-p tlon-newsletter-numeros-subdir)
+    (user-error "\"numeros\" subdirectory not found: %s" tlon-newsletter-numeros-subdir)))
+
+(defun tlon-newsletter-ensure-prompt-file-exists ()
+  "Ensure the prompt file for creating newsletter issues exists."
+  (unless (file-exists-p tlon-newsletter-prompt-file)
+    (user-error "Prompt file not found: %s" tlon-newsletter-prompt-file)))
+
+(defun tlon-newsletter-ensure-sample-issue-file-exists ()
+  "Ensure the sample issue file exists."
+  (unless (file-exists-p tlon-newsletter-sample-issue-file)
+    (user-error "Sample issue file not found: %s" tlon-newsletter-sample-issue-file)))
 
 ;;;;; Menu
 
