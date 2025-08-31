@@ -98,7 +98,7 @@ news. The original input file is then overwritten with this new draft."
                                    nil
                                    #'tlon-newsletter--create-issue-callback
                                    tlon-newsletter-model
-                                   t   ; Skip context check
+				   'skip-content-check
                                    nil ; Request buffer
                                    (list "search" "fetch_content") ; Tools
                                    input-file-path))) ; Pass input-file-path as context-data
