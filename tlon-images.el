@@ -396,7 +396,8 @@ relative to the repository root. For example, if FILE is
 	 (repo-root (tlon-get-repo))
          (target-dir (tlon-images-get-dir file))
          (image-urls (tlon-images--get-image-urls-from-markdown file))
-         (counter 1))
+         (counter 1)
+         (tag-replacements '()))
     (when (and (file-directory-p target-dir)
                (directory-files target-dir nil "^[^.]"))
       (if (y-or-n-p (format "Directory `%s' is not empty. Delete contents and proceed? "
@@ -432,8 +433,23 @@ relative to the repository root. For example, if FILE is
 		       (image-path (expand-file-name image-file-name target-dir)))
 		  (write-region header-end (point-max) image-path nil 0)
 		  (message "Saved to %s" image-path)
+                  (let* ((relative-src (file-relative-name image-path (file-name-directory file)))
+                         (values (list relative-src nil nil)) ; src, alt, ignore-content
+                         (figure-tag (tlon-md-get-tag-filled "Figure" values "")))
+                    (push (cons url figure-tag) tag-replacements))
 		  (kill-buffer image-data-buffer)
 		  (setq counter (1+ counter))))))))
+    ;; Replace Markdown image syntax with <Figure> tags referencing the
+    ;; downloaded local files.
+    (with-current-buffer (find-file-noselect file)
+      (save-excursion
+        (goto-char (point-min))
+        (while (re-search-forward tlon-md-image nil t)
+          (let* ((url (match-string 2))
+                 (replacement (assoc-default url tag-replacements nil nil #'string=)))
+            (when replacement
+              (replace-match replacement t t))))
+        (save-buffer)))
     (when tlon-images-open-after-processing
       (dired target-dir))
     (message "Downloaded %d images to %s" (length image-urls) (file-relative-name target-dir repo-root))))
