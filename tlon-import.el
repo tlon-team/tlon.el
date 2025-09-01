@@ -80,6 +80,7 @@
 (declare-function ebib-extras-open-key "ebib-extras")
 (declare-function tlon-yaml-insert-field "tlon-yaml")
 (declare-function tlon-yaml-suggest-tags "tlon-yaml")
+(declare-function tlon-images-download-from-markdown "tlon-images")
 ;;;###autoload
 (defun tlon-import-document ()
   "Import a new document from a URL or a PDF file."
@@ -98,8 +99,10 @@
     (if (simple-extras-string-is-url-p identifier)
 	(tlon-import-html identifier title)
       (tlon-import-pdf (expand-file-name identifier)))
-    (tlon-yaml-insert-field "key" key)
-    (tlon-yaml-suggest-tags (buffer-file-name))))
+    (tlon-yaml-insert-field "key" key))
+  (let ((file (buffer-file-name)))
+    (tlon-yaml-suggest-tags file)
+    (tlon-images-download-from-markdown file)))
 
 (declare-function ebib-extras-get-field "ebib-extras")
 (declare-function ebib-extras-get-file "ebib-extras")
