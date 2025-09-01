@@ -185,7 +185,7 @@ marker with `[^N]', and store an id→N mapping in the buffer-local
 variable `tlon-cleanup--footnote-map', ready for
 `tlon-cleanup-fix-eaf-footnote-references'."
   (setq-local tlon-cleanup--footnote-map (make-hash-table :test #'equal))
-  (let ((pattern "^\\^\\[\\\\\\[\\([[:digit:]]+\\)\\\\\\]\\](#fn\\([^)]*\\))\\^")
+  (let ((pattern "\\^\\[\\\\?\\[?\\([[:digit:]]+\\)\\\\?\\]?\\](#fn\\([^)]*\\))\\^")
         (counter 1))
     (goto-char (point-min))
     (while (re-search-forward pattern nil t)
