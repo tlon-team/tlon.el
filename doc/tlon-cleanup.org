@@ -70,7 +70,7 @@ These functions perform general cleanup tasks applicable to most imported Markdo
 + ~tlon-cleanup-remove-double-brackets~ :: Removes instances of literal double square brackets (`[[` or `]]`) which might occur as artifacts from conversion processes (e.g., from wiki links).
 
 #+findex: tlon-cleanup-remove-nonbreaking-spaces
-+ ~tlon-cleanup-remove-nonbreaking-spaces~ :: Removes specific non-breaking spaces (U+00A0) that might appear incorrectly after periods followed by a space or opening bracket.
++ ~tlon-cleanup-remove-nonbreaking-spaces~ :: Replaces non-breaking spaces (U+00A0) that occur after periods, after in-text footnote markers, and at the start of footnote definitions.
 
 #+findex: tlon-cleanup-remove-span-elements
 + ~tlon-cleanup-remove-span-elements~ :: Removes empty Pandoc-style span elements (`{.*?}`) which often contain attributes but no content and are usually unnecessary artifacts.
