@@ -197,13 +197,48 @@ variable `tlon-cleanup--footnote-map', ready for
         (replace-match (format "[^%d]" n))))))
 
 (defun tlon-cleanup-fix-eaf-footnote-references ()
-  "Convert footnote references to valid Markdown syntax."
-  (let* ((ref-number "[[:digit:]]\\{1,3\\}")
-	 (ref-target (format "^\\(?1:%1$s\\)\\.\\s-*\\(?2:[^[:space:]].*?\\)\\s-*\\[↩︎\\](#fnref-[[:alnum:]]*-%1$s)"
-			     ref-number)))
+  "Convert EA Forum footnote reference blocks to standard Markdown.
+
+The function handles two EA Forum formats:
+
+1. Classic numeric list items, e.g.
+     3. Footnote text [↩︎](#fnref-abc123-3)
+
+2. Caret-style blocks:
+     ^**[^](#fnrefabc123)**^
+     Footnote text …
+
+It relies on the buffer-local `tlon-cleanup--footnote-map' populated by
+`tlon-cleanup-fix-eaf-footnotes' so that numbers match the in-text markers."
+  (let ((caret-pattern  "^\\^\\*\\*\\[\\^\\](#fnref\\([^)]*\\))\\*\\*\\^")
+        (classic-pattern "^\\([[:digit:]]+\\)\\.\\s-*\\([^[:space:]].*?\\)\\s-*\\[↩\\(?:︎\\)?\\](#fnref-[[:alnum:]]*-[[:digit:]]+)"))
+    ;; ── caret-style blocks ────────────────────────────────────────────────
     (goto-char (point-min))
-    (while (re-search-forward ref-target nil t)
-      (replace-match (format "[^%s]: %s" (match-string-no-properties 1) (match-string-no-properties 2))))))
+    (while (re-search-forward caret-pattern nil t)
+      (let* ((id (match-string-no-properties 1))
+             (num (or (and (hash-table-p tlon-cleanup--footnote-map)
+                           (gethash id tlon-cleanup--footnote-map))
+                      (let ((n (1+ (hash-table-count tlon-cleanup--footnote-map))))
+                        (puthash id n tlon-cleanup--footnote-map) n)))
+             (block-start (match-beginning 0)))
+        ;; Determine the bounds of the footnote body
+        (end-of-line)
+        (let* ((text-beg (progn (forward-line 1) (point)))
+               (text-end (or (save-excursion
+                               (when (re-search-forward caret-pattern nil t)
+                                 (match-beginning 0)))
+                             (point-max)))
+               (body (string-trim (buffer-substring-no-properties text-beg text-end))))
+          (delete-region block-start text-end)
+          (goto-char block-start)
+          (insert (format "[^%d]: %s\n\n" num body)))))
+    ;; ── classic numeric list items ────────────────────────────────────────
+    (goto-char (point-min))
+    (while (re-search-forward classic-pattern nil t)
+      (replace-match (format "[^%s]: %s"
+                             (match-string-no-properties 1)
+                             (match-string-no-properties 2))
+                     nil t))))
 
 (defun tlon-cleanup-remove-eaf-text ()
   "Remove various strings of text."
