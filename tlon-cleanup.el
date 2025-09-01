@@ -27,6 +27,12 @@
 
 (require 'tlon-core)
 (require 'transient)
+(require 'subr-x)
+
+(defvar-local tlon-cleanup--footnote-map nil
+  "Hash table mapping EA Forum footnote ids to sequential numbers in the current
+buffer.  It is populated by `tlon-cleanup-fix-eaf-footnotes' and consumed by
+`tlon-cleanup-fix-eaf-footnote-references'.")
 
 ;;;; Functions
 
@@ -171,12 +177,24 @@ entry is added."
 ;; If problems arise, test against documents imported from these URLs:
 ;; https://forum.effectivealtruism.org/s/vSAFjmWsfbMrTonpq/p/u5JesqQ3jdLENXBtB
 (defun tlon-cleanup-fix-eaf-footnotes ()
-  "Convert footnotes to valid Markdown syntax."
-  (let* ((ref-number "[[:digit:]]\\{1,3\\}")
-         (ref-source (format "\\^\\[\\(?1:%s\\)\\](#fn[^)]*)\\^" ref-number)))
+  "Convert EAF in-text footnote markers to `[^N]' and record the mapping.
+Each EA Forum footnote marker looks like:
+  ^[\\[3\\]](#fn<id>)^
+We sequentially number them in order of appearance, replace the
+marker with `[^N]', and store an id→N mapping in the buffer-local
+variable `tlon-cleanup--footnote-map', ready for
+`tlon-cleanup-fix-eaf-footnote-references'."
+  (setq-local tlon-cleanup--footnote-map (make-hash-table :test #'equal))
+  (let ((pattern "^\\^\\[\\\\\\[\\([[:digit:]]+\\)\\\\\\]\\](#fn\\([^)]*\\))\\^")
+        (counter 1))
     (goto-char (point-min))
-    (while (re-search-forward ref-source nil t)
-      (replace-match (format "[^%s]" (match-string-no-properties 1))))))
+    (while (re-search-forward pattern nil t)
+      (let* ((id (match-string-no-properties 2))
+             (n  (or (gethash id tlon-cleanup--footnote-map)
+                     (prog1 counter
+                       (puthash id counter tlon-cleanup--footnote-map)
+                       (setq counter (1+ counter))))))
+        (replace-match (format "[^%d]" n))))))
 
 (defun tlon-cleanup-fix-eaf-footnote-references ()
   "Convert footnote references to valid Markdown syntax."
