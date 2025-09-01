@@ -122,10 +122,24 @@ are no level 2 headings and some headings level 3 or higher."
       (replace-match "\\1"))))
 
 (defun tlon-cleanup-remove-nonbreaking-spaces ()
-  "Remove selected nonbreaking spaces."
+  "Replace non-breaking spaces (U+00A0) that appear in common EA-Forum artefacts.
+
+The function normalises three patterns:
+1. After a period:      \". X\" → \". X\"
+2. After a footnote ref \"[^1] X\" → \"[^1] X\"
+3. At a footnote start  \"[^1]: X\" → \"[^1]: X\""
   (goto-char (point-min))
-  (while (re-search-forward "\\. \\([ \\[]\\)" nil t)
-    (replace-match ".\\1")))
+  ;; 1. After periods.
+  (while (re-search-forward "\\. " nil t)
+    (replace-match ". "))
+  ;; 2. After in-text footnote references.
+  (goto-char (point-min))
+  (while (re-search-forward "\\(\\[\\^[[:digit:]]\\{1,3\\}\\]\\) " nil t)
+    (replace-match "\\1 "))
+  ;; 3. Immediately after the colon in footnote definitions.
+  (goto-char (point-min))
+  (while (re-search-forward "^\\(\\[\\^[[:digit:]]\\{1,3\\}\\]:\\) " nil t)
+    (replace-match "\\1 ")))
 
 (defun tlon-cleanup-remove-span-elements ()
   "Remove span elements spaces."
