@@ -425,34 +425,36 @@ relative to the repository root. For example, if FILE is
                               from-header))
 			  (let ((path (url-filename (url-generic-parse-url url))))
                             (when path (file-name-extension path))))))
-		(unless extension
-		  (user-error "Could not determine image type for %s" url))
-		(let* ((lang (tlon-get-language-in-file file))
-		       (figure-name (tlon-lookup tlon-figure-names :name :language lang))
-		       (image-file-name (format "%s-%02d.%s" figure-name counter extension))
-		       (image-path (expand-file-name image-file-name target-dir)))
-		  (write-region header-end (point-max) image-path nil 0)
-		  (message "Saved to %s" image-path)
-                  (let* ((relative-src (file-relative-name image-path (file-name-directory file)))
-                         (values (list relative-src nil nil)) ; src, alt, ignore-content
-                         (figure-tag (tlon-md-get-tag-filled "Figure" values "")))
-                    (push (cons url figure-tag) tag-replacements))
-		  (kill-buffer image-data-buffer)
-		  (setq counter (1+ counter))))))))
-    ;; Replace Markdown image syntax with <Figure> tags referencing the
-    ;; downloaded local files.
-    (with-current-buffer (find-file-noselect file)
-      (save-excursion
-        (goto-char (point-min))
-        (while (re-search-forward tlon-md-image nil t)
-          (let* ((url (match-string 2))
-                 (replacement (assoc-default url tag-replacements nil nil #'string=)))
-            (when replacement
-              (replace-match replacement t t))))
-        (save-buffer)))
-    (when tlon-images-open-after-processing
-      (dired target-dir))
-    (message "Downloaded %d images to %s" (length image-urls) (file-relative-name target-dir repo-root))))
+                (if (not extension)
+                    (progn
+                      (message "Skipping %s (unknown or unsupported image type)" url)
+                      (kill-buffer image-data-buffer))
+                  (let* ((lang (tlon-get-language-in-file file))
+			 (figure-name (tlon-lookup tlon-figure-names :name :language lang))
+			 (image-file-name (format "%s-%02d.%s" figure-name counter extension))
+			 (image-path (expand-file-name image-file-name target-dir)))
+		    (write-region header-end (point-max) image-path nil 0)
+		    (message "Saved to %s" image-path)
+                    (let* ((relative-src (file-relative-name image-path (file-name-directory file)))
+                           (values (list relative-src nil nil)) ; src, alt, ignore-content
+                           (figure-tag (tlon-md-get-tag-filled "Figure" values "")))
+                      (push (cons url figure-tag) tag-replacements))
+		    (kill-buffer image-data-buffer)
+		    (setq counter (1+ counter))))))))
+      ;; Replace Markdown image syntax with <Figure> tags referencing the
+      ;; downloaded local files.
+      (with-current-buffer (find-file-noselect file)
+	(save-excursion
+          (goto-char (point-min))
+          (while (re-search-forward tlon-md-image nil t)
+            (let* ((url (match-string 2))
+                   (replacement (assoc-default url tag-replacements nil nil #'string=)))
+              (when replacement
+		(replace-match replacement t t))))
+          (save-buffer)))
+      (when tlon-images-open-after-processing
+	(dired target-dir))
+      (message "Downloaded %d images to %s" (length image-urls) (file-relative-name target-dir repo-root)))))
 
 (defun tlon-images--get-image-urls-from-markdown (file)
   "Return a list of all image URLs in Markdown FILE."
