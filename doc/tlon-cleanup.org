@@ -85,9 +85,9 @@ These functions target cleanup tasks specific to content imported from the Effec
 #+findex: tlon-cleanup-eaf
 + ~tlon-cleanup-eaf~ :: Runs a sequence of cleanup functions specifically designed for EAF content after initial common cleanup. The sequence is:
   - ~tlon-cleanup-eaf-replace-urls~
-  - ~tlon-cleanup-fix-footnotes~
-  - ~tlon-cleanup-fix-footnote-references~
-  - ~tlon-cleanup-remove-text~
+  - ~tlon-cleanup-fix-eaf-footnotes~
+  - ~tlon-cleanup-fix-eaf-footnote-references~
+  - ~tlon-cleanup-remove-eaf-text~
 
 #+findex: tlon-cleanup-eaf-replace-urls
 + ~tlon-cleanup-eaf-replace-urls~ :: Replaces various forms of EA Forum post URLs found in the buffer (including those within collections or with comment IDs) with their canonical format: `https://forum.effectivealtruism.org/posts/POST_ID(/COMMENT_ID)`. It uses the regexps defined in `tlon-core.el` (~tlon-eaf-url-post-canonical~, ~tlon-eaf-url-post-collection~).
@@ -95,11 +95,11 @@ These functions target cleanup tasks specific to content imported from the Effec
 #+findex: tlon-cleanup-eaf-replace-urls-in-repo
 + ~tlon-cleanup-eaf-replace-urls-in-repo~ :: Applies ~tlon-cleanup-eaf-replace-urls~ to all Markdown files (`.md`) found recursively within the current Tlön repository. This is intended for occasional maintenance to ensure URL consistency across the repository.
 
-#+findex: tlon-cleanup-fix-footnotes
-+ ~tlon-cleanup-fix-footnotes~ :: Converts EAF-style footnote markers (e.g., `^\[\[1\]\](#fn...) {rev="footnote"}^`) into standard Markdown footnote references (e.g., `[^1]`). It extracts the footnote number (1-3 digits).
+#+findex: tlon-cleanup-fix-eaf-footnotes
++ ~tlon-cleanup-fix-eaf-footnotes~ :: Converts EAF-style footnote markers (e.g., `^[1](#fn-...)^`) into standard Markdown footnote references (e.g., `[^1]`). It extracts the footnote number (1-3 digits).
 
-#+findex: tlon-cleanup-fix-footnote-references
-+ ~tlon-cleanup-fix-footnote-references~ :: Converts EAF-style footnote definitions (e.g., `1. Footnote text [↩︎](#fnref-...)`) into standard Markdown footnote definitions (e.g., `[^1]: Footnote text`). It extracts the number and the footnote text.
+#+findex: tlon-cleanup-fix-eaf-footnote-references
++ ~tlon-cleanup-fix-eaf-footnote-references~ :: Converts EAF-style footnote definitions (e.g., `1. Footnote text [↩︎](#fnref-...)`) into standard Markdown footnote definitions (e.g., `[^1]: Footnote text`). It extracts the number and the footnote text.
 
 #+findex: tlon-cleanup-remove-text
 + ~tlon-cleanup-remove-text~ :: Removes various EAF-specific text fragments and markup artifacts from the buffer, including:

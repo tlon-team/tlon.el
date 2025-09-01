@@ -181,7 +181,7 @@ entry is added."
 (defun tlon-cleanup-fix-eaf-footnote-references ()
   "Convert footnote references to valid Markdown syntax."
   (let* ((ref-number "[[:digit:]]\\{1,3\\}")
-	 (ref-target (format "\\(?1:%1$s\\)\\..*?\\(?2:[^[:space:]].*?\\)\\[↩︎\\](#fnref-[[:alnum:]]*-%1$s){\\.footnote-backref}"
+	 (ref-target (format "^\\(?1:%1$s\\)\\.\\s-*\\(?2:[^[:space:]].*?\\)\\s-*\\[↩︎\\](#fnref-[[:alnum:]]*-%1$s)"
 			     ref-number)))
     (goto-char (point-min))
     (while (re-search-forward ref-target nil t)
