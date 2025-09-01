@@ -448,7 +448,7 @@ relative to the repository root. For example, if FILE is
           (goto-char (point-min))
           (while (re-search-forward tlon-md-image nil t)
             (let* ((url (match-string 2))
-                   (replacement (assoc-default url tag-replacements nil nil #'string=)))
+                   (replacement (assoc-default url tag-replacements #'string=)))
               (when replacement
 		(replace-match replacement t t))))
           (save-buffer)))
