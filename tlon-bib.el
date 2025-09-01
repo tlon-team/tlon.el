@@ -1473,7 +1473,7 @@ if Markdown, \"[cite:@KEY]\", if org-mode."
       (user-error "File does not exist: %s" file))
     (message "Requesting AI to process citations in %s..." (file-name-nondirectory file))
     (tlon-make-gptel-request prompt nil #'tlon-bib-replace-citations-callback
-			     tlon-bib-replace-citations-model t nil tools)))
+			     tlon-bib-replace-citations-model t nil tools nil '("ddg-search"))))
 
 (defun tlon-bib-get-citation-replacement-prompt-examples (org)
   "Return a list of examples for replacing citations.
