@@ -1117,6 +1117,15 @@ friendly name (e.g., \"Brian\"), not the voice ID or the full display string."
            (friendly-name (tlon-lookup voices :name :id selected-id)))
       friendly-name)))
 
+;;;;;;; Misc
+
+(defun tlon-md-tag-list ()
+  "Return a list of all tag names in `tlon-tag-specs'."
+  (let ((tags (mapcar (lambda (plist) (plist-get plist :tag)) tlon-tag-specs)))
+    (when (called-interactively-p 'any)
+      (message "%S" tags))
+    tags))
+
 ;;;;; Notes
 
 (defun tlon-md-get-note (&optional n content-only)
