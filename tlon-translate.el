@@ -150,18 +150,19 @@ message is appended to the buffer named by
   "Prefix for translation revision prompts.")
 
 (defconst tlon-translate-prompt-revise-suffix
-  "Do not modify URLs, BibTeX keys, or tags enclosed in angular brackets (such as ‘<Roman>’, ‘<LiteralLink>’, etc.). Only after you are done comparing the paragraphs and determining all the changes that should be made to the translation, write your changes to \"%1$s\" using the 'edit_file` tool. You should use this tool ONLY ONCE, to make all your changes in one go. Note that the file (\"%1$s\") may include other paragraphs besides those I shared with you; you should only modify the paragraphs that I shared with you, leaving the rest of the file unchanged.\n\nHere are the paragraph pairs:\n\n"
+  "Only after you are done comparing the paragraphs and determining all the changes that should be made to the translation, write your changes to \"%1$s\" using the 'edit_file` tool. You should use this tool ONLY ONCE, to make all your changes in one go. Note that the file (\"%1$s\") may include other paragraphs besides those I shared with you; you should only modify the paragraphs that I shared with you, leaving the rest of the file unchanged.\n\nHere are the paragraph pairs:\n\n"
   "Suffix for translation revision prompts.")
 
+(declare-function tlon-md-tag-list "tlon-md")
 (defconst tlon-translate-revise-errors-prompt
   (concat tlon-translate-prompt-revise-prefix
-	  "Your task is to read both carefully and try to spot errors in the translation: the code surrounding the translation may have been corrupted, there may be sentences and even paragraphs missing, the abbreviations may be used wrongly or inconsistently, etc. "
+	  (format "Your task is to read both carefully and try to spot errors in the translation: the code surrounding the translation may have been corrupted, there may be sentences and even paragraphs missing, the abbreviations may be used wrongly or inconsistently, etc. In addition, the custom tags we use, which should remain invariant, may have been inadvertently translated; if so, you should restore them to their original form. This is an exhaustive list of all our custom tags: %S. Do not modify any URLs or BibTeX keys. " (tlon-md-tag-list))
 	  tlon-translate-prompt-revise-suffix)
   "Prompt for revising translation errors.")
 
 (defconst tlon-translate-revise-flow-prompt
   (concat tlon-translate-prompt-revise-prefix
-	  "Your task is to to read both carefully and try improve the translation for a better flow. "
+	  "Your task is to to read both carefully and try improve the translation for a better flow. Do not modify URLS, BibTeX keys, or tags enclosed in angular brackets (such as ‘<Roman>’, ‘<LiteralLink>’, etc.)"
 	  tlon-translate-prompt-revise-suffix)
   "Prompt for improving translation flow.")
 
