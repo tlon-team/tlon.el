@@ -210,7 +210,7 @@ The function handles two EA Forum formats:
 
 It relies on the buffer-local `tlon-cleanup--footnote-map' populated by
 `tlon-cleanup-fix-eaf-footnotes' so that numbers match the in-text markers."
-  (let ((caret-pattern  "^\\^\\*\\*\\[\\^\\](#fnref\\([^)]*\\))\\*\\*\\^")
+  (let ((caret-pattern  "^[[:blank:]]*\\^\\*\\*\\[\\\\?\\^\\](#fnref\\([^)]*\\))\\*\\*\\^")
         (classic-pattern "^\\([[:digit:]]+\\)\\.\\s-*\\([^[:space:]].*?\\)\\s-*\\[↩\\(?:︎\\)?\\](#fnref-[[:alnum:]]*-[[:digit:]]+)"))
     ;; ── caret-style blocks ────────────────────────────────────────────────
     (goto-char (point-min))
