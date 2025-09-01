@@ -99,7 +99,7 @@
 	(tlon-import-html identifier title)
       (tlon-import-pdf (expand-file-name identifier)))
     (tlon-yaml-insert-field "key" key)
-    (tlon-yaml-suggest-tags)))
+    (tlon-yaml-suggest-tags (buffer-file-name))))
 
 (declare-function ebib-extras-get-field "ebib-extras")
 (declare-function ebib-extras-get-file "ebib-extras")
