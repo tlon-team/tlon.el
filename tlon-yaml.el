@@ -750,7 +750,7 @@ non-nil, run non-interactively on that file without prompting."
 			     (file-name-nondirectory (buffer-file-name))))
 	 (article-file (or article-file
 			   (expand-file-name
-			    (read-file-name "Article: " articles-dir default-filename t nil
+			    (read-file-name "Suggest tags in this article: " articles-dir default-filename t nil
 					    (lambda (f) (string-suffix-p ".md" f)))))))
     ;; Collect candidate tags
     (let* ((tags-dir (file-name-concat repo-dir "tags"))
