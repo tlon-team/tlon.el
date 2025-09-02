@@ -100,16 +100,6 @@ are processed sequentially."
   :group 'tlon-translate
   :type 'integer)
 
-(defcustom tlon-translate-revise-stream nil
-  "If non-nil, enable streaming when sending AI revision requests.
-
-With streaming disabled (the default), `gptel' calls the callback exactly
-once per chunk, after the model and any tools have finished.  This makes it
-trivial to detect completion and schedule the next chunk.  Set this option
-to t if you prefer to see partial responses in real time."
-  :group 'tlon-translate
-  :type 'boolean)
-
 ;;;; Logging
 
 (defconst tlon-translate-log-buffer-name "*tlon-translate-log*"
@@ -740,15 +730,7 @@ needed."
                        (and (numberp st) (>= st 400)))))
         (tlon-ai-callback-fail info))
       ;; Decide when the request is *finished* and fire AFTER-FN once.
-      (when (and (not fired)
-                 (or
-                  ;; non-streaming mode → single call means we're done
-                  (not tlon-translate-revise-stream)
-                  ;; explicit done/final flags (plist or alist)
-                  (plist-get info :done) (alist-get 'done info)
-                  (plist-get info :final) (alist-get 'final info)
-                  ;; INFO may be nil in some backends
-                  (null info)))
+      (when (not fired)
         (setq fired t)
         (when (functionp after-fn)
           (funcall after-fn))))))
@@ -851,7 +833,7 @@ areas. AFTER-FN is an optional function to call after the revision is complete."
           (tlon-make-gptel-request
            prompt nil
            (tlon-translate--gptel-callback-simple translation-file type wrapped-after-fn)
-           model tlon-translate-revise-stream nil tools))
+           model nil nil tools))
     (push proc tlon-translate--active-revision-processes)
     proc))
 
