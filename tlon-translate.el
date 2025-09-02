@@ -981,7 +981,7 @@ If nil, use the default model."
     ("r a" "Abort revision" tlon-translate-revise-abort)
     ""
     "Options"
-    ("r -s" "Spot errors model" tlon-translate-infix-select-revise-errors-model)
+    ("r -e" "Spot errors model" tlon-translate-infix-select-revise-errors-model)
     ("r -f" "Improve flow model" tlon-translate-infix-select-revise-flow-model)
     ""
     ("r -r" "Restrict range" tlon-translate-infix-set-restrict-revision-range)
