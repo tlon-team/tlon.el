@@ -458,6 +458,62 @@ typographic apostrophes (’) to prevent Sieve errors."
     (setq tlon-email-language (tlon-lookup tlon-languages-properties :name :code language))
     (tlon-email-send "share-glossary.org" recipient attachment)))
 
+;;;###autoload
+(defun tlon-extract-multilingual-glossary ()
+  "Extract a multilingual CSV with all existing translations for each term."
+  (interactive)
+  (let* ((json (tlon-read-json tlon-file-glossary-source nil 'list 'symbol))
+         (languages (tlon--glossary-detect-languages json))
+         (path (tlon--glossary-multilingual-target-path)))
+    (with-temp-file path
+      (insert (tlon--glossary-make-csv-row
+               (mapcar (lambda (sym) (upcase (symbol-name sym))) languages)))
+      (dolist (item json)
+        (let ((row (mapcar (lambda (lang) (or (alist-get lang item) ""))
+                           languages)))
+          (insert (tlon--glossary-make-csv-row row)))))
+    (message "Multilingual glossary extracted to `%s'" path)
+    path))
+
+(defun tlon--glossary-multilingual-target-path ()
+  "Return the target filepath for the multilingual CSV."
+  (file-name-concat paths-dir-downloads "EN-ALL.csv"))
+
+(defun tlon--glossary-make-csv-row (fields)
+  "Return a CSV row for FIELDS."
+  (concat (mapconcat (lambda (f)
+                       (format "\"%s\""
+                               (tlon--glossary-escape (format "%s" f))))
+                     fields
+                     ",")
+          "\n"))
+
+(defun tlon--glossary-escape (s)
+  "Escape double quotes in string S for CSV."
+  (replace-regexp-in-string "\"" "\"\"" s t t))
+
+(defun tlon--glossary-detect-languages (json)
+  "Detect language keys present in JSON and return an ordered list."
+  (let ((present '()))
+    (dolist (item json)
+      (dolist (pair item)
+        (let ((k (car pair)))
+          (when (and (symbolp k) (not (eq k 'type)))
+            (cl-pushnew k present)))))
+    (setq present (cl-remove-if (lambda (k) (eq k 'en)) present))
+    (let* ((preferred (mapcar #'intern
+                              (cl-remove-if (lambda (s) (string= s "en"))
+                                            tlon-project-target-languages)))
+           (ordered (append '(en)
+                            (cl-remove-duplicates
+                             (seq-filter (lambda (l) (memq l present)) preferred))
+                            (cl-set-difference
+                             (sort (copy-sequence present)
+                                   (lambda (a b)
+                                     (string< (symbol-name a) (symbol-name b))))
+                             preferred))))
+      ordered)))
+
 ;;;;; Menu
 
 (transient-define-infix tlon-ai-infix-select-glossary-model ()
@@ -478,6 +534,7 @@ If nil, use the default model."
   [["Glossary Actions"
     ("e" "Edit entry"              tlon-edit-glossary)
     ("x" "Extract glossary"        tlon-extract-glossary)
+    ("X" "Extract multilingual (CSV)" tlon-extract-multilingual-glossary)
     ("s" "Share glossary"          tlon-share-glossary)]
    ["AI Actions"
     ("a" "AI Create Language"    tlon-ai-create-glossary-language)

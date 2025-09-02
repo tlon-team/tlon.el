@@ -114,6 +114,21 @@ The command ~tlon-extract-glossary~ extracts a language-specific glossary from t
 7. If the recipient is =human=, it asks the user if they want to share the extracted glossary via email using ~tlon-share-glossary~.
 8. For other recipients (=deepl-editor=, =deepl-api=, =sieve=), it messages the path to the extracted file.
 
+*** Extract Multilingual Glossary
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-extract-multilingual-glossary
+:END:
+#+findex: tlon-extract-multilingual-glossary
+The command ~tlon-extract-multilingual-glossary~ writes a CSV file containing
+all existing translations for every term in the master glossary. It is useful
+for translators onboarding a new target language.
+
+- It detects all language keys present across entries (including ~en~).
+- It writes a header row with the language codes.
+- Each subsequent row contains the translation for that term in each language
+  (empty if missing).
+- The file is saved to your downloads directory as =EN-ALL.csv=.
+
 *** Share Glossary
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-share-glossary
