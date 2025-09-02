@@ -365,12 +365,9 @@ each package or feature, following this model:\n\n%s"
     (prompt &optional printf-arg callback full-model
             skip-context-check request-buffer tools context-data mcp-servers)
   "Send PROMPT through gptel, pinning BACKEND+MODEL for tool follow-ups.
-Pass either:
-
-- FULL-MODEL = (BACKEND . MODEL), where BACKEND is a string (e.g. \"Gemini\") or
-    a backend object, and MODEL is a symbol or string; OR
-
-- FULL-MODEL = nil, to use the buffer/global `gptel-backend' and `gptel-model'.
+FULL-MODEL is a cons cell of the form (BACKEND . MODEL), where BACKEND is a
+string (e.g. \"Gemini\") or a backend object, and MODEL is a symbol or string;
+if nil, use the buffer/global `gptel-backend' and `gptel-model'.
 
 TOOLS is a list of tool names (symbols/strings) that `gptel-get-tool' can
 resolve.
