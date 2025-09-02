@@ -986,9 +986,7 @@ If nil, use the default model."
     ""
     ("r -r" "Restrict range" tlon-translate-infix-set-restrict-revision-range)
     ("r -c" "Chunk size"     tlon-translate-infix-set-chunk-size)
-    ("r -p" "Max parallel" tlon-translate-infix-set-max-parallel)
-    ""
-    ("r -e" "edit prompt"                               tlon-ai-infix-toggle-edit-prompt)]
+    ("r -p" "Max parallel" tlon-translate-infix-set-max-parallel)]
    ["General options"
     ("-c" "Commit changes" tlon-translate-infix-toggle-commit-changes)]])
 
