@@ -251,14 +251,12 @@ The slug is built by translating the original title with
 `simple-extras-slugify'.  If translation fails, fall back to a
 slugified version of the original basename."
   (let* ((original-key (tlon-yaml-get-key "key" source-file))
-	 (target-lang-name (tlon-lookup tlon-languages-properties
-					:standard :code target-lang-code))
-	 (translation-key (tlon-get-counterpart-key original-key target-lang-name))
+	 (translation-key (tlon-get-counterpart-key original-key target-lang-code))
          (title (or (tlon-bibliography-lookup "=key=" translation-key "title")
                     (replace-regexp-in-string "-" " " (file-name-base source-file))))
 	 (source-lang-code (tlon-get-language-in-file source-file))
 	 (translated (ignore-errors
-                       (tlon-translate-text title
+		       (tlon-translate-text title
 					    target-lang-code
 					    source-lang-code
 					    nil
