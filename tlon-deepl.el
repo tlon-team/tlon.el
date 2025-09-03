@@ -277,7 +277,7 @@ LANGUAGE. Returns nil if `tlon-translate-source-language' is not \"en\"."
 
 ;;;;;; “quality_optimized” model newlines workaround
 
-(defconst tlon-deepl-newline-token "Nihil igitur mors est ad nos. "
+(defconst tlon-deepl-newline-token "Nihil igitur mors est ad nos."
   "Placeholder string used to preserve newlines when using \"quality_optimized\".
 The string is replaced back to newlines after translation is received.")
 
@@ -304,7 +304,8 @@ consistently, so callers do not need to invoke
 (defun tlon-deepl--postprocess-text (text)
   "Replace `tlon-deepl-newline-token' in TEXT with real newlines when needed."
   (if (tlon-deepl--model-uses-newline-workaround-p)
-      (replace-regexp-in-string tlon-deepl-newline-token "\n" text 'fixedcase 'literal)
+      (let ((pattern (concat (regexp-quote tlon-deepl-newline-token) " ?")))
+	(replace-regexp-in-string pattern "\n" text 'fixedcase))
     text))
 
 ;;;;; Glossaries
