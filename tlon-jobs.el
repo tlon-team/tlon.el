@@ -486,9 +486,13 @@ COMMIT is non-nil, commit the change."
     (if trans-key
 	(setq orig-key (tlon-get-counterpart-key key "en"))
       (let ((lang (tlon-select-language 'code 'babel "Translation language: ")))
+	;; TODO: Revise counterpart functionality to ensure `trans-key' is
+	;; always set, then remove conditional below
 	(setq trans-key (tlon-get-counterpart-key key lang))))
     (tlon-db-move-entry orig-key)
-    (tlon-db-move-entry trans-key)))
+    (if trans-key
+	(tlon-db-move-entry trans-key)
+      (message "No translation entry found. Call `M-x tlon-db-move-entry' manually from the translated BibTeX entry."))))
 
 ;;;;; Menu
 
