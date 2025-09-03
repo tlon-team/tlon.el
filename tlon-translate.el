@@ -730,7 +730,7 @@ a boolean indicating whether to restrict the revision to specific areas."
       ((process (remaining idx)
          (if (null remaining)
              (progn
-               (tlon-translate--log "Finished processing all %d chunk%s of %s"
+               (tlon-translate--log "Completed processing all %d chunk%s of %s"
                                     idx (if (= idx 1) "" "s")
                                     (file-name-nondirectory translation-file))
                (tlon-translate-show-log))
