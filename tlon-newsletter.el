@@ -180,7 +180,7 @@ response INFO."
   (unless (file-exists-p tlon-newsletter-sample-issue-file)
     (user-error "Sample issue file not found: %s" tlon-newsletter-sample-issue-file)))
 
-;;;;;; Helpers
+;;;;;; Handle dates
 
 (defun tlon-newsletter-get-issue-month (date)
   "Return the lowercase month name for date string DATE.
