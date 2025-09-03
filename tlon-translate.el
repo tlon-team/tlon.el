@@ -872,11 +872,16 @@ areas. AFTER-FN is an optional function to call after the revision is complete."
                                    (tlon-get-number-of-paragraphs-in-file translation-file)))
 			 (file-name-nondirectory translation-file))
     (setq revert-without-query '(".*")) ; avoid annoying prompt to confirm revert
-    (setq proc
-          (tlon-make-gptel-request
-           prompt nil
-           (tlon-translate--gptel-callback-simple translation-file type wrapped-after-fn)
-           model nil nil tools))
+    (let* ((req-buf (get-buffer-create (format "*tlon-revise:%s:%s*"
+                                               (file-name-nondirectory translation-file)
+                                               chunk-desc))))
+      (with-current-buffer req-buf
+        (setq-local gptel-include-reasoning nil))
+      (setq proc
+            (tlon-make-gptel-request
+             prompt nil
+             (tlon-translate--gptel-callback-simple translation-file type wrapped-after-fn)
+             model nil req-buf tools)))
     (push proc tlon-translate--active-revision-processes)
     proc))
 
