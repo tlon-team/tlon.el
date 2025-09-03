@@ -538,6 +538,49 @@ nil, use `tlon-project-target-languages'."
   (tlon-translate--revise-common 'flow))
 
 ;;;###autoload
+(defun tlon-translate-revise-errors-in-range ()
+  "Use AI to spot errors in a translation file within a paragraph range."
+  (interactive)
+  (let ((range (tlon-translate--read-paragraph-range)))
+    (let ((tlon-translate-restrict-revision-to-paragraphs range))
+      (tlon-translate-revise-errors))))
+
+;;;###autoload
+(defun tlon-translate-improve-errors-in-range ()
+  "Use AI to improve the flow of a translation file within a paragraph range."
+  (interactive)
+  (let ((range (tlon-translate--read-paragraph-range)))
+    (let ((tlon-translate-restrict-revision-to-paragraphs range))
+      (tlon-translate-revise-flow))))
+
+(defun tlon-translate--read-paragraph-range ()
+  "Prompt for a paragraph range and return it as a cons (START . END).
+Empty inputs mean the beginning or end of the file respectively. START and END
+are 1-based. Return nil to indicate the whole file."
+  (let* ((current tlon-translate-restrict-revision-to-paragraphs)
+         (start-str (read-string
+                     (if current
+                         (format "Start paragraph (empty = first) [current: %s]: "
+                                 (or (car current) "1"))
+                       "Start paragraph (empty = first): ")))
+         (end-str   (read-string
+                     (if current
+                         (format "End paragraph (empty = last) [current: %s]: "
+                                 (or (cdr current) "last"))
+                       "End paragraph (empty = last): ")))
+         (start (unless (string-blank-p start-str)
+                  (string-to-number start-str)))
+         (end   (unless (string-blank-p end-str)
+                  (string-to-number end-str))))
+    (when (and start (<= start 0))
+      (user-error "Start must be positive"))
+    (when (and start end (< end start))
+      (user-error "End must be ≥ start"))
+    (if (and (null start) (null end))
+        nil
+      (cons start end))))
+
+;;;###autoload
 (defun tlon-translate-revise-abort ()
   "Abort all ongoing `tlon-translate' revision requests.
 
@@ -915,33 +958,6 @@ If nil, use the default model."
   :variable 'tlon-translate-revise-max-parallel
   :reader (lambda (_ _ _) (read-number "Max parallel requests: " tlon-translate-revise-max-parallel)))
 
-(transient-define-infix tlon-translate-infix-set-restrict-revision-range ()
-  "Restrict AI revision to a paragraph range, or reset to whole file."
-  :class 'transient-lisp-variable
-  :variable 'tlon-translate-restrict-revision-to-paragraphs
-  :reader (lambda (_ _ _)
-            (let* ((current tlon-translate-restrict-revision-to-paragraphs)
-                   (start-str (read-string
-                               (if current
-                                   (format "Start paragraph (empty = first) [current: %s]: "
-                                           (or (car current) "1"))
-                                 "Start paragraph (empty = first): ")))
-                   (end-str   (read-string
-                               (if current
-                                   (format "End paragraph (empty = last) [current: %s]: "
-                                           (or (cdr current) "last"))
-                                 "End paragraph (empty = last): ")))
-                   (start (unless (string-blank-p start-str)
-                            (string-to-number start-str)))
-                   (end   (unless (string-blank-p end-str)
-                            (string-to-number end-str))))
-              (when (and start (<= start 0))
-                (user-error "Start must be positive"))
-              (when (and start end (< end start))
-                (user-error "End must be ≥ start"))
-              (cond
-               ((and (null start) (null end)) nil) ; whole file
-               (t (cons start end))))))
 
 ;;;###autoload (autoload 'tlon-translate-menu "tlon-translate" nil t)
 (transient-define-prefix tlon-translate-menu ()
@@ -958,6 +974,8 @@ If nil, use the default model."
    ["Revise"
     ("r e" "Spot errors" tlon-translate-revise-errors)
     ("r f" "Improve flow" tlon-translate-revise-flow)
+    ("r E" "Spot errors in range" tlon-translate-revise-errors-in-range)
+    ("r F" "Improve flow in range" tlon-translate-improve-errors-in-range)
     ""
     ("r l" "Show log" tlon-translate-show-log)
     ("r a" "Abort revision" tlon-translate-revise-abort)
@@ -966,7 +984,6 @@ If nil, use the default model."
     ("r -e" "Spot errors model" tlon-translate-infix-select-revise-errors-model)
     ("r -f" "Improve flow model" tlon-translate-infix-select-revise-flow-model)
     ""
-    ("r -r" "Restrict range" tlon-translate-infix-set-restrict-revision-range)
     ("r -c" "Chunk size"     tlon-translate-infix-set-chunk-size)
     ("r -p" "Max parallel" tlon-translate-infix-set-max-parallel)]
    ["General options"
