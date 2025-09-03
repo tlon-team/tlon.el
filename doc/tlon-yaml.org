@@ -191,3 +191,18 @@ This module provides functions for reading, writing, and manipulating YAML front
 
 #+findex: tlon-yaml-select-key-values
 + ~tlon-yaml-select-key-values~ :: Prompts the user to select one or more VALUES (likely BibTeX keys) for a given KEY, offering completion.
+
+** AI utilities
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-ai
+:END:
+
+#+findex: tlon-yaml-guess-english-counterpart
++ ~tlon-yaml-guess-english-counterpart~ :: Uses an AI model to guess the English
+  counterpart filename for the tag or author at point. It sends the current YAML
+  ~title~ and the list of candidate filenames from the English repository’s tags
+  or authors folder, and expects the model to return the exact matching filename.
+
+#+vindex: tlon-yaml-guess-counterpart-model
++ ~tlon-yaml-guess-counterpart-model~ :: AI model to use for
+  ~tlon-yaml-guess-english-counterpart~. When nil, use the default model.
