@@ -441,17 +441,7 @@ relative to the repository root. For example, if FILE is
                       (push (cons url figure-tag) tag-replacements))
 		    (kill-buffer image-data-buffer)
 		    (setq counter (1+ counter))))))))
-      ;; Replace Markdown image syntax with <Figure> tags referencing the
-      ;; downloaded local files.
-      (with-current-buffer (find-file-noselect file)
-	(save-excursion
-          (goto-char (point-min))
-          (while (re-search-forward tlon-md-image nil t)
-            (let* ((url (match-string 2))
-                   (replacement (assoc-default url tag-replacements #'string=)))
-              (when replacement
-		(replace-match replacement t t))))
-          (save-buffer)))
+      (tlon-images--replace-markdown-images-with-figure-tags file tag-replacements)
       (when tlon-images-open-after-processing
 	(dired target-dir))
       (message "Downloaded %d images to %s" (length image-urls) (file-relative-name target-dir repo-root)))))
@@ -465,6 +455,24 @@ relative to the repository root. For example, if FILE is
       (while (re-search-forward "!\\[.*?\\](\\(.+?\\))" nil t)
         (push (match-string 1) urls))
       (nreverse urls))))
+
+(defun tlon-images--replace-markdown-images-with-figure-tags (file tag-replacements)
+  "Replace Markdown images in FILE using TAG-REPLACEMENTS alist.
+Trim leading and trailing newlines from replacement tags before insertion."
+  (with-current-buffer (find-file-noselect file)
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward tlon-md-image nil t)
+        (let* ((url (match-string 2))
+               (replacement (assoc-default url tag-replacements #'string=)))
+          (when replacement
+            (replace-match (tlon-images--trim-leading-trailing-newlines replacement) t t))))
+      (save-buffer))))
+
+(defun tlon-images--trim-leading-trailing-newlines (s)
+  "Return S without leading or trailing newlines and surrounding spaces."
+  (let ((s1 (replace-regexp-in-string "\\`[ \t]*\n+" "" s)))
+    (replace-regexp-in-string "\n+[ \t]*\\'" "" s1)))
 
 ;;;;; Menu
 
