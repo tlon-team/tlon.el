@@ -388,8 +388,8 @@ Otherwise, construct a local file path from SRC and return it."
   "Scan Markdown FILE for all image URLs, download them, and store them locally.
 The images are stored in a directory structure derived from the FILE's path
 relative to the repository root. For example, if FILE is
-`.../repo/articles/my-post.md`, images will be saved in
-`.../repo/images/articles/my-post/`."
+\".../repo/articles/my-post.md\", images will be saved in
+\".../repo/images/articles/my-post/\"."
   (interactive)
   (let* ((file (or file (read-file-name "Download images from Markdown file: " nil nil t
 					(file-relative-name (buffer-file-name) default-directory))))
