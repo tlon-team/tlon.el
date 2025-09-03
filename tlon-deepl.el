@@ -277,11 +277,9 @@ LANGUAGE. Returns nil if `tlon-translate-source-language' is not \"en\"."
 
 ;;;;;; “quality_optimized” model newlines workaround
 
-(defconst tlon-deepl-newline-token "<!>"
-  "Placeholder string used to preserve newlines when the
-`quality_optimized' model is selected.  The chosen token is
-unlikely to appear in normal text; it is replaced back to
-newlines after translation is received.")
+(defconst tlon-deepl-newline-token "Nihil igitur mors est ad nos. "
+  "Placeholder string used to preserve newlines when using \"quality_optimized\".
+The string is replaced back to newlines after translation is received.")
 
 (defun tlon-deepl--model-uses-newline-workaround-p ()
   "Return non-nil if the newline workaround must be applied."
