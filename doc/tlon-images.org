@@ -43,6 +43,9 @@ This module provides functionality for processing images, primarily using the ex
 #+vindex: tlon-images-overwrite-alt-text
 + ~tlon-images-overwrite-alt-text~ :: Boolean flag. If non-nil, existing alt text will be replaced by the newly generated text when using ~tlon-images-set-image-alt-text-in-buffer~. If nil (the default), existing alt text will be preserved. Note: The command ~tlon-images-set-image-alt-text-in-file~ (operating on a single image tag at point) *always* overwrites existing alt text, regardless of this option's setting.
 
+#+vindex: tlon-images-preserve-markdown-alt-text
++ ~tlon-images-preserve-markdown-alt-text~ :: Boolean flag. If non-nil, when replacing Markdown images with <Figure> tags (e.g., via ~tlon-images-download-from-markdown~) the Markdown alt text will be preserved and inserted as the =alt= attribute. If nil (the default), the =alt= attribute will be omitted.
+
 ** Commands
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-images-commands
@@ -117,7 +120,7 @@ The command ~tlon-images-download-from-markdown~ scans a Markdown file for all i
 8. It saves the images sequentially in the target directory (e.g., =figure-01.png=, =figure-02.png=, etc.). The file extension is determined by first checking the image's file signature ("magic numbers"). If that fails, it inspects the =Content-Type= HTTP header, and as a final fallback, it uses the file extension from the URL itself. If no extension can be determined, the image is skipped and processing
 continues.
 9. If ~tlon-images-open-after-processing~ is non-nil, it opens the target directory in Dired to show the downloaded images.
-10. It replaces each Markdown image with a <Figure> tag whose src points to the downloaded local file and whose alt is populated from the Markdown alt text when present. Extra blank lines around the inserted tag are avoided.
+10. It replaces each Markdown image with a <Figure> tag whose src points to the downloaded local file. Whether the =alt= attribute is populated from the Markdown alt text depends on ~tlon-images-preserve-markdown-alt-text~. Extra blank lines around the inserted tag are avoided.
 
 *** AI-Powered Image Commands
 
