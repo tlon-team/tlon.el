@@ -89,6 +89,10 @@ The order of the keys determines the sort order by
   "You are an assistant that assigns encyclopedia tags to articles. Below you will find, first, the full Markdown of one article delimited by <ARTICLE> … </ARTICLE>.  After that you will see a catalogue of candidate tags.  Each candidate starts with the tag *title* on its own line and is immediately followed by its first descriptive paragraph; candidates are separated by one blank line.\n Return ONLY a JSON array whose elements are the titles of the tags in the list below that best apply to the article, ordered from most to least relevant. Suggest only the most relevant tags; you should not suggest more than six tags. Do not output any other prose, comments, or code blocks.\n <ARTICLE>\n%s\n</ARTICLE>\n <CANDIDATE TAGS>\n%s\n</CANDIDATE TAGS>"
   "Prompt used by `tlon-yaml-suggest-tags'.")
 
+(defconst tlon-yaml-guess-counterpart-prompt
+  "You are an assistant that maps a tag/author title to its English filename.\nTitle: \"%s\"\n\nBelow is a list of candidate Markdown filenames, one per line.\nReturn ONLY the single exact filename from the list that corresponds to the\nEnglish counterpart of the title. Do not include any extra text, quotes, code\nfences, or explanations.\n\n%s"
+  "Prompt used by `tlon-yaml-guess-english-counterpart'.")
+
 ;;;; User options
 
 (defgroup tlon-yaml ()
@@ -99,6 +103,13 @@ The order of the keys determines the sort order by
   "AI model to use for `tlon-yaml-suggest-tags'.
 The value is a cons cell (BACKEND . MODEL) like the other
 `tlon-yaml-*model' custom variables.  When nil, use the current
+`gptel' default model."
+  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
+  :group 'tlon-yaml)
+
+(defcustom tlon-yaml-guess-counterpart-model nil
+  "AI model to use for `tlon-yaml-guess-english-counterpart'.
+The value is a cons cell (BACKEND . MODEL). When nil, use the current
 `gptel' default model."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-yaml)
@@ -829,6 +840,67 @@ canonical form taken from the tag metadata."
                    (length tags) (if (= (length tags) 1) "" "s")
                    (file-name-nondirectory article-file)))))))
 
+;;;;;; Guess English counterpart
+
+;;;###autoload
+(defun tlon-yaml-guess-english-counterpart (&optional file)
+  "Guess the English counterpart filename for the tag/author in FILE.
+When FILE is nil, use the file visited by the current buffer."
+  (interactive)
+  (let* ((file (or file (buffer-file-name)))
+         (type (tlon-yaml-get-key "type" file))
+         (title (tlon-yaml-get-key "title" file)))
+    (unless (member type '("tag" "author"))
+      (user-error "This command only works in tag or author files"))
+    (unless title
+      (user-error "YAML field `title' not found"))
+    (let* ((en-root (tlon-yaml--english-repo-dir))
+           (en-dir  (tlon-yaml--dir-for-type en-root type))
+           (candidates (mapcar #'file-name-nondirectory
+                               (directory-files-recursively en-dir "\\.md\\'")))
+           (prompt (tlon-yaml--make-guess-counterpart-prompt title candidates)))
+      (message "Requesting English counterpart for “%s” …" title)
+      (tlon-make-gptel-request
+       prompt nil
+       (tlon-yaml-guess-english-counterpart-callback candidates en-dir)
+       tlon-yaml-guess-counterpart-model t))))
+
+(defun tlon-yaml-guess-english-counterpart-callback (candidates en-dir)
+  "Return a closure handling the AI response using CANDIDATES and EN-DIR."
+  (lambda (response info)
+    (if (not response)
+        (tlon-ai-callback-fail info)
+      (let* ((ans (string-trim response))
+             (ans (car (split-string ans "[\r\n]+" t)))
+             (match (seq-find (lambda (f) (string= f ans)) candidates)))
+        (if (not match)
+            (message "Model returned an unknown filename: %s" ans)
+          (let ((full (expand-file-name match en-dir)))
+            (kill-new match)
+            (message "English counterpart: %s (copied to kill ring)%s"
+                     full
+                     (if (file-exists-p full) "" " [file not found]"))))))))
+
+(defun tlon-yaml--english-repo-dir ()
+  "Return the absolute path to the English repo for the current repo."
+  (let* ((curr (tlon-get-repo))
+         (sub  (tlon-repo-lookup :subproject :dir curr)))
+    (tlon-repo-lookup :dir :subproject sub :language "en")))
+
+(defun tlon-yaml--dir-for-type (repo-dir type)
+  "Return the directory in REPO-DIR for TYPE, which is \"tag\" or \"author\"."
+  (pcase type
+    ("tag"    (tlon--yaml--tags-dir repo-dir "en"))
+    ("author" (file-name-concat
+               repo-dir
+               (tlon-get-bare-dir-translation "en" "en" "authors")))))
+
+(defun tlon-yaml--make-guess-counterpart-prompt (title candidates)
+  "Build the prompt from TITLE and CANDIDATES."
+  (format tlon-yaml-guess-counterpart-prompt
+          title
+          (mapconcat #'identity candidates "\n")))
+
 ;;;;;; Translated tags
 
 (defun tlon--yaml--tags-dir (repo-dir language)
@@ -919,6 +991,7 @@ If nil, use the default model."
   [["Tags"
     ("t s" "suggest tags"   tlon-yaml-suggest-tags)
     ("t t" "insert translated tags" tlon-yaml-insert-translated-tags)
+    ("t g" "guess English counterpart" tlon-yaml-guess-english-counterpart)
     ""
     "AI models"
     ("-t" "suggest tags" tlon-yaml-infix-suggest-tags-model)]])
