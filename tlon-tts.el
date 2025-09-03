@@ -1850,9 +1850,7 @@ chunk. Subsequent chunks are triggered by the sentinel."
         ;; If all files exist and we only process missing, set start index beyond total
         (unless found-missing
           (setq start-index total-chunks))))
-
     (setq tlon-tts-chunks-to-process (- total-chunks start-index))
-
     (if (> tlon-tts-chunks-to-process 0)
         (progn
           (message "Starting TTS processing from chunk %d/%d." (1+ start-index) total-chunks)
