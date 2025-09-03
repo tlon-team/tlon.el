@@ -836,7 +836,10 @@ areas. AFTER-FN is an optional function to call after the revision is complete."
          (prompt (tlon-ai-maybe-edit-prompt (concat
 					     prompt-template
 					     comparison)))
-         (chunk-desc (format "%d–%d" (1+ start) end))
+         (single-p (= end (1+ start)))
+         (chunk-desc (if single-p
+			 (format "%d" (1+ start))
+		       (format "%d–%d" (1+ start) end)))
          (proc nil)
          (wrapped-after-fn
           (lambda ()
@@ -846,10 +849,12 @@ areas. AFTER-FN is an optional function to call after the revision is complete."
                 (let ((rstart (or (car restrict) 1))
                       (rend   (or (cdr restrict)
                                   (tlon-get-number-of-paragraphs-in-file translation-file))))
-                  (tlon-translate--log "Finished processing paragraphs %s (range %d–%d) of %s"
+                  (tlon-translate--log "Finished processing %s %s (range %d–%d) of %s"
+                                       (if single-p "paragraph" "paragraphs")
                                        chunk-desc rstart rend
                                        (file-name-nondirectory translation-file)))
-              (tlon-translate--log "Finished processing paragraphs %s (out of %d) of %s"
+              (tlon-translate--log "Finished processing %s %s (out of %d) of %s"
+                                   (if single-p "paragraph" "paragraphs")
                                    chunk-desc
                                    (tlon-get-number-of-paragraphs-in-file translation-file)
                                    (file-name-nondirectory translation-file)))
@@ -861,7 +866,8 @@ areas. AFTER-FN is an optional function to call after the revision is complete."
     ;; Clean up the transient indirect buffers created for COMPARISON.
     (tlon-translate--kill-indirect-buffers-of-file translation-file)
     (tlon-translate--kill-indirect-buffers-of-file original-file)
-    (tlon-translate--log "Processing paragraphs %s%s of %s"
+    (tlon-translate--log "Processing %s %s%s of %s"
+                         (if single-p "paragraph" "paragraphs")
                          chunk-desc
                          (if restrict
                              (format " (in range %d–%d)"
