@@ -101,12 +101,7 @@ This section details the interactive commands provided by =tlon-tts.el=.
   3. Inserts `<!-- Chunk N -->` comments into the staging buffer based on the prepared chunks (~tlon-tts-insert-chunk-comments~).
   4. Iterates through the chunks, calling the appropriate engine's request function (~tlon-tts-generate-audio~) for each chunk, saving the audio to files named by chunk number (e.g., =filename-chunk-001.mp3=).
   5. Monitors the asynchronous audio generation processes.
-  6. Once all chunks are generated:
-     - Appends silence to chunks if needed (e.g., for ElevenLabs).
-     - Optionally normalizes (if ~tlon-tts-normalize-audio~ is non-nil) and then joins the audio chunks into a single output file.
-     - Optionally deletes the chunk files (~tlon-tts-delete-chunks-of-file~).
-     - Opens the directory containing the final audio file in Dired.
-     - Opens the final audio file using the system's default player.
+  6. Once all chunks are generated, no automatic finalization is performed. Use ~tlon-tts-finalize-audio-processing~ to append silence (if needed), optionally normalize (if ~tlon-tts-normalize-audio~ is non-nil), and join the chunks into the final output file.
 
 #+findex: tlon-tts-narrate-staged-chunks
 + ~tlon-tts-narrate-staged-chunks~ :: Asynchronously generates audio for specific chunk(s) in the TTS staging buffer. If a region is active, it generates audio for all chunks starting within that region. Otherwise, it generates audio for the chunk at the current cursor position. This command *always attempts* to generate the selected chunks, overwriting existing audio files if necessary. It identifies chunks by reading the number =N= from the =<!-- Chunk N -->= comment. *Important:* This command only generates the individual chunk audio files; it does *not* perform the final silence appending, normalization, or joining steps. Use ~tlon-tts-finalize-audio-processing~ for that.
