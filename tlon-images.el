@@ -435,10 +435,8 @@ relative to the repository root. For example, if FILE is
 			 (image-path (expand-file-name image-file-name target-dir)))
 		    (write-region header-end (point-max) image-path nil 0)
 		    (message "Saved to %s" image-path)
-                    (let* ((relative-src (file-relative-name image-path (file-name-directory file)))
-                           (values (list relative-src nil nil)) ; src, alt, ignore-content
-                           (figure-tag (tlon-md-get-tag-filled "Figure" values "")))
-                      (push (cons url figure-tag) tag-replacements))
+                    (let* ((relative-src (file-relative-name image-path (file-name-directory file))))
+                      (push (cons url relative-src) tag-replacements))
 		    (kill-buffer image-data-buffer)
 		    (setq counter (1+ counter))))))))
       (tlon-images--replace-markdown-images-with-figure-tags file tag-replacements)
@@ -463,10 +461,14 @@ Trim leading and trailing newlines from replacement tags before insertion."
     (save-excursion
       (goto-char (point-min))
       (while (re-search-forward tlon-md-image nil t)
-        (let* ((url (match-string 2))
-               (replacement (assoc-default url tag-replacements #'string=)))
-          (when replacement
-            (replace-match (tlon-images--trim-leading-trailing-newlines replacement) t t))))
+        (let* ((alt (string-trim (or (match-string 1) "")))
+               (url (match-string 2))
+               (relative-src (assoc-default url tag-replacements #'string=))
+               (alt-val (unless (string-empty-p alt) alt))
+               (values (list relative-src alt-val nil))
+               (figure-tag (tlon-md-get-tag-filled "Figure" values "")))
+          (when relative-src
+            (replace-match (tlon-images--trim-leading-trailing-newlines figure-tag) t t))))
       (save-buffer))))
 
 (defun tlon-images--trim-leading-trailing-newlines (s)
