@@ -537,10 +537,12 @@ variable."
     ("b" "set alt text in buffer"                tlon-images-set-image-alt-text-in-buffer)
     ""
     "Options"
-    ("-l" "overwrite alt text"                   tlon-images-toggle-overwrite-alt-text)
-    ("-p" "preserve markdown alt on replace"     tlon-images-toggle-preserve-markdown-alt-text)]
+    ("-l" "overwrite alt text"                   tlon-images-toggle-overwrite-alt-text)]
    ["Other"
-    ("w" "download images in file"               tlon-images-download-from-markdown)]
+    ("w" "download images in file"               tlon-images-download-from-markdown)
+    ""
+    "Options"
+    ("-w" "preserve alt text"                    tlon-images-toggle-preserve-markdown-alt-text)]
    ["General options"
     ("-f" "read file without asking"             tlon-images-toggle-process-without-asking)]])
 
