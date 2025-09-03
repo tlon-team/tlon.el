@@ -405,6 +405,8 @@ the same BACKEND+MODEL by setting them buffer-locally before dispatch."
       (setq-local gptel-model   model-sym)
       (setq-local gptel-tools   tool-structs)
       (setq-local gptel-use-tools (and gptel-tools t))
+      (when gptel-tools
+        (setq-local gptel-include-reasoning nil))
       ;; Dispatch the request; gptel will consult buffer-local vars later, too.
       (gptel-request full-prompt
         :callback   callback
