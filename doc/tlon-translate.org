@@ -73,6 +73,12 @@ This module provides functions for translating entire files using various transl
 #+findex: tlon-translate-revise-flow
 + ~tlon-translate-revise-flow~ :: Use an AI agent to improve the flow of a translation. The agent is instructed to make the translation less literal, while respecting the terminology in the relevant glossary.
 
+#+findex: tlon-translate-revise-errors-in-range
++ ~tlon-translate-revise-errors-in-range~ :: Spot errors but only within a user-specified inclusive paragraph range.
+
+#+findex: tlon-translate-improve-errors-in-range
++ ~tlon-translate-improve-errors-in-range~ :: Improve the flow only within a user-specified inclusive paragraph range.
+
 #+findex: tlon-translate-revise-abort
 + ~tlon-translate-revise-abort~ :: Abort all ongoing revision requests, immediately stopping any remaining AI jobs.
 
@@ -89,9 +95,10 @@ It provides the following groups and commands:
 + *Revise*:
   + =e= :: Spot errors (~tlon-translate-revise-errors~)
   + =f= :: Improve flow (~tlon-translate-revise-flow~)
+  + =E= :: Spot errors in range (~tlon-translate-revise-errors-in-range~)
+  + =F= :: Improve flow in range (~tlon-translate-improve-errors-in-range~)
 + *Options*:
   + =c= :: Commit changes after revision (~tlon-translate-infix-toggle-commit-changes~)
-  + =r= :: Restrict revision range (~tlon-translate-infix-set-restrict-revision-range~)
   + =n= :: Paragraph chunk size (~tlon-translate-infix-set-chunk-size~)
   + =e= :: Select Engine (~tlon-translation-engine-infix~) - Select the translation engine (e.g., 'deepl).
   + =m -e= :: Revise errors model (~tlon-translate-infix-select-revise-errors-model~)

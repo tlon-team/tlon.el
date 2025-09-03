@@ -1899,8 +1899,7 @@ The text for the chunk is read live from the buffer using its markers."
                      (< next-chunk-index (length tlon-tts-chunks)))
                 (tlon-tts-generate-audio next-chunk-index)
               (when (<= tlon-tts-chunks-to-process 0)
-                (message "All buffer chunks processed (or skipped). Use M-x tlon-tts-finalize-audio-processing to join and finalize.")
-                (when file (tlon-tts-finish-processing file))))))))))
+                (message "All buffer chunks processed (or skipped). Call `M-x tlon-tts-finalize-audio-processing' (`H-r z f') to join and finalize.")))))))))
 
 (defun tlon-tts-get-chunk-name (file chunk-number)
   "Return the name of the chunk file for CHUNK-NUMBER of FILE.
