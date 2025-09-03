@@ -320,9 +320,30 @@ The options are:
     ("ulaw_8000" . "ulaw")))
 
 (defcustom tlon-elevenlabs-model
-  "eleven_multilingual_v2"
+  "eleven_v3"
   "Model to use for the ElevenLabs TTS.
-Options are
+Current models (as of 2025-09-03):
+
+- `\"eleven_v3\"': \"Our latest and most advanced speech synthesis model. It is
+  a state-of-the-art model that produces natural, life-like speech with high
+  emotional range and contextual understanding across multiple languages. It
+  supports 74 languages.\"
+
+- `\"eleven_multilingual_v2\"': \"Our most life-like, emotionally rich model.
+  It's best for voiceovers, audiobooks, and content creation. 1 character costs
+  1 credit, excluding credit multipliers.\"
+
+- `\"eleven_flash_v2_5\"': \"our latest, ultra-low-latency model, generating
+  speech in under 75ms. Best for developer use cases requiring speed and
+  multiple languages. 1 character costs 0.5 credit, excluding credit
+  multipliers. It supports 32 languages.\"
+
+- `\"eleven_flash_v2\"': \"our latest, ultra-low-latency English-only model,
+  generating speech in under 75ms. Best for developer use cases requiring speed.
+  1 character costs 0.5 credit, excluding credit multipliers. It supports
+  English only.\"
+
+Older models (also supported):
 
 - `\"eleven_monolingual_v1\"': \"Our very first model, English v1, set the
   foundation for what's to come. This model was created specifically for English
@@ -338,12 +359,6 @@ Options are
   phase. However, it paved the way for the future as we took what we learned to
   improve the next iteration. Multilingual v1 currently supports a range of
   languages.\"
-
-- `\"eleven_multilingual_v2\"': \"Introducing our latest model, Multilingual v2,
-  which stands as a testament to our dedication to progress. This model is a
-  powerhouse, excelling in stability, language diversity, and accuracy in
-  replicating accents and voices. Its speed and agility are remarkable
-  considering its size.\"
 
 - `\"eleven_turbo_v2\"': \"Using cutting-edge technology, this is a highly
   optimized model for real-time applications that require very low latency, but
