@@ -60,6 +60,13 @@ This variable only affects the behavior of
   :type 'boolean
   :group 'tlon-images)
 
+(defcustom tlon-images-preserve-markdown-alt-text nil
+  "Whether to preserve Markdown alt text when replacing images.
+If non-nil, when replacing Markdown images with a Figure tag we copy the
+Markdown alt into the alt attribute. If nil, we omit the alt attribute."
+  :type 'boolean
+  :group 'tlon-images)
+
 ;;;; Variables
 
 (defconst tlon-invertornot-generic-endpoint
@@ -464,7 +471,9 @@ Trim leading and trailing newlines from replacement tags before insertion."
         (let* ((alt (string-trim (or (match-string 1) "")))
                (url (match-string 2))
                (relative-src (assoc-default url tag-replacements #'string=))
-               (alt-val (unless (string-empty-p alt) alt))
+               (alt-val (when (and tlon-images-preserve-markdown-alt-text
+                                   (not (string-empty-p alt)))
+                          alt))
                (values (list relative-src alt-val nil))
                (figure-tag (tlon-md-get-tag-filled "Figure" values "")))
           (when relative-src
@@ -498,6 +507,12 @@ variable."
   :variable 'tlon-images-overwrite-alt-text
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-images-overwrite-alt-text)))
 
+(transient-define-infix tlon-images-toggle-preserve-markdown-alt-text ()
+  "Toggle the value of `tlon-images-preserve-markdown-alt-text' in `images' menu."
+  :class 'transient-lisp-variable
+  :variable 'tlon-images-preserve-markdown-alt-text
+  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-images-preserve-markdown-alt-text)))
+
 (transient-define-infix tlon-images-toggle-process-without-asking ()
   "Toggle the value of `'tlon-images-read-file-without-asking' in `images' menu."
   :class 'transient-lisp-variable
@@ -522,7 +537,8 @@ variable."
     ("b" "set alt text in buffer"                tlon-images-set-image-alt-text-in-buffer)
     ""
     "Options"
-    ("-l" "overwrite alt text"                   tlon-images-toggle-overwrite-alt-text)]
+    ("-l" "overwrite alt text"                   tlon-images-toggle-overwrite-alt-text)
+    ("-p" "preserve markdown alt on replace"     tlon-images-toggle-preserve-markdown-alt-text)]
    ["Other"
     ("w" "download images in file"               tlon-images-download-from-markdown)]
    ["General options"
