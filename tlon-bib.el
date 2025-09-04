@@ -465,6 +465,37 @@ and sets the value of the field for all entries to `Tlön'."
       (replace-match "}" t t))))
 
 ;;;###autoload
+(defun tlon-bib-unescape-escaped-characters (&optional file)
+  "Unescape characters escaped by `bibtex-extras-escaped-characters' in FILE.
+If FILE is nil, use the file visited by the current buffer, if any. Return the
+total number of replacements made."
+  (interactive)
+  (let* ((buf (if file (find-file-noselect file) (current-buffer)))
+	 (total 0))
+    (unless (buffer-live-p buf)
+      (user-error "No file specified and current buffer does not visit a file"))
+    (with-current-buffer buf
+      (save-excursion
+	(save-restriction
+	  (widen)
+	  (let ((case-fold-search nil))
+	    (dolist (ch bibtex-extras-escaped-characters)
+	      (let* ((s (if (integerp ch) (char-to-string ch) ch))
+		     (from (concat "\\" s)))
+		(goto-char (point-min))
+		(while (search-forward from nil t)
+		  (replace-match s nil t)
+		  (cl-incf total))))))))
+    (when (called-interactively-p 'interactive)
+      (message "Unescaped %d occurrence%s%s"
+	       total
+	       (if (= total 1) "" "s")
+	       (if (and (buffer-live-p buf) (buffer-file-name buf))
+		   (format " in %s" (file-name-nondirectory (buffer-file-name buf)))
+		 "")))
+    total))
+
+;;;###autoload
 (defun tlon-bib-remove-url-fields-with-doi (&optional save)
   "Remove the `url' field from entries with a `doi' field in the current buffer.
 If SAVE is non-nil (interactively with a prefix argument), save the buffer after

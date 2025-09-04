@@ -166,6 +166,9 @@ This section details the interactive commands provided by =tlon-bib.el=.
 #+findex: tlon-auto-clean-entry
 + ~tlon-auto-clean-entry~ :: Hook function intended for =after-save-hook= in BibTeX mode. Performs cleanup actions on save: removes trailing spaces in fields (~tlon-remove-empty-spaces~), escapes special characters (~bibtex-extras-escape-special-characters~), and runs =bibtex-clean-entry= if point is at the start of an entry.
 
+#+findex: tlon-bib-unescape-escaped-characters
++ ~tlon-bib-unescape-escaped-characters~ :: Unescapes characters in a BibTeX file that were previously escaped by ~bibtex-extras-escape-special-characters~. Iterates over the characters listed in ~bibtex-extras-escaped-characters~ and replaces each occurrence of a backslash-escaped character (e.g., "\$") with the literal character ("$"). Operates on a specified FILE, or defaults to the file visited by the current buffer if omitted. Does not save the buffer automatically.
+
 #+findex: tlon-add-lang-id-to-entries
 + ~tlon-add-lang-id-to-entries~ :: Iterates through entries in the current BibTeX buffer. If an entry lacks a =langid= field, prompts the user to select a language using ~tlon-select-language~ and sets the field.
 
