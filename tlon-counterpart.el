@@ -146,7 +146,7 @@ lookup, subsequent queries are instantaneous."
 		 (when table
 		   (puthash orig-key file table))
 		 file))
-	      (_ (completing-read "Select translation: " candidates nil t))))))))
+	      (_ (completing-read (format "Select translation for %s: " orig-name) candidates nil t))))))))
 
 (defun tlon-get-counterpart-repo (&optional file prompt)
   "Get the counterpart repo of FILE.
