@@ -1049,7 +1049,9 @@ translation. If OVERWRITE is non-nil, overwrite the existing translation. If VAR
 is non-nil, save the translations in VAR; otherwise, save them in
 `tlon-file-abstract-translations'."
   (let ((translation (tlon-deepl-print-translation)))
-    (tlon-add-abstract-translation key target-lang translation overwrite var)))
+    (tlon-add-abstract-translation key target-lang translation overwrite var)
+    (when (null var)
+      (tlon-bib-unescape-escaped-characters tlon-file-abstract-translations))))
 
 ;;;;;; Report
 
