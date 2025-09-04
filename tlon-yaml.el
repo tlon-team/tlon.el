@@ -771,7 +771,6 @@ user for one."
 ;;;###autoload
 (defun tlon-yaml-suggest-tags (&optional article-file)
   "Suggest tags for ARTICLE-FILE using AI.
-
 When called interactively, default to the current article or prompt for
 one inside the uqbar-en/articles directory.  When ARTICLE-FILE is
 non-nil, run non-interactively on that file without prompting."
@@ -849,12 +848,12 @@ comma-/newline-separated list."
                         (len (length s)))
                     (dotimes (i len)
                       (when (eq (aref s i) ?]) (setq last i)))
-                    (if (>= last 0) (substring s o (1+ last)) s))
-                s))))
+                (if (>= last 0) (substring s o (1+ last)) s))
+              s)))
     (or
      ;; Try strict JSON first.
      (condition-case nil
-         (let ((json-array-type 'list))
+	 (let ((json-array-type 'list))
            (json-read-from-string s))
        (error nil))
      ;; Fallback: split and clean tokens.
@@ -870,7 +869,7 @@ comma-/newline-separated list."
             (clean (cl-remove-if (lambda (x)
                                    (or (string-empty-p x)
                                        (member (downcase x) '("[" "]" "```" "```json"))))
-                                 clean)))
+				 clean)))
        clean))))
 
 (declare-function tlon-ai-callback-fail "tlon-ai")
@@ -1292,8 +1291,8 @@ a temporary clean-up helper."
                       (replace-match (if q (concat "\"" lc "\"") lc) t t nil 1)
                       (save-buffer)
                       (setq updated (1+ updated))))))))))
-    (message "Lowercased titles in %d file%s under %s"
-             updated (if (= updated 1) "" "s") dir)))
+      (message "Lowercased titles in %d file%s under %s"
+               updated (if (= updated 1) "" "s") dir))))
 
 (provide 'tlon-yaml)
 ;;; tlon-yaml.el ends here
