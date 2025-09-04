@@ -201,8 +201,17 @@ This module provides functions for reading, writing, and manipulating YAML front
 + ~tlon-yaml-guess-english-counterpart~ :: Uses an AI model to guess the English
   counterpart filename for the tag or author at point. It sends the current YAML
   ~title~ and the list of candidate filenames from the English repository’s tags
-  or authors folder, and expects the model to return the exact matching filename.
+  or authors folder, expects the model to return the exact matching filename,
+  and inserts it into the YAML under ~original_path~. If ~original_path~ already
+  exists, the command asks for confirmation when called interactively and does
+  nothing when called programmatically.
 
 #+vindex: tlon-yaml-guess-counterpart-model
 + ~tlon-yaml-guess-counterpart-model~ :: AI model to use for
   ~tlon-yaml-guess-english-counterpart~. When nil, use the default model.
+
+#+findex: tlon-yaml-guess-english-counterpart-in-dir
++ ~tlon-yaml-guess-english-counterpart-in-dir~ :: Walks the current directory
+  (non-recursively) and calls ~tlon-yaml-guess-english-counterpart~ for each
+  tag or author file. With a numeric argument, only processes the first N files
+  that do not already have an ~original_path~ field.

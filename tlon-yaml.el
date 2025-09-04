@@ -845,7 +845,11 @@ canonical form taken from the tag metadata."
 ;;;###autoload
 (defun tlon-yaml-guess-english-counterpart (&optional file)
   "Guess the English counterpart filename for the tag/author in FILE.
-When FILE is nil, use the file visited by the current buffer."
+When FILE is nil, use the file visited by the current buffer.
+
+If `original_path' already exists:
+- When called interactively, ask for confirmation before proceeding.
+- When called programmatically, do nothing."
   (interactive)
   (let* ((file (or file (buffer-file-name)))
          (type (tlon-yaml-get-key "type" file))
@@ -854,19 +858,32 @@ When FILE is nil, use the file visited by the current buffer."
       (user-error "This command only works in tag or author files"))
     (unless title
       (user-error "YAML field `title' not found"))
-    (let* ((en-root (tlon-yaml--english-repo-dir))
-           (en-dir  (tlon-yaml--dir-for-type en-root type))
-           (candidates (mapcar #'file-name-nondirectory
-                               (directory-files-recursively en-dir "\\.md\\'")))
-           (prompt (tlon-yaml--make-guess-counterpart-prompt title candidates)))
-      (message "Requesting English counterpart for “%s” …" title)
-      (tlon-make-gptel-request
-       prompt nil
-       (tlon-yaml-guess-english-counterpart-callback candidates en-dir)
-       tlon-yaml-guess-counterpart-model t))))
+    (let* ((existing (tlon-yaml-get-key "original_path" file))
+           (proceed (if existing
+                        (if (called-interactively-p 'interactive)
+                            (y-or-n-p
+                             (format "Field `original_path' already exists with value `%s'. Proceed? "
+                                     existing))
+                          nil)
+                      t)))
+      (if (not proceed)
+          (message "Skipping %s (original_path already present)"
+                   (file-name-nondirectory file))
+        (let* ((en-root (tlon-yaml--english-repo-dir))
+               (en-dir  (tlon-yaml--dir-for-type en-root type))
+               (candidates (mapcar #'file-name-nondirectory
+                                   (directory-files-recursively en-dir "\\.md\\'")))
+               (prompt (tlon-yaml--make-guess-counterpart-prompt title candidates)))
+          (message "Requesting English counterpart for “%s” …" title)
+          (tlon-make-gptel-request
+           prompt nil
+           (tlon-yaml-guess-english-counterpart-callback candidates en-dir file)
+           tlon-yaml-guess-counterpart-model t))))))
 
-(defun tlon-yaml-guess-english-counterpart-callback (candidates en-dir)
-  "Return a closure handling the AI response using CANDIDATES and EN-DIR."
+(defun tlon-yaml-guess-english-counterpart-callback (candidates en-dir file)
+  "Return a closure to handle AI response using CANDIDATES, EN-DIR and FILE.
+When a valid filename is returned, insert it into FILE as
+`original_path' in the YAML metadata."
   (lambda (response info)
     (if (not response)
         (tlon-ai-callback-fail info)
@@ -876,8 +893,10 @@ When FILE is nil, use the file visited by the current buffer."
         (if (not match)
             (message "Model returned an unknown filename: %s" ans)
           (let ((full (expand-file-name match en-dir)))
-            (kill-new match)
-            (message "English counterpart: %s (copied to kill ring)%s"
+            (with-current-buffer (find-file-noselect file)
+              (tlon-yaml-insert-field "original_path" match)
+              (save-buffer))
+            (message "Inserted original_path: %s%s"
                      full
                      (if (file-exists-p full) "" " [file not found]"))))))))
 
@@ -900,6 +919,37 @@ When FILE is nil, use the file visited by the current buffer."
   (format tlon-yaml-guess-counterpart-prompt
           title
           (mapconcat #'identity candidates "\n")))
+
+;;;###autoload
+(defun tlon-yaml-guess-english-counterpart-in-dir (&optional n dir)
+  "Guess English counterparts for all tag/author files in DIR, non-recursively.
+
+When N is non-nil, only process the first N files that do not
+already contain an `original_path' field.  When DIR is nil, use
+`default-directory'.
+
+Each file is processed by calling `tlon-yaml-guess-english-counterpart'
+programmatically (i.e., without interactive prompts)."
+  (interactive "P")
+  (let* ((dir (file-name-as-directory (or dir default-directory)))
+         (files (directory-files dir t "\\.md\\'"))
+         (missing-count 0)
+         (limit (and n (prefix-numeric-value n))))
+    (dolist (file files)
+      (when (member (tlon-yaml-get-key "type" file) '("tag" "author"))
+        (let ((has (tlon-yaml-get-key "original_path" file)))
+          (cond
+           (limit
+            (unless has
+              (when (< missing-count limit)
+                (setq missing-count (1+ missing-count))
+                (tlon-yaml-guess-english-counterpart file))))
+           (t
+            ;; No limit: call for all files (files with original_path will be skipped)
+            (tlon-yaml-guess-english-counterpart file))))))
+    (when limit
+      (message "Queued AI requests for %d file%s without original_path in %s"
+               missing-count (if (= missing-count 1) "" "s") dir))))
 
 ;;;;;; Translated tags
 
@@ -983,6 +1033,12 @@ If nil, use the default model."
   :class 'tlon-model-selection-infix
   :variable 'tlon-yaml-suggest-tags-model)
 
+(transient-define-infix tlon-yaml-infix-guess-counterpart-model ()
+  "AI model to use for guessing English counterparts.
+If nil, use the default model."
+  :class 'tlon-model-selection-infix
+  :variable 'tlon-yaml-guess-counterpart-model)
+
 (autoload 'gptel--infix-provider "gptel-transient")
 ;;;###autoload (autoload 'tlon-yaml-menu "tlon-yaml" nil t)
 (transient-define-prefix tlon-yaml-menu ()
@@ -992,9 +1048,11 @@ If nil, use the default model."
     ("t s" "suggest tags"   tlon-yaml-suggest-tags)
     ("t t" "insert translated tags" tlon-yaml-insert-translated-tags)
     ("t g" "guess English counterpart" tlon-yaml-guess-english-counterpart)
+    ("t G" "guess counterparts in dir" tlon-yaml-guess-english-counterpart-in-dir)
     ""
     "AI models"
-    ("-t" "suggest tags" tlon-yaml-infix-suggest-tags-model)]])
+    ("-t" "suggest tags" tlon-yaml-infix-suggest-tags-model)
+    ("-g" "guess counterpart" tlon-yaml-infix-guess-counterpart-model)]])
 
 ;;;;; temp
 
