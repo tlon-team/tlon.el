@@ -1045,7 +1045,10 @@ If nil, use the default model."
 (transient-define-prefix tlon-yaml-menu ()
   "Menu for `tlon-yaml'."
   :info-manual "(tlon) yaml"
-  [["Tags"
+  [["General"
+    ("i" "insert or edit field" tlon-yaml-insert-field)
+    ""
+    "Tags"
     ("t s" "suggest tags"   tlon-yaml-suggest-tags)
     ("t t" "insert translated tags" tlon-yaml-insert-translated-tags)
     ("t g" "guess English counterpart" tlon-yaml-guess-english-counterpart)
