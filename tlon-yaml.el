@@ -1257,5 +1257,43 @@ With a prefix argument, prompt for DIR."
              (if (= processed 1) "" "s")
              dir)))
 
+;;;###autoload
+(defun tlon-yaml-lowercase-fr-tag-titles (&optional dir)
+  "Lowercase the YAML title field for all Markdown files in DIR.
+When DIR is nil, default to
+\"/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-fr/sujets\".
+Operate recursively and only update files whose title changes. This is
+a temporary clean-up helper."
+  (interactive)
+  (let* ((dir (file-name-as-directory
+               (or dir "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-fr/sujets")))
+         (files (directory-files-recursively dir "\\.md\\'"))
+         (updated 0)
+         (skipped 0))
+    (dolist (file files)
+      (with-current-buffer (find-file-noselect file)
+        (save-excursion
+          (goto-char (point-min))
+          (if (not (looking-at-p tlon-yaml-delimiter))
+              (setq skipped (1+ skipped))
+            (forward-line)
+            (let ((end (save-excursion (re-search-forward tlon-yaml-delimiter nil t))))
+              (if (not end)
+                  (setq skipped (1+ skipped))
+                (when (re-search-forward "^title:\\s-*\\(.*\\)$" end t)
+                  (let* ((raw (match-string 1))
+                         (trim (string-trim raw))
+                         (q (and (>= (length trim) 2)
+                                 (eq (aref trim 0) ?\")
+                                 (eq (aref trim (1- (length trim))) ?\")))
+                         (core (if q (substring trim 1 -1) trim))
+                         (lc (downcase core)))
+                    (unless (string= core lc)
+                      (replace-match (if q (concat "\"" lc "\"") lc) t t nil 1)
+                      (save-buffer)
+                      (setq updated (1+ updated))))))))))
+    (message "Lowercased titles in %d file%s under %s"
+             updated (if (= updated 1) "" "s") dir)))
+
 (provide 'tlon-yaml)
 ;;; tlon-yaml.el ends here

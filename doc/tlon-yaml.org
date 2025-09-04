@@ -230,3 +230,14 @@ This module provides functions for reading, writing, and manipulating YAML front
   (non-recursively) and calls ~tlon-yaml-guess-english-counterpart~ for each
   tag or author file. With a numeric argument, only processes the first N files
   that do not already have an ~original_path~ field.
+
+** Maintenance helpers
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-maintenance
+:END:
+
+#+findex: tlon-yaml-lowercase-fr-tag-titles
++ ~tlon-yaml-lowercase-fr-tag-titles~ :: Temporarily lowercases the YAML
+  ~title~ field for every Markdown file under a given directory, defaulting to
+  =/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-fr/sujets=.
+  Operates recursively and only updates files whose title actually changes.
