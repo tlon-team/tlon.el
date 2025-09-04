@@ -24,7 +24,7 @@ This module provides functions for reading, writing, and manipulating YAML front
 #+vindex: tlon-yaml-delimiter
 + ~tlon-yaml-delimiter~ :: The string used to delimit YAML front matter blocks (="---\n"=).
 #+vindex: tlon-yaml-core-keys
-+ ~tlon-yaml-core-keys~ :: A list of YAML keys considered essential for initializing translation metadata (e.g., ="type"=, ="original_path"=).
++ ~tlon-yaml-core-keys~ :: A list of YAML keys considered essential for initializing translation metadata (e.g., ="original_path"=). The file type is derived from the directory structure and is not stored in YAML.
 #+vindex: tlon-yaml-translation-only-keys
 + ~tlon-yaml-translation-only-keys~ :: A list of YAML keys that are typically included only in the metadata of translated files, not originals (e.g., ="original_path"=, ="publication_status"=).
 #+vindex: tlon-yaml-article-keys
@@ -99,6 +99,9 @@ This module provides functions for reading, writing, and manipulating YAML front
 #+findex: tlon-yaml-get-valid-keys
 + ~tlon-yaml-get-valid-keys~ :: Returns a list of valid YAML keys expected for a given FILE, potentially based on its TYPE. If NO-CORE is non-nil, core keys might be excluded.
 
+#+findex: tlon-yaml-get-type
++ ~tlon-yaml-get-type~ :: Returns the canonical type for a file (="article"=, ="tag"=, ="author"=, or ="collection"=) by inspecting the top-level directory name and mapping via ~tlon-get-bare-dir-translation~.
+
 #+findex: tlon-yaml-get-filenames-in-dir
 + ~tlon-yaml-get-filenames-in-dir~ :: Returns a list of filenames within a DIR, optionally filtered by EXTENSION.
 
@@ -170,7 +173,7 @@ This module provides functions for reading, writing, and manipulating YAML front
 :END:
 
 #+findex: tlon-initialize-translation-metadata
-+ ~tlon-initialize-translation-metadata~ :: Sets up the initial YAML metadata for a new translation FILE based on the ORIGINAL source file's metadata.
++ ~tlon-initialize-translation-metadata~ :: Sets up the initial YAML metadata for a new translation FILE by inserting the ~original_path~. The file type is inferred from the directory structure.
 
 #+findex: tlon-name-file-from-title
 + ~tlon-name-file-from-title~ :: Generates a filename based on a given TITLE, likely applying sluggification rules.

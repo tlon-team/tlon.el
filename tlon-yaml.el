@@ -35,8 +35,9 @@
 ;;;; Variables
 
 (defconst tlon-yaml-core-keys
-  '("type" "original_path")
-  "List of YAML keys necessary to initialize the translation metadata.")
+  '("original_path")
+  "List of YAML keys necessary to initialize the translation metadata.
+The type is derived from the directory structure and is not stored in YAML.")
 
 (defconst tlon-yaml-translation-only-keys
   '("original_path" "publication_status")
@@ -44,19 +45,19 @@
 I.e., these keys are not included in the metadata of originals.")
 
 (defconst tlon-yaml-article-keys
-  '("type" "title" "authors" "translators" "tags" "date" "original_path" "original_key" "translation_key" "publication_status" "description")
+  '("title" "authors" "translators" "tags" "date" "original_path" "original_key" "translation_key" "publication_status" "description")
   "List of YAML keys of fields to include in articles.
 The order of the keys determines the sort order by
 `tlon-yaml-sort-fields', unless overridden.")
 
 (defconst tlon-yaml-tag-keys
-  '("type" "title" "brief_title" "original_path" "publication_status")
+  '("title" "brief_title" "original_path" "publication_status")
   "List of YAML keys of fields to include in tags.
 The order of the keys determines the sort order by
 `tlon-yaml-sort-fields', unless overridden.")
 
 (defconst tlon-yaml-author-keys
-  '("type" "title" "original_path" "publication_status")
+  '("title" "original_path" "publication_status")
   "List of YAML keys of fields to include in authors.
 The order of the keys determines the sort order by
 `tlon-yaml-sort-fields', unless overridden.")
@@ -215,7 +216,8 @@ additional metadata such as the file name and the file type."
 	 (language (tlon-repo-lookup :language :dir repo))
 	 (extras `(("file" . ,file-or-buffer)
 		   ("database" . "Tlön")
-		   ("landid" . ,language))))
+		   ("landid" . ,language)
+                   ("type" . ,(tlon-yaml-get-type file-or-buffer)))))
     (append metadata extras)))
 
 ;;;###autoload
@@ -241,6 +243,7 @@ alist, unless RAW is non-nil."
 	    (tlon-yaml-to-alist metadata)))))))
 
 (declare-function yaml-parse-string "yaml")
+(declare-function tlon-get-bare-dir-translation "tlon-core")
 (defun tlon-yaml-get-metadata2 (&optional file-or-buffer raw)
   "Return the YAML metadata from FILE-OR-BUFFER as strings in a list.
 If FILE-OR-BUFFER is nil, use the current buffer. Return the metadata as an
@@ -274,11 +277,11 @@ If one of FIELDS is not found, throw an error unless NO-ERROR is non-nil."
 
 (defun tlon-yaml-get-valid-keys (&optional file type no-core)
   "Return the admissible keys for YAML metadata in FILE.
-If FILE is nil, return the work type of the file visited by the current buffer.
-If TYPE is nil, use the value of the `type' field in FILE. If NO-CORE is
-non-nil, exclude core keys, as defined in `tlon-yaml-core-keys'."
+If FILE is nil, use the current buffer’s file. If TYPE is nil, derive it from
+the directory name (articles, tags, authors, collections). If NO-CORE is non-nil,
+exclude core keys as defined in `tlon-yaml-core-keys'."
   (let* ((file (or file (buffer-file-name)))
-	 (type (or type (tlon-yaml-get-key "type" file)))
+	 (type (or type (tlon-yaml-get-type file)))
 	 (keys (pcase type
 		 ("article" tlon-yaml-article-keys)
 		 ("tag" tlon-yaml-tag-keys)
@@ -289,6 +292,29 @@ non-nil, exclude core keys, as defined in `tlon-yaml-core-keys'."
 			(member key tlon-yaml-core-keys))
 		      keys)
       keys)))
+
+(defun tlon-yaml-get-type (&optional file)
+  "Return canonical type for FILE based on its directory.
+The result is one of \"article\", \"tag\", \"author\" or \"collection\".
+When FILE is nil, use the current buffer's file."
+  (let* ((file (or file (buffer-file-name)))
+	 (repo (and file (tlon-get-repo-from-file file)))
+	 (lang (and repo (tlon-repo-lookup :language :dir repo))))
+    (unless (and file repo lang)
+      (user-error "Cannot determine type for file %s" file))
+    (let* ((rel (file-relative-name file repo))
+	   (first (car (split-string rel "/" t)))
+	   (articles (tlon-get-bare-dir-translation lang "en" "articles"))
+	   (tags (tlon-get-bare-dir-translation lang "en" "tags"))
+	   (authors (tlon-get-bare-dir-translation lang "en" "authors"))
+	   (collections (tlon-get-bare-dir-translation lang "en" "collections"))
+	   (first (downcase first)))
+      (cond
+       ((string= first (downcase articles)) "article")
+       ((string= first (downcase tags)) "tag")
+       ((string= first (downcase authors)) "author")
+       ((string= first (downcase collections)) "collection")
+       (t (user-error "Unrecognized top-level directory %s for %s" first file))))))
 
 (defun tlon-yaml-get-filenames-in-dir (&optional dir extension)
   "Return a list of all filenames in DIR.
@@ -323,14 +349,11 @@ want to search all files, use the empty string."
 (defun tlon-initialize-translation-metadata (file original)
   "Set the initial metadata section for a FILE that translates ORIGINAL.
 This function creates a new metadata section in FILE, and sets the value of
-`type' and `original_path'. These values are needed for the remaining metadata
-to be set via `tlon-populate-translation-metadata'."
+`original_path'. The type is derived from the directory structure."
   (with-current-buffer (find-file-noselect file)
-    (let ((type (tlon-yaml-get-key "type" original)))
-      ;; consider using a fun that sets all fields at once
-      ;; consider setting it by reference to `tlon-yaml-core-keys'
-      (tlon-yaml-insert-field "type" type)
-      (tlon-yaml-insert-field "original_path" (file-name-nondirectory original)))))
+    ;; consider using a fun that sets all fields at once
+    ;; consider setting it by reference to `tlon-yaml-core-keys'
+    (tlon-yaml-insert-field "original_path" (file-name-nondirectory original))))
 
 (defun tlon-yaml-set-key (key)
   "Set the value of the YAML field with KEY."
@@ -497,7 +520,7 @@ If KEY or VALUE are nil, prompt user to select from list of suitable candidates.
   "Select a value for a YAML field with KEY from a list of VALUES."
   (let ((prompt (format "%s: " key)))
     (pcase key
-      ((or "type" "authors" "translators" "tags" "original_path" "publication_status")
+      ((or "authors" "translators" "tags" "original_path" "publication_status")
        (completing-read prompt values))
       ((or "title" "date" "description")
        (read-string prompt values))
@@ -509,7 +532,7 @@ If KEY or VALUE are nil, prompt user to select from list of suitable candidates.
   (pcase key
     ((or "authors" "translators" "tags")
      (tlon-yaml-insert-list value))
-    ((or "type" "type" "date" "original_path" "original_key" "translation_key" "publication_status" "description")
+    ((or "date" "original_path" "original_key" "translation_key" "publication_status" "description")
      (tlon-yaml-insert-string value))))
 
 ;;;;; tags format normalization
@@ -852,12 +875,14 @@ If `original_path' already exists:
 - When called programmatically, do nothing."
   (interactive)
   (let* ((file (or file (buffer-file-name)))
-         (type (tlon-yaml-get-key "type" file))
+         (type (file-name-nondirectory (directory-file-name (file-name-directory file))))
+         (lang (tlon-get-language-in-file file))
+	 (en-type (tlon-get-bare-dir-translation "en" lang type))
          (title (tlon-yaml-get-key "title" file)))
-    (unless (member type '("tag" "author"))
+    (unless (member en-type '("tags" "authors"))
       (user-error "This command only works in tag or author files"))
     (unless title
-      (user-error "YAML field `title' not found"))
+      (user-error "YAML field `title' not found for %s" file))
     (let* ((existing (tlon-yaml-get-key "original_path" file))
            (proceed (if existing
                         (if (called-interactively-p 'interactive)
@@ -869,8 +894,8 @@ If `original_path' already exists:
       (if (not proceed)
           (message "Skipping %s (original_path already present)"
                    (file-name-nondirectory file))
-        (let* ((en-root (tlon-yaml--english-repo-dir))
-               (en-dir  (tlon-yaml--dir-for-type en-root type))
+        (let* ((en-root (tlon-repo-lookup :dir :name "uqbar-en"))
+               (en-dir  (file-name-concat en-root en-type))
                (candidates (mapcar #'file-name-nondirectory
                                    (directory-files-recursively en-dir "\\.md\\'")))
                (prompt (tlon-yaml--make-guess-counterpart-prompt title candidates)))
@@ -899,20 +924,6 @@ When a valid filename is returned, insert it into FILE as
             (message "Inserted original_path: %s%s"
                      full
                      (if (file-exists-p full) "" " [file not found]"))))))))
-
-(defun tlon-yaml--english-repo-dir ()
-  "Return the absolute path to the English repo for the current repo."
-  (let* ((curr (tlon-get-repo))
-         (sub  (tlon-repo-lookup :subproject :dir curr)))
-    (tlon-repo-lookup :dir :subproject sub :language "en")))
-
-(defun tlon-yaml--dir-for-type (repo-dir type)
-  "Return the directory in REPO-DIR for TYPE, which is \"tag\" or \"author\"."
-  (pcase type
-    ("tag"    (tlon--yaml--tags-dir repo-dir "en"))
-    ("author" (file-name-concat
-               repo-dir
-               (tlon-get-bare-dir-translation "en" "en" "authors")))))
 
 (defun tlon-yaml--make-guess-counterpart-prompt (title candidates)
   "Build the prompt from TITLE and CANDIDATES."
