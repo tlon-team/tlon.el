@@ -269,7 +269,7 @@ in the other window."
 		       (point-min)))
 	(markdown-forward-paragraph (- paragraphs offset))
 	(goto-char (1+ (point))))
-    (message "Counterpart not found for file `%s'" file)))
+    (message "Counterpart not found for file `%s'. Call `tlon-yaml-guess-english-counterpart' from translation" file)))
 
 (autoload 'dired-get-file-for-visit "dired")
 (defun tlon-open-counterpart-in-dired (&optional arg file)
