@@ -1065,6 +1065,51 @@ is processed by calling `tlon-yaml-insert-translated-tags'."
       (message "Inserted translated tags in %d article%s without tags in %s"
                processed (if (= processed 1) "" "s") dir))))
 
+;;;###autoload
+(defun tlon-yaml-list-files-missing-field-in-dir (&optional dir field)
+  "List Markdown files in DIR missing YAML FIELD.
+
+When DIR is nil, use `default-directory'.  Prompt for FIELD from the
+union of valid keys found among file types present in DIR.  Search only
+the top level of DIR (non-recursive).  Display the results in a
+temporary buffer and return the list of file paths."
+  (interactive)
+  (let* ((dir (file-name-as-directory (or dir default-directory)))
+         (files (directory-files dir t "\\.md\\'"))
+         (keys (let ((table (make-hash-table :test #'equal)))
+                 (dolist (f files)
+                   (ignore-errors
+                     (dolist (k (or (tlon-yaml-get-valid-keys f nil) '()))
+                       (puthash k t table))))
+                 (let (acc)
+                   (maphash (lambda (k _v) (push k acc)) table)
+                   (nreverse acc))))
+         (field (or field
+                    (if keys
+                        (completing-read "Field: " keys nil nil nil nil (car keys))
+                      (read-string "Field: "))))
+         (missing
+          (cl-loop for f in files
+                   for val = (ignore-errors (tlon-yaml-get-key field f))
+                   for miss = (or (null val)
+                                  (and (stringp val)
+                                       (let ((s (string-trim val)))
+                                         (or (string= s "")
+                                             (string= s "[]")))))
+                   if miss collect f)))
+    (let ((buf (get-buffer-create "*tlon-missing-field*")))
+      (with-current-buffer buf
+        (setq buffer-read-only nil)
+        (erase-buffer)
+        (insert (format "Directory: %s\nField missing: %s\nCount: %d\n\n"
+                        dir field (length missing)))
+        (dolist (f missing)
+          (insert f "\n"))
+        (goto-char (point-min))
+        (view-mode 1))
+      (display-buffer buf))
+    missing))
+
 ;;;;; menu
 
 (transient-define-infix tlon-yaml-infix-suggest-tags-model ()

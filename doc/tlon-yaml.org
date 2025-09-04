@@ -117,6 +117,12 @@ This module provides functions for reading, writing, and manipulating YAML front
 #+findex: tlon-metadata-get-translators
 + ~tlon-metadata-get-translators~ :: Retrieves a list of translators, presumably from metadata across relevant files.
 
+#+findex: tlon-yaml-list-files-missing-field-in-dir
++ ~tlon-yaml-list-files-missing-field-in-dir~ :: Lists Markdown files in the
++  directory at point that are missing a YAML FIELD. Prompts for FIELD, scans the
++  directory non-recursively, displays the results in a temporary buffer, and
++  returns the list of file paths.
+
 *** Modifying Metadata
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-yaml-modifying
