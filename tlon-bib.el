@@ -485,7 +485,8 @@ total number of replacements made."
 		(goto-char (point-min))
 		(while (search-forward from nil t)
 		  (replace-match s nil t)
-		  (cl-incf total))))))))
+		  (cl-incf total)))))
+	  (save-buffer))))
     (when (called-interactively-p 'interactive)
       (message "Unescaped %d occurrence%s%s"
 	       total
