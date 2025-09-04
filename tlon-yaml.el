@@ -831,14 +831,47 @@ when the Markdown file lacks a local-variables section)."
 	 (buffer-substring-no-properties beg (point)))))))
 
 (defun tlon-yaml--parse-tags-from-response (response)
-  "Convert RESPONSE to a list of strings.
-RESPONSE is a JSON array or a comma-/newline-separated list."
-  (condition-case nil
-      (let ((json-array-type 'list))
-        (json-read-from-string response))
-    (error
-     (mapcar #'string-trim
-             (split-string response "[,\n]+" t)))))
+  "Convert RESPONSE into a clean list of tag titles.
+RESPONSE may be a fenced JSON array, a raw JSON array, or a
+comma-/newline-separated list."
+  (let* ((s (string-trim (or response "")))
+         ;; Strip fenced code blocks: ```lang\n ... \n```
+         (s (if (string-match "\\`\\s-*```[[:alnum:]-_]*[ \t]*\n" s)
+                (let* ((start (match-end 0))
+                       (end (or (string-match "\n```\\s-*\\'" s start)
+                                (string-match "\n```" s start))))
+                  (if end (substring s start end) s))
+              s))
+         ;; If there's an array inside the text, keep only [ ... ] span.
+         (s (let ((o (string-match "\\[" s)))
+              (if o
+                  (let ((last -1)
+                        (len (length s)))
+                    (dotimes (i len)
+                      (when (eq (aref s i) ?]) (setq last i)))
+                    (if (>= last 0) (substring s o (1+ last)) s))
+                s))))
+    (or
+     ;; Try strict JSON first.
+     (condition-case nil
+         (let ((json-array-type 'list))
+           (json-read-from-string s))
+       (error nil))
+     ;; Fallback: split and clean tokens.
+     (let* ((raw (split-string s "[,\n]+" t))
+            (clean (mapcar (lambda (tok)
+                             (let* ((x (string-trim tok))
+                                    ;; Drop bracket/fence artifacts.
+                                    (x (replace-regexp-in-string "\\`\\[\\|\\]\\'\\|^```.*\\'" "" x))
+                                    ;; Remove repeated leading/trailing quotes.
+                                    (x (replace-regexp-in-string "\\`[\"']+\\|[\"']+\\'" "" x)))
+                               (string-trim x)))
+                           raw))
+            (clean (cl-remove-if (lambda (x)
+                                   (or (string-empty-p x)
+                                       (member (downcase x) '("[" "]" "```" "```json"))))
+                                 clean)))
+       clean))))
 
 (declare-function tlon-ai-callback-fail "tlon-ai")
 (defun tlon-yaml-suggest-tags-callback (article-file title-map)
