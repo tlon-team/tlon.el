@@ -31,6 +31,7 @@
 (require 'tlon-ai)
 (require 'simple-extras)
 (require 'seq)
+(require 'json)
 
 ;;;; Variables
 
@@ -833,27 +834,27 @@ when the Markdown file lacks a local-variables section)."
   "Convert RESPONSE into a clean list of tag titles.
 RESPONSE may be a fenced JSON array, a raw JSON array, or a
 comma-/newline-separated list."
-  (let* ((s (string-trim (or response "")))
-         ;; Strip fenced code blocks: ```lang\n ... \n```
-         (s (if (string-match "\\`\\s-*```[[:alnum:]-_]*[ \t]*\n" s)
-                (let* ((start (match-end 0))
-                       (end (or (string-match "\n```\\s-*\\'" s start)
-                                (string-match "\n```" s start))))
-                  (if end (substring s start end) s))
-              s))
-         ;; If there's an array inside the text, keep only [ ... ] span.
-         (s (let ((o (string-match "\\[" s)))
-              (if o
-                  (let ((last -1)
-                        (len (length s)))
-                    (dotimes (i len)
-                      (when (eq (aref s i) ?]) (setq last i)))
-                (if (>= last 0) (substring s o (1+ last)) s))
-              s)))
+  (let* ((s (string-trim (or response ""))))
+    ;; Strip fenced code blocks: ```lang\n ... \n```
+    (when (string-match "\\`\\s-*```[[:alnum:]-_]*[ \t]*\n" s)
+      (let ((start (match-end 0))
+            (end (or (string-match "\n```\\s-*\\'" s (match-end 0))
+                     (string-match "\n```" s (match-end 0)))))
+        (when end
+          (setq s (substring s start end)))))
+    ;; If there's an array inside the text, keep only [ ... ] span.
+    (let ((o (string-match "\\[" s)))
+      (when o
+        (let ((last -1)
+              (len (length s)))
+          (dotimes (i len)
+            (when (eq (aref s i) ?]) (setq last i)))
+          (when (>= last 0)
+            (setq s (substring s o (1+ last)))))))
     (or
      ;; Try strict JSON first.
      (condition-case nil
-	 (let ((json-array-type 'list))
+         (let ((json-array-type 'list))
            (json-read-from-string s))
        (error nil))
      ;; Fallback: split and clean tokens.
@@ -865,12 +866,12 @@ comma-/newline-separated list."
                                     ;; Remove repeated leading/trailing quotes.
                                     (x (replace-regexp-in-string "\\`[\"']+\\|[\"']+\\'" "" x)))
                                (string-trim x)))
-                           raw))
-            (clean (cl-remove-if (lambda (x)
-                                   (or (string-empty-p x)
-                                       (member (downcase x) '("[" "]" "```" "```json"))))
-				 clean)))
-       clean))))
+                           raw)))
+       (cl-remove-if
+        (lambda (x)
+          (or (string-empty-p x)
+              (member (downcase x) '("[" "]" "```" "```json"))))
+        clean)))))
 
 (declare-function tlon-ai-callback-fail "tlon-ai")
 (defun tlon-yaml-suggest-tags-callback (article-file title-map)
