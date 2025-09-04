@@ -481,7 +481,7 @@ total number of replacements made."
 	  (let ((case-fold-search nil))
 	    (dolist (ch bibtex-extras-escaped-characters)
 	      (let* ((s (if (integerp ch) (char-to-string ch) ch))
-		     (from (concat "\\" s)))
+		     (from (concat "\\\\" s)))
 		(goto-char (point-min))
 		(while (search-forward from nil t)
 		  (replace-match s nil t)
