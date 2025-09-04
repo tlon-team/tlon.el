@@ -1259,7 +1259,7 @@ With a prefix argument, prompt for DIR."
 
 ;;;###autoload
 (defun tlon-yaml-lowercase-fr-tag-titles (&optional dir)
-  "Lowercase the YAML title field for all Markdown files in DIR.
+  "Lowercase only the first word of the YAML title field for all Markdown files in DIR.
 When DIR is nil, default to
 \"/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-fr/sujets\".
 Operate recursively and only update files whose title changes. This is
@@ -1287,13 +1287,52 @@ a temporary clean-up helper."
                                  (eq (aref trim 0) ?\")
                                  (eq (aref trim (1- (length trim))) ?\")))
                          (core (if q (substring trim 1 -1) trim))
-                         (lc (downcase core)))
-                    (unless (string= core lc)
-                      (replace-match (if q (concat "\"" lc "\"") lc) t t nil 1)
+                         (pos (string-match "[ \t]" core))
+                         (first (if pos (substring core 0 pos) core))
+                         (rest (if pos (substring core pos) ""))
+                         (new-core (concat (downcase first) rest)))
+                    (unless (string= core new-core)
+                      (replace-match (if q (concat "\"" new-core "\"") new-core) t t nil 1)
                       (save-buffer)
                       (setq updated (1+ updated))))))))))
-      (message "Lowercased titles in %d file%s under %s"
+      (message "Lowercased first word of titles in %d file%s under %s"
                updated (if (= updated 1) "" "s") dir))))
+
+;;;###autoload
+(defun tlon-yaml-uncapitalize-fr-article-tags (&optional dir)
+  "Lowercase only the first word of each tag in the YAML tags field for all Markdown files in DIR.
+When DIR is nil, default to
+\"/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-fr/articles\".
+Operate recursively and only update files whose tags change. This is a
+temporary clean-up helper."
+  (interactive)
+  (let* ((dir (file-name-as-directory
+               (or dir "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-fr/articles")))
+         (files (directory-files-recursively dir "\\.md\\'"))
+         (updated 0)
+         (skipped 0))
+    (dolist (file files)
+      (let ((tags (tlon-yaml-get-key "tags" file)))
+        (when (stringp tags)
+          (setq tags (tlon-yaml-format-value tags)))
+        (if (not (listp tags))
+            (setq skipped (1+ skipped))
+          (let* ((new-tags
+                  (mapcar (lambda (s)
+                            (let* ((s (or s ""))
+                                   (s (string-trim s))
+                                   (pos (string-match "[ \t]" s))
+                                   (first (if pos (substring s 0 pos) s))
+                                   (rest (if pos (substring s pos) "")))
+                              (concat (downcase first) rest)))
+                          tags)))
+            (unless (equal tags new-tags)
+              (with-current-buffer (find-file-noselect file)
+                (tlon-yaml-insert-field "tags" new-tags)
+                (save-buffer))
+              (setq updated (1+ updated)))))))
+    (message "Lowercased first word of tags in %d file%s under %s"
+             updated (if (= updated 1) "" "s") dir)))
 
 (provide 'tlon-yaml)
 ;;; tlon-yaml.el ends here
