@@ -237,7 +237,14 @@ This module provides functions for reading, writing, and manipulating YAML front
 :END:
 
 #+findex: tlon-yaml-lowercase-fr-tag-titles
-+ ~tlon-yaml-lowercase-fr-tag-titles~ :: Temporarily lowercases the YAML
-  ~title~ field for every Markdown file under a given directory, defaulting to
++ ~tlon-yaml-lowercase-fr-tag-titles~ :: Temporarily lowercases only the first
+  word of the YAML ~title~ field for every Markdown file under a given
+  directory, defaulting to
   =/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-fr/sujets=.
   Operates recursively and only updates files whose title actually changes.
+
+#+findex: tlon-yaml-uncapitalize-fr-article-tags
++ ~tlon-yaml-uncapitalize-fr-article-tags~ :: Temporarily lowercases only the
+  first word of each tag in the YAML ~tags~ field for every Markdown file under
+  =/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-fr/articles=.
+  Operates recursively and only updates files whose tags actually change.
