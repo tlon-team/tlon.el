@@ -1037,6 +1037,35 @@ of the `tags` field."
                (if (= (length missing) 1) "" "s")
                (mapconcat #'identity (nreverse (delete-dups missing)) ", ")))))
 
+;;;###autoload
+(defun tlon-yaml-insert-translated-tags-in-dir (&optional n dir)
+  "Insert translated tags in article files in DIR that lack `tags', non-recursively.
+
+When N is non-nil (prefix arg), only process the first N articles
+missing Tags. When DIR is nil, use `default-directory'. Each file
+is processed by calling `tlon-yaml-insert-translated-tags'."
+  (interactive "P")
+  (let* ((dir (file-name-as-directory (or dir default-directory))))
+    (unless (file-directory-p dir)
+      (user-error "Directory not found: %s" dir))
+    (let* ((files (directory-files dir t "\\.md\\'"))
+           (processed 0)
+           (limit (and n (prefix-numeric-value n))))
+      (dolist (file files)
+        (condition-case nil
+            (when (and (file-regular-p file)
+                       (string= (tlon-yaml-get-type file) "article"))
+              (unless (tlon-yaml-get-key "tags" file)
+                (if limit
+                    (when (< processed limit)
+                      (tlon-yaml-insert-translated-tags file)
+                      (setq processed (1+ processed)))
+                  (tlon-yaml-insert-translated-tags file)
+                  (setq processed (1+ processed)))))
+          (error nil)))
+      (message "Inserted translated tags in %d article%s without tags in %s"
+               processed (if (= processed 1) "" "s") dir))))
+
 ;;;;; menu
 
 (transient-define-infix tlon-yaml-infix-suggest-tags-model ()
