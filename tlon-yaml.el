@@ -931,12 +931,13 @@ already contain an `original_path' field.  When DIR is nil, use
 Each file is processed by calling `tlon-yaml-guess-english-counterpart'
 programmatically (i.e., without interactive prompts)."
   (interactive "P")
-  (let* ((dir (file-name-as-directory (or dir default-directory)))
-         (files (directory-files dir t "\\.md\\'"))
-         (missing-count 0)
-         (limit (and n (prefix-numeric-value n))))
-    (dolist (file files)
-      (when (member (tlon-yaml-get-key "type" file) '("tag" "author"))
+  (let* ((dir (file-name-as-directory (or dir default-directory))))
+    (unless (file-directory-p dir)
+      (user-error "Directory not found: %s" dir))
+    (let* ((files (directory-files dir t "\\.md\\'"))
+           (missing-count 0)
+           (limit (and n (prefix-numeric-value n))))
+      (dolist (file files)
         (let ((has (tlon-yaml-get-key "original_path" file)))
           (cond
            (limit
@@ -946,10 +947,10 @@ programmatically (i.e., without interactive prompts)."
                 (tlon-yaml-guess-english-counterpart file))))
            (t
             ;; No limit: call for all files (files with original_path will be skipped)
-            (tlon-yaml-guess-english-counterpart file))))))
-    (when limit
-      (message "Queued AI requests for %d file%s without original_path in %s"
-               missing-count (if (= missing-count 1) "" "s") dir))))
+            (tlon-yaml-guess-english-counterpart file)))))
+      (when limit
+        (message "Queued AI requests for %d file%s without original_path in %s"
+                 missing-count (if (= missing-count 1) "" "s") dir)))))
 
 ;;;;;; Translated tags
 
