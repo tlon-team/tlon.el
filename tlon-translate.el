@@ -391,30 +391,35 @@ languages."
       (message "Checking %d BibTeX entries for missing abstract translations..." total)
       (dolist (key keys)
         (setq processed (1+ processed))
-        (let ((missing-langs '()))
-          (when-let* ((context (tlon-translate--get-abstract-context nil key nil))
-                      (abstract (nth 1 context))
-                      (source-lang-code (nth 2 context)))
-            (dolist (target-lang-name target-languages)
-              (let ((target-lang-code (tlon-lookup tlon-languages-properties :code :name target-lang-name)))
-                (let* ((key-entry (assoc key all-translations))
-		       (translation-text nil)
-		       (has-translation nil))
-                  (when key-entry
-                    (let ((lang-entry (assoc target-lang-code (cdr key-entry))))
-                      (when lang-entry
-                        (setq translation-text (cdr lang-entry)))))
-                  (setq has-translation (and translation-text
-                                             (stringp translation-text)
-                                             (> (length (string-trim translation-text)) 0)))
-                  (unless (or (string= source-lang-code target-lang-code)
-                              has-translation)
-                    (push target-lang-name missing-langs)))))
-            (when missing-langs
-              (message "Processing key %s (missing: %s) (%d/%d)"
-		       key (string-join (reverse missing-langs) ", ") processed total)
-              (setq initiated-count (1+ initiated-count))
-              (tlon-translate-abstract-dispatch abstract key (reverse missing-langs))))))
+        (let* ((translation-of (tlon-bibliography-lookup "=key=" key "translation"))
+               (is-translation (and (stringp translation-of)
+                                    (not (string-blank-p translation-of)))))
+          (if is-translation
+              (message "Skipping translation entry %s (%d/%d)" key processed total)
+            (let ((missing-langs '()))
+              (when-let* ((context (tlon-translate--get-abstract-context nil key nil))
+                          (abstract (nth 1 context))
+                          (source-lang-code (nth 2 context)))
+                (dolist (target-lang-name target-languages)
+                  (let ((target-lang-code (tlon-lookup tlon-languages-properties :code :name target-lang-name)))
+                    (let* ((key-entry (assoc key all-translations))
+                           (translation-text nil)
+                           (has-translation nil))
+                      (when key-entry
+                        (let ((lang-entry (assoc target-lang-code (cdr key-entry))))
+                          (when lang-entry
+                            (setq translation-text (cdr lang-entry)))))
+                      (setq has-translation (and translation-text
+                                                 (stringp translation-text)
+                                                 (> (length (string-trim translation-text)) 0)))
+                      (unless (or (string= source-lang-code target-lang-code)
+                                  has-translation)
+                        (push target-lang-name missing-langs)))))
+                (when missing-langs
+                  (message "Processing key %s (missing: %s) (%d/%d)"
+                           key (string-join (reverse missing-langs) ", ") processed total)
+                  (setq initiated-count (1+ initiated-count))
+                  (tlon-translate-abstract-dispatch abstract key (reverse missing-langs))))))))
       (if (= initiated-count 0)
           (let ((lang-label (if (= (length target-languages) 1)
                                 (car target-languages)
