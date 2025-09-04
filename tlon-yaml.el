@@ -278,8 +278,8 @@ If one of FIELDS is not found, throw an error unless NO-ERROR is non-nil."
 (defun tlon-yaml-get-valid-keys (&optional file type no-core)
   "Return the admissible keys for YAML metadata in FILE.
 If FILE is nil, use the current buffer’s file. If TYPE is nil, derive it from
-the directory name (articles, tags, authors, collections). If NO-CORE is non-nil,
-exclude core keys as defined in `tlon-yaml-core-keys'."
+the directory name (articles, tags, authors, collections). If NO-CORE is
+non-nil, exclude core keys as defined in `tlon-yaml-core-keys'."
   (let* ((file (or file (buffer-file-name)))
 	 (type (or type (tlon-yaml-get-type file)))
 	 (keys (pcase type
@@ -314,7 +314,7 @@ When FILE is nil, use the current buffer's file."
        ((string= first (downcase tags)) "tag")
        ((string= first (downcase authors)) "author")
        ((string= first (downcase collections)) "collection")
-       (t (user-error "Unrecognized top-level directory %s for %s" first file))))))
+       (t)))))
 
 (defun tlon-yaml-get-filenames-in-dir (&optional dir extension)
   "Return a list of all filenames in DIR.
