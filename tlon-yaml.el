@@ -896,6 +896,34 @@ canonical form taken from the tag metadata."
                    (length tags) (if (= (length tags) 1) "" "s")
                    (file-name-nondirectory article-file)))))))
 
+;;;###autoload
+(defun tlon-yaml-suggest-tags-in-dir (&optional n dir)
+  "Suggest tags via AI for article files in DIR that lack `tags'.
+When N is non-nil (prefix arg), only process the first N articles
+missing Tags. When DIR is nil, use `default-directory'. Each file
+is processed by calling `tlon-yaml-suggest-tags'."
+  (interactive "P")
+  (let* ((dir (file-name-as-directory (or dir default-directory))))
+    (unless (file-directory-p dir)
+      (user-error "Directory not found: %s" dir))
+    (let* ((files (directory-files dir t "\\.md\\'"))
+           (processed 0)
+           (limit (and n (prefix-numeric-value n))))
+      (dolist (file files)
+        (condition-case nil
+            (when (and (file-regular-p file)
+                       (string= (tlon-yaml-get-type file) "article"))
+              (unless (tlon-yaml-get-key "tags" file)
+                (if limit
+                    (when (< processed limit)
+                      (tlon-yaml-suggest-tags file)
+                      (setq processed (1+ processed)))
+                  (tlon-yaml-suggest-tags file)
+                  (setq processed (1+ processed)))))
+          (error nil)))
+      (message "Queued AI tag suggestions for %d article%s without tags in %s"
+               processed (if (= processed 1) "" "s") dir))))
+
 ;;;;;; Guess English counterpart
 
 ;;;###autoload
@@ -1168,6 +1196,7 @@ If nil, use the default model."
     ""
     "Tags"
     ("t s" "suggest tags"   tlon-yaml-suggest-tags)
+    ("t S" "suggest tags in dir" tlon-yaml-suggest-tags-in-dir)
     ("t t" "insert translated tags" tlon-yaml-insert-translated-tags)
     ("t T" "insert translated tags in dir" tlon-yaml-insert-translated-tags-in-dir)
     ("t g" "guess English counterpart" tlon-yaml-guess-english-counterpart)
