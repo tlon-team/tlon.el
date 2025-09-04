@@ -1090,6 +1090,7 @@ If nil, use the default model."
     "Tags"
     ("t s" "suggest tags"   tlon-yaml-suggest-tags)
     ("t t" "insert translated tags" tlon-yaml-insert-translated-tags)
+    ("t T" "insert translated tags in dir" tlon-yaml-insert-translated-tags-in-dir)
     ("t g" "guess English counterpart" tlon-yaml-guess-english-counterpart)
     ("t G" "guess counterparts in dir" tlon-yaml-guess-english-counterpart-in-dir)
     ""
