@@ -231,6 +231,12 @@ This module provides functions for reading, writing, and manipulating YAML front
   tag or author file. With a numeric argument, only processes the first N files
   that do not already have an ~original_path~ field.
 
+#+findex: tlon-yaml-suggest-tags-in-dir
++ ~tlon-yaml-suggest-tags-in-dir~ :: Walks the current directory
+  (non-recursively) and queues AI requests to suggest tags for each
+  article file that lacks a ~tags~ field. With a numeric prefix argument,
+  only processes the first N such files.
+
 ** Maintenance helpers
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-yaml-maintenance
