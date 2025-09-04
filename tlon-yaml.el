@@ -1039,8 +1039,7 @@ of the `tags` field."
 
 ;;;###autoload
 (defun tlon-yaml-insert-translated-tags-in-dir (&optional n dir)
-  "Insert translated tags in article files in DIR that lack `tags', non-recursively.
-
+  "Insert translated tags in article files in DIR that lack `tags'.
 When N is non-nil (prefix arg), only process the first N articles
 missing Tags. When DIR is nil, use `default-directory'. Each file
 is processed by calling `tlon-yaml-insert-translated-tags'."
