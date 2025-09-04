@@ -974,7 +974,6 @@ If nil, use the default model."
   :variable 'tlon-translate-revise-max-parallel
   :reader (lambda (_ _ _) (read-number "Max parallel requests: " tlon-translate-revise-max-parallel)))
 
-
 ;;;###autoload (autoload 'tlon-translate-menu "tlon-translate" nil t)
 (transient-define-prefix tlon-translate-menu ()
   "`tlon-translate' menu."
