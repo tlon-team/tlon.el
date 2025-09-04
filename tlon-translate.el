@@ -482,6 +482,8 @@ otherwise return nil."
 
 (declare-function tlon-bib-remove-braces "tlon-bib")
 (declare-function tlon-translate-abstract-callback "tlon-bib")
+(declare-function tlon-bib-unescape-escaped-characters "tlon-bib")
+(defvar tlon-file-abstract-translations)
 (defun tlon-translate-abstract-interactive (key text source-lang-code)
   "Handle interactive abstract translation for KEY, TEXT, SOURCE-LANG-CODE.
 If a translation for the KEY into the selected target language already exists,
