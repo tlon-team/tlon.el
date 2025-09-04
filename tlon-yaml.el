@@ -1131,6 +1131,7 @@ If nil, use the default model."
   :info-manual "(tlon) yaml"
   [["General"
     ("i" "insert or edit field" tlon-yaml-insert-field)
+    ("m" "list files missing field in dir" tlon-yaml-list-files-missing-field-in-dir)
     ""
     "Tags"
     ("t s" "suggest tags"   tlon-yaml-suggest-tags)
