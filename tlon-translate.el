@@ -353,7 +353,7 @@ slugified version of the original basename."
 ;;;;;; abstract
 
 ;;;###autoload
-(defun tlon-translate-abstract (&optional abstract key langs interactive-call-p)
+(defun tlon-translate-abstract-dispatch (&optional abstract key langs interactive-call-p)
   "Translate the ABSTRACT of entry KEY into LANGS.
 LANGS is a list of languages, such as `(\"spanish\" \"french\")'. If LANGS is
 nil, use `tlon-project-target-languages'. INTERACTIVE-CALL-P indicates if the
@@ -414,7 +414,7 @@ languages."
               (message "Processing key %s (missing: %s) (%d/%d)"
 		       key (string-join (reverse missing-langs) ", ") processed total)
               (setq initiated-count (1+ initiated-count))
-              (tlon-translate-abstract abstract key (reverse missing-langs))))))
+              (tlon-translate-abstract-dispatch abstract key (reverse missing-langs))))))
       (message "Finished checking %d entries. Initiated translation for %d entries." total initiated-count))))
 
 (declare-function tlon-bibliography-lookup "tlon-bib")
@@ -976,7 +976,7 @@ If nil, use the default model."
   [["Translate"
     ("t t" "Translate text" tlon-translate-text)
     ("t f" "Translate file" tlon-translate-file)
-    ("t a" "Translate current abstract" (lambda () (interactive) (tlon-translate-abstract nil nil nil t)))
+    ("t a" "Translate current abstract" (lambda () (interactive) (tlon-translate-abstract-dispatch nil nil nil t)))
     ("t A" "Translate missing abstracts" tlon-translate-missing-abstracts)
     ""
     "Options"
