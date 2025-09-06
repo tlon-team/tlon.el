@@ -367,14 +367,20 @@ function was called interactively."
 
 (defvar tlon-file-fluid)
 (defvar tlon-file-stable)
+(defvar tlon-file-db)
 (declare-function tlon-bib-get-keys-in-file "tlon-bib")
 ;;;###autoload
 (defun tlon-translate-missing-abstracts (&optional langs)
-  "Translate abstracts for BibTeX entries missing translations into LANGS.
-Iterate through all keys in `tlon-file-fluid' and `tlon-file-stable'. For each
-key, check if abstract translations are missing for any language in LANGS.
-LANGS is a list of language names, such as `(\"spanish\" \"french\")'. If LANGS
-is nil, prompt the user to select languages using
+  "Translate abstracts for entries missing translations into LANGS.
+
+Iterate through keys in `tlon-file-fluid', `tlon-file-stable' and
+`tlon-file-db'. For entries in `tlon-file-db', only translate if:
+1) the entry is not itself a translation (empty ‘translation’ field); and
+2) there is no other entry whose ‘langid’ equals the target language and whose
+   ‘translation’ field equals this entry's key.
+
+LANGS is a list of language names, such as `(\"spanish\" \"french\")'. If
+LANGS is nil, prompt the user to select languages using
 `tlon-read-multiple-languages'. When a translation in a language is missing,
 call `tlon-translate-abstract' for that key and the specific missing
 languages."
@@ -383,17 +389,20 @@ languages."
     (unless target-languages
       (user-error "No target languages selected. Aborting"))
     (let* ((all-translations (tlon-read-abstract-translations))
-           (keys (seq-uniq (append (tlon-bib-get-keys-in-file tlon-file-fluid)
-                                   (tlon-bib-get-keys-in-file tlon-file-stable))))
-           (total (length keys))
+           (keys-fluid  (tlon-bib-get-keys-in-file tlon-file-fluid))
+           (keys-stable (tlon-bib-get-keys-in-file tlon-file-stable))
+           (keys-db     (tlon-bib-get-keys-in-file tlon-file-db))
+           (all-keys    (seq-uniq (append keys-fluid keys-stable keys-db)))
+           (total (length all-keys))
            (initiated-count 0)
            (processed 0))
       (message "Checking %d BibTeX entries for missing abstract translations..." total)
-      (dolist (key keys)
+      (dolist (key all-keys)
         (setq processed (1+ processed))
         (let* ((translation-of (tlon-bibliography-lookup "=key=" key "translation"))
                (is-translation (and (stringp translation-of)
-                                    (not (string-blank-p translation-of)))))
+                                    (not (string-blank-p translation-of))))
+               (in-db (member key keys-db)))
           (if is-translation
               (message "Skipping translation entry %s (%d/%d)" key processed total)
             (let ((missing-langs '()))
@@ -402,27 +411,35 @@ languages."
                           (source-lang-code (nth 2 context)))
                 (dolist (target-lang-name target-languages)
                   (let ((target-lang-code (tlon-lookup tlon-languages-properties :code :name target-lang-name))
-			translation-text has-translation)
+                        translation-text has-translation translates-elsewhere)
+                    ;; Check whether we already have a translated abstract stored.
                     (when-let* ((key-entry (assoc key all-translations)))
-		      (when-let* ((lang-entry (assoc target-lang-code (cdr key-entry))))
-			(setq translation-text (cdr lang-entry)))
-		      (setq has-translation (and translation-text
-						 (stringp translation-text)
-						 (> (length (string-trim translation-text)) 0)))
-		      (unless (or (string= source-lang-code target-lang-code)
-				  has-translation)
-			(push target-lang-name missing-langs)))))
-		(when missing-langs
-                  (message "Processing key %s (missing: %s) (%d/%d)"
-                           key (string-join (reverse missing-langs) ", ") processed total)
-                  (setq initiated-count (1+ initiated-count))
-                  (tlon-translate-abstract-dispatch abstract key (reverse missing-langs))))))))
+                      (when-let* ((lang-entry (assoc target-lang-code (cdr key-entry))))
+                        (setq translation-text (cdr lang-entry))))
+                    (setq has-translation (and translation-text
+                                               (stringp translation-text)
+                                               (> (length (string-trim translation-text)) 0)))
+                    ;; For DB entries, ensure no other entry translates KEY into target language.
+                    (setq translates-elsewhere
+                          (and in-db
+                               (tlon-translate--has-translating-entry-p
+                                key target-lang-name all-keys)))
+                    (unless (or (string= source-lang-code target-lang-code)
+                                has-translation
+                                translates-elsewhere)
+                      (push target-lang-name missing-langs)))))
+              (when missing-langs
+                (message "Processing key %s (missing: %s) (%d/%d)"
+                         key (string-join (reverse missing-langs) ", ") processed total)
+                (setq initiated-count (1+ initiated-count))
+                (tlon-translate-abstract-dispatch abstract key (reverse missing-langs)))))))
       (if (= initiated-count 0)
           (let ((lang-label (if (= (length target-languages) 1)
-				(car target-languages)
+                                (car target-languages)
                               (format "languages: %s" (string-join target-languages ", ")))))
             (message "No entries with a missing %s translation found" lang-label))
-	(message "Finished checking %d entries. Initiated translation for %d entries." total initiated-count)))))
+        (message "Finished checking %d entries. Initiated translation for %d entries."
+                 total initiated-count)))))
 
 (declare-function tlon-bibliography-lookup "tlon-bib")
 (declare-function ebib--get-key-at-point "ebib")
@@ -486,6 +503,23 @@ otherwise return nil."
     (if (and translation (stringp translation) (> (length (string-trim translation)) 0))
         translation
       nil)))
+
+(defun tlon-translate--has-translating-entry-p (key target-lang-name keys)
+  "Return non-nil if another entry translates KEY into TARGET-LANG-NAME.
+KEY is a BibTeX key. TARGET-LANG-NAME is the language name stored in
+the ‘langid’ field (e.g., \"french\"). KEYS is the list of keys to scan."
+  (catch 'found
+    (dolist (k keys)
+      (unless (string= k key)
+        (let ((lang (tlon-bibliography-lookup "=key=" k "langid"))
+              (translation (tlon-bibliography-lookup "=key=" k "translation")))
+          (when (and (stringp lang)
+                     (stringp translation)
+                     (not (string-blank-p translation))
+                     (string-equal (downcase lang) (downcase target-lang-name))
+                     (string= translation key))
+            (throw 'found t)))))
+    nil))
 
 (declare-function tlon-bib-remove-braces "tlon-bib")
 (declare-function tlon-translate-abstract-callback "tlon-bib")
