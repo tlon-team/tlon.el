@@ -401,31 +401,28 @@ languages."
                           (abstract (nth 1 context))
                           (source-lang-code (nth 2 context)))
                 (dolist (target-lang-name target-languages)
-                  (let ((target-lang-code (tlon-lookup tlon-languages-properties :code :name target-lang-name)))
-                    (let* ((key-entry (assoc key all-translations))
-                           (translation-text nil)
-                           (has-translation nil))
-                      (when key-entry
-                        (let ((lang-entry (assoc target-lang-code (cdr key-entry))))
-                          (when lang-entry
-                            (setq translation-text (cdr lang-entry)))))
-                      (setq has-translation (and translation-text
-                                                 (stringp translation-text)
-                                                 (> (length (string-trim translation-text)) 0)))
-                      (unless (or (string= source-lang-code target-lang-code)
-                                  has-translation)
-                        (push target-lang-name missing-langs)))))
-                (when missing-langs
+                  (let ((target-lang-code (tlon-lookup tlon-languages-properties :code :name target-lang-name))
+			translation-text has-translation)
+                    (when-let* ((key-entry (assoc key all-translations)))
+		      (when-let* ((lang-entry (assoc target-lang-code (cdr key-entry))))
+			(setq translation-text (cdr lang-entry)))
+		      (setq has-translation (and translation-text
+						 (stringp translation-text)
+						 (> (length (string-trim translation-text)) 0)))
+		      (unless (or (string= source-lang-code target-lang-code)
+				  has-translation)
+			(push target-lang-name missing-langs)))))
+		(when missing-langs
                   (message "Processing key %s (missing: %s) (%d/%d)"
                            key (string-join (reverse missing-langs) ", ") processed total)
                   (setq initiated-count (1+ initiated-count))
                   (tlon-translate-abstract-dispatch abstract key (reverse missing-langs))))))))
       (if (= initiated-count 0)
           (let ((lang-label (if (= (length target-languages) 1)
-                                (car target-languages)
+				(car target-languages)
                               (format "languages: %s" (string-join target-languages ", ")))))
             (message "No entries with a missing %s translation found" lang-label))
-        (message "Finished checking %d entries. Initiated translation for %d entries." total initiated-count)))))
+	(message "Finished checking %d entries. Initiated translation for %d entries." total initiated-count)))))
 
 (declare-function tlon-bibliography-lookup "tlon-bib")
 (declare-function ebib--get-key-at-point "ebib")
@@ -522,13 +519,14 @@ nil, use `tlon-project-target-languages'."
   (let ((initiated-langs '()))
     (mapc (lambda (language)
             (let ((target-lang (tlon-lookup tlon-languages-properties :code :name language)))
-              (unless (string= source-lang-code target-lang)
-                (unless (tlon-translate--get-existing-abstract-translation key target-lang)
-                  (push language initiated-langs)
-                  (message "Initiating translation for %s -> %s" key target-lang)
-                  (tlon-translate-text (tlon-bib-remove-braces text) target-lang source-lang-code
-                                       (lambda () (tlon-translate-abstract-callback key target-lang 'overwrite)))))))
-          (or langs tlon-project-target-languages))
+              (unless (and (string= source-lang-code target-lang)
+			   (tlon-translate--get-existing-abstract-translation key target-lang))
+                (push language initiated-langs)
+                (message "Initiating translation for %s -> %s" key target-lang)
+                (tlon-translate-text (tlon-bib-remove-braces text) target-lang source-lang-code
+                                     (lambda () (tlon-translate-abstract-callback key target-lang 'overwrite))
+				     'no-glossary-ok))))
+	  (or langs tlon-project-target-languages))
     (when initiated-langs
       (message "Finished initiating translations for abstract of `%s' into: %s"
                key (string-join (reverse initiated-langs) ", ")))))
