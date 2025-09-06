@@ -427,12 +427,12 @@ languages."
                     (unless (or (string= source-lang-code target-lang-code)
                                 has-translation
                                 translates-elsewhere)
-                      (push target-lang-name missing-langs)))))
-              (when missing-langs
-                (message "Processing key %s (missing: %s) (%d/%d)"
-                         key (string-join (reverse missing-langs) ", ") processed total)
-                (setq initiated-count (1+ initiated-count))
-                (tlon-translate-abstract-dispatch abstract key (reverse missing-langs)))))))
+                      (push target-lang-name missing-langs))))
+                (when missing-langs
+                  (message "Processing key %s (missing: %s) (%d/%d)"
+                           key (string-join (reverse missing-langs) ", ") processed total)
+                  (setq initiated-count (1+ initiated-count))
+                  (tlon-translate-abstract-dispatch abstract key (reverse missing-langs)))))))
       (if (= initiated-count 0)
           (let ((lang-label (if (= (length target-languages) 1)
                                 (car target-languages)
