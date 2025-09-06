@@ -1288,7 +1288,7 @@ With a prefix argument, prompt for DIR."
 
 ;;;###autoload
 (defun tlon-yaml-lowercase-fr-tag-titles (&optional dir)
-  "Lowercase only the first word of the YAML title field for all Markdown files in DIR.
+  "Lowercase only the first word of the YAML title field for al files in DIR.
 When DIR is nil, default to
 \"/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-fr/sujets\".
 Operate recursively and only update files whose title changes. This is
@@ -1329,7 +1329,7 @@ a temporary clean-up helper."
 
 ;;;###autoload
 (defun tlon-yaml-uncapitalize-fr-article-tags (&optional dir)
-  "Lowercase only the first word of each tag in the YAML tags field for all Markdown files in DIR.
+  "Lowercase the first word of each tag in the tags field for all files in DIR.
 When DIR is nil, default to
 \"/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-fr/articles\".
 Operate recursively and only update files whose tags change. This is a
