@@ -62,6 +62,9 @@ This module provides functions for translating entire files using various transl
   6. Based on the value of ~tlon-translation-engine~, it calls the appropriate translation function (e.g., ~tlon-deepl-translate~).
   7. The content of the source file is read, translated, and then written to the target file, which is then opened.
 
+#+findex: tlon-translate-list-non-english-with-empty-translation
++ ~tlon-translate-list-non-english-with-empty-translation~ :: List all entries in =fluid.bib= and =stable.bib= whose ~langid~ is not =english= and whose ~translation~ field is empty. Displays the results in a dedicated buffer.
+
 *** Revision
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-translate-revision

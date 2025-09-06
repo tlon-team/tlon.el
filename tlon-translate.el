@@ -1009,5 +1009,35 @@ If nil, use the default model."
    ["General options"
     ("-c" "Commit changes" tlon-translate-infix-toggle-commit-changes)]])
 
+;;;###autoload
+(defun tlon-translate-list-non-english-with-empty-translation ()
+  "List non-English entries with empty translation field in fluid/stable.
+Display results in a buffer, one per line: KEY<TAB>LANGID<TAB>TITLE."
+  (interactive)
+  (let* ((keys (seq-uniq (append (tlon-bib-get-keys-in-file tlon-file-fluid)
+                                 (tlon-bib-get-keys-in-file tlon-file-stable))))
+         (results '()))
+    (dolist (key keys)
+      (let* ((lang (tlon-bibliography-lookup "=key=" key "langid"))
+             (translation (tlon-bibliography-lookup "=key=" key "translation")))
+        (when (and (stringp lang)
+                   (null (string-blank-p lang))
+                   (null (string-equal (downcase lang) "english"))
+                   (null translation))
+          (let* ((title (or (tlon-bibliography-lookup "=key=" key "title") "")))
+            (push (list :key key :langid lang :title title) results)))))
+    (setq results (nreverse results))
+    (let ((buf (get-buffer-create "*tlon-bib:non-english-empty-translation*")))
+      (with-current-buffer buf
+        (erase-buffer)
+        (insert (format "Entries with non-English langid and empty translation (%d):\n\n" (length results)))
+        (dolist (it results)
+          (insert (format "%s\t%s\t%s\n"
+                          (plist-get it :key)
+                          (plist-get it :langid)
+                          (plist-get it :title)))))
+      (display-buffer buf))
+    results))
+
 (provide 'tlon-translate)
 ;;; tlon-translate.el ends here
