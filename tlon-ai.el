@@ -394,18 +394,17 @@ the same BACKEND+MODEL by setting them buffer-locally before dispatch."
          (full-prompt (if printf-arg (format prompt printf-arg) prompt)))
     (with-current-buffer buf
       ;; Pin scope for initial request *and* tool follow-ups.
-      (setq-local gptel-backend backend-obj)
-      (setq-local gptel-model   model-sym)
-      (setq-local gptel-tools   tool-structs)
-      (setq-local gptel-use-tools (and gptel-tools t))
-      (when gptel-tools
-        (setq-local gptel-include-reasoning nil))
+      (setq-local gptel-backend backend-obj
+		  gptel-model model-sym
+		  gptel-tools tool-structs
+		  gptel-use-tools (and gptel-tools t)
+		  gptel-include-reasoning nil)
       ;; Dispatch the request; gptel will consult buffer-local vars later, too.
       (gptel-request full-prompt
-        :callback   callback
-        :buffer     buf
-        :context    context-data
-        :transforms gptel-prompt-transform-functions))))
+	:callback   callback
+	:buffer     buf
+	:context    context-data
+	:transforms gptel-prompt-transform-functions))))
 
 ;; Helper: normalize (backend . model), allow strings, symbols, or objects
 (defun tlon--resolve-backend+model (full-model)
