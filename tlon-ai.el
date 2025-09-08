@@ -290,7 +290,15 @@ default `gptel-model'."
   `((:prompt ,(format "Please transcribe the following text phonetically, i.e. using the International Phonetic Alphabet (IPA).%sJust return the phonetic transcription, without any commentary. Do not enclose the transcription in slashes." tlon-ai-string-wrapper)
 	     :language "en")
     (:prompt ,(format "Por favor, transcribe fonéticamente el siguiente texto, es decir, utilizando el Alfabeto Fonético Internacional (AFI).%sLimítate a devolver la transcripción fonética, sin comentarios de ningún tipo. No encierres la transcripción entre barras." tlon-ai-string-wrapper)
-	     :language "es")))
+	     :language "es")
+    (:prompt ,(format "Per favore, trascrivi foneticamente il seguente testo, cioè utilizzando l'Alfabeto Fonetico Internazionale (AFI).%sRestituisci solo la trascrizione fonetica, senza alcun commento. Non racchiudere la trascrizione tra barre." tlon-ai-string-wrapper)
+	     :language "it")
+    (:prompt ,(format "Veuillez transcrire phonétiquement le texte suivant, c'est-à-dire en utilisant l'Alphabet Phonétique International (API).%sRetournez seulement la transcription phonétique, sans aucun commentaire. N'encadrez pas la transcription entre barres obliques." tlon-ai-string-wrapper)
+	     :language "fr")
+    (:prompt ,(format "Por favor, transcreva foneticamente o seguinte texto, ou seja, usando o Alfabeto Fonético Internacional (AFI).%sApenas retorne a transcrição fonética, sem qualquer comentário. Não coloque a transcrição entre barras." tlon-ai-string-wrapper)
+	     :language "pt")
+    (:prompt ,(format "Bitte transkribieren Sie den folgenden Text phonetisch, das heißt mit dem Internationalen Phonetischen Alphabet (IPA).%sGeben Sie nur die phonetische Transkription zurück, ohne jegliche Kommentare. Schließen Sie die Transkription nicht in Schrägstriche ein." tlon-ai-string-wrapper)
+	     :language "de")))
 
 ;;;;; Math
 
@@ -1360,8 +1368,12 @@ request was sent."
 				      (buffer-substring-no-properties (region-beginning) (region-end))
 				    (word-at-point)))
 		     (or (tlon-get-language-in-file) (tlon-select-language 'code))))
-  (let ((prompt (tlon-lookup tlon-ai-transcribe-phonetically-prompt
-			     :prompt :language language)))
+  (let* ((prompt (or (tlon-lookup tlon-ai-transcribe-phonetically-prompt
+                                  :prompt :language language)
+                     (tlon-lookup tlon-ai-transcribe-phonetically-prompt
+                                  :prompt :language "en"))))
+    (unless prompt
+      (user-error "No prompt available for phonetic transcription in language %s" language))
     (tlon-make-gptel-request prompt expression #'tlon-ai-callback-copy)))
 
 (defun tlon-phonetically-transcribe-in-buffer ()
