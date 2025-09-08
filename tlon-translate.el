@@ -433,13 +433,13 @@ languages."
                            key (string-join (reverse missing-langs) ", ") processed total)
                   (setq initiated-count (1+ initiated-count))
                   (tlon-translate-abstract-dispatch abstract key (reverse missing-langs)))))))
-      (if (= initiated-count 0)
-          (let ((lang-label (if (= (length target-languages) 1)
-                                (car target-languages)
-                              (format "languages: %s" (string-join target-languages ", ")))))
-            (message "No entries with a missing %s translation found" lang-label))
-        (message "Finished checking %d entries. Initiated translation for %d entries."
-                 total initiated-count)))))
+	(if (= initiated-count 0)
+            (let ((lang-label (if (= (length target-languages) 1)
+                                  (car target-languages)
+				(format "languages: %s" (string-join target-languages ", ")))))
+              (message "No entries with a missing %s translation found" lang-label))
+          (message "Finished checking %d entries. Initiated translation for %d entries."
+                   total initiated-count))))))
 
 (declare-function tlon-bibliography-lookup "tlon-bib")
 (declare-function ebib--get-key-at-point "ebib")
