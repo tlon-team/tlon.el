@@ -4031,7 +4031,7 @@ pre-fill the prompt with that suggestion."
           (tlon-make-gptel-request
            prompt
            term
-           (lambda (response info)
+           (lambda (response _info)
              (let* ((suggestion (or (and (stringp response) (string-trim response)) "")))
                (when (and (stringp suggestion) (not (string-empty-p suggestion)))
                  (kill-new suggestion)
