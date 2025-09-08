@@ -403,6 +403,11 @@ Older models (also supported):
   (file-name-concat tlon-dir-tts "phonetic-transcriptions.json")
   "File with phonetic transcriptions.")
 
+(defconst tlon-file-elevenlabs-dictionary-locators
+  (file-name-concat tlon-dir-tts "pronunciation-dictionaries.json")
+  "JSON file mapping language codes to ElevenLabs pronunciation dictionary
+locators.")
+
 ;;;;; Staging buffer
 
 (defconst tlon-tts-staging-buffer-formatter
@@ -770,6 +775,12 @@ questions\").")
 
 (defvar tlon-elevenlabs-key nil
   "API key for the ElevenLabs TTS service.")
+
+
+(defcustom tlon-elevenlabs-attach-dictionaries nil
+  "Whether to attach pronunciation dictionary locators to ElevenLabs requests."
+  :group 'tlon-tts
+  :type 'boolean)
 
 ;;;;; Engines
 
@@ -1446,6 +1457,7 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
   (interactive)
   (unless (tlon-tts-staging-buffer-p)
     (user-error "Not in a staging buffer"))
+  (tlon-tts-elevenlabs--maybe-export-dictionary)
   (setq tlon-tts-user-selected-chunks-to-process nil) ; Ensure we are in full buffer mode
   ;; If tlon-tts-chunks is not populated, it means initial staging
   ;; might not have completed or this is a fresh call.
@@ -1473,6 +1485,7 @@ number (e.g., `basename-chunk-005.mp3`)."
                  (list nil nil)))
   (unless (tlon-tts-staging-buffer-p)
     (user-error "Not in a TTS staging buffer. Run `tlon-tts-stage-content' first"))
+  (tlon-tts-elevenlabs--maybe-export-dictionary)
   ;; Ensure chunks are calculated so tlon-tts-chunks is populated
   ;; and comments in buffer reflect it.
   (save-excursion
@@ -2771,7 +2784,29 @@ USE-CONTEXT is non-nil."
     ,@(when (and use-context after-text) `(("after_text" . ,after-text)))
     ,@(when (and use-context previous-chunk-id) `(("previous_request_ids" . (,previous-chunk-id))))
     ,@(when (and use-context next-chunk-id) `(("next_request_ids" . (,next-chunk-id))))
+    ,@(let ((locs (and tlon-elevenlabs-attach-dictionaries
+                       (tlon-tts-elevenlabs-get-locators-for-language))))
+        (when locs `(("pronunciation_dictionary_locators" . ,locs))))
     ("stitch_audio" . ,(if use-context t nil))))
+
+(defun tlon-tts-elevenlabs-get-locators-for-language (&optional lang)
+  "Return up to three ElevenLabs dictionary locators for LANG.
+Each locator is an alist with string keys \"pronunciation_dictionary_id\" and
+\"version_id\". If LANG is nil, use the current TTS language."
+  (let* ((language (or lang (tlon-tts-get-current-language)))
+         (data (ignore-errors (tlon-read-json tlon-file-elevenlabs-dictionary-locators)))
+         (locs (and (listp data) (alist-get language data nil nil #'string=))))
+    (when (vectorp locs)
+      (setq locs (append locs nil)))
+    (let ((res '())
+          (count 0))
+      (dolist (item locs)
+        (when (and (alist-get "pronunciation_dictionary_id" item nil nil #'string=)
+                   (alist-get "version_id" item nil nil #'string=))
+          (push item res)
+          (setq count (1+ count))
+          (when (>= count 3) (cl-return))))
+      (nreverse res))))
 
 (defun tlon-tts-build-voice-settings (voice-definition voice-settings-params)
   "Build the voice settings from the VOICE-DEFINITION and VOICE-SETTINGS-PARAMS."
@@ -3263,6 +3298,51 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
   (replace-match (format (tlon-md-get-tag-to-fill "phoneme")
 			 "ipa" replacement (match-string-no-properties 0))
 		 t t))
+
+(defun tlon-tts-elevenlabs-export-dictionary-to-temp (&optional lang)
+  "Export a PLS dictionary for LANG to a temporary file and return its path."
+  (let* ((language (or lang (tlon-select-language 'code 'babel)))
+         (pairs (tlon-tts--phoneme-pairs-for-language language))
+         (outfile (make-temp-file (format "pronunciation-%s-" language) nil ".pls")))
+    (unless pairs
+      (user-error "No phonetic transcriptions found for %s" language))
+    (tlon-tts--write-pls-file outfile language pairs)
+    outfile))
+
+(defun tlon-tts-elevenlabs--maybe-export-dictionary ()
+  "Export an ElevenLabs PLS dictionary to a temporary file when appropriate."
+  (when (string= tlon-tts-engine "ElevenLabs")
+    (let* ((language (tlon-tts-get-current-language))
+           (pairs (tlon-tts--phoneme-pairs-for-language language)))
+      (when pairs
+        (let ((path (tlon-tts-elevenlabs-export-dictionary-to-temp language)))
+          (message "Exported ElevenLabs PLS dictionary to %s" path))))))
+
+(defun tlon-tts--phoneme-pairs-for-language (language)
+  "Return (TERM . IPA) pairs for LANGUAGE from global phonetic transcriptions."
+  (let ((data (tlon-read-json tlon-file-global-phonetic-transcriptions))
+        (result '()))
+    (dolist (entry data (nreverse result))
+      (let* ((term (car entry))
+             (langmap (cdr entry))
+             (ipa (or (alist-get language langmap nil nil #'string=)
+                      (alist-get "default" langmap nil nil #'string=))))
+        (when (and term ipa (stringp ipa) (not (string-empty-p ipa)))
+          (push (cons term ipa) result))))))
+
+(defun tlon-tts--write-pls-file (path language pairs)
+  "Write a W3C PLS 1.0 file at PATH for LANGUAGE from PAIRS."
+  (with-temp-file path
+    (insert "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+    (insert (format "<lexicon version=\"1.0\" xmlns=\"http://www.w3.org/2005/01/pronunciation-lexicon\" xml:lang=\"%s\" alphabet=\"ipa\">\n" language))
+    (dolist (pair pairs)
+      (let* ((term (tlon-tts-escape-xml-special-characters-in-text (car pair)))
+             (ipa  (tlon-tts-escape-xml-special-characters-in-text (cdr pair))))
+        (insert "  <lexeme>\n")
+        (insert (format "    <grapheme>%s</grapheme>\n" term))
+        (insert (format "    <phoneme>%s</phoneme>\n" ipa))
+        (insert "  </lexeme>\n")))
+    (insert "</lexicon>\n")))
 
 ;;;;;; Listener cues
 
