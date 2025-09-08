@@ -79,6 +79,17 @@ Each supported TTS engine has specific configuration options:
   #+vindex: tlon-amazon-polly-region
   + ~tlon-amazon-polly-region~ :: Specifies the AWS region for Amazon Polly requests (e.g., "us-east-1").
 
++ Pronunciation dictionaries (ElevenLabs):
+  #+vindex: tlon-elevenlabs-attach-dictionaries
+  + ~tlon-elevenlabs-attach-dictionaries~ :: Boolean. If non-nil, includes
+    =pronunciation_dictionary_locators= in ElevenLabs requests based on
+    ~tlon-file-elevenlabs-dictionary-locators~ for the current language. IPA
+    rules require a compatible model (e.g., "eleven_turbo_v2").
+  #+vindex: tlon-file-elevenlabs-dictionary-locators
+  + ~tlon-file-elevenlabs-dictionary-locators~ :: JSON file mapping language
+    codes to arrays of objects with =pronunciation_dictionary_id= and
+    =version_id= used to attach up to three dictionaries per request.
+
 ** Commands
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-tts-commands
@@ -147,6 +158,7 @@ This section details the interactive commands provided by =tlon-tts.el=.
 
 #+findex: tlon-tts-edit-global-phonetic-transcriptions
 + ~tlon-tts-edit-global-phonetic-transcriptions~ :: (Autoloaded) Interactively edits the global phonetic transcriptions list stored in =tlon-file-global-phonetic-transcriptions=.
+
 
 #+findex: tlon-add-local-abbreviation
 + ~tlon-add-local-abbreviation~ :: (Autoloaded) Adds a file-local abbreviation to the =tlon-local-abbreviations= variable in the current buffer's local variables section.
