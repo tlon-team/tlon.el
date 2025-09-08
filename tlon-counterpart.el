@@ -137,16 +137,16 @@ lookup, subsequent queries are instantaneous."
                                          (tlon-yaml-get-key "original_path" f)))
                               candidates)))
               (when filtered
-                (setq candidates filtered)))
-	    (pcase candidates
-	      ((pred null)
-	       (user-error "No translation counterpart found in %s" dir))
-	      ((pred (lambda (c) (= (length c) 1)))
-	       (let ((file (car candidates)))
-		 (when table
-		   (puthash orig-key file table))
-		 file))
-	      (_ (completing-read (format "Select translation for %s: " orig-name) candidates nil t))))))))
+                (setq candidates filtered))
+	      (pcase candidates
+		((pred null)
+		 (user-error "No translation counterpart found in %s" dir))
+		((pred (lambda (c) (= (length c) 1)))
+		 (let ((file (car candidates)))
+		   (when table
+		     (puthash orig-key file table))
+		   file))
+		(_ (completing-read (format "Select translation for %s: " orig-name) candidates nil t)))))))))
 
 (defun tlon-get-counterpart-repo (&optional file prompt)
   "Get the counterpart repo of FILE.
