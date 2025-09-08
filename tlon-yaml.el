@@ -848,7 +848,7 @@ comma-/newline-separated list."
         (let ((last -1)
               (len (length s)))
           (dotimes (i len)
-            (when (eq (aref s i) ?]) (setq last i)))
+            (when (eq (aref s i) ?\]) (setq last i)))
           (when (>= last 0)
             (setq s (substring s o (1+ last)))))))
     (or
