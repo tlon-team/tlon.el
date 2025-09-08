@@ -27,6 +27,7 @@
 
 (require 'tlon-core)
 (require 'tlon-md)
+(require 'tlon-ai)
 (eval-and-compile
   (require 'eieio)
   (require 'transient))
@@ -3995,9 +3996,48 @@ is populated and the current buffer is the staging buffer."
 
 ;;;###autoload
 (defun tlon-tts-edit-global-phonetic-transcriptions ()
-  "Add or edit a global phonetic transcription."
+  "Add or edit a global phonetic transcription.
+When adding a new term, suggest an IPA transcription via AI and
+pre-fill the prompt with that suggestion."
   (interactive)
-  (tlon-edit-json-mapping tlon-file-global-phonetic-transcriptions "Term to transcribe: " "IPA Transcription: "))
+  (let* ((data (or (tlon-read-json tlon-file-global-phonetic-transcriptions) '()))
+         (existing-terms (mapcar #'car data))
+         (term (completing-read "Term to transcribe: " existing-terms nil nil))
+         (lang (or (tlon-select-language 'code 'babel)
+                   (user-error "Language selection aborted")))
+         (entry (assoc term data))
+         (current-ipa (when entry (alist-get lang (cdr entry) nil nil #'string=))))
+    (cl-labels
+        ((save-mapping
+          (ipa)
+          (let* ((current (or (tlon-read-json tlon-file-global-phonetic-transcriptions) '()))
+                 (existing (assoc term current)))
+            (if existing
+                (let* ((langmap (cdr existing))
+                       (langmap* (cl-remove-if (lambda (kv) (string= (car kv) lang)) langmap)))
+                  (setcdr existing (cons (cons lang ipa) langmap*)))
+              (push (cons term (list (cons lang ipa))) current))
+            (tlon-write-data tlon-file-global-phonetic-transcriptions current)
+            (message "Saved IPA for \"%s\" (%s)" term lang))))
+      (if entry
+          (let ((ipa (read-string "IPA Transcription: " current-ipa)))
+            (save-mapping ipa))
+        (let* ((prompt (or (tlon-lookup tlon-ai-transcribe-phonetically-prompt
+                                        :prompt :language lang)
+                           (tlon-lookup tlon-ai-transcribe-phonetically-prompt
+                                        :prompt :language "en"))))
+          (unless prompt
+            (user-error "No prompt available for phonetic transcription in language %s" lang))
+          (tlon-make-gptel-request
+           prompt
+           term
+           (lambda (response info)
+             (let* ((suggestion (or (and (stringp response) (string-trim response)) "")))
+               (when (and (stringp suggestion) (not (string-empty-p suggestion)))
+                 (kill-new suggestion)
+                 (message "Copied AI suggestion to kill ring."))
+               (let ((ipa (read-string "IPA Transcription: " suggestion)))
+                 (save-mapping ipa))))))))))
 
 ;;;;; Local
 
