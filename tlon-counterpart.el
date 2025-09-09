@@ -464,8 +464,7 @@ language within the current subproject."
   (interactive)
   (let* ((type (tlon-counterpart--prompt-entity-type))
          (lang-a (tlon-counterpart--select-language-code "First language code: "))
-         (lang-b (tlon-counterpart--select-language-code "Second language code: "))
-         (repo (tlon-get-repo t)))
+         (lang-b (tlon-counterpart--select-language-code "Second language code: ")))
     (when (string= lang-a lang-b)
       (user-error "Languages must be different"))
     (let* ((repo-a (tlon-repo-lookup :dir :subproject "uqbar" :language lang-a))
@@ -476,14 +475,71 @@ language within the current subproject."
              (files-b (tlon-counterpart--files-of-type-in-repo repo-b type))
              (missing-in-b (seq-filter
                             (lambda (f)
-                              (null (tlon-counterpart--counterpart-in-language f lang-b)))
+                              (null (tlon-counterpart--counterpart-exists-p f lang-b)))
                             files-a))
              (missing-in-a (seq-filter
                             (lambda (f)
-                              (null (tlon-counterpart--counterpart-in-language f lang-a)))
+                              (null (tlon-counterpart--counterpart-exists-p f lang-a)))
                             files-b)))
         (tlon-counterpart--display-missing-report
          type lang-a lang-b repo-a repo-b missing-in-b missing-in-a)))))
+
+(defun tlon-counterpart--list-md-nonrecursive (dir)
+  "Return a list of markdown files directly under DIR."
+  (directory-files dir t "\\.md\\'"))
+
+(defun tlon-counterpart--find-original-for-translation (file)
+  "Return absolute path to original counterpart of translation FILE, or nil."
+  (let* ((dir (tlon-get-counterpart-dir file "en"))
+         (op (tlon-yaml-get-key "original_path" file)))
+    (cond
+     ((and dir op)
+      (let ((path (expand-file-name op dir)))
+        (when (file-exists-p path) path)))
+     (dir
+      (let* ((tr-key (tlon-yaml-get-key "key" file))
+             (orig-key (and tr-key (tlon-get-counterpart-key tr-key))))
+        (when orig-key
+          (seq-find (lambda (f) (string= orig-key (tlon-yaml-get-key "key" f)))
+                    (tlon-counterpart--list-md-nonrecursive dir))))))))
+
+(defun tlon-counterpart--counterpart-exists-p (file target-language-code)
+  "Return non-nil if FILE has a counterpart in TARGET-LANGUAGE-CODE."
+  (let* ((repo (tlon-get-repo-from-file file))
+         (src-lang (tlon-repo-lookup :language :dir repo))
+         (subtype (tlon-repo-lookup :subtype :dir repo)))
+    (cond
+     ((string= src-lang target-language-code) t)
+     ((eq subtype 'originals)
+      (let* ((dir (tlon-get-counterpart-dir file target-language-code))
+             (orig-key (tlon-yaml-get-key "key" file)))
+        (when dir
+          (let ((cands (tlon-counterpart--list-md-nonrecursive dir)))
+            (or (and orig-key
+                     (seq-some
+                      (lambda (f)
+                        (let ((tr-key (tlon-yaml-get-key "key" f)))
+                          (and tr-key (equal orig-key (tlon-get-counterpart-key tr-key)))))
+                      cands))
+                (let ((orig-name (file-name-nondirectory file)))
+                  (seq-some
+                   (lambda (f) (equal orig-name (tlon-yaml-get-key "original_path" f)))
+                   cands)))))))
+     ((eq subtype 'translations)
+      (if (string= target-language-code "en")
+          (let* ((dir (tlon-get-counterpart-dir file "en"))
+                 (tr-key (tlon-yaml-get-key "key" file))
+                 (orig-key (and tr-key (tlon-get-counterpart-key tr-key))))
+            (when dir
+              (if orig-key
+                  (seq-some
+                   (lambda (f) (equal orig-key (tlon-yaml-get-key "key" f)))
+                   (tlon-counterpart--list-md-nonrecursive dir))
+                (let ((op (tlon-yaml-get-key "original_path" file)))
+                  (and op (file-exists-p (expand-file-name op dir)))))))
+        (when-let* ((orig (tlon-counterpart--find-original-for-translation file)))
+          (tlon-counterpart--counterpart-exists-p orig target-language-code))))
+     (t nil))))
 
 (defun tlon-counterpart--prompt-entity-type ()
   "Prompt for an entity type and return the YAML type string."
