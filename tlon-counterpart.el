@@ -498,11 +498,23 @@ language within the current subproject."
   (tlon-select-language 'code 'babel prompt t))
 
 (defun tlon-counterpart--files-of-type-in-repo (repo-dir yaml-type)
-  "Return a list of markdown files in REPO-DIR whose YAML type is YAML-TYPE."
-  (seq-filter (lambda (file)
-                (and (string-suffix-p ".md" file t)
-                     (string= yaml-type (tlon-yaml-get-type file))))
-              (directory-files repo-dir t "\\.md\\'")))
+  "Return a list of markdown files in REPO-DIR whose YAML type is YAML-TYPE.
+
+Scan only the repository root and its immediate subdirectories (non-recursive)."
+  (let* ((top-level (directory-files repo-dir t "\\.md\\'"))
+         (subdirs (seq-filter
+                   (lambda (p)
+                     (and (file-directory-p p)
+                          (not (string-prefix-p "." (file-name-nondirectory p)))))
+                   (directory-files repo-dir t "\\`[^.]")))
+         (in-subdirs (apply #'append
+                            (mapcar (lambda (d) (directory-files d t "\\.md\\'"))
+                                    subdirs)))
+         (candidates (append top-level in-subdirs)))
+    (seq-filter (lambda (file)
+                  (and (string-suffix-p ".md" file t)
+                       (string= yaml-type (tlon-yaml-get-type file))))
+                candidates)))
 
 (defun tlon-counterpart--counterpart-in-language (file target-language-code)
   "Return counterpart of FILE in TARGET-LANGUAGE-CODE, or nil if missing."
