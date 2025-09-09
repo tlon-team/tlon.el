@@ -465,7 +465,7 @@ language within the current subproject."
   (let* ((type (tlon-counterpart--prompt-entity-type))
          (lang-a (tlon-counterpart--select-language-code "First language code: "))
          (lang-b (tlon-counterpart--select-language-code "Second language code: "))
-         (repo (tlon-get-repo))
+         (repo (tlon-get-repo t))
          (subproject (tlon-repo-lookup :subproject :dir repo)))
     (when (string= lang-a lang-b)
       (user-error "Languages must be different"))
