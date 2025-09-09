@@ -502,7 +502,7 @@ language within the current subproject."
   (seq-filter (lambda (file)
                 (and (string-suffix-p ".md" file t)
                      (string= yaml-type (tlon-yaml-get-type file))))
-              (directory-files-recursively repo-dir "\\.md\\'")))
+              (directory-files repo-dir t "\\.md\\'")))
 
 (defun tlon-counterpart--counterpart-in-language (file target-language-code)
   "Return counterpart of FILE in TARGET-LANGUAGE-CODE, or nil if missing."
