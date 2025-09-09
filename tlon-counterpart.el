@@ -465,12 +465,11 @@ language within the current subproject."
   (let* ((type (tlon-counterpart--prompt-entity-type))
          (lang-a (tlon-counterpart--select-language-code "First language code: "))
          (lang-b (tlon-counterpart--select-language-code "Second language code: "))
-         (repo (tlon-get-repo t))
-         (subproject (tlon-repo-lookup :subproject :dir repo)))
+         (repo (tlon-get-repo t)))
     (when (string= lang-a lang-b)
       (user-error "Languages must be different"))
-    (let* ((repo-a (tlon-counterpart--repo-for-language subproject lang-a))
-           (repo-b (tlon-counterpart--repo-for-language subproject lang-b)))
+    (let* ((repo-a (tlon-repo-lookup :dir :subproject "uqbar" :language lang-a))
+           (repo-b (tlon-repo-lookup :dir :subproject "uqbar" :language lang-b)))
       (unless (and repo-a repo-b)
         (user-error "Could not resolve repositories for %s and %s" lang-a lang-b))
       (let* ((files-a (tlon-counterpart--files-of-type-in-repo repo-a type))
@@ -497,10 +496,6 @@ language within the current subproject."
 (defun tlon-counterpart--select-language-code (prompt)
   "Prompt with PROMPT for a language code using project language data."
   (tlon-select-language 'code 'babel prompt t))
-
-(defun tlon-counterpart--repo-for-language (subproject language)
-  "Return repo directory for SUBPROJECT and LANGUAGE."
-  (tlon-repo-lookup :dir :subproject subproject :language language))
 
 (defun tlon-counterpart--files-of-type-in-repo (repo-dir yaml-type)
   "Return a list of markdown files in REPO-DIR whose YAML type is YAML-TYPE."
