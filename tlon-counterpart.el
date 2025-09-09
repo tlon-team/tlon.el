@@ -628,7 +628,9 @@ counterpart in LANG-A."
    ["Links"
     ("l" "replace internal links"                tlon-replace-internal-links)]
    ["Metadata"
-    ("o" "set ‘original_path’"                   tlon-yaml-insert-original-path)]])
+    ("o" "set ‘original_path’"                   tlon-yaml-insert-original-path)]
+   ["Report missing"
+    ("r" "report missing counterparts"          tlon-counterpart-report-missing)]])
 
 (provide 'tlon-counterpart)
 ;;; tlon-counterpart.el ends here
