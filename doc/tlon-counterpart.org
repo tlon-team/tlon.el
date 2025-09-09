@@ -98,8 +98,9 @@ This module provides functionality for finding, opening, and comparing "counterp
   type (one of “articles”, “authors” or “tags”) and two languages, then
   scans the current subproject’s repositories for those languages and
   reports files of the selected type that have no counterpart in the
-  other language. The results are shown in a dedicated buffer with two
-  lists:
+  other language. The scan includes Markdown files in the repository
+  root and in immediate subdirectories only (non-recursive). The results
+  are shown in a dedicated buffer with two lists:
   - Missing in LANG-B: files in LANG-A with no counterpart in LANG-B.
   - Missing in LANG-A: files in LANG-B with no counterpart in LANG-A.
 
