@@ -452,6 +452,107 @@ return its key.  When no counterpart exists, return nil."
 		 (tr-file  (tlon-get-counterpart-in-originals orig-file language)))
        (tlon-yaml-get-key "key" tr-file)))))
 
+;;;; Reports
+
+;;;###autoload
+(defun tlon-counterpart-report-missing ()
+  "Report files missing counterparts between two languages for an entity type.
+
+Prompt for an entity type (articles, authors or tags) and two languages, and
+list files of that type in each language that lack a counterpart in the other
+language within the current subproject."
+  (interactive)
+  (let* ((type (tlon-counterpart--prompt-entity-type))
+         (lang-a (tlon-counterpart--select-language-code "First language code: "))
+         (lang-b (tlon-counterpart--select-language-code "Second language code: "))
+         (repo (tlon-get-repo))
+         (subproject (tlon-repo-lookup :subproject :dir repo)))
+    (when (string= lang-a lang-b)
+      (user-error "Languages must be different"))
+    (let* ((repo-a (tlon-counterpart--repo-for-language subproject lang-a))
+           (repo-b (tlon-counterpart--repo-for-language subproject lang-b)))
+      (unless (and repo-a repo-b)
+        (user-error "Could not resolve repositories for %s and %s" lang-a lang-b))
+      (let* ((files-a (tlon-counterpart--files-of-type-in-repo repo-a type))
+             (files-b (tlon-counterpart--files-of-type-in-repo repo-b type))
+             (missing-in-b (seq-filter
+                            (lambda (f)
+                              (null (tlon-counterpart--counterpart-in-language f lang-b)))
+                            files-a))
+             (missing-in-a (seq-filter
+                            (lambda (f)
+                              (null (tlon-counterpart--counterpart-in-language f lang-a)))
+                            files-b)))
+        (tlon-counterpart--display-missing-report
+         type lang-a lang-b repo-a repo-b missing-in-b missing-in-a)))))
+
+(defun tlon-counterpart--prompt-entity-type ()
+  "Prompt for an entity type and return the YAML type string."
+  (let* ((choices '(("articles" . "article")
+                    ("authors"  . "author")
+                    ("tags"     . "tag")))
+         (sel (completing-read "Entity type: " (mapcar #'car choices) nil t)))
+    (cdr (assoc sel choices))))
+
+(defun tlon-counterpart--select-language-code (prompt)
+  "Prompt with PROMPT for a language code using project language data."
+  (tlon-select-language 'code 'babel prompt t))
+
+(defun tlon-counterpart--repo-for-language (subproject language)
+  "Return repo directory for SUBPROJECT and LANGUAGE."
+  (tlon-repo-lookup :dir :subproject subproject :language language))
+
+(defun tlon-counterpart--files-of-type-in-repo (repo-dir yaml-type)
+  "Return a list of markdown files in REPO-DIR whose YAML type is YAML-TYPE."
+  (seq-filter (lambda (file)
+                (and (string-suffix-p ".md" file t)
+                     (string= yaml-type (tlon-yaml-get-type file))))
+              (directory-files-recursively repo-dir "\\.md\\'")))
+
+(defun tlon-counterpart--counterpart-in-language (file target-language-code)
+  "Return counterpart of FILE in TARGET-LANGUAGE-CODE, or nil if missing."
+  (let* ((repo (tlon-get-repo-from-file file))
+         (src-lang (tlon-repo-lookup :language :dir repo))
+         (subtype (tlon-repo-lookup :subtype :dir repo)))
+    (cond
+     ((string= src-lang target-language-code) file)
+     ((eq subtype 'originals)
+      (tlon-get-counterpart-in-originals file target-language-code))
+     ((eq subtype 'translations)
+      (if (string= target-language-code "en")
+          (tlon-get-counterpart-in-translations file)
+        (when-let* ((orig (tlon-get-counterpart-in-translations file)))
+          (tlon-get-counterpart-in-originals orig target-language-code))))
+     (t nil))))
+
+(defun tlon-counterpart--display-missing-report
+    (yaml-type lang-a lang-b repo-a repo-b missing-in-b missing-in-a)
+  "Display a report buffer for missing counterparts.
+
+YAML-TYPE, LANG-A, LANG-B identify the query. REPO-A and REPO-B are the
+repository roots for each language. MISSING-IN-B lists files in REPO-A with no
+counterpart in LANG-B, and MISSING-IN-A lists files in REPO-B with no
+counterpart in LANG-A."
+  (let* ((buf-name (format "*Counterparts Missing: %s %s↔%s*"
+                           yaml-type lang-a lang-b))
+         (in-a (mapcar (lambda (f) (file-relative-name f repo-a)) missing-in-b))
+         (in-b (mapcar (lambda (f) (file-relative-name f repo-b)) missing-in-a)))
+    (with-current-buffer (get-buffer-create buf-name)
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (insert (format "Missing counterparts for type \"%s\" between %s and %s\n\n"
+                        yaml-type lang-a lang-b))
+        (insert (format "- In %s (missing in %s): %d\n"
+                        lang-a lang-b (length in-a)))
+        (dolist (p in-a) (insert "  • " p "\n"))
+        (insert "\n")
+        (insert (format "- In %s (missing in %s): %d\n"
+                        lang-b lang-a (length in-b)))
+        (dolist (p in-b) (insert "  • " p "\n"))
+        (goto-char (point-min))
+        (view-mode 1)))
+    (pop-to-buffer buf-name)))
+
 ;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-counterpart-menu "tlon-counterpart" nil t)
