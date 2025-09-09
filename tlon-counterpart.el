@@ -49,7 +49,7 @@ buffer."
 (defun tlon-get-counterpart (&optional file target-language-code)
   "Get the counterpart file of FILE.
 If FILE is nil, return the counterpart of the file visited by the current
-buffer. 
+buffer.
 
 A file's counterpart is the original if it is a translation, and a translation
 into some language if it is the original. If the latter, prompt the user for a
