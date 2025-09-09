@@ -88,6 +88,21 @@ This module provides functionality for finding, opening, and comparing "counterp
 #+findex: tlon-open-counterpart-in-other-window-dwim
 + ~tlon-open-counterpart-in-other-window-dwim~ :: (Autoloaded) Convenience command that calls ~tlon-open-counterpart-dwim~ with the =OTHER-WIN= argument set to =t=, forcing the counterpart to open in another window.
 
+*** Reporting
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-counterpart-reporting
+:END:
+
+#+findex: tlon-counterpart-report-missing
++ ~tlon-counterpart-report-missing~ :: (Autoloaded) Prompts for an entity
+  type (one of “articles”, “authors” or “tags”) and two languages, then
+  scans the current subproject’s repositories for those languages and
+  reports files of the selected type that have no counterpart in the
+  other language. The results are shown in a dedicated buffer with two
+  lists:
+  - Missing in LANG-B: files in LANG-A with no counterpart in LANG-B.
+  - Missing in LANG-A: files in LANG-B with no counterpart in LANG-A.
+
 *** Transient Menu
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-counterpart-menu-cmd
