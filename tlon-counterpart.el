@@ -65,11 +65,11 @@ language, unless TARGET-LANGUAGE-CODE is provided."
 (defun tlon-get-counterpart-in-translations (file)
   "Return the original counterpart of translation FILE.
 
-The function reads FILE’s ‘key’, consults the bibliography to find
-the key of the original article, and then selects within the
+Read FILE’s ‘key’, resolve the original key, and locate in the
 mirrored originals directory the Markdown file whose ‘key’ matches
-that value.  When the key cannot be resolved or several candidates
-remain, the user is prompted to choose."
+that value. If a unique match is found, return its absolute path.
+If there are zero or multiple candidates, return nil without
+prompting."
   (let* ((dir (tlon-get-counterpart-dir file))
 	 (trans-key (tlon-yaml-get-key "key" file))
 	 (orig-key  (when trans-key
@@ -92,14 +92,18 @@ remain, the user is prompted to choose."
         (when (and op dir)
           (setq candidates (list (expand-file-name op dir))))))
     (pcase candidates
-      ((pred null) (user-error "No original counterpart found in %s" dir))
+      ((pred null) nil)
       ((pred (lambda (c) (= (length c) 1))) (car candidates))
-      (_ (completing-read "Select counterpart: " candidates nil t)))))
+      (_ nil))))
 
 (defun tlon-get-counterpart-in-originals (file &optional target-language-code)
   "Return the translation counterpart of original FILE.
-TARGET-LANGUAGE-CODE is the language code of the target translation. If nil,
-prompt the user for a language.
+
+TARGET-LANGUAGE-CODE is the target translation language code. If nil,
+the user may be prompted to select a language.
+
+If a unique counterpart is found, return its absolute path. If none or
+multiple candidates are found, return nil without prompting.
 
 This implementation maintains a per-repository cache so that, after the first
 lookup, subsequent queries are instantaneous."
@@ -140,13 +144,13 @@ lookup, subsequent queries are instantaneous."
                 (setq candidates filtered))
 	      (pcase candidates
 		((pred null)
-		 (user-error "No translation counterpart found in %s" dir))
+		 nil)
 		((pred (lambda (c) (= (length c) 1)))
 		 (let ((file (car candidates)))
 		   (when table
 		     (puthash orig-key file table))
 		   file))
-		(_ (completing-read (format "Select translation for %s: " orig-name) candidates nil t)))))))))
+		(_ nil))))))))
 
 (defun tlon-get-counterpart-repo (&optional file prompt)
   "Get the counterpart repo of FILE.
