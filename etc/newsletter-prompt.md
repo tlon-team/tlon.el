@@ -7,7 +7,7 @@ Tu tarea es la siguiente:
 3. Pégale una mirada al sitio https://altruismoeficaz.net/ y toma nota de todos los artículos publicados en el mes de %1$s, junto con los correspondientes URLs. Normalmente encontrarás estos artículos bajo la sección ‘Artículos recientes’. En el siguiente paso, deberás agregar un resumen de un párrafo de cada uno de estos artículos bajo la subsección ‘Traducciones’.
 4. Ahora vuelve al borrador y conviértelo en una versión completa y lista para publicación. Para hacerlo, considera tanto los contenidos actuales del borrador como los acontecimientos que identificaste en el paso (2) y las traducciones y correspondientes resúmenes en el paso (3). Si necesitas explorar algún URL, utiliza las herramientas de navegación web ("search" y "fetch_content"). Asegúrate de que todo el contenido esté en español y que los resúmenes sean concisos y claros. Ten en cuenta que este boletín se publicará el 1 de %2$s, de modo que si haces referencia a un evento posterior a esa fecha, debes usar el tiempo futuro. Al redactar el contenido, no incluyas ningún comentario editorial como "Nota del editor" o "Aquí tienes el contenido".
 
-He aquí un número reciente de nuestro boletín; debes seguir su estilo y estructura al redactar el nuevo número:
+A modo de ejemplo, he aquí un número reciente de nuestro boletín; debes seguir su estilo y estructura al redactar el nuevo número:
 
 ```
 %3$s
