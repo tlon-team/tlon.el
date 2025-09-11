@@ -323,7 +323,8 @@ For each markdown file in REPO-DIR:
 2. Look up the corresponding original key in the bibliography
 3. Map the original key to the translation file path
 
-REPO-DIR should be a directory path containing markdown translation files.
+REPO-DIR is a directory path containing markdown translation files.
+TARGET-LANGUAGE is the language code of the translations in that repository.
 
 Returns a hash table where keys are original bibliography keys (strings)
 and values are absolute file paths to translation files."
@@ -341,9 +342,8 @@ and values are absolute file paths to translation files."
 ;;;;;  File lookup helpers
 
 (defun tlon-counterpart--file-for-key (key language)
-  "Return absolute path of the markdown file whose YAML ‘key’ is KEY
-inside the repository whose `:language' property is LANGUAGE.
-Return nil when the file cannot be found."
+  "Return path of the file whose YAML ‘key’ is KEY from repo in LANGUAGE.
+If no file is found, return nil."
   (when-let* ((repo (tlon-repo-lookup :dir :subproject "uqbar" :language language)))
     (seq-find (lambda (file)
                 (string= key (tlon-yaml-get-key "key" file)))
