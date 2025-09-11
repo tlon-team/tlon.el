@@ -243,7 +243,7 @@ If FILE is nil, use the current buffer's file."
 	 (repo (tlon-get-counterpart-repo file))
 	 (image-dir (tlon-lookup tlon-image-dirs :name :language target-lang))
 	 (bare-dir (tlon-get-bare-dir-translation target-lang current-lang (tlon-get-bare-dir file)))
-	 (slug (file-name-base file))
+	 (slug (file-name-base (tlon-get-counterpart file target-lang)))
 	 (figure-current (tlon-lookup tlon-figure-names :name :language current-lang))
 	 (figure-target (tlon-lookup tlon-figure-names :name :language target-lang))
 	 (file-name (replace-regexp-in-string figure-current figure-target (file-name-nondirectory translated-src))))
