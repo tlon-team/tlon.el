@@ -820,7 +820,7 @@ when the current buffer is a translation in the `uqbar' subproject."
 	 (counterpart-file (tlon-get-counterpart))
 	 (target-lang (tlon-get-language-in-file))
 	 (source-lang "en")
-	 (original-src (tlon-get-image-counterpart translated-src (buffer-file-name)))
+	 (original-src (tlon-get-image-counterpart translated-src))
 	 (relative-original-src (file-relative-name original-src (file-name-directory counterpart-file))))
     (if-let ((original-attrs (tlon-md--get-tag-attributes-by-src "Figure" counterpart-file relative-original-src)))
 	(let* ((original-alt (nth 1 original-attrs)))

@@ -220,31 +220,50 @@ which may prompt if the source file is an original."
 	nil))))
 
 ;;;###autoload
-(defun tlon-get-image-counterpart (translated-src &optional file)
-  "Return the counterpart path for a TRANSLATED-SRC image path.
+(defun tlon-get-image-counterpart (path &optional target-lang)
+  "Return the counterpart path for an image PATH.
 This function translates components of the path (repo, directories, filename)
-from the language of FILE to the source language (English).
-If FILE is nil, use the current buffer's file."
-  (let* ((file (or file (buffer-file-name)))
+from the language of FILE to TARGET-LANG."
+  (let* ((file (tlon-get-file-from-image path))
 	 (current-lang (tlon-get-language-in-file file))
-	 (target-lang "en")
-	 (repo (tlon-get-counterpart-repo file))
+	 (target-lang (or target-lang (if (string= current-lang "en")
+					  (tlon-select-language 'code 'babel)
+					"en")))
+	 (subproject (tlon-repo-lookup :subproject :dir (tlon-get-repo-from-file file)))
+	 (target-repo (tlon-repo-lookup :dir
+					:subproject subproject
+					:language target-lang))
 	 (image-dir (tlon-lookup tlon-image-dirs :name :language target-lang))
 	 (bare-dir (tlon-get-bare-dir-translation target-lang current-lang (tlon-get-bare-dir file)))
 	 (slug (file-name-base (tlon-get-counterpart file target-lang)))
 	 (figure-current (tlon-lookup tlon-figure-names :name :language current-lang))
 	 (figure-target (tlon-lookup tlon-figure-names :name :language target-lang))
-	 (file-name (replace-regexp-in-string figure-current figure-target (file-name-nondirectory translated-src))))
-    (file-name-concat repo image-dir bare-dir slug file-name)))
+	 (file-name (replace-regexp-in-string figure-current figure-target (file-name-nondirectory path))))
+    (file-name-concat target-repo image-dir bare-dir slug file-name)))
+
+(defun tlon-get-file-from-image (path)
+  "Return the file path corresponding to image PATH.
+For example, if PATH is
+\"../uqbar-en/images/articles/on-caring/figure-1.jpg\", the function returns
+\"../uqbar-en/articles/on-caring.md\"."
+  (let* ((up-dir (lambda (dir)
+		   (directory-file-name (file-name-directory dir))))
+	 (one-up (funcall up-dir path))
+	 (two-up (funcall up-dir one-up))
+	 (slug (file-name-base one-up))
+	 (bare-dir (file-name-base two-up))
+	 (repo (tlon-get-repo-from-file path))
+	 (filename (file-name-with-extension slug "md")))
+    (file-name-concat repo bare-dir filename)))
 
 (autoload 'markdown-forward-paragraph "markdown-mode" nil t)
 ;;;###autoload
 (defun tlon-open-counterpart (&optional other-win file)
   "Open the counterpart of file in FILE and move point to matching position.
-If FILE is nil, open the counterpart of the file visited by the current buffer.
+  If FILE is nil, open the counterpart of the file visited by the current buffer.
 
-If called with a prefix argument, or OTHER-WIN is non-nil, open the counterpart
-in the other window."
+  If called with a prefix argument, or OTHER-WIN is non-nil, open the counterpart
+  in the other window."
   (interactive "P")
   (unless file
     (save-buffer))
