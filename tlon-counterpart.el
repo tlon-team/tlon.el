@@ -152,41 +152,29 @@ lookup, subsequent queries are instantaneous."
 		   file))
 		(_ nil))))))))
 
-(defun tlon-get-counterpart-repo (&optional file prompt)
+(defun tlon-get-counterpart-repo (&optional file)
   "Get the counterpart repo of FILE.
-A file's counterpart repo is the repo of that file's counterpart.
-
-If FILE is nil, return the counterpart repo of the file visited by the current
-buffer.
-PROMPT controls whether `tlon-get-counterpart-language' should prompt."
-  ;; PROMPT is non-nil to interactively ask for a language; nil means
-  ;; choose automatically without prompting.
+A file's counterpart repo is the repo of that file's counterpart. If FILE is
+nil, return the counterpart repo of the file visited by the current buffer."
   (let* ((file (or file (files-extras-buffer-file-name)))
 	 (repo (tlon-get-repo-from-file file))
 	 (subproject (tlon-repo-lookup :subproject :dir repo))
-	 (language (tlon-get-counterpart-language repo prompt))
+	 (language (tlon-get-counterpart-language repo))
 	 (counterpart-repo
 	  (tlon-repo-lookup :dir
 			    :subproject subproject
 			    :language language)))
     counterpart-repo))
 
-(defun tlon-get-counterpart-language (&optional repo prompt)
-  "Return the language code of the counterpart of REPO.
-If PROMPT is non-nil and the source repo’s language is \"en\",
-ask the user which target language to use.  When PROMPT is nil
-the first entry in `tlon-project-target-languages' is selected
-automatically.  If the source language is not \"en\" the
-counterpart is always \"en\"."
+(defun tlon-get-counterpart-language (&optional repo)
+  "Return the language code of the counterpart of REPO."
   (let* ((repo (or repo (tlon-get-repo)))
 	 (language (tlon-repo-lookup :language :dir repo))
 	 (languages (mapcar (lambda (lang)
 			      (tlon-get-formatted-languages lang 'code))
 			    tlon-project-target-languages)))
     (pcase language
-      ("en" (if prompt
-		(completing-read "Language: " languages nil t)
-	      (car languages)))
+      ("en" (completing-read "Language: " languages nil t))
       ((pred (lambda (lang)
 	       (member lang languages)))
        "en")
@@ -218,7 +206,7 @@ which may prompt if the source file is an original."
 				  :language final-target-lang)))
       ;; No TARGET-LANGUAGE-CODE given: prompt exactly once via the repo helper.
       (progn
-	(setq final-counterpart-repo (tlon-get-counterpart-repo file t)) ; single prompt
+	(setq final-counterpart-repo (tlon-get-counterpart-repo file)) ; single prompt
 	(setq final-target-lang (tlon-repo-lookup :language :dir final-counterpart-repo))))
 
     (if (and final-counterpart-repo final-target-lang)
