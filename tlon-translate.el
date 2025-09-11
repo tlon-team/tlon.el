@@ -371,8 +371,7 @@ TARGET-SLUG is the basename for the target article file."
       (let ((files (directory-files-recursively src-dir ".*")))
         (dolist (src files)
           (let* ((rel (file-relative-name src src-dir))
-                 (translated-src-web (concat "/" target-images "/" target-bare "/" target-slug "/" rel))
-                 (expected-src-web (concat "/" source-images "/" bare-dir "/" source-slug "/" rel)))
+                 (translated-src-web (concat "/" target-images "/" target-bare "/" target-slug "/" rel)))
             (ignore-errors
               (tlon-get-image-counterpart translated-src-web target-file))
             (make-directory (file-name-directory (file-name-concat dst-dir rel)) t)
