@@ -321,7 +321,7 @@ The options are:
     ("ulaw_8000" . "ulaw")))
 
 (defcustom tlon-elevenlabs-model
-  "eleven_v3"
+  "eleven_multilingual_v2"
   "Model to use for the ElevenLabs TTS.
 Current models (as of 2025-09-03):
 
