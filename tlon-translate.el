@@ -349,33 +349,18 @@ slugified version of the original basename."
       (tlon-yaml-insert-field "key" target-key)
       (tlon-yaml-insert-translated-tags)
       (save-buffer)
-      (tlon-translate--copy-associated-images orig-file target-file target-language-code slug))))
+      (tlon-translate--copy-associated-images orig-file target-file))))
 
-(defun tlon-translate--copy-associated-images (original-file target-file target-lang-code target-slug)
-  "Copy images associated with ORIGINAL-FILE into the target repo.
-Check for an images subdirectory corresponding to ORIGINAL-FILE and, if present,
-copy its contents into the corresponding target-language images subdirectory
-derived from TARGET-FILE. TARGET-LANG-CODE is the target language code.
-TARGET-SLUG is the basename for the target article file."
-  (let* ((source-repo (tlon-get-repo-from-file original-file))
-         (target-repo (tlon-get-repo-from-file target-file))
-         (source-lang (tlon-repo-lookup :language :dir source-repo))
-         (bare-dir (tlon-get-bare-dir original-file))
-         (source-images (tlon-get-bare-dir-translation source-lang source-lang "images"))
-         (target-images (tlon-get-bare-dir-translation target-lang-code source-lang "images"))
-         (target-bare (tlon-get-bare-dir-translation target-lang-code source-lang bare-dir))
-         (source-slug (file-name-base original-file))
-         (src-dir (file-name-concat source-repo source-images bare-dir source-slug))
-         (dst-dir (file-name-concat target-repo target-images target-bare target-slug)))
-    (when (file-directory-p src-dir)
-      (let ((files (directory-files-recursively src-dir ".*")))
-        (dolist (src files)
-          (let* ((rel (file-relative-name src src-dir))
-                 (translated-src-web (concat "/" target-images "/" target-bare "/" target-slug "/" rel)))
-            (ignore-errors
-              (tlon-get-image-counterpart translated-src-web target-file))
-            (make-directory (file-name-directory (file-name-concat dst-dir rel)) t)
-            (copy-file src (file-name-concat dst-dir rel) t)))))))
+(declare-function tlon-images-get-dir "tlon-images")
+(defun tlon-translate--copy-associated-images (orig-file target-file)
+  "Copy images associated with ORIG-FILE into TARGET-FILE’s corresponding paths."
+  (when-let ((files (directory-files-recursively (tlon-images-get-dir orig-file) ".*")))
+    (let ((img-dir (tlon-images-get-dir target-file))
+	  (lang (tlon-get-language-in-file target-file)))
+      (unless (file-directory-p img-dir)
+	(make-directory img-dir))
+      (dolist (file files)
+	(copy-file file (tlon-get-image-counterpart file lang))))))
 
 ;;;;;; abstract
 
