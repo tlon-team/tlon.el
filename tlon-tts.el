@@ -2843,19 +2843,26 @@ Each locator is an alist with string keys \"pronunciation_dictionary_id\" and
 
 ;;;;; Metadata
 
-;; MAYBE: Include summary?
+(declare-function bibtex-extras-get-field "bibtex-extras")
+(declare-function bib-reverse-first-last-name "bib")
 (defun tlon-tts-get-metadata ()
   "Return the metadata of the current file."
-  (let ((separator "\n\n"))
-    (when-let* ((metadata (tlon-yaml-format-values-of-alist (tlon-yaml-get-metadata)))
-		(title (alist-get "title" metadata nil nil #'string=))
-		(title-part (concat (format "%s." title) separator)))
-      (if-let* ((authors (alist-get "authors" metadata nil nil #'string=))
-		(author-string (tlon-concatenate-list authors))
-		(pattern (tlon-lookup tlon-authorship-pattern :pattern :language (tlon-tts-get-current-language)))
-		(author-part (concat (format pattern author-string) separator)))
-	  (concat title-part author-part)
-	title-part))))
+  (let ((separator "\n\n")
+	(lang (tlon-tts-get-current-language)))
+    (if-let* ((key (tlon-yaml-get-key "key")))
+	(with-current-buffer (find-file-noselect tlon-file-db)
+          (save-excursion
+	    (when (bibtex-search-entry key)
+	      (when-let* ((title (bibtex-extras-get-field "title"))
+			  (authors (bibtex-extras-get-field "author"))
+			  (title-part (and title (concat (format "%s." title) separator))))
+		(if authors
+		    (let* ((formatted-authors (bib-reverse-first-last-name authors))
+			   (pattern (tlon-lookup tlon-authorship-pattern :pattern :language lang))
+			   (author-part (concat (format pattern formatted-authors) separator)))
+		      (concat title-part author-part))
+		  title-part)))))
+      (user-error "No key found in %s" (buffer-file-name)))))
 
 ;;;;; Get SSML
 

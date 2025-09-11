@@ -5,7 +5,8 @@
 ;; Version: 1.6.7
 ;; URL: https://github.com/tlon-team/tlon
 ;; Keywords: convenience tools
-;; Package-Requires: ((bibtex-extras "0.1")
+;; Package-Requires: ((bib "0.1")
+;;                   (bibtex-extras "0.1")
 ;;                   (citar "1.4.0")
 ;;                   (ebib "2.36")
 ;;                   (el-patch "0.1")
