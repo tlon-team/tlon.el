@@ -38,6 +38,7 @@
 (require 'tlon-yaml)
 (require 'tlon-paragraphs)
 (require 'cl-lib)
+(require 'bibtex)
 (require 'subr-x)
 
 ;;;; User options
@@ -383,19 +384,28 @@ function was called interactively."
 (declare-function tlon-bib-get-keys-in-file "tlon-bib")
 ;;;###autoload
 (defun tlon-translate-missing-abstracts (&optional langs)
-  "Translate abstracts for entries missing translations into LANGS.
-Iterate through keys in `tlon-file-fluid', `tlon-file-stable' and
-`tlon-file-db'. For entries in `tlon-file-db', only translate if:
-1) the entry is not itself a translation (empty ‘translation’ field); and
-2) there is no other entry whose ‘langid’ equals the target language and whose
-   ‘translation’ field equals this entry's key.
+  "Translate abstracts missing from both internal and external sources.
 
-LANGS is a list of language names, such as `(\"spanish\" \"french\")'. If
-LANGS is nil, prompt the user to select languages using
-`tlon-read-multiple-languages'. When a translation in a language is missing,
-call `tlon-translate-abstract' for that key and the specific missing
-languages."
+First, for internal translations (case I), iterate over `tlon-file-db' and
+for any entry that is a translation (has a non-empty ‘translation’ field)
+but lacks an ‘abstract’, translate the original entry's abstract and write
+it into the translation entry's ‘abstract’ field.
+
+Second, for external works (case II), fall back to translating abstracts
+into the `abstract-translations.json' store for entries cited across
+`tlon-file-fluid' and `tlon-file-stable' that are not handled by (I).
+
+If LANGS is non-nil, it is a list of language names (e.g., '(\"spanish\"))
+to consider for case (II).  When nil, prompts the user."
   (interactive)
+  (tlon-translate--internal-abstracts)
+  (tlon-translate--external-abstracts langs))
+
+(defun tlon-translate--external-abstracts (&optional langs)
+  "Translate missing abstracts for non-DB works into JSON store.
+
+LANGS is a list of language names such as '(\"spanish\" \"french\").
+If nil, prompt using `tlon-read-multiple-languages'."
   (let ((target-languages (or langs (tlon-read-multiple-languages 'babel))))
     (unless target-languages
       (user-error "No target languages selected. Aborting"))
@@ -423,14 +433,12 @@ languages."
                 (dolist (target-lang-name target-languages)
                   (let ((target-lang-code (tlon-lookup tlon-languages-properties :code :name target-lang-name))
                         translation-text has-translation translates-elsewhere)
-                    ;; Check whether we already have a translated abstract stored.
                     (when-let* ((key-entry (assoc key all-translations)))
                       (when-let* ((lang-entry (assoc target-lang-code (cdr key-entry))))
                         (setq translation-text (cdr lang-entry))))
                     (setq has-translation (and translation-text
                                                (stringp translation-text)
                                                (> (length (string-trim translation-text)) 0)))
-                    ;; For DB entries, ensure no other entry translates KEY into target language.
                     (setq translates-elsewhere
                           (and in-db
                                (tlon-translate--has-translating-entry-p
@@ -451,6 +459,100 @@ languages."
               (message "No entries with a missing %s translation found" lang-label))
           (message "Finished checking %d entries. Initiated translation for %d entries."
                    total initiated-count))))))
+
+(defun tlon-translate--internal-abstracts ()
+  "Translate missing abstracts for translation entries in `tlon-file-db'.
+For each DB entry with a non-empty ‘translation’ field and empty/missing
+‘abstract’, translate the original's abstract and set it in the DB entry.
+If the original entry lacks an abstract, log a message and skip."
+  (let* ((buf (find-file-noselect tlon-file-db))
+         (index (make-hash-table :test #'equal))
+         (work '())
+         (scheduled 0))
+    (with-current-buffer buf
+      (save-excursion
+        (save-restriction
+          (widen)
+          (goto-char (point-min))
+          (bibtex-map-entries
+           (lambda (key beg _end)
+             (goto-char beg)
+             (let ((entry (bibtex-parse-entry t)))
+	       (puthash key entry index)))))
+        (goto-char (point-min))
+        (bibtex-map-entries
+         (lambda (key beg _end)
+           (goto-char beg)
+           (let* ((entry (bibtex-parse-entry t))
+                  (translation-of (cdr (assoc-string "translation" entry t)))
+                  (current-abstract (cdr (assoc-string "abstract" entry t))))
+             (when (and (stringp translation-of)
+                        (not (string-blank-p translation-of))
+                        (or (null current-abstract)
+                            (string-blank-p (string-trim current-abstract))))
+	       (let* ((orig (gethash translation-of index))
+		      (orig-abstract (and orig (cdr (assoc-string "abstract" orig t))))
+		      (orig-lang (and orig (cdr (assoc-string "langid" orig t))))
+		      (trans-lang (cdr (assoc-string "langid" entry t)))
+		      (source-code (and orig-lang (tlon-lookup tlon-languages-properties :code :name orig-lang)))
+		      (target-code (and trans-lang (tlon-lookup tlon-languages-properties :code :name trans-lang))))
+                 (if (or (null orig) (null orig-abstract) (string-blank-p (string-trim (or orig-abstract ""))))
+                     (tlon-translate--log "Skipping %s: original %s has no abstract"
+                                          key translation-of)
+                   (push (list :target key
+			       :source translation-of
+			       :text orig-abstract
+			       :src source-code
+			       :dst target-code)
+                         work)))))))))
+    (setq work (nreverse work))
+    (if (null work)
+        (tlon-translate--log "No DB translation entries missing abstracts")
+      (cl-labels
+          ((next ()
+             (let ((item (pop work)))
+	       (if (null item)
+                   (tlon-translate--log "Finished internal abstract translation queue (%d scheduled)" scheduled)
+                 (setq scheduled (1+ scheduled))
+                 (let ((text (plist-get item :text))
+		       (src  (plist-get item :src))
+		       (dst  (plist-get item :dst))
+		       (tkey (plist-get item :target))
+		       (skey (plist-get item :source)))
+                   (tlon-translate--log "Translating abstract of %s → setting into %s" skey tkey)
+                   (tlon-deepl-translate
+                    text dst src
+                    (lambda ()
+		      (let ((translated (tlon-translate--get-deepl-translation-from-buffer)))
+                        (when (and translated (stringp translated) (not (string-blank-p (string-trim translated))))
+                          (tlon-translate--db-set-abstract tkey translated)
+                          (tlon-translate--log "Set abstract for %s (from %s)" tkey skey)))
+		      (next))))))))
+        (next))))))
+
+(defun tlon-translate--db-set-abstract (key text)
+  "Set the ABSTRACT field of entry KEY in `tlon-file-db' to TEXT."
+  (let ((buf (find-file-noselect tlon-file-db)))
+    (with-current-buffer buf
+      (save-excursion
+        (save-restriction
+          (widen)
+          (goto-char (point-min))
+          (if (not (bibtex-search-entry key))
+              (tlon-translate--log "Entry %s not found in db file" key)
+            (let ((end (save-excursion (bibtex-end-of-entry)))
+                  (bounds nil))
+              (setq bounds (bibtex-search-forward-field "abstract" end))
+              (if bounds
+                  (progn
+                    (goto-char (bibtex-start-of-text-in-field bounds))
+                    (delete-region (bibtex-start-of-text-in-field bounds)
+                                   (bibtex-end-of-text-in-field bounds))
+                    (insert (bibtex-field-left-delimiter) text (bibtex-field-right-delimiter)))
+                (goto-char end)
+                (skip-chars-backward " \t\n}")
+                (bibtex-make-field (list "abstract" nil text)))
+              (save-buffer))))))))
 
 (declare-function tlon-bibliography-lookup "tlon-bib")
 (declare-function ebib--get-key-at-point "ebib")
