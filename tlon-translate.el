@@ -384,7 +384,6 @@ function was called interactively."
 ;;;###autoload
 (defun tlon-translate-missing-abstracts (&optional langs)
   "Translate abstracts for entries missing translations into LANGS.
-
 Iterate through keys in `tlon-file-fluid', `tlon-file-stable' and
 `tlon-file-db'. For entries in `tlon-file-db', only translate if:
 1) the entry is not itself a translation (empty ‘translation’ field); and
