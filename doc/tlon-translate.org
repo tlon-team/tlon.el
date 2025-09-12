@@ -26,6 +26,7 @@ This module provides functions for translating entire files using various transl
 + =tlon-counterpart=
 + =tlon-deepl=
 + =transient=
++ =bibtex=
 
 ** Configuration
 :PROPERTIES:
@@ -63,7 +64,9 @@ This module provides functions for translating entire files using various transl
   7. The content of the source file is read, translated, and then written to the target file, which is then opened.
 
 #+findex: tlon-translate-missing-abstracts
-+ ~tlon-translate-missing-abstracts~ :: Translate abstracts that are missing across the =fluid= and =stable= bibliographies, and also in =tlon-file-db= when both of the following hold: (1) the entry is not itself a translation (empty ~translation~ field); and (2) no other entry exists whose ~langid~ equals the target language and whose ~translation~ equals the entry's key. For each selected target language, if a translated abstract already exists in the JSON store, it is not re-created.
++ ~tlon-translate-missing-abstracts~ :: Translate abstracts that are missing from two sources:
+  - (I) Internal DB translations: iterate over =db.bib= and, for any translation entry (non-empty ~translation~ field) lacking an ~abstract~, translate the original entry's abstract and set it as the ~abstract~ of the translation entry. If the original has no abstract, a message is logged and the entry is skipped.
+  - (II) External works: across the =fluid= and =stable= bibliographies (and =db.bib= originals), if a cited work does not have a DB translation entry, create missing abstract translations in =abstract-translations.json=. For each selected target language, if a translated abstract already exists in the JSON store, it is not re-created.
 
 #+findex: tlon-translate-list-non-english-with-empty-translation
 + ~tlon-translate-list-non-english-with-empty-translation~ :: List all entries in =fluid.bib= and =stable.bib= whose ~langid~ is not =english= and whose ~translation~ field is empty. Displays the results in a dedicated buffer.
@@ -117,6 +120,12 @@ It provides the following groups and commands:
 
 #+findex: tlon-translate--do-translate
 + ~tlon-translate--do-translate~ :: Handles the actual translation process. It reads the source file, calls the selected translation engine's function, writes the result to the target file, and opens it.
+#+findex: tlon-translate--external-abstracts
++ ~tlon-translate--external-abstracts~ :: Implements case (II): finds and translates missing abstracts for non-DB works into the JSON store.
+#+findex: tlon-translate--internal-abstracts
++ ~tlon-translate--internal-abstracts~ :: Implements case (I): scans =db.bib= for translation entries missing an ~abstract~, translates from the original entry's abstract, and writes the result into =db.bib=.
+#+findex: tlon-translate--db-set-abstract
++ ~tlon-translate--db-set-abstract~ :: Helper to write/update the ~abstract~ field of a DB entry directly in =db.bib=.
 
 #+findex: tlon-translate--get-translation-from-original
 + ~tlon-translate--get-translation-from-original~ :: A helper that, given an original file, finds its translation for a specific =LANG-CODE=. It checks metadata and falls back to constructing a path in a counterpart directory if no metadata entry is found.
