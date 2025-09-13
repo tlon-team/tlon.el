@@ -182,31 +182,34 @@ message is appended to the buffer named by
 ;;;;;; text
 
 ;;;###autoload
-(defun tlon-translate-text (&optional text target-lang source-lang callback no-glossary-ok)
+(defun tlon-translate-text (&optional text target-lang source-lang callback no-glossary)
   "Translate TEXT from SOURCE-LANG into TARGET-LANG and execute CALLBACK.
 If SOURCE-LANG is nil, use \"en\". If CALLBACK is nil, execute
-`tlon-print-translation'. If NO-GLOSSARY-OK is non-nil, don't ask for
-confirmation when no glossary is found.
+`tlon-print-translation'. If NO-GLOSSARY is non-nil, don't ask for
+confirmation when no glossary is found. If NO-GLOSSARY is the symbol `skip',
+skip the translation and return nil without signaling an error.
 
-Returns the translated text as a string."
+Returns the translated text as a string, or nil if skipped."
   (interactive)
-  (let* ((source-lang (or source-lang (tlon-select-language 'code 'babel "Source language: " t)))
-	 (excluded-lang (list (tlon-lookup tlon-languages-properties :standard :code source-lang)))
-	 (target-lang (or target-lang (tlon-select-language 'code 'babel "Target language: "
-							    'require-match nil nil excluded-lang)))
-	 (text (or text
-		   (read-string "Text to translate: "
-				(or (when (region-active-p)
-				      (buffer-substring-no-properties (region-beginning) (region-end)))
-				    (thing-at-point 'word))))))
-    (setq tlon-translate-text text
-          tlon-translate-source-language source-lang
-          tlon-translate-target-language target-lang)
-    (pcase-exhaustive tlon-translate-engine
-      ('deepl (tlon-deepl-request-wrapper 'translate callback no-glossary-ok))
-      ;; TODO: develop this
-      ;; ('ai)
-      )))
+  (if (eq no-glossary 'skip)
+      nil
+    (let* ((source-lang (or source-lang (tlon-select-language 'code 'babel "Source language: " t)))
+	   (excluded-lang (list (tlon-lookup tlon-languages-properties :standard :code source-lang)))
+	   (target-lang (or target-lang (tlon-select-language 'code 'babel "Target language: "
+							      'require-match nil nil excluded-lang)))
+	   (text (or text
+		     (read-string "Text to translate: "
+				  (or (when (region-active-p)
+					(buffer-substring-no-properties (region-beginning) (region-end)))
+				      (thing-at-point 'word))))))
+      (setq tlon-translate-text text
+            tlon-translate-source-language source-lang
+            tlon-translate-target-language target-lang)
+      (pcase-exhaustive tlon-translate-engine
+	('deepl (tlon-deepl-request-wrapper 'translate callback no-glossary))
+	;; TODO: develop this
+	;; ('ai)
+	))))
 
 ;;;;;; file
 
@@ -661,7 +664,7 @@ nil, use `tlon-project-target-languages'."
                 (message "Initiating translation for %s -> %s" key target-lang)
                 (tlon-translate-text (tlon-bib-remove-braces text) target-lang source-lang-code
                                      (lambda () (tlon-translate-abstract-callback key target-lang 'overwrite))
-				     'no-glossary-ok))))
+				     t))))
 	  (or langs tlon-project-target-languages))
     (when initiated-langs
       (message "Finished initiating translations for abstract of `%s' into: %s"

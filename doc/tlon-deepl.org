@@ -105,7 +105,7 @@ This section details the interactive commands provided by =tlon-deepl.el=.
   3. Prompts for the text to translate, defaulting to the active region or the word at point.
   4. Sets the internal state variables (~tlon-translate-text~, ~tlon-translate-source-language~, ~tlon-translate-target-language~).
   5. Calls ~tlon-deepl-request-wrapper~ with the =translate= type. The provided =CALLBACK= (or the default ~tlon-deepl-print-translation~ if nil) will be executed upon completion.
-  6. Handles glossary lookup (~tlon-deepl-get-language-glossary~) and prompts for confirmation if no suitable glossary is found (unless =NO-GLOSSARY-OK= is non-nil).
+  6. Handles glossary lookup (~tlon-deepl-get-language-glossary~) and prompts for confirmation if no suitable glossary is found (unless =NO-GLOSSARY= is non-nil). If =NO-GLOSSARY= is =skip=, the translation is skipped without error.
   7. Returns the translated text as a string (typically via the callback or the default printing mechanism).
 
 #+findex: tlon-translate-abstract
@@ -202,10 +202,10 @@ This section lists non-interactive functions and variables used internally or po
 :END:
 
 #+findex: tlon-deepl-request-wrapper
-+ ~tlon-deepl-request-wrapper~ :: The core function for making DeepL API calls. Takes the API call =TYPE=, an optional =CALLBACK= function, and an optional =NO-GLOSSARY-OK= flag.
++ ~tlon-deepl-request-wrapper~ :: The core function for making DeepL API calls. Takes the API call =TYPE=, an optional =CALLBACK= function, and an optional =NO-GLOSSARY= flag.
   1. Retrieves parameters (method, URL suffix/function, default callback, encoding function) from ~tlon-deepl-parameters~ based on =TYPE=.
   2. Constructs the full API =URL=.
-  3. If an encoding function exists, calls it to generate the JSON =PAYLOAD= (passing =NO-GLOSSARY-OK=). Writes the payload to a temporary file.
+  3. If an encoding function exists, calls it to generate the JSON =PAYLOAD= (passing =NO-GLOSSARY=). Writes the payload to a temporary file.
   4. Builds the =curl= command arguments list including method, URL, headers (Content-Type, Authorization with ~tlon-deepl-key~), and payload data if applicable.
   5. Executes the =curl= command using =call-process=, directing output to a temporary buffer.
   6. Deletes the temporary payload file if created.
@@ -238,7 +238,7 @@ This section lists non-interactive functions and variables used internally or po
 #+findex: tlon-deepl-translate-encode
 + ~tlon-deepl-translate-encode~ :: Generates the JSON payload for a translation request. Includes the text (as a vector), source language, target language, and potentially a glossary ID.
 +   - Glossaries are only included if the source language is "en", the target language supports glossaries, and a matching glossary is found in the local cache (~tlon-deepl-glossaries~) via ~tlon-deepl-get-language-glossary~.
-+   - If a glossary is applicable but not found (or source is not "en"), prompts the user for confirmation unless =NO-GLOSSARY-OK= is non-nil. The prompt message clarifies the reason (source language vs. missing cache entry). Handles potential user abortion.
++   - If a glossary is applicable but not found (or source is not "en"), prompts the user for confirmation unless =NO-GLOSSARY= is non-nil. The prompt message clarifies the reason (source language vs. missing cache entry). Handles potential user abortion.
 #+findex: tlon-deepl-glossary-create-encode
 + ~tlon-deepl-glossary-create-encode~ :: Generates the JSON payload for creating a glossary. Determines the glossary file path (~tlon-glossary-make-file~), reads its content (as a UTF-8 string), and includes the glossary name, source language ("en"), target language, the raw entries string, and format ("tsv") in the JSON object. ~json-encode~ handles the necessary escaping for the entries string.
 
