@@ -84,6 +84,16 @@ chunk before joining. If nil (the default), this step is skipped."
   :group 'tlon-tts
   :type 'boolean)
 
+(defcustom tlon-tts-loudness-target -16
+  "Target integrated loudness for audio normalization in LUFS.
+Lower values (more negative) result in quieter audio.
+Common values: -16 (loud), -18 (moderate), -20 (quiet), -23 (broadcast standard).
+To determine the right value, analyze a reference clip with:
+  ffmpeg -i reference.mp3 -af loudnorm=print_format=summary -f null -
+and use the 'Input Integrated' LUFS value."
+  :group 'tlon-tts
+  :type 'integer)
+
 ;; TODO: it looks like this is not being used; decide what to do about it
 (defcustom tlon-tts-prompt
   nil
@@ -844,15 +854,15 @@ present value; otherwise return the value itself."
 ;;;;; `ffmpeg'
 
 (defconst tlon-tts-ffmpeg-normalize
-  "ffmpeg -i %s -af loudnorm=I=-16:TP=-1.5:LRA=11 -y %s"
-  "Command to normalize an audio file using ffmpeg loudnorm filter.
+  "ffmpeg -i %%s -af loudnorm=I=%d:TP=-1.5:LRA=11 -y %%s"
+  "Command template to normalize an audio file using ffmpeg loudnorm filter.
 -i: input file
 -af loudnorm: apply the loudness normalization filter
-  I=-16: Integrated loudness target (LUFS)
+  I=%d: Integrated loudness target (LUFS) - will be filled with `tlon-tts-loudness-target'
   TP=-1.5: True peak target (dBTP)
   LRA=11: Loudness range target (LU)
 -y: overwrite output file without asking
-First %s is input file, second %s is output file.")
+First %%s is input file, second %%s is output file, %d is the loudness target.")
 
 (defconst tlon-tts-ffmpeg-convert
   "ffmpeg -i \"%s\" -acodec libmp3lame -ar 44100 -b:a 128k -ac 1 \"%s\""
@@ -2099,6 +2109,7 @@ created by appending silence, if any."
                         (unless (stringp output-file)
                           (error "Invalid output file (temp normalized) in normalization pair: %S (input: %S)" output-file input-file))
                         (format tlon-tts-ffmpeg-normalize
+                                tlon-tts-loudness-target
                                 (shell-quote-argument input-file)
                                 (shell-quote-argument output-file))))
                     (cl-mapcar #'list files-to-normalize temp-normalized-output-files)
@@ -2490,9 +2501,10 @@ settings in `tlon-tts-ffmpeg-normalize'."
     (dolist (file targets)
       (when (file-exists-p file)
         (let* ((tmp (make-temp-file "tts_norm_" nil
-                                    (concat "." (file-name-extension file))))
-               (cmd (format tlon-tts-ffmpeg-normalize
-                            (shell-quote-argument file)
+        (concat "." (file-name-extension file))))
+        (cmd (format tlon-tts-ffmpeg-normalize
+        tlon-tts-loudness-target
+        (shell-quote-argument file)
                             (shell-quote-argument tmp))))
           (message "Normalizing %s..." (file-name-nondirectory file))
           (when (zerop (shell-command cmd))
@@ -4255,6 +4267,20 @@ Reads audio format choices based on the currently selected engine."
   "Reader for `tlon-tts-menu-infix-toggle-normalize-audio'."
   (tlon-transient-toggle-variable-value 'tlon-tts-normalize-audio))
 
+;;;;;;; Loudness target
+
+(transient-define-infix tlon-tts-menu-infix-set-loudness-target ()
+  "Set the target loudness for audio normalization."
+  :class 'transient-lisp-variable
+  :variable 'tlon-tts-loudness-target
+  :reader 'tlon-tts-loudness-target-reader)
+
+(defun tlon-tts-loudness-target-reader (_ _ _)
+  "Reader for `tlon-tts-menu-infix-set-loudness-target'."
+  (let* ((current (number-to-string tlon-tts-loudness-target))
+         (input (read-string "Loudness target (LUFS, e.g. -20): " current)))
+    (string-to-number input)))
+
 ;;;;;; Main menu
 
 ;;;###autoload (autoload 'tlon-tts-menu "tlon-tts" nil t)
@@ -4286,6 +4312,7 @@ Reads audio format choices based on the currently selected engine."
     ""
     "File processing options"
     ("-n" "Normalize audio during finalization"                 tlon-tts-menu-infix-toggle-normalize-audio)
+    ("-l" "Loudness target for normalization"                   tlon-tts-menu-infix-set-loudness-target)
     ("-d" "Delete file chunks after finalizing"                 tlon-tts-menu-infix-toggle-delete-file-chunks-after-finalizing)
     ("-k" "When narrating buffer, generate missing chunks only" tlon-tts-menu-infix-toggle-generate-missing-chunks-only)]
    ["Edit"
