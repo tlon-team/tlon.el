@@ -155,7 +155,7 @@ message is appended to the buffer named by
 
 (defconst tlon-translate-revise-flow-prompt
   (concat tlon-translate-prompt-revise-prefix
-	  "Your task is to to read both carefully and try improve the translation for a better flow. Do not modify URLS, BibTeX keys, or tags enclosed in angular brackets (such as ‘<Roman>’, ‘<LiteralLink>’, etc.)"
+	  "Your task is to to read both carefully and try improve the translation for a better flow. Do not modify URLS, BibTeX keys, or tags enclosed in angular brackets (such as \"<Roman>\", \"<LiteralLink>\", etc.)"
 	  tlon-translate-prompt-revise-suffix)
   "Prompt for improving translation flow.")
 
@@ -464,8 +464,8 @@ If nil, prompt using `tlon-read-multiple-languages'."
 
 (defun tlon-translate--internal-abstracts ()
   "Translate missing abstracts for translation entries in `tlon-file-db'.
-For each DB entry with a non-empty ‘translation’ field and empty/missing
-‘abstract’, translate the original's abstract and set it in the DB entry.
+For each DB entry with a non-empty \"translation\" field and empty/missing
+\"abstract\", translate the original's abstract and set it in the DB entry.
 If the original entry lacks an abstract, log a message and skip."
   (let* ((buf (find-file-noselect tlon-file-db))
          (index (make-hash-table :test #'equal))
@@ -611,7 +611,7 @@ otherwise return nil."
 (defun tlon-translate--has-translating-entry-p (key target-lang-name keys)
   "Return non-nil if another entry translates KEY into TARGET-LANG-NAME.
 KEY is a BibTeX key. TARGET-LANG-NAME is the language name stored in
-the ‘langid’ field (e.g., \"french\"). KEYS is the list of keys to scan."
+the \"langid\" field (e.g., \"french\"). KEYS is the list of keys to scan."
   (catch 'found
     (dolist (k keys)
       (unless (string= k key)
