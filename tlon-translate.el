@@ -1194,25 +1194,41 @@ Display results in a buffer, one per line: KEY<TAB>LANGID<TAB>TITLE."
 
 ;;;###autoload
 (defun tlon-translate-remove-duplicate-abstract-translations ()
-  "Remove JSON abstract translations whose keys exist in the DB file.
-Scan abstract-translations.json and delete any entry whose KEY is
-present in db.bib. Save the pruned JSON store and report the number
-of removals."
+  "Remove JSON abstract translations that duplicate DB translation entries.
+Iterate over translation entries in `tlon-file-db' (non-empty \"translation\"),
+derive the original key and language code, and delete the corresponding language
+entry from `abstract-translations.json'. Drop the original key from the JSON
+store if it ends up empty. Report how many per-language items were removed and
+how many originals were pruned entirely."
   (interactive)
   (let* ((db-keys (tlon-bib-get-keys-in-file tlon-file-db))
-         (entries (tlon-read-abstract-translations))
-         (before (length entries))
-         (filtered (let (acc)
-                     (dolist (cell entries (nreverse acc))
-                       (unless (member (car cell) db-keys)
-                         (push cell acc)))))
-         (removed (- before (length filtered))))
+         (store   (tlon-read-abstract-translations))
+         (removed 0)
+         (pruned-keys 0))
+    (dolist (tkey db-keys)
+      (let* ((orig (tlon-bibliography-lookup "=key=" tkey "translation"))
+             (lang-name (tlon-bibliography-lookup "=key=" tkey "langid"))
+             (lang-code (and (stringp lang-name)
+                             (tlon-lookup tlon-languages-properties :code :name lang-name))))
+        (when (and (stringp orig) (not (string-blank-p orig))
+                   (stringp lang-code) (not (string-blank-p lang-code)))
+          (let ((entry (assoc orig store)))
+            (when entry
+              (let* ((langs (cdr entry))
+                     (newlangs (cl-remove-if (lambda (p) (string= (car p) lang-code)) langs)))
+                (when (< (length newlangs) (length langs))
+                  (cl-incf removed)
+                  (if newlangs
+                      (setcdr entry newlangs)
+                    (setq store (cl-remove-if (lambda (cell) (string= (car cell) orig)) store))
+                    (cl-incf pruned-keys)))))))))
     (if (> removed 0)
         (progn
-          (tlon-write-abstract-translations filtered)
-          (tlon-translate--log "Removed %d duplicate entr%s from abstract-translations.json"
-                               removed (if (= removed 1) "y" "ies")))
-      (tlon-translate--log "No duplicate entries found in abstract-translations.json"))))
+          (tlon-write-abstract-translations store)
+          (tlon-translate--log "Removed %d JSON translation%s (%d original entr%s pruned)"
+                               removed (if (= removed 1) "" "s")
+                               pruned-keys (if (= pruned-keys 1) "y" "ies")))
+      (tlon-translate--log "No duplicate JSON translations found to remove"))))
 
 (provide 'tlon-translate)
 ;;; tlon-translate.el ends here
