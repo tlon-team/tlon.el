@@ -528,7 +528,7 @@ If the original entry lacks an abstract, log a message and skip."
                           (tlon-translate--db-set-abstract tkey translated)
                           (tlon-translate--log "Set abstract for %s (from %s)" tkey skey)))
 		      (next))))))))
-        (next))))))
+        (next)))))
 
 (defun tlon-translate--db-set-abstract (key text)
   "Set the ABSTRACT field of entry KEY in `tlon-file-db' to TEXT."
