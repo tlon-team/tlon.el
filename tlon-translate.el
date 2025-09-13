@@ -550,7 +550,11 @@ If the original entry lacks an abstract, log a message and skip."
                                    (bibtex-end-of-text-in-field bounds))
                     (insert (bibtex-field-left-delimiter) text (bibtex-field-right-delimiter)))
                 (goto-char end)
-                (skip-chars-backward " \t\n}")
+                ;; Insert just before the entry's right delimiter, without
+                ;; crossing back over any field-level closing braces.
+                (skip-chars-backward " \t\n")
+                (when (eq (char-before) ?})
+                  (backward-char))
                 (bibtex-make-field (list "abstract" nil text)))
               (save-buffer))))))))
 
