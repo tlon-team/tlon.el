@@ -523,14 +523,21 @@ If the original entry lacks an abstract, log a message and skip."
 		       (tkey (plist-get item :target))
 		       (skey (plist-get item :source)))
                    (tlon-translate--log "Translating abstract of %s → setting into %s" skey tkey)
-                   (tlon-deepl-translate
-                    text dst src
-                    (lambda ()
-		      (let ((translated (tlon-translate--get-deepl-translation-from-buffer)))
-                        (when (and translated (stringp translated) (not (string-blank-p (string-trim translated))))
-                          (tlon-translate--db-set-abstract tkey translated)
-                          (tlon-translate--log "Set abstract for %s (from %s)" tkey skey)))
-		      (next))))))))
+                   (let* ((src-en (string= src "en"))
+                          (supports (member dst tlon-deepl-supported-glossary-languages))
+                          (glossary-id (and src-en supports
+                                            (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" dst))))
+                     (if (and src-en supports glossary-id)
+                         (tlon-deepl-translate
+                          text dst src
+                          (lambda ()
+                            (let ((translated (tlon-translate--get-deepl-translation-from-buffer)))
+                              (when (and translated (stringp translated) (not (string-blank-p (string-trim translated))))
+                                (tlon-translate--db-set-abstract tkey translated)
+                                (tlon-translate--log "Set abstract for %s (from %s)" tkey skey)))
+                            (next)))
+                       (tlon-translate--log "Skipping abstract for %s -> %s: no suitable glossary found" skey dst)
+                       (next))))))))
         (next)))))
 
 (defun tlon-translate--db-set-abstract (key text)
@@ -660,15 +667,22 @@ nil, use `tlon-project-target-languages'."
             (let ((target-lang (tlon-lookup tlon-languages-properties :code :name language)))
               (unless (and (string= source-lang-code target-lang)
 			   (tlon-translate--get-existing-abstract-translation key target-lang))
-                (push language initiated-langs)
-                (message "Initiating translation for %s -> %s" key target-lang)
-                (tlon-translate-text (tlon-bib-remove-braces text) target-lang source-lang-code
-                                     (lambda () (tlon-translate-abstract-callback key target-lang 'overwrite))
-				     t))))
-	  (or langs tlon-project-target-languages))
+                (let* ((src-en (string= source-lang-code "en"))
+                       (supports (member target-lang tlon-deepl-supported-glossary-languages))
+                       (glossary-id (and src-en supports
+                                         (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" target-lang))))
+                  (if (and src-en supports glossary-id)
+                      (progn
+                        (push language initiated-langs)
+                        (message "Initiating translation for %s -> %s" key target-lang)
+                        (tlon-deepl-translate (tlon-bib-remove-braces text) target-lang source-lang-code
+                                              (lambda () (tlon-translate-abstract-callback key target-lang 'overwrite))
+                                              nil))
+                    (message "Skipping %s -> %s: no suitable glossary found" key target-lang)))))
+	    (or langs tlon-project-target-languages)))
     (when initiated-langs
       (message "Finished initiating translations for abstract of `%s' into: %s"
-               key (string-join (reverse initiated-langs) ", ")))))
+	       key (string-join (reverse initiated-langs) ", ")))))
 
 ;;;;; Revision
 
