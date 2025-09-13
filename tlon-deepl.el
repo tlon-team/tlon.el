@@ -142,9 +142,9 @@ for a file."
 
 ;;;;; API
 
-(defun tlon-deepl-request-wrapper (type &optional callback no-glossary-ok)
+(defun tlon-deepl-request-wrapper (type &optional callback no-glossary)
   "Wrapper for API requests of TYPE.
-If CALLBACK is nil, use the default callback for TYPE. If NO-GLOSSARY-OK is
+If CALLBACK is nil, use the default callback for TYPE. If NO-GLOSSARY is
 non-nil, don't ask for confirmation when no glossary is found."
   (cl-destructuring-bind (method url-suffix-or-fun default-callback &optional json)
       (alist-get type tlon-deepl-parameters)
@@ -152,7 +152,7 @@ non-nil, don't ask for confirmation when no glossary is found."
            (url (if (functionp url-suffix-or-fun)
                     (funcall url-suffix-or-fun)
                   (concat tlon-deepl-url-prefix url-suffix-or-fun)))
-           (payload (when json (funcall json no-glossary-ok)))
+           (payload (when json (funcall json no-glossary)))
            (temp-file (make-temp-file "deepl-payload-" nil ".json")))
       (when payload
 	(with-temp-file temp-file
@@ -181,27 +181,30 @@ non-nil, don't ask for confirmation when no glossary is found."
 (defvar tlon-translate-source-language)
 (defvar tlon-translate-target-language)
 ;;;###autoload
-(defun tlon-deepl-translate (&optional text target-lang source-lang callback no-glossary-ok)
+(defun tlon-deepl-translate (&optional text target-lang source-lang callback no-glossary)
   "Translate TEXT from SOURCE-LANG into TARGET-LANG and execute CALLBACK.
 If SOURCE-LANG is nil, use \"en\". If CALLBACK is nil, execute
-`tlon-deepl-print-translation'. If NO-GLOSSARY-OK is non-nil, don't ask for
-confirmation when no glossary is found.
+`tlon-deepl-print-translation'. If NO-GLOSSARY is non-nil, don't ask for
+confirmation when no glossary is found. If NO-GLOSSARY is the symbol `skip',
+skip the translation and return nil without signaling an error.
 
-Returns the translated text as a string."
+Returns the translated text as a string, or nil if skipped."
   (interactive)
-  (let* ((source-lang (or source-lang (tlon-select-language 'code 'babel "Source language: " t)))
-	 (excluded-lang (list (tlon-lookup tlon-languages-properties :standard :code source-lang)))
-	 (target-lang (or target-lang (tlon-select-language 'code 'babel "Target language: "
-							    'require-match nil nil excluded-lang)))
-	 (text (or text
-		   (read-string "Text to translate: "
-				(or (when (region-active-p)
-				      (buffer-substring-no-properties (region-beginning) (region-end)))
-				    (thing-at-point 'word))))))
-    (setq tlon-translate-text text
-          tlon-translate-source-language source-lang
-          tlon-translate-target-language target-lang)
-    (tlon-deepl-request-wrapper 'translate callback no-glossary-ok)))
+  (if (eq no-glossary 'skip)
+      nil
+    (let* ((source-lang (or source-lang (tlon-select-language 'code 'babel "Source language: " t)))
+	   (excluded-lang (list (tlon-lookup tlon-languages-properties :standard :code source-lang)))
+	   (target-lang (or target-lang (tlon-select-language 'code 'babel "Target language: "
+							      'require-match nil nil excluded-lang)))
+	   (text (or text
+		     (read-string "Text to translate: "
+				  (or (when (region-active-p)
+					(buffer-substring-no-properties (region-beginning) (region-end)))
+				      (thing-at-point 'word))))))
+      (setq tlon-translate-text text
+	    tlon-translate-source-language source-lang
+	    tlon-translate-target-language target-lang)
+      (tlon-deepl-request-wrapper 'translate callback no-glossary))))
 
 (defun tlon-deepl-print-translation ()
   "Print the translated text and copy it to the kill ring.
@@ -225,9 +228,9 @@ Returns the translated text as a string, or nil if parsing fails."
 		       (replace-regexp-in-string "%" "%%" translation))))
     translation))
 
-(defun tlon-deepl-translate-encode (&optional no-glossary-ok)
+(defun tlon-deepl-translate-encode (&optional no-glossary)
   "Return a JSON representation of the text to be translated to language.
-If NO-GLOSSARY-OK is non-nil, don't ask for confirmation when no glossary is
+If NO-GLOSSARY is non-nil, don't ask for confirmation when no glossary is
 found or applicable.
 
 Glossaries are only used if the source language is \"en\" and a matching
@@ -242,7 +245,7 @@ glossary for the target language exists in `tlon-deepl-glossaries'."
     ;; Determine if we should proceed without a glossary or prompt the user
     (setq proceed
           (or glossary-id ; Glossary found and will be used
-              no-glossary-ok ; Caller allows no glossary
+              no-glossary ; Caller allows no glossary
               (not target-supports-glossary) ; Target language doesn't support glossaries anyway
               ;; Prompt needed: Glossary applicable but not found, or source not "en"
               (let ((prompt-message

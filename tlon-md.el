@@ -828,7 +828,7 @@ when the current buffer is a translation in the `uqbar' subproject."
               (tlon-deepl-translate
 	       original-alt target-lang source-lang
 	       (lambda () (tlon-md--insert-translated-figure-callback translated-src point action))
-	       'no-glossary-ok)
+	       t)
             (user-error "Could not find alt text for figure with src %s in %s" relative-original-src counterpart-file)))
       (user-error "Could not find figure with src %s in %s" relative-original-src counterpart-file))))
 
