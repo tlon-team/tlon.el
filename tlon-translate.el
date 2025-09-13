@@ -387,14 +387,13 @@ function was called interactively."
 ;;;###autoload
 (defun tlon-translate-missing-abstracts (&optional langs)
   "Translate abstracts missing from both internal and external sources.
+First, for internal translations (case I), iterate over `tlon-file-db' and for
+any entry that is a translation (has a non-empty \"translation\" field) but
+lacks an \"abstract\", translate the original entry's abstract and write it into
+the translation entry's \"abstract\" field.
 
-First, for internal translations (case I), iterate over `tlon-file-db' and
-for any entry that is a translation (has a non-empty ‘translation’ field)
-but lacks an ‘abstract’, translate the original entry's abstract and write
-it into the translation entry's ‘abstract’ field.
-
-Second, for external works (case II), fall back to translating abstracts
-into the `abstract-translations.json' store for entries cited across
+Second, for external works (case II), fall back to translating abstracts into
+the `abstract-translations.json' store for entries cited across
 `tlon-file-fluid' and `tlon-file-stable' that are not handled by (I).
 
 If LANGS is non-nil, it is a list of language names (e.g., '(\"spanish\"))
