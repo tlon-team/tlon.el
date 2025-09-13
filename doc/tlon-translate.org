@@ -71,6 +71,9 @@ This module provides functions for translating entire files using various transl
 #+findex: tlon-translate-list-non-english-with-empty-translation
 + ~tlon-translate-list-non-english-with-empty-translation~ :: List all entries in =fluid.bib= and =stable.bib= whose ~langid~ is not =english= and whose ~translation~ field is empty. Displays the results in a dedicated buffer.
 
+#+findex: tlon-translate-remove-duplicate-abstract-translations
++ ~tlon-translate-remove-duplicate-abstract-translations~ :: Remove entries from =abstract-translations.json= whose keys already exist in =db.bib=, to avoid duplicates in the JSON store. Reports how many entries were removed.
+
 *** Revision
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-translate-revision

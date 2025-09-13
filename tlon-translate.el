@@ -1190,5 +1190,29 @@ Display results in a buffer, one per line: KEY<TAB>LANGID<TAB>TITLE."
       (display-buffer buf))
     results))
 
+(declare-function tlon-write-abstract-translations "tlon-bib")
+
+;;;###autoload
+(defun tlon-translate-remove-duplicate-abstract-translations ()
+  "Remove JSON abstract translations whose keys exist in the DB file.
+Scan abstract-translations.json and delete any entry whose KEY is
+present in db.bib. Save the pruned JSON store and report the number
+of removals."
+  (interactive)
+  (let* ((db-keys (tlon-bib-get-keys-in-file tlon-file-db))
+         (entries (tlon-read-abstract-translations))
+         (before (length entries))
+         (filtered (let (acc)
+                     (dolist (cell entries (nreverse acc))
+                       (unless (member (car cell) db-keys)
+                         (push cell acc)))))
+         (removed (- before (length filtered))))
+    (if (> removed 0)
+        (progn
+          (tlon-write-abstract-translations filtered)
+          (tlon-translate--log "Removed %d duplicate entr%s from abstract-translations.json"
+                               removed (if (= removed 1) "y" "ies")))
+      (tlon-translate--log "No duplicate entries found in abstract-translations.json"))))
+
 (provide 'tlon-translate)
 ;;; tlon-translate.el ends here
