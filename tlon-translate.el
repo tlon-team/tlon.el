@@ -396,17 +396,16 @@ Second, for external works (case II), fall back to translating abstracts into
 the `abstract-translations.json' store for entries cited across
 `tlon-file-fluid' and `tlon-file-stable' that are not handled by (I).
 
-If LANGS is non-nil, it is a list of language names (e.g., '(\"spanish\"))
-to consider for case (II).  When nil, prompts the user."
+If LANGS is non-nil, it is a list of language names (e.g., \\='(\"spanish\")) to
+consider for case (II). When nil, prompts the user."
   (interactive)
   (tlon-translate--internal-abstracts)
   (tlon-translate--external-abstracts langs))
 
 (defun tlon-translate--external-abstracts (&optional langs)
   "Translate missing abstracts for non-DB works into JSON store.
-
-LANGS is a list of language names such as '(\"spanish\" \"french\").
-If nil, prompt using `tlon-read-multiple-languages'."
+LANGS is a list of language names such as \\='(\"spanish\" \"french\"). If nil,
+prompt using `tlon-read-multiple-languages'."
   (let ((target-languages (or langs (tlon-read-multiple-languages 'babel))))
     (unless target-languages
       (user-error "No target languages selected. Aborting"))
