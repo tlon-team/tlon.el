@@ -41,6 +41,8 @@
 (require 'bibtex)
 (require 'subr-x)
 
+(declare-function bibtex-extras-set-field "bibtex-extras")
+
 ;;;; User options
 
 (defgroup tlon-translate nil
@@ -540,23 +542,8 @@ If the original entry lacks an abstract, log a message and skip."
           (goto-char (point-min))
           (if (not (bibtex-search-entry key))
               (tlon-translate--log "Entry %s not found in db file" key)
-            (let ((end (save-excursion (bibtex-end-of-entry)))
-                  (bounds nil))
-              (setq bounds (bibtex-search-forward-field "abstract" end))
-              (if bounds
-                  (progn
-                    (goto-char (bibtex-start-of-text-in-field bounds))
-                    (delete-region (bibtex-start-of-text-in-field bounds)
-                                   (bibtex-end-of-text-in-field bounds))
-                    (insert (bibtex-field-left-delimiter) text (bibtex-field-right-delimiter)))
-                (goto-char end)
-                ;; Insert just before the entry's right delimiter, without
-                ;; crossing back over any field-level closing braces.
-                (skip-chars-backward " \t\n")
-                (when (eq (char-before) ?})
-                  (backward-char))
-                (bibtex-make-field (list "abstract" nil text)))
-              (save-buffer))))))))
+            (bibtex-extras-set-field "abstract" text)
+            (save-buffer)))))))
 
 (declare-function tlon-bibliography-lookup "tlon-bib")
 (declare-function ebib--get-key-at-point "ebib")
