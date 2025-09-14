@@ -413,60 +413,72 @@ consider for case (II). When nil, prompts the user."
   "Translate missing abstracts for non-DB works into JSON store.
 LANGS is a list of language names such as \\='(\"spanish\" \"french\"). If nil,
 prompt using `tlon-read-multiple-languages'."
-  (let* ((prompt "Select target languages for abstract translation (comma-separated): ")
-	 (target-languages (or langs (tlon-read-multiple-languages 'babel prompt))))
-    (unless target-languages
-      (user-error "No target languages selected. Aborting"))
-    (let* ((all-translations (tlon-read-abstract-translations))
-           (keys-fluid  (tlon-bib-get-keys-in-file tlon-file-fluid))
-           (keys-stable (tlon-bib-get-keys-in-file tlon-file-stable))
-           (keys-db     (tlon-bib-get-keys-in-file tlon-file-db))
-           (all-keys    (seq-uniq (append keys-fluid keys-stable keys-db)))
-           (total (length all-keys))
-           (initiated-count 0)
-           (processed 0))
-      (message "Checking %d BibTeX entries for missing abstract translations..." total)
-      (dolist (key all-keys)
-        (setq processed (1+ processed))
-        (let* ((translation-of (tlon-bibliography-lookup "=key=" key "translation"))
-               (is-translation (and (stringp translation-of)
-                                    (not (string-blank-p translation-of))))
-               (in-db (member key keys-db)))
-          (if is-translation
-              (message "Skipping translation entry %s (%d/%d)" key processed total)
-            (let ((missing-langs '()))
-              (when-let* ((context (tlon-translate--get-abstract-context nil key nil))
-                          (abstract (nth 1 context))
-                          (source-lang-code (nth 2 context)))
-                (dolist (target-lang-name target-languages)
-                  (let ((target-lang-code (tlon-lookup tlon-languages-properties :code :name target-lang-name))
-                        translation-text has-translation translates-elsewhere)
-                    (when-let* ((key-entry (assoc key all-translations)))
-                      (when-let* ((lang-entry (assoc target-lang-code (cdr key-entry))))
-                        (setq translation-text (cdr lang-entry))))
-                    (setq has-translation (and translation-text
-                                               (stringp translation-text)
-                                               (> (length (string-trim translation-text)) 0)))
-                    (setq translates-elsewhere
-                          (and in-db
-                               (tlon-translate--has-translating-entry-p
-                                key target-lang-name all-keys)))
-                    (unless (or (string= source-lang-code target-lang-code)
-                                has-translation
-                                translates-elsewhere)
-                      (push target-lang-name missing-langs))))
-                (when missing-langs
-                  (message "Processing key %s (missing: %s) (%d/%d)"
-                           key (string-join (reverse missing-langs) ", ") processed total)
-                  (setq initiated-count (1+ initiated-count))
-                  (tlon-translate-abstract-dispatch abstract key (reverse missing-langs)))))))
-	(if (= initiated-count 0)
-            (let ((lang-label (if (= (length target-languages) 1)
-                                  (car target-languages)
-				(format "languages: %s" (string-join target-languages ", ")))))
-              (message "No entries with a missing %s translation found" lang-label))
-          (message "Finished checking %d entries. Initiated translation for %d entries."
-                   total initiated-count))))))
+  (if tlon-translate--external-abstracts-running
+      (tlon-translate--log "External abstract translation already running; skipping duplicate invocation")
+    (setq tlon-translate--external-abstracts-running t)
+    (unwind-protect
+        (let* ((prompt "Select target languages for abstract translation (comma-separated): ")
+               (selected (or langs (tlon-read-multiple-languages 'babel prompt)))
+               (target-languages (if (listp selected) selected (list selected))))
+          (unless target-languages
+            (user-error "No target languages selected. Aborting"))
+          (let* ((all-translations (tlon-read-abstract-translations))
+                 (keys-fluid  (tlon-bib-get-keys-in-file tlon-file-fluid))
+                 (keys-stable (tlon-bib-get-keys-in-file tlon-file-stable))
+                 (keys-db     (tlon-bib-get-keys-in-file tlon-file-db))
+                 (all-keys    (seq-uniq (append keys-fluid keys-stable keys-db)))
+                 (total (length all-keys))
+                 (initiated-count 0)
+                 (processed 0)
+                 (skip-count 0))
+            (message "Checking %d BibTeX entries for missing abstract translations..." total)
+            (dolist (key all-keys)
+              (setq processed (1+ processed))
+              (let* ((translation-of (tlon-bibliography-lookup "=key=" key "translation"))
+                     (is-translation (and (stringp translation-of)
+                                          (not (string-blank-p translation-of))))
+                     (in-db (member key keys-db)))
+                (if is-translation
+                    (progn
+                      (setq skip-count (1+ skip-count))
+                      (when (zerop (mod processed 500))
+                        (message "Progress: %d/%d processed (%d translation entr%s skipped)"
+                                 processed total skip-count (if (= skip-count 1) "y" "ies"))))
+                  (let ((missing-langs '()))
+                    (when-let* ((context (tlon-translate--get-abstract-context nil key nil))
+                                (abstract (nth 1 context))
+                                (source-lang-code (nth 2 context)))
+                      (dolist (target-lang-name target-languages)
+                        (let ((target-lang-code (tlon-lookup tlon-languages-properties :code :name target-lang-name))
+                              translation-text has-translation translates-elsewhere)
+                          (when-let* ((key-entry (assoc key all-translations)))
+                            (when-let* ((lang-entry (assoc target-lang-code (cdr key-entry))))
+                              (setq translation-text (cdr lang-entry))))
+                          (setq has-translation (and translation-text
+                                                     (stringp translation-text)
+                                                     (> (length (string-trim translation-text)) 0)))
+                          (setq translates-elsewhere
+                                (and in-db
+                                     (tlon-translate--has-translating-entry-p
+                                      key target-lang-name all-keys)))
+                          (unless (or (string= source-lang-code target-lang-code)
+                                      has-translation
+                                      translates-elsewhere)
+                            (push target-lang-name missing-langs))))
+                      (when missing-langs
+                        (message "Processing key %s (missing: %s) (%d/%d)"
+                                 key (string-join (reverse missing-langs) ", ") processed total)
+                        (setq initiated-count (1+ initiated-count))
+                        (tlon-translate-abstract-dispatch abstract key (reverse missing-langs)))))))
+            (if (= initiated-count 0)
+                (let ((lang-label (if (= (length target-languages) 1)
+                                      (car target-languages)
+                                    (format "languages: %s" (string-join target-languages ", ")))))
+                  (message "No entries with a missing %s translation found (processed %d, skipped %d translation entr%s)"
+                           lang-label processed skip-count (if (= skip-count 1) "y" "ies")))
+              (message "Finished checking %d entries. Initiated translation for %d entries; skipped %d translation entr%s."
+                       total initiated-count skip-count (if (= skip-count 1) "y" "ies")))))
+      (setq tlon-translate--external-abstracts-running nil))))
 
 (defun tlon-translate--internal-abstracts ()
   "Translate missing abstracts for translation entries in `tlon-file-db'.
