@@ -470,15 +470,15 @@ prompt using `tlon-read-multiple-languages'."
                                  key (string-join (reverse missing-langs) ", ") processed total)
                         (setq initiated-count (1+ initiated-count))
                         (tlon-translate-abstract-dispatch abstract key (reverse missing-langs)))))))
-            (if (= initiated-count 0)
-                (let ((lang-label (if (= (length target-languages) 1)
-                                      (car target-languages)
-                                    (format "languages: %s" (string-join target-languages ", ")))))
-                  (message "No entries with a missing %s translation found (processed %d, skipped %d translation entr%s)"
-                           lang-label processed skip-count (if (= skip-count 1) "y" "ies")))
-              (message "Finished checking %d entries. Initiated translation for %d entries; skipped %d translation entr%s."
-                       total initiated-count skip-count (if (= skip-count 1) "y" "ies")))))
-      (setq tlon-translate--external-abstracts-running nil))))
+              (if (= initiated-count 0)
+                  (let ((lang-label (if (= (length target-languages) 1)
+					(car target-languages)
+                                      (format "languages: %s" (string-join target-languages ", ")))))
+                    (message "No entries with a missing %s translation found (processed %d, skipped %d translation entr%s)"
+                             lang-label processed skip-count (if (= skip-count 1) "y" "ies")))
+		(message "Finished checking %d entries. Initiated translation for %d entries; skipped %d translation entr%s."
+			 total initiated-count skip-count (if (= skip-count 1) "y" "ies")))))
+	  (setq tlon-translate--external-abstracts-running nil)))))
 
 (defun tlon-translate--internal-abstracts ()
   "Translate missing abstracts for translation entries in `tlon-file-db'.
