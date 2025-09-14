@@ -706,7 +706,9 @@ prompt the user for confirmation before overwriting."
           (message "Initiating translation for %s -> %s (%s)" key target-lang-name source-lang-code)
           (tlon-translate-text (tlon-bib-remove-braces text) target-lang source-lang-code
                                (lambda ()
-				 (tlon-translate-abstract-callback key target-lang 'overwrite))
+                                 (tlon-translate--suppress-file-change-prompt
+                                  (lambda ()
+                                    (tlon-translate-abstract-callback key target-lang 'overwrite))))
                                nil))))))
 
 (defvar tlon-project-target-languages)
@@ -732,12 +734,32 @@ nil, use `tlon-project-target-languages'."
                     (push language initiated-langs)
                     (message "Initiating translation for %s -> %s" key target-lang)
                     (tlon-deepl-translate (tlon-bib-remove-braces text) target-lang source-lang-code
-                                          (lambda () (tlon-translate-abstract-callback key target-lang 'overwrite))
+                                          (lambda ()
+                                            (tlon-translate--suppress-file-change-prompt
+                                             (lambda ()
+                                               (tlon-translate-abstract-callback key target-lang 'overwrite))))
                                           nil))
                 (message "Skipping %s -> %s: no suitable glossary found" key target-lang)))))))
     (when initiated-langs
       (message "Finished initiating translations for abstract of `%s' into: %s"
 	       key (string-join (reverse initiated-langs) ", ")))))
+
+(defun tlon-translate--suppress-file-change-prompt (thunk)
+  "Call THUNK while suppressing file-changed prompts, and refresh JSON.
+THUNK is a nullary function. Temporarily set `revert-without-query' to match
+all files, invoke THUNK, then silently revert any live buffer visiting
+`tlon-file-abstract-translations'. Finally restore the original value."
+  (let ((orig revert-without-query))
+    (unwind-protect
+        (progn
+          (setq revert-without-query '(".*"))
+          (funcall thunk)
+          (when (and (boundp 'tlon-file-abstract-translations)
+                     (stringp tlon-file-abstract-translations))
+            (when-let ((buf (get-file-buffer tlon-file-abstract-translations)))
+              (with-current-buffer buf
+                (revert-buffer :ignore-auto :noconfirm)))))
+      (setq revert-without-query orig))))
 
 (declare-function tlon-write-abstract-translations "tlon-bib")
 ;;;###autoload
