@@ -773,8 +773,14 @@ how many originals were pruned entirely."
   (let* ((db-keys (tlon-bib-get-keys-in-file tlon-file-db))
          (store   (tlon-read-abstract-translations))
          (removed 0)
-         (pruned-keys 0))
+         (pruned-keys 0)
+         (total (length db-keys))
+         (processed 0)
+         (progress-interval (max 1 (ceiling (/ (float total) 10)))))
+    (tlon-translate--log "Scanning %d DB entr%s for duplicate abstract translations..."
+                         total (if (= total 1) "y" "ies"))
     (dolist (tkey db-keys)
+      (setq processed (1+ processed))
       (let* ((orig (tlon-bibliography-lookup "=key=" tkey "translation"))
              (lang-name (tlon-bibliography-lookup "=key=" tkey "langid"))
              (lang-code (and (stringp lang-name)
@@ -790,7 +796,13 @@ how many originals were pruned entirely."
                   (if newlangs
                       (setcdr entry newlangs)
                     (setq store (cl-remove-if (lambda (cell) (string= (car cell) orig)) store))
-                    (cl-incf pruned-keys)))))))))
+                    (cl-incf pruned-keys))))))))
+      (when (or (= processed total)
+                (zerop (mod processed progress-interval)))
+        (tlon-translate--log "Progress: %d/%d processed; removed %d duplicate%s; pruned %d original entr%s"
+                             processed total
+                             removed (if (= removed 1) "" "s")
+                             pruned-keys (if (= pruned-keys 1) "y" "ies"))))
     (if (> removed 0)
         (progn
           (tlon-write-abstract-translations store)
