@@ -664,23 +664,25 @@ LANGS is a list of languages, such as `(\"spanish\" \"french\")'. If LANGS is
 nil, use `tlon-project-target-languages'."
   (message "Checking abstract translations for %s..." key)
   (let ((initiated-langs '()))
-    (mapc (lambda (language)
-            (let ((target-lang (tlon-lookup tlon-languages-properties :code :name language)))
-              (unless (and (string= source-lang-code target-lang)
-			   (tlon-translate--get-existing-abstract-translation key target-lang))
-                (let* ((src-en (string= source-lang-code "en"))
-                       (supports (member target-lang tlon-deepl-supported-glossary-languages))
-                       (glossary-id (and src-en supports
-                                         (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" target-lang))))
-                  (if (and src-en supports glossary-id)
-                      (progn
-                        (push language initiated-langs)
-                        (message "Initiating translation for %s -> %s" key target-lang)
-                        (tlon-deepl-translate (tlon-bib-remove-braces text) target-lang source-lang-code
-                                              (lambda () (tlon-translate-abstract-callback key target-lang 'overwrite))
-                                              nil))
-                    (message "Skipping %s -> %s: no suitable glossary found" key target-lang)))))
-	    (or langs tlon-project-target-languages)))
+    (let ((languages (or (and (listp langs) langs)
+                         (and langs (list langs))
+                         tlon-project-target-languages)))
+      (dolist (language languages)
+        (let ((target-lang (tlon-lookup tlon-languages-properties :code :name language)))
+          (unless (and (string= source-lang-code target-lang)
+                       (tlon-translate--get-existing-abstract-translation key target-lang))
+            (let* ((src-en (string= source-lang-code "en"))
+                   (supports (member target-lang tlon-deepl-supported-glossary-languages))
+                   (glossary-id (and src-en supports
+                                     (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" target-lang))))
+              (if (and src-en supports glossary-id)
+                  (progn
+                    (push language initiated-langs)
+                    (message "Initiating translation for %s -> %s" key target-lang)
+                    (tlon-deepl-translate (tlon-bib-remove-braces text) target-lang source-lang-code
+                                          (lambda () (tlon-translate-abstract-callback key target-lang 'overwrite))
+                                          nil))
+                (message "Skipping %s -> %s: no suitable glossary found" key target-lang)))))))
     (when initiated-langs
       (message "Finished initiating translations for abstract of `%s' into: %s"
 	       key (string-join (reverse initiated-langs) ", ")))))
