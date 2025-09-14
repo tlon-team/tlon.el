@@ -39,6 +39,7 @@
 (require 'tlon-paragraphs)
 (require 'cl-lib)
 (require 'bibtex)
+(require 'citar-cache)
 (require 'subr-x)
 
 (declare-function bibtex-extras-set-field "bibtex-extras")
