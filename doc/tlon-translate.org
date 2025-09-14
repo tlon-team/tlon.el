@@ -69,7 +69,7 @@ This module provides functions for translating entire files using various transl
   - (II) External works: across the =fluid= and =stable= bibliographies (and =db.bib= originals), if a cited work does not have a DB translation entry, create missing abstract translations in =abstract-translations.json=. For each selected target language, if a translated abstract already exists in the JSON store, it is not re-created.
 
 #+findex: tlon-translate-remove-duplicate-abstract-translations
-+ ~tlon-translate-remove-duplicate-abstract-translations~ :: Remove per-language abstract translations from =abstract-translations.json= when a corresponding translation entry exists in =db.bib= (detected via the =translation= and =langid= fields). Only the relevant language’s JSON entry is deleted; originals with no remaining languages are dropped. Reports how many items were pruned.
++ ~tlon-translate-remove-duplicate-abstract-translations~ :: Remove per-language abstract translations from =abstract-translations.json= when a corresponding translation entry exists in =db.bib= (detected via the =translation= and =langid= fields). Only the relevant language’s JSON entry is deleted; originals with no remaining languages are dropped. Reports how many items were pruned and emits progress logs during the scan.
 
 *** Revision
 :PROPERTIES:
