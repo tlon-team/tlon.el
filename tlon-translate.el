@@ -407,8 +407,7 @@ If LANGS is non-nil, it is a list of language names (e.g., \\='(\"spanish\")) to
 consider for case (II). When nil, prompts the user."
   (interactive)
   (tlon-translate--internal-abstracts)
-  (tlon-translate--external-abstracts langs)
-  )
+  (tlon-translate--external-abstracts langs))
 
 (defun tlon-translate--external-abstracts (&optional langs)
   "Translate missing abstracts for non-DB works into JSON store.
