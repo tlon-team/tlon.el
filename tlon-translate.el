@@ -175,6 +175,9 @@ message is appended to the buffer named by
 (defvar tlon-translate--active-revision-processes nil
   "List of active processes launched by `tlon-translate' revision commands.")
 
+(defvar tlon-translate--external-abstracts-running nil
+  "Non-nil while `tlon-translate--external-abstracts' is running to prevent re-entry.")
+
 ;;;; Commands
 
 ;;;;; Translation
