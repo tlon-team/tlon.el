@@ -1143,13 +1143,14 @@ list of languages, respectively."
 	(language-candidates (tlon-get-language-candidates babel additional-langs excluded-langs)))
     (completing-read prompt language-candidates nil require-match initial-input)))
 
-(defun tlon-read-multiple-languages (&optional babel)
+(defun tlon-read-multiple-languages (&optional babel prompt)
   "Read a list of languages from a list of languages.
 By default, offer all valid BibTeX languages; if BABEL is non-nil, restrict the
-candidates to languages in the Babel project."
-  (let* ((language-candidates (tlon-get-language-candidates babel)))
-    (completing-read-multiple "Languages (comma-separated, or 'default'): "
-			      (append '("default") language-candidates))))
+candidates to languages in the Babel project. Prompt user using PROMPT; if nil,
+use \"Languages (comma-separated, or ‘default’): \"."
+  (let* ((language-candidates (tlon-get-language-candidates babel))
+	 (prompt (or prompt "Languages (comma-separated, or 'default'): ")))
+    (completing-read-multiple prompt (append '("default") language-candidates))))
 
 (defun tlon-get-language-candidates (babel &optional additional-langs excluded-langs)
   "Return a list of language candidates.
