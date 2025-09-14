@@ -508,10 +508,11 @@ prompt using `tlon-read-multiple-languages'."
 		(let ((label (if (= (length target-names) 1)
 				 (car target-names)
                                (format "languages: %s" (string-join target-names ", ")))))
-                  (message "No entries with a missing %s translation found (processed %d, skipped %d translation entr%s)"
+                  (message (concat "No entries with a missing %s translation found "
+				   "(processed %d, skipped %d translation entr%s)")
                            label processed skipped (if (= skipped 1) "y" "ies")))
-              (message "Finished checking %d entries. Initiated translation for %d entries; skipped %d translation 
-entr%s."
+              (message (concat "Finished checking %d entries. "
+			       "Initiated translation for %d entries; skipped %d translation entr%s.")
                        total initiated-count skipped (if (= skipped 1) "y" "ies")))))
       (setq tlon-translate--external-abstracts-running nil))))
 
