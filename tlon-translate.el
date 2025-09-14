@@ -420,66 +420,101 @@ prompt using `tlon-read-multiple-languages'."
     (unwind-protect
         (let* ((prompt "Select target languages for abstract translation (comma-separated): ")
                (selected (or langs (tlon-read-multiple-languages 'babel prompt)))
-               (target-languages (if (listp selected) selected (list selected))))
-          (unless target-languages
+               (target-names (if (listp selected) selected (list selected))))
+          (unless target-names
             (user-error "No target languages selected. Aborting"))
-          (let* ((all-translations (tlon-read-abstract-translations))
+          ;; Precompute compact indexes for performance.
+          (let* ((target-codes (mapcar (lambda (name)
+                                         (tlon-lookup tlon-languages-properties :code :name name))
+                                       target-names))
+                 ;; JSON index: key -> set of language codes with non-empty translations
+                 (json-store (tlon-read-abstract-translations))
+                 (json-index (let ((h (make-hash-table :test #'equal)))
+                               (dolist (cell json-store h)
+                                 (let ((key (car cell))
+                                       (langs (cdr cell))
+                                       (langset (make-hash-table :test #'equal)))
+                                   (dolist (p langs)
+                                     (let ((code (car p))
+                                           (text (cdr p)))
+                                       (when (and (stringp text)
+                                                  (> (length (string-trim text)) 0))
+                                         (puthash code t langset))))
+                                   (puthash key langset h)))))
+                 ;; Collect keys
                  (keys-fluid  (tlon-bib-get-keys-in-file tlon-file-fluid))
                  (keys-stable (tlon-bib-get-keys-in-file tlon-file-stable))
                  (keys-db     (tlon-bib-get-keys-in-file tlon-file-db))
+                 (db-set      (let ((s (make-hash-table :test #'equal)))
+                                (dolist (k keys-db) (puthash k t s)) s))
                  (all-keys    (seq-uniq (append keys-fluid keys-stable keys-db)))
-                 (total (length all-keys))
-                 (initiated-count 0)
-                 (processed 0)
-                 (skip-count 0))
+                 (total       (length all-keys))
+                 ;; Build entries map once: key -> entry alist
+                 (entries (let ((tbl (make-hash-table :test #'equal)))
+                            (dolist (file (list tlon-file-fluid tlon-file-stable tlon-file-db))
+                              (let* ((bib (citar-cache--get-bibliography (file-truename file)))
+                                     (ents (and bib (citar-cache--bibliography-entries bib))))
+                                (when (hash-table-p ents)
+                                  (maphash (lambda (_k entry)
+                                             (let ((key (cdr (assoc "=key=" entry))))
+                                               (when (stringp key)
+                                                 (puthash key entry tbl))))
+                                           ents))))
+                            tbl))
+                 ;; DB translations: original -> set of language NAMES with a DB translation
+                 (db-translations (let ((idx (make-hash-table :test #'equal)))
+                                    (dolist (k keys-db idx)
+                                      (let* ((entry (gethash k entries))
+                                             (orig  (and entry (cdr (assoc "translation" entry))))
+                                             (langn (and entry (cdr (assoc "langid" entry)))))
+                                        (when (and (stringp orig) (not (string-blank-p orig))
+                                                   (stringp langn) (not (string-blank-p langn)))
+                                          (let ((set (or (gethash orig idx)
+                                                         (let ((s (make-hash-table :test #'equal)))
+                                                           (puthash orig s idx) s))))
+                                            (puthash (downcase langn) t set)))))
+                                    idx))
+		 (initiated-count 0)
+		 (processed 0)
+		 (skipped 0))
             (message "Checking %d BibTeX entries for missing abstract translations..." total)
             (dolist (key all-keys)
               (setq processed (1+ processed))
-              (let* ((translation-of (tlon-bibliography-lookup "=key=" key "translation"))
+              (let* ((entry (gethash key entries))
+                     (translation-of (and entry (cdr (assoc "translation" entry))))
                      (is-translation (and (stringp translation-of)
-                                          (not (string-blank-p translation-of))))
-                     (in-db (member key keys-db)))
-                (if is-translation
-                    (progn
-                      (setq skip-count (1+ skip-count))
-                      (when (zerop (mod processed 500))
-                        (message "Progress: %d/%d processed (%d translation entr%s skipped)"
-                                 processed total skip-count (if (= skip-count 1) "y" "ies"))))
-                  (let ((missing-langs '()))
-                    (when-let* ((context (tlon-translate--get-abstract-context nil key nil))
-                                (abstract (nth 1 context))
-                                (source-lang-code (nth 2 context)))
-                      (dolist (target-lang-name target-languages)
-                        (let ((target-lang-code (tlon-lookup tlon-languages-properties :code :name target-lang-name))
-                              translation-text has-translation translates-elsewhere)
-                          (when-let* ((key-entry (assoc key all-translations)))
-                            (when-let* ((lang-entry (assoc target-lang-code (cdr key-entry))))
-                              (setq translation-text (cdr lang-entry))))
-                          (setq has-translation (and translation-text
-                                                     (stringp translation-text)
-                                                     (> (length (string-trim translation-text)) 0)))
-                          (setq translates-elsewhere
-                                (and in-db
-                                     (tlon-translate--has-translating-entry-p
-                                      key target-lang-name all-keys)))
-                          (unless (or (string= source-lang-code target-lang-code)
-                                      has-translation
-                                      translates-elsewhere)
-                            (push target-lang-name missing-langs))))
-                      (when missing-langs
-                        (message "Processing key %s (missing: %s) (%d/%d)"
-                                 key (string-join (reverse missing-langs) ", ") processed total)
-                        (setq initiated-count (1+ initiated-count))
-                        (tlon-translate-abstract-dispatch abstract key (reverse missing-langs)))))))
-              (if (= initiated-count 0)
-                  (let ((lang-label (if (= (length target-languages) 1)
-					(car target-languages)
-                                      (format "languages: %s" (string-join target-languages ", ")))))
-                    (message "No entries with a missing %s translation found (processed %d, skipped %d translation entr%s)"
-                             lang-label processed skip-count (if (= skip-count 1) "y" "ies")))
-		(message "Finished checking %d entries. Initiated translation for %d entries; skipped %d translation entr%s."
-			 total initiated-count skip-count (if (= skip-count 1) "y" "ies")))))
-	  (setq tlon-translate--external-abstracts-running nil)))))
+                                          (not (string-blank-p translation-of)))))
+		(if is-translation
+                    (setq skipped (1+ skipped))
+                  (let* ((abstract (and entry (cdr (assoc "abstract" entry))))
+			 (langname (and entry (cdr (assoc "langid" entry))))
+			 (source-code (and langname (tlon-lookup tlon-languages-properties :code :name langname))))
+                    (when (and (stringp abstract) (not (string-blank-p (string-trim abstract)))
+                               (stringp source-code) (not (string-blank-p source-code)))
+                      (let ((missing '()))
+			(cl-loop for tname in target-names
+				 for tcode in target-codes
+				 do (let* ((same-lang (string= source-code tcode))
+                                           (json-set (gethash key json-index))
+                                           (has-json (and json-set (gethash tcode json-set)))
+                                           (in-db (gethash key db-set))
+                                           (dbset (and in-db (gethash key db-translations)))
+                                           (has-db (and dbset (gethash (downcase tname) dbset))))
+                                      (unless (or same-lang has-json has-db)
+					(push tname missing))))
+			(when missing
+                          (setq initiated-count (1+ initiated-count))
+                          (tlon-translate-abstract-dispatch abstract key (nreverse missing)))))))))
+            (if (= initiated-count 0)
+		(let ((label (if (= (length target-names) 1)
+				 (car target-names)
+                               (format "languages: %s" (string-join target-names ", ")))))
+                  (message "No entries with a missing %s translation found (processed %d, skipped %d translation entr%s)"
+                           label processed skipped (if (= skipped 1) "y" "ies")))
+              (message "Finished checking %d entries. Initiated translation for %d entries; skipped %d translation 
+entr%s."
+                       total initiated-count skipped (if (= skipped 1) "y" "ies")))))
+      (setq tlon-translate--external-abstracts-running nil))))
 
 (defun tlon-translate--internal-abstracts ()
   "Translate missing abstracts for translation entries in `tlon-file-db'.
@@ -703,6 +738,45 @@ nil, use `tlon-project-target-languages'."
     (when initiated-langs
       (message "Finished initiating translations for abstract of `%s' into: %s"
 	       key (string-join (reverse initiated-langs) ", ")))))
+
+(declare-function tlon-write-abstract-translations "tlon-bib")
+;;;###autoload
+(defun tlon-translate-remove-duplicate-abstract-translations ()
+  "Remove JSON abstract translations that duplicate DB translation entries.
+Iterate over translation entries in `tlon-file-db' (non-empty \"translation\"),
+derive the original key and language code, and delete the corresponding language
+entry from `abstract-translations.json'. Drop the original key from the JSON
+store if it ends up empty. Report how many per-language items were removed and
+how many originals were pruned entirely."
+  (interactive)
+  (let* ((db-keys (tlon-bib-get-keys-in-file tlon-file-db))
+         (store   (tlon-read-abstract-translations))
+         (removed 0)
+         (pruned-keys 0))
+    (dolist (tkey db-keys)
+      (let* ((orig (tlon-bibliography-lookup "=key=" tkey "translation"))
+             (lang-name (tlon-bibliography-lookup "=key=" tkey "langid"))
+             (lang-code (and (stringp lang-name)
+                             (tlon-lookup tlon-languages-properties :code :name lang-name))))
+        (when (and (stringp orig) (not (string-blank-p orig))
+                   (stringp lang-code) (not (string-blank-p lang-code)))
+          (let ((entry (assoc orig store)))
+            (when entry
+              (let* ((langs (cdr entry))
+                     (newlangs (cl-remove-if (lambda (p) (string= (car p) lang-code)) langs)))
+                (when (< (length newlangs) (length langs))
+                  (cl-incf removed)
+                  (if newlangs
+                      (setcdr entry newlangs)
+                    (setq store (cl-remove-if (lambda (cell) (string= (car cell) orig)) store))
+                    (cl-incf pruned-keys)))))))))
+    (if (> removed 0)
+        (progn
+          (tlon-write-abstract-translations store)
+          (tlon-translate--log "Removed %d JSON translation%s (%d original entr%s pruned)"
+                               removed (if (= removed 1) "" "s")
+                               pruned-keys (if (= pruned-keys 1) "y" "ies")))
+      (tlon-translate--log "No duplicate JSON translations found to remove"))))
 
 ;;;;; Revision
 
@@ -1158,6 +1232,7 @@ If nil, use the default model."
     ("t f" "Translate file" tlon-translate-file)
     ("t a" "Translate current abstract" (lambda () (interactive) (tlon-translate-abstract-dispatch nil nil nil t)))
     ("t A" "Translate missing abstracts" tlon-translate-missing-abstracts)
+    ("t d" "Remove duplicate abstracts" tlon-translate-remove-duplicate-abstract-translations)
     ""
     "Options"
     ("t -t" "Translation engine" tlon-translate-engine-infix)
@@ -1179,76 +1254,6 @@ If nil, use the default model."
     ("r -p" "Max parallel" tlon-translate-infix-set-max-parallel)]
    ["General options"
     ("-c" "Commit changes" tlon-translate-infix-toggle-commit-changes)]])
-
-;;;###autoload
-(defun tlon-translate-list-non-english-with-empty-translation ()
-  "List non-English entries with empty translation field in fluid/stable.
-Display results in a buffer, one per line: KEY<TAB>LANGID<TAB>TITLE."
-  (interactive)
-  (let* ((keys (seq-uniq (append (tlon-bib-get-keys-in-file tlon-file-fluid)
-                                 (tlon-bib-get-keys-in-file tlon-file-stable))))
-         (results '()))
-    (dolist (key keys)
-      (let* ((lang (tlon-bibliography-lookup "=key=" key "langid"))
-             (translation (tlon-bibliography-lookup "=key=" key "translation")))
-        (when (and (stringp lang)
-                   (null (string-blank-p lang))
-                   (null (string-equal (downcase lang) "english"))
-                   (null translation))
-          (let* ((title (or (tlon-bibliography-lookup "=key=" key "title") "")))
-            (push (list :key key :langid lang :title title) results)))))
-    (setq results (nreverse results))
-    (let ((buf (get-buffer-create "*tlon-bib:non-english-empty-translation*")))
-      (with-current-buffer buf
-        (erase-buffer)
-        (insert (format "Entries with non-English langid and empty translation (%d):\n\n" (length results)))
-        (dolist (it results)
-          (insert (format "%s\t%s\t%s\n"
-                          (plist-get it :key)
-                          (plist-get it :langid)
-                          (plist-get it :title)))))
-      (display-buffer buf))
-    results))
-
-(declare-function tlon-write-abstract-translations "tlon-bib")
-
-;;;###autoload
-(defun tlon-translate-remove-duplicate-abstract-translations ()
-  "Remove JSON abstract translations that duplicate DB translation entries.
-Iterate over translation entries in `tlon-file-db' (non-empty \"translation\"),
-derive the original key and language code, and delete the corresponding language
-entry from `abstract-translations.json'. Drop the original key from the JSON
-store if it ends up empty. Report how many per-language items were removed and
-how many originals were pruned entirely."
-  (interactive)
-  (let* ((db-keys (tlon-bib-get-keys-in-file tlon-file-db))
-         (store   (tlon-read-abstract-translations))
-         (removed 0)
-         (pruned-keys 0))
-    (dolist (tkey db-keys)
-      (let* ((orig (tlon-bibliography-lookup "=key=" tkey "translation"))
-             (lang-name (tlon-bibliography-lookup "=key=" tkey "langid"))
-             (lang-code (and (stringp lang-name)
-                             (tlon-lookup tlon-languages-properties :code :name lang-name))))
-        (when (and (stringp orig) (not (string-blank-p orig))
-                   (stringp lang-code) (not (string-blank-p lang-code)))
-          (let ((entry (assoc orig store)))
-            (when entry
-              (let* ((langs (cdr entry))
-                     (newlangs (cl-remove-if (lambda (p) (string= (car p) lang-code)) langs)))
-                (when (< (length newlangs) (length langs))
-                  (cl-incf removed)
-                  (if newlangs
-                      (setcdr entry newlangs)
-                    (setq store (cl-remove-if (lambda (cell) (string= (car cell) orig)) store))
-                    (cl-incf pruned-keys)))))))))
-    (if (> removed 0)
-        (progn
-          (tlon-write-abstract-translations store)
-          (tlon-translate--log "Removed %d JSON translation%s (%d original entr%s pruned)"
-                               removed (if (= removed 1) "" "s")
-                               pruned-keys (if (= pruned-keys 1) "y" "ies")))
-      (tlon-translate--log "No duplicate JSON translations found to remove"))))
 
 (provide 'tlon-translate)
 ;;; tlon-translate.el ends here
