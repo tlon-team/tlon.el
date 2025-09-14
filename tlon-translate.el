@@ -409,7 +409,8 @@ consider for case (II). When nil, prompts the user."
   "Translate missing abstracts for non-DB works into JSON store.
 LANGS is a list of language names such as \\='(\"spanish\" \"french\"). If nil,
 prompt using `tlon-read-multiple-languages'."
-  (let ((target-languages (or langs (tlon-read-multiple-languages 'babel))))
+  (let* ((prompt "Select target languages for abstract translation (comma-separated): ")
+	 (target-languages (or langs (tlon-read-multiple-languages 'babel prompt))))
     (unless target-languages
       (user-error "No target languages selected. Aborting"))
     (let* ((all-translations (tlon-read-abstract-translations))
