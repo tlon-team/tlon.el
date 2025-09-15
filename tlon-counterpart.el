@@ -368,77 +368,48 @@ If no file is found, return nil."
                 (string= key (tlon-yaml-get-key "key" file)))
               (directory-files-recursively repo "\\.md\\'"))))
 
-;;;;; Translate links
-
-(defun tlon-get-counterpart-link (relative-link current-buffer-file)
-  "Return the counterpart path for RELATIVE-LINK found in CURRENT-BUFFER-FILE.
-
-The function resolves RELATIVE-LINK to an absolute path, asks
-`tlon-get-counterpart' for its peer, and converts the result back
-to a path relative to the current buffer directory.  Nil is
-returned when no counterpart exists."
-  (let* ((current-dir (file-name-directory current-buffer-file))
-	 (linked-abs (expand-file-name relative-link current-dir))
-	 (counterpart (ignore-errors (tlon-get-counterpart linked-abs))))
-    (when counterpart
-      (file-relative-name counterpart current-dir))))
+;;;;; Translate relative links
 
 ;;;###autoload
-(defun tlon-replace-internal-links ()
-  "Replace internal Markdown links with their counterparts.
-If a region is active, operate only within the region. Otherwise, operate on
-the entire buffer.
-
-Searches for links like '[text](./file.md)' or '[text](../dir/file.md)'
-and replaces the target path with the path to the corresponding translated file."
+(defun tlon-translate-relative-links (&optional file)
+  "Translate relative Markdown links in FILE.
+If FILE is nil, use the file visited by the current buffer, if available, else
+prompt for a file."
   (interactive)
-  (unless (eq major-mode 'markdown-mode)
-    (user-error "This command only works in Markdown buffers"))
-  (let* ((buffer-file (buffer-file-name))
-	 (cnt 0)
-	 (errors 0)
-	 (region-active (region-active-p))
-	 (start (if region-active (region-beginning) (point-min)))
-	 (end (if region-active (region-end) (point-max)))
-	 ;; Regex to find markdown links ending in .md, excluding URLs like http:
-	 ;; Matches [text](link.md) or [text](../path/link.md) etc., allowing whitespace.
-	 ;; Group 1 captures the relative path we need to replace.
-	 (link-regex "\\[[^]]*\\](\\s-*\\(\\([.]\\{1,2\\}/\\)?[^):]+\\.md\\)\\s-*)")
-	 (case-fold-search nil)) ; Ensure case-sensitive matching for paths
-    (unless buffer-file
-      (user-error "Buffer is not visiting a file"))
+  (let* ((file (or file (buffer-file-name) (read-file-name "File: ")))
+	 (trans-dir (file-name-directory file))
+         (trans-lang (tlon-get-language-in-file file))
+	 (trans-root (tlon-get-repo-from-file file))
+	 (trans-bare (tlon-get-bare-dir file))
+	 (subproject (tlon-repo-lookup :subproject :dir trans-root))
+         (orig-lang "en")
+	 (orig-root (tlon-repo-lookup :dir :language orig-lang :subproject subproject))
+         (orig-bare (tlon-get-bare-dir-translation orig-lang trans-lang trans-bare))
+         (changes 0))
     (save-excursion
-      (goto-char start)
-      (while (re-search-forward link-regex end t)
-	(let* ((original-relative-link (match-string 1)) ; Path is group 1
-	       (match-start (match-beginning 1)))        ; Use group 1 start
-	  ;; Skip processing for links pointing only to current or parent directory
-	  (if (member original-relative-link '("./" "../"))
-	      (goto-char (match-end 0)) ; Skip this match entirely
-	    ;; Process potentially replaceable links
-	    (let* ((new-relative-link
-		    (save-match-data
-		      (tlon-get-counterpart-link original-relative-link buffer-file))))
-	      ;; Preserve an explicit "./" prefix when the original link used one.
-	      (when (and new-relative-link
-			 (string-prefix-p "./" original-relative-link)
-			 (not (string-prefix-p "./" new-relative-link)))
-		(setq new-relative-link (concat "./" new-relative-link)))
-	      (if new-relative-link
-		  ;; Counterpart found
-		  (if (string= original-relative-link new-relative-link)
-		      ;; Counterpart is the same, no replacement needed. Advance past the whole match.
-		      (goto-char (match-end 0))
-		    ;; Counterpart is different, perform replacement.
-		    (replace-match new-relative-link t t nil 1) ; Replace group 1
-		    (setq cnt (1+ cnt))
-		    ;; Adjust search position: start right after the modified link target
-		    (goto-char (+ match-start (length new-relative-link))))
-		;; Counterpart not found
-		(setq errors (1+ errors))
-		;; Move past the entire link match to continue searching
-		(goto-char (match-end 0))))))))
-    (message "Replaced %d internal links. %d counterparts not found." cnt errors)))
+      (goto-char (point-min))
+      (while (re-search-forward markdown-regex-link-inline nil t)
+        (when-let ((url (match-string-no-properties 6)))
+	  (let ((start (match-beginning 6))
+		(end (match-end 6))
+		(pref "./"))
+	    (when (and (string-prefix-p pref url)
+		       (string-match "\\`\\(\\./[^#) \t\n\r]+\\)\\(#[^) \t\n\r]*\\)?\\'" url))
+	      (let* ((file-part (match-string 1 url))
+		     (anchor (or (match-string 2 url) ""))
+		     (local-path (expand-file-name file-part trans-dir)))
+		(unless (file-exists-p local-path)
+		  (let* ((filename (file-name-nondirectory file-part))
+			 (orig-path (file-name-concat orig-root orig-bare filename)))
+		    (when-let* ((trans-path (tlon-get-counterpart orig-path trans-lang)))
+		      (let* ((rel (file-relative-name trans-path trans-dir))
+			     (new-url (concat pref rel anchor)))
+			(goto-char start)
+			(delete-region start end)
+			(insert new-url)
+			(setq changes (1+ changes)))))))))))
+      (message "Translated %d relative link%s" changes (if (= changes 1) "" "s")))))
+
 
 ;;;;; bibtex keys
 
@@ -633,11 +604,11 @@ counterpart in LANG-A."
     ("H-u" "visit counterpart other window"      tlon-open-counterpart-in-other-window-dwim)
     ("U" "open counterpart in Dired"             tlon-open-counterpart-in-dired)]
    ["Links"
-    ("l" "replace internal links"                tlon-replace-internal-links)]
+    ("l" "translate relative links"              tlon-translate-relative-links)]
    ["Metadata"
     ("o" "set ‘original_path’"                   tlon-yaml-insert-original-path)]
    ["Report missing"
-    ("r" "report missing counterparts"          tlon-counterpart-report-missing)]])
+    ("r" "report missing counterparts"           tlon-counterpart-report-missing)]])
 
 (provide 'tlon-counterpart)
 ;;; tlon-counterpart.el ends here
