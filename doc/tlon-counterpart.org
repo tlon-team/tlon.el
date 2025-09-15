@@ -145,7 +145,7 @@ This section lists non-interactive functions used internally or potentially usef
 :END:
 
 #+findex: tlon-translate-relative-links
-+ ~tlon-translate-relative-links~ :: Scans the current Markdown buffer for relative links beginning with =./= that do not resolve to an existing local file. For each such link (e.g., =./effective-altruism.md=), it constructs the corresponding English path in the =uqbar-en= repo using the current file’s bare directory mapping, obtains its French counterpart with =tlon-get-counterpart=, and rewrites the link to point to the translated relative path (e.g., =./altruisme-efficace.md=). Links starting with =../= are ignored, and anchors (such as =#section=) are preserved.
++ ~tlon-translate-relative-links~ :: Scans the current Markdown buffer for relative links beginning with =./= or of the form =../bare-dir/filename.md= that do not resolve to an existing local file. For each such link, it constructs the corresponding English path in the =uqbar-en= repo using the appropriate bare directory mapping, obtains the counterpart with =tlon-get-counterpart=, and rewrites the link to point to the translated relative path, preserving anchors.
 
 #+findex: tlon-replace-internal-links
 + ~tlon-replace-internal-links~ :: (Autoloaded) Interactively replaces internal Markdown links (like =[text](./file.md)= or =[text](../dir/file.md)=) with their corresponding counterpart links.
