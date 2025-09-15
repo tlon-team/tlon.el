@@ -144,22 +144,8 @@ This section lists non-interactive functions used internally or potentially usef
 :CUSTOM_ID: h:tlon-counterpart-link-internals
 :END:
 
-#+findex: tlon-get-counterpart-link
-+ ~tlon-get-counterpart-link~ :: Given a relative link path =RELATIVE-LINK= (for example, ="../authors/foo.md"=) found in the file =CURRENT-BUFFER-FILE=, return the path to the counterpart file relative to the current buffer directory, or nil if no counterpart exists.
-  1. Determines the directory of the current buffer (=current-dir=).
-  2. Gets the repository containing the current buffer (=target-repo=).
-  3. Reads the =original_path= metadata from the current buffer's YAML front matter. If missing, warns and returns nil.
-  4. Determines the repository containing the original file (~tlon-get-counterpart-repo~).
-  5. Constructs the absolute path to the original file corresponding to the current buffer.
-  6. Resolves the =ORIGINAL-RELATIVE-LINK= against the original file's directory to get the absolute path of the *linked original file*.
-  7. Calculates the path of the linked original file relative to its repository root. This relative path is used as the lookup key.
-  8. Looks up metadata in the =target-repo= for an entry whose =original_path= matches the calculated key. If found, retrieves the =file= property (which is the absolute path to the *linked counterpart file*).
-  9. *Fallback:* If the metadata lookup fails (e.g., the linked file hasn't been translated yet or is in a different subdirectory structure like ="../authors/"=), it attempts to construct the expected counterpart path directly:
-     - It gets the expected counterpart *directory* for the linked original file using ~tlon-get-counterpart-dir~.
-     - It concatenates this directory with the filename of the linked original file.
-     - This fallback path is used even if the file doesn't exist yet, ensuring the link points to the correct future location. A debug message is emitted if the file is missing.
-  10. If a counterpart absolute path (either from metadata or fallback) is found, calculates its path relative to the =current-dir= and returns it.
-  11. If no counterpart path is found, warns and returns nil.
+#+findex: tlon-translate-relative-links
++ ~tlon-translate-relative-links~ :: Scans the current Markdown buffer for relative links beginning with =./= that do not resolve to an existing local file. For each such link (e.g., =./effective-altruism.md=), it constructs the corresponding English path in the =uqbar-en= repo using the current file’s bare directory mapping, obtains its French counterpart with =tlon-get-counterpart=, and rewrites the link to point to the translated relative path (e.g., =./altruisme-efficace.md=). Links starting with =../= are ignored, and anchors (such as =#section=) are preserved.
 
 #+findex: tlon-replace-internal-links
 + ~tlon-replace-internal-links~ :: (Autoloaded) Interactively replaces internal Markdown links (like =[text](./file.md)= or =[text](../dir/file.md)=) with their corresponding counterpart links.
