@@ -464,6 +464,7 @@ and sets the value of the field for all entries to `Tlön'."
     (while (re-search-forward " \\}" nil t)
       (replace-match "}" t t))))
 
+(defvar bibtex-extras-escaped-characters)
 ;;;###autoload
 (defun tlon-bib-unescape-escaped-characters (&optional file)
   "Unescape characters escaped by `bibtex-extras-escaped-characters' in FILE.
