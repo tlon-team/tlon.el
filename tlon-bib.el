@@ -658,6 +658,7 @@ modification. Display a message reporting how many entries were updated."
 ;; TODO: maybe generalize to other fields, e.g. isbn, doi
 (declare-function simple-extras-simplify-url "simple-extras")
 (declare-function tlon-import-eaf-get-id-from-identifier "tlon-import")
+(declare-function tlon-get-urls-in-file "tlon-url")
 (defun tlon-get-missing-urls (&optional file)
   "Return all URLs present in FILE but missing in the Tlön bibliography.
 If FILE is nil, use the file visited by the current buffer."
@@ -670,22 +671,6 @@ If FILE is nil, use the file visited by the current buffer."
     (mapcar (lambda (url)
 	      (concat "https://" url))
 	    missing-urls-simple)))
-
-(defvar markdown-regex-link-inline)
-(declare-function ffap-url-p "ffap")
-(defun tlon-get-urls-in-file (&optional file)
-  "Return a list of all the URLs in the Markdown links present in FILE.
-If FILE is nil, use the file visited by the current buffer."
-  (let ((file (or file (buffer-file-name))))
-    (with-temp-buffer
-      (insert-file-contents file)
-      (goto-char (point-min))
-      (let ((links))
-	(while (re-search-forward markdown-regex-link-inline nil t)
-	  (when-let ((url (ffap-url-p (match-string-no-properties 6))))
-	    (unless (member url links)
-	      (push url links))))
-	(reverse links)))))
 
 ;;;;; Translation
 
