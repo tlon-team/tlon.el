@@ -28,6 +28,7 @@
 
 (require 'tlon-core)
 (require 'transient)
+(require 'tlon-counterpart)
 
 ;;;; Variables
 
@@ -413,6 +414,46 @@ dedicated function."
 	(replace-match "")
 	(setq cnt (1+ cnt)))
       (message "Done. %d URLs were fixed." cnt))))
+
+;;;###autoload
+(defun tlon-fix-translate-relative-links (&optional file)
+  "Translate relative Markdown links in FILE.
+If FILE is nil, use the file visited by the current buffer, if available, else
+prompt for a file."
+  (interactive)
+  (let* ((file (or file (buffer-file-name) (read-file-name "File: ")))
+	 (trans-dir (file-name-directory file))
+         (trans-lang (tlon-get-language-in-file file))
+	 (trans-root (tlon-get-repo-from-file file))
+	 (trans-bare (tlon-get-bare-dir file))
+	 (subproject (tlon-repo-lookup :subproject :dir trans-root))
+         (orig-lang "en")
+	 (orig-root (tlon-repo-lookup :dir :language orig-lang :subproject subproject))
+         (orig-bare (tlon-get-bare-dir-translation orig-lang trans-lang trans-bare))
+         (changes 0))
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward markdown-regex-link-inline nil t)
+        (when-let ((url (match-string-no-properties 6)))
+	  (let ((start (match-beginning 6))
+		(end (match-end 6))
+		(pref "./"))
+	    (when (and (string-prefix-p pref url)
+		       (string-match "\\`\\(\\./[^#) \t\n\r]+\\)\\(#[^) \t\n\r]*\\)?\\'" url))
+	      (let* ((file-part (match-string 1 url))
+		     (anchor (or (match-string 2 url) ""))
+		     (local-path (expand-file-name file-part trans-dir)))
+		(unless (file-exists-p local-path)
+		  (let* ((filename (file-name-nondirectory file-part))
+			 (orig-path (file-name-concat orig-root orig-bare filename)))
+		    (when-let* ((trans-path (tlon-get-counterpart orig-path trans-lang)))
+		      (let* ((rel (file-relative-name trans-path trans-dir))
+			     (new-url (concat pref rel anchor)))
+			(goto-char start)
+			(delete-region start end)
+			(insert new-url)
+			(setq changes (1+ changes)))))))))))
+      (message "Translated %d relative link%s" changes (if (= changes 1) "" "s")))))
 
 ;;;;;; Language-specific
 

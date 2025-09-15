@@ -134,6 +134,9 @@ These functions apply sets of predefined search-and-replace rules tailored for s
 #+findex: tlon-fix-internet-archive-urls
 + ~tlon-fix-internet-archive-urls~ :: Removes the `https://web.archive.org/web/TIMESTAMP/` prefix from Internet Archive URLs found in the current buffer, effectively restoring them to their original form. Reports the number of URLs fixed.
 
+#+findex: tlon-fix-translate-relative-links
++ ~tlon-fix-translate-relative-links~ :: Scans the current Markdown buffer for relative links beginning with `./` that do not resolve to an existing local file. For each such link (e.g., `./effective-altruism.md`), it constructs the corresponding English path in the `uqbar-en` repo using the current file’s bare directory mapping, obtains its French counterpart with `tlon-get-counterpart`, and rewrites the link to point to the translated relative path (e.g., `./altruisme-efficace.md`). Links starting with `../` are ignored, and anchors (such as `#section`) are preserved.
+
 ** Internal Helper Functions
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-fix-internals
