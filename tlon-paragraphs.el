@@ -322,5 +322,71 @@ If nil, use the default model."
    ["Options"
     ("-a" "Align paragraphs model"                      tlon-paragraphs-infix-select-align-model)]])
 
+;;; Mode line
+
+(defcustom tlon-paragraphs-mode-line-format " ¶ %d/%d"
+  "Format for the paragraph indicator in the mode line.
+The format receives two integers: CURRENT paragraph and TOTAL paragraphs."
+  :type 'string
+  :group 'tlon-paragraphs)
+
+(defvar-local tlon-paragraphs-mode-line nil
+  "Mode line construct used by `tlon-paragraphs-mode-line-mode'.")
+
+(defvar-local tlon-paragraphs--positions-cache nil
+  "Cached list of (START . END) paragraph positions for the current buffer.")
+
+(defvar-local tlon-paragraphs--tick-cache 0
+  "Tick value for `tlon-paragraphs--positions-cache' from `buffer-chars-modified-tick'.")
+
+(add-to-list 'minor-mode-alist
+             '(tlon-paragraphs-mode-line-mode tlon-paragraphs-mode-line))
+
+;;;###autoload
+(define-minor-mode tlon-paragraphs-mode-line-mode
+  "Show the paragraph number at point in the mode line."
+  :init-value nil
+  :lighter nil
+  :group 'tlon-paragraphs
+  (if tlon-paragraphs-mode-line-mode
+      (progn
+        (setq tlon-paragraphs-mode-line
+              '(" " (:eval (tlon-paragraphs-mode-line-string))))
+        (force-mode-line-update))
+    (setq tlon-paragraphs-mode-line nil)
+    (force-mode-line-update)))
+
+(defun tlon-paragraphs-mode-line-string ()
+  "Return a `mode-line-format' fragment with the paragraph indicator."
+  (let* ((bounds (tlon-paragraphs--content-boundaries))
+         (start (car bounds))
+         (end (cdr bounds)))
+    (when (and (>= (point) start) (<= (point) end))
+      (let ((pair (tlon-paragraphs--index-and-total)))
+        (when pair
+          (format tlon-paragraphs-mode-line-format (car pair) (cdr pair)))))))
+
+(defun tlon-paragraphs--index-and-total ()
+  "Return cons (CURRENT . TOTAL) for the paragraph at point."
+  (let* ((positions (tlon-paragraphs--positions))
+         (total (length positions)))
+    (when (> total 0)
+      (let ((pt (point)) (i 0) idx)
+        (while (< i total)
+          (let* ((pos (nth i positions)) (s (car pos)) (e (cdr pos)))
+            (if (and (>= pt s) (< pt e))
+                (setq idx (1+ i) i total)
+              (setq i (1+ i)))))
+        (cons (or idx total) total)))))
+
+(defun tlon-paragraphs--positions ()
+  "Return cached list of paragraph positions for the current buffer."
+  (let ((tick (buffer-chars-modified-tick)))
+    (if (and tlon-paragraphs--positions-cache
+             (= tick tlon-paragraphs--tick-cache))
+        tlon-paragraphs--positions-cache
+      (setq tlon-paragraphs--positions-cache (tlon-with-paragraphs nil #'ignore t)
+            tlon-paragraphs--tick-cache tick))))
+
 (provide 'tlon-paragraphs)
 ;;; tlon-paragraphs.el ends here
