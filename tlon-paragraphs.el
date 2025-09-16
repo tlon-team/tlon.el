@@ -417,12 +417,12 @@ If nil, use the default model."
 (transient-define-prefix tlon-paragraphs-menu ()
   "Menu for `tlon-paragraphs' functions."
   [["Commands"
+    ("p" "Toggle paragraphs in mode line"               tlon-paragraphs-mode-line-mode)
     ("a" "Align paragraphs"                             tlon-paragraphs-align-with-ai)
     ("c" "Count paragraphs"                             tlon-count-paragraphs)
     ("g" "Go to paragraph"                              tlon-goto-paragraph)
     ("d" "Display corresponding paragraphs"             tlon-display-corresponding-paragraphs)]
    ["Options"
-    ("t" "Toggle paragraphs in mode line"               tlon-paragraphs-mode-line-mode)
     ("-a" "Align paragraphs model"                      tlon-paragraphs-infix-select-align-model)]])
 
 (provide 'tlon-paragraphs)
