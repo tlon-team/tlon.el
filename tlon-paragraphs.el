@@ -31,9 +31,6 @@
 (require 'tlon-yaml)
 (require 'transient)
 
-;; Declare external function to silence byte-compiler when doom-modeline isn't loaded at compile time.
-(declare-function doom-modeline-set-modeline "doom-modeline-core" (modeline &optional default))
-
 ;;;; User options
 
 (defgroup tlon-paragraphs nil
@@ -347,6 +344,7 @@ N is 1-based. Signal an error if there are no paragraphs."
 (add-to-list 'minor-mode-alist
              '(tlon-paragraphs-mode-line-mode tlon-paragraphs-mode-line))
 
+(declare-function doom-modeline-set-modeline "doom-modeline-core" (modeline &optional default))
 ;;;###autoload
 (define-minor-mode tlon-paragraphs-mode-line-mode
   "Show the paragraph number at point in the mode line."
@@ -399,7 +397,7 @@ N is 1-based. Signal an error if there are no paragraphs."
       (setq tlon-paragraphs--positions-cache (tlon-with-paragraphs nil #'ignore t)
             tlon-paragraphs--tick-cache tick))))
 
-;;;;; Doom modeline integration
+;;;;;; Doom modeline integration
 
 (with-eval-after-load 'doom-modeline
   (require 'doom-modeline-core nil t)
