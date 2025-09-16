@@ -260,10 +260,9 @@ For example, if PATH is
 ;;;###autoload
 (defun tlon-open-counterpart (&optional other-win file)
   "Open the counterpart of file in FILE and move point to matching position.
-  If FILE is nil, open the counterpart of the file visited by the current buffer.
-
-  If called with a prefix argument, or OTHER-WIN is non-nil, open the counterpart
-  in the other window."
+If FILE is nil, open the counterpart of the file visited by the current buffer.
+If called with a prefix argument, or OTHER-WIN is non-nil, open the counterpart
+in the other window."
   (interactive "P")
   (unless file
     (save-buffer))
