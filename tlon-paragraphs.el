@@ -31,6 +31,9 @@
 (require 'tlon-yaml)
 (require 'transient)
 
+;; Declare external function to silence byte-compiler when doom-modeline isn't loaded at compile time.
+(declare-function doom-modeline-set-modeline "doom-modeline-core" (modeline &optional default))
+
 ;;;; User options
 
 (defgroup tlon-paragraphs nil
@@ -401,9 +404,12 @@ N is 1-based. Signal an error if there are no paragraphs."
 (with-eval-after-load 'doom-modeline
   (require 'doom-modeline-core nil t)
   (require 'doom-modeline-segments nil t)
-  (doom-modeline-def-segment tlon-paragraph
-    (when (and (bound-and-true-p tlon-paragraphs-mode-line-mode))
-      (tlon-paragraphs-mode-line-string))))
+  ;; Quote macro form to avoid compile-time expansion when doom-modeline isn't available,
+  ;; which would otherwise trigger a byte-compiler warning.
+  (eval
+   '(doom-modeline-def-segment tlon-paragraph
+      (when (and (bound-and-true-p tlon-paragraphs-mode-line-mode))
+        (tlon-paragraphs-mode-line-string)))))
 
 ;;;;; Menu
 
