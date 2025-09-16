@@ -304,25 +304,7 @@ RESPONSE is the AI's response, INFO is the response info."
       (message "AI agent finished aligning paragraphs.")
     (tlon-ai-callback-fail info)))
 
-;;;;; Menu
-
-(transient-define-infix tlon-paragraphs-infix-select-align-model ()
-  "AI model to use for aligning paragraphs.
-If nil, use the default model."
-  :class 'tlon-model-selection-infix
-  :variable 'tlon-paragraphs-align-with-ai-model)
-
-;;;###autoload (autoload 'tlon-paragraphs-menu "tlon-paragraphs" nil t)
-(transient-define-prefix tlon-paragraphs-menu ()
-  "Menu for `tlon-paragraphs' functions."
-  [["Commands"
-    ("a" "Align paragraphs"                             tlon-paragraphs-align-with-ai)
-    ("c" "Count paragraphs"                             tlon-count-paragraphs)
-    ("d" "Display corresponding paragraphs"             tlon-display-corresponding-paragraphs)]
-   ["Options"
-    ("-a" "Align paragraphs model"                      tlon-paragraphs-infix-select-align-model)]])
-
-;;; Mode line
+;;;;; Mode line indicator
 
 (defcustom tlon-paragraphs-mode-line-format " ¶ %d/%d"
   "Format for the paragraph indicator in the mode line.
@@ -337,7 +319,7 @@ The format receives two integers: CURRENT paragraph and TOTAL paragraphs."
   "Cached list of (START . END) paragraph positions for the current buffer.")
 
 (defvar-local tlon-paragraphs--tick-cache 0
-  "Tick value for `tlon-paragraphs--positions-cache' from `buffer-chars-modified-tick'.")
+  "Value for `tlon-paragraphs--positions-cache' from `buffer-chars-modified-tick'.")
 
 (add-to-list 'minor-mode-alist
              '(tlon-paragraphs-mode-line-mode tlon-paragraphs-mode-line))
@@ -387,6 +369,24 @@ The format receives two integers: CURRENT paragraph and TOTAL paragraphs."
         tlon-paragraphs--positions-cache
       (setq tlon-paragraphs--positions-cache (tlon-with-paragraphs nil #'ignore t)
             tlon-paragraphs--tick-cache tick))))
+
+;;;;; Menu
+
+(transient-define-infix tlon-paragraphs-infix-select-align-model ()
+  "AI model to use for aligning paragraphs.
+If nil, use the default model."
+  :class 'tlon-model-selection-infix
+  :variable 'tlon-paragraphs-align-with-ai-model)
+
+;;;###autoload (autoload 'tlon-paragraphs-menu "tlon-paragraphs" nil t)
+(transient-define-prefix tlon-paragraphs-menu ()
+  "Menu for `tlon-paragraphs' functions."
+  [["Commands"
+    ("a" "Align paragraphs"                             tlon-paragraphs-align-with-ai)
+    ("c" "Count paragraphs"                             tlon-count-paragraphs)
+    ("d" "Display corresponding paragraphs"             tlon-display-corresponding-paragraphs)]
+   ["Options"
+    ("-a" "Align paragraphs model"                      tlon-paragraphs-infix-select-align-model)]])
 
 (provide 'tlon-paragraphs)
 ;;; tlon-paragraphs.el ends here
