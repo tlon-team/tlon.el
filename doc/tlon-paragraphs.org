@@ -106,3 +106,21 @@ If you use =doom-modeline=, enabling ~tlon-paragraphs-mode-line-mode~ will
 automatically add a custom segment with the indicator and switch the current
 buffer to a modeline layout that includes it. No extra setup is required.
 Disabling the mode restores the default =doom-modeline= layout for the buffer.
+
+*** Lazy doom-modeline integration
+To include the =tlon-paragraph= segment in your modeline without loading
+=tlon-paragraphs= at startup, define a lightweight shim in your config:
+
+#+begin_src emacs-lisp
+(with-eval-after-load 'doom-modeline
+  (unless (fboundp 'doom-modeline-segment-tlon-paragraph)
+    (doom-modeline-def-segment tlon-paragraph
+      (when (and (featurep 'tlon-paragraphs)
+                 (bound-and-true-p tlon-paragraphs-mode-line-mode)
+                 (fboundp 'tlon-paragraphs-mode-line-string))
+        (tlon-paragraphs-mode-line-string))))))
+#+end_src
+
+Then you can safely add =tlon-paragraph= to your =doom-modeline-def-modeline=
+spec. The segment will remain empty until =tlon-paragraphs= is loaded and the
+minor mode is enabled.
