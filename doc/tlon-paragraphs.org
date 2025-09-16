@@ -72,3 +72,19 @@ It provides the following groups and commands:
   + =a= :: Align paragraphs (~tlon-paragraphs-align-with-ai~)
 + *Models*:
   + =m= :: Select the AI model for aligning paragraphs.
+
+** Mode line indicator
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-paragraphs-mode-line
+:END:
+
+#+findex: tlon-paragraphs-mode-line-mode
+#+vindex: tlon-paragraphs-mode-line-format
+- ~tlon-paragraphs-mode-line-mode~ :: Minor mode that shows “¶ N/M” in the mode
+  line for the current buffer, where N is the paragraph at point and M is the
+  total number of paragraphs in the main content. The count excludes YAML front
+  matter and the local variables section. The indicator is hidden when point is
+  outside the main content. Toggle with ~M-x tlon-paragraphs-mode-line-mode~,
+  or enable automatically, e.g., by adding it to ~markdown-mode-hook~.
+- ~tlon-paragraphs-mode-line-format~ :: Format string for the indicator. It
+  receives two integers: the current paragraph and the total.
