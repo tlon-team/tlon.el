@@ -334,9 +334,15 @@ The format receives two integers: CURRENT paragraph and TOTAL paragraphs."
       (progn
         (setq tlon-paragraphs-mode-line
               '(" " (:eval (tlon-paragraphs-mode-line-string))))
-        (force-mode-line-update))
+        (force-mode-line-update)
+        (when (bound-and-true-p doom-modeline-mode)
+          (when (fboundp 'doom-modeline-set-modeline)
+            (doom-modeline-set-modeline 'tlon-main))))
     (setq tlon-paragraphs-mode-line nil)
-    (force-mode-line-update)))
+    (force-mode-line-update)
+    (when (bound-and-true-p doom-modeline-mode)
+      (when (fboundp 'doom-modeline-set-modeline)
+        (doom-modeline-set-modeline 'main)))))
 
 (defun tlon-paragraphs-mode-line-string ()
   "Return a `mode-line-format' fragment with the paragraph indicator."
@@ -369,6 +375,18 @@ The format receives two integers: CURRENT paragraph and TOTAL paragraphs."
         tlon-paragraphs--positions-cache
       (setq tlon-paragraphs--positions-cache (tlon-with-paragraphs nil #'ignore t)
             tlon-paragraphs--tick-cache tick))))
+
+;;;;; Doom modeline integration
+
+(with-eval-after-load 'doom-modeline
+  (require 'doom-modeline-core nil t)
+  (require 'doom-modeline-segments nil t)
+  (doom-modeline-def-segment tlon-paragraph
+    (when (and (bound-and-true-p tlon-paragraphs-mode-line-mode))
+      (tlon-paragraphs-mode-line-string)))
+  (doom-modeline-def-modeline 'tlon-main
+    '(eldoc bar window-state workspace-name window-number modals matches follow buffer-info remote-host tlon-paragraph buffer-position word-count parrot selection-info)
+    '(compilation objed-state misc-info project-name persp-name battery grip irc mu4e gnus github debug repl lsp minor-modes input-method indent-info buffer-encoding major-mode process vcs check time)))
 
 ;;;;; Menu
 

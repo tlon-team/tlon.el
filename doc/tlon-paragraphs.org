@@ -88,3 +88,8 @@ It provides the following groups and commands:
   or enable automatically, e.g., by adding it to ~markdown-mode-hook~.
 - ~tlon-paragraphs-mode-line-format~ :: Format string for the indicator. It
   receives two integers: the current paragraph and the total.
+
+If you use =doom-modeline=, enabling ~tlon-paragraphs-mode-line-mode~ will
+automatically add a custom segment with the indicator and switch the current
+buffer to a modeline layout that includes it. No extra setup is required.
+Disabling the mode restores the default =doom-modeline= layout for the buffer.
