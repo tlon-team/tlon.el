@@ -430,7 +430,6 @@ forms, preserving anchors."
                         (setq changes (1+ changes))))))))))))
       (message "Translated %d relative link%s" changes (if (= changes 1) "" "s")))))
 
-
 ;;;;; bibtex keys
 
 (defun tlon-get-counterpart-key (key &optional language)
