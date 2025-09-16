@@ -86,11 +86,11 @@ chunk before joining. If nil (the default), this step is skipped."
 
 (defcustom tlon-tts-loudness-target -16
   "Target integrated loudness for audio normalization in LUFS.
-Lower values (more negative) result in quieter audio.
-Common values: -16 (loud), -18 (moderate), -20 (quiet), -23 (broadcast standard).
-To determine the right value, analyze a reference clip with:
-  ffmpeg -i reference.mp3 -af loudnorm=print_format=summary -f null -
-and use the 'Input Integrated' LUFS value."
+Lower values (more negative) result in quieter audio. Common values: -16 (loud),
+-18 (moderate), -20 (quiet), -23 (broadcast standard). To determine the right
+value, analyze a reference clip with: ffmpeg -i reference.mp3 -af
+loudnorm=print_format=summary -f null - and use the \"Input Integrated\" LUFS
+value."
   :group 'tlon-tts
   :type 'integer)
 
@@ -416,8 +416,7 @@ Older models (also supported):
 
 (defconst tlon-file-elevenlabs-dictionary-locators
   (file-name-concat tlon-dir-tts "pronunciation-dictionaries.json")
-  "JSON file mapping language codes to ElevenLabs pronunciation dictionary
-locators.")
+  "JSON file mapping lang codes to ElevenLabs pronunciation dictionary locators.")
 
 ;;;;; Staging buffer
 
@@ -857,12 +856,13 @@ present value; otherwise return the value itself."
   "ffmpeg -i %%s -af loudnorm=I=%d:TP=-1.5:LRA=11 -y %%s"
   "Command template to normalize an audio file using ffmpeg loudnorm filter.
 -i: input file
--af loudnorm: apply the loudness normalization filter
-  I=%d: Integrated loudness target (LUFS) - will be filled with `tlon-tts-loudness-target'
-  TP=-1.5: True peak target (dBTP)
-  LRA=11: Loudness range target (LU)
--y: overwrite output file without asking
-First %%s is input file, second %%s is output file, %d is the loudness target.")
+
+-af loudnorm: apply the loudness normalization filter I=%d: Integrated loudness
+  target (LUFS) - will be filled with `tlon-tts-loudness-target' TP=-1.5: True
+  peak target (dBTP) LRA=11: Loudness range target (LU)
+
+-y: overwrite output file without asking First %%s is input file, second %%s is
+output file, %d is the loudness target.")
 
 (defconst tlon-tts-ffmpeg-convert
   "ffmpeg -i \"%s\" -acodec libmp3lame -ar 44100 -b:a 128k -ac 1 \"%s\""
@@ -2489,9 +2489,9 @@ If LOCALE is nil, use the locale of the current voice."
 ;;;###autoload
 (defun tlon-tts-normalize-audio-files (&optional files)
   "Normalize the selected audio FILES using ffmpeg loudnorm filter.
-If invoked from dired with marked files, those are used.  Otherwise
-prompt for one file.  Each file is normalized in place, using the
-settings in `tlon-tts-ffmpeg-normalize'."
+If invoked from Dired with marked files, those are used. Otherwise prompt for
+one file. Each file is normalized in place, using the settings in
+`tlon-tts-ffmpeg-normalize'."
   (interactive)
   (let* ((targets (or files
                       (if (derived-mode-p 'dired-mode)
