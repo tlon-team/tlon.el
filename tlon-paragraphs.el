@@ -405,9 +405,10 @@ N is 1-based. Signal an error if there are no paragraphs."
   ;; Quote macro form to avoid compile-time expansion when doom-modeline isn't available,
   ;; which would otherwise trigger a byte-compiler warning.
   (eval
-   '(doom-modeline-def-segment tlon-paragraph
-      (when (and (bound-and-true-p tlon-paragraphs-mode-line-mode))
-        (tlon-paragraphs-mode-line-string)))))
+   '(unless (fboundp 'doom-modeline-segment-tlon-paragraph)
+      (doom-modeline-def-segment tlon-paragraph
+        (when (and (bound-and-true-p tlon-paragraphs-mode-line-mode))
+          (tlon-paragraphs-mode-line-string))))))
 
 ;;;;; Menu
 
