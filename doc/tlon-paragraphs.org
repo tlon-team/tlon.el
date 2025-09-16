@@ -52,6 +52,15 @@ This section details the interactive commands provided by =tlon-paragraph.el=.
 #+findex: tlon-count-paragraphs
 + ~tlon-count-paragraphs~ :: Interactively counts paragraphs in the active region. If no region is active, it prompts for a file and counts the paragraphs in it. Programmatically, it can also count between specified =START= and =END= positions. Uses ~tlon-get-number-of-paragraphs~.
 
+*** Going to a Paragraph
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-goto-paragraph
+:END:
+#+findex: tlon-goto-paragraph
++ ~tlon-goto-paragraph~ :: Prompts for a paragraph number (defaulting to the
+  current one) and moves point to the beginning of that paragraph. Paragraphs
+  are counted within the main content area only.
+
 *** Displaying Corresponding Paragraphs  
 #+findex: tlon-display-corresponding-paragraphs
 + ~tlon-display-corresponding-paragraphs~ :: Displays pairs of corresponding paragraphs from a file and its counterpart in a dedicated buffer ("/Paragraph Pairs/").
@@ -68,9 +77,13 @@ This section details the interactive commands provided by =tlon-paragraph.el=.
 The command ~tlon-paragraphs-menu~ (Autoloaded) activates a =transient= menu interface for paragraph-related operations.
 
 It provides the following groups and commands:
-+ *AI*:
++ *Commands*:
   + =a= :: Align paragraphs (~tlon-paragraphs-align-with-ai~)
-+ *Models*:
+  + =c= :: Count paragraphs (~tlon-count-paragraphs~)
+  + =g= :: Go to paragraph (~tlon-goto-paragraph~)
+  + =d= :: Display corresponding paragraphs (~tlon-display-corresponding-paragraphs~)
++ *Options*:
+  + =t= :: Toggle paragraphs in mode line (~tlon-paragraphs-mode-line-mode~)
   + =m= :: Select the AI model for aligning paragraphs.
 
 ** Mode line indicator
