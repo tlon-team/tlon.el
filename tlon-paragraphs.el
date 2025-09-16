@@ -46,6 +46,12 @@ use a different model for aligning paragraphs."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-paragraphs)
 
+(defcustom tlon-paragraphs-mode-line-format " ¶ %d/%d"
+  "Format for the paragraph indicator in the mode line.
+The format receives two integers: CURRENT paragraph and TOTAL paragraphs."
+  :type 'string
+  :group 'tlon-paragraphs)
+
 ;;;; Functions
 
 ;;;;; Common
@@ -306,12 +312,6 @@ RESPONSE is the AI's response, INFO is the response info."
 
 ;;;;; Mode line indicator
 
-(defcustom tlon-paragraphs-mode-line-format " ¶ %d/%d"
-  "Format for the paragraph indicator in the mode line.
-The format receives two integers: CURRENT paragraph and TOTAL paragraphs."
-  :type 'string
-  :group 'tlon-paragraphs)
-
 (defvar-local tlon-paragraphs-mode-line nil
   "Mode line construct used by `tlon-paragraphs-mode-line-mode'.")
 
@@ -337,7 +337,7 @@ The format receives two integers: CURRENT paragraph and TOTAL paragraphs."
         (force-mode-line-update)
         (when (bound-and-true-p doom-modeline-mode)
           (when (fboundp 'doom-modeline-set-modeline)
-            (doom-modeline-set-modeline 'tlon-main))))
+            (doom-modeline-set-modeline 'main))))
     (setq tlon-paragraphs-mode-line nil)
     (force-mode-line-update)
     (when (bound-and-true-p doom-modeline-mode)
@@ -383,10 +383,7 @@ The format receives two integers: CURRENT paragraph and TOTAL paragraphs."
   (require 'doom-modeline-segments nil t)
   (doom-modeline-def-segment tlon-paragraph
     (when (and (bound-and-true-p tlon-paragraphs-mode-line-mode))
-      (tlon-paragraphs-mode-line-string)))
-  (doom-modeline-def-modeline 'tlon-main
-    '(eldoc bar window-state workspace-name window-number modals matches follow buffer-info remote-host tlon-paragraph buffer-position word-count parrot selection-info)
-    '(compilation objed-state misc-info project-name persp-name battery grip irc mu4e gnus github debug repl lsp minor-modes input-method indent-info buffer-encoding major-mode process vcs check time)))
+      (tlon-paragraphs-mode-line-string))))
 
 ;;;;; Menu
 
