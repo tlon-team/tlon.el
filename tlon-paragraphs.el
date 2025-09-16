@@ -310,6 +310,26 @@ RESPONSE is the AI's response, INFO is the response info."
       (message "AI agent finished aligning paragraphs.")
     (tlon-ai-callback-fail info)))
 
+;;;;; Navigation
+
+;;;###autoload
+(defun tlon-goto-paragraph (&optional n)
+  "Go to paragraph N in the main content.
+If N is nil, prompt for it with default as the current paragraph.
+N is 1-based. Signal an error if there are no paragraphs."
+  (interactive)
+  (let* ((positions (tlon-paragraphs--positions))
+         (total (length positions)))
+    (unless (> total 0)
+      (user-error "No paragraphs in main content"))
+    (let* ((current (car (tlon-paragraphs--index-and-total)))
+           (n (or n (read-number (format "Go to paragraph (1-%d, default %d): " total current)
+                                 current))))
+      (unless (and (integerp n) (<= 1 n total))
+        (user-error "Paragraph number must be between 1 and %d" total))
+      (goto-char (car (nth (1- n) positions)))
+      (message "Moved to paragraph %d/%d" n total))))
+
 ;;;;; Mode line indicator
 
 (defvar-local tlon-paragraphs-mode-line nil
@@ -399,8 +419,10 @@ If nil, use the default model."
   [["Commands"
     ("a" "Align paragraphs"                             tlon-paragraphs-align-with-ai)
     ("c" "Count paragraphs"                             tlon-count-paragraphs)
+    ("g" "Go to paragraph"                              tlon-goto-paragraph)
     ("d" "Display corresponding paragraphs"             tlon-display-corresponding-paragraphs)]
    ["Options"
+    ("t" "Toggle paragraphs in mode line"               tlon-paragraphs-mode-line-mode)
     ("-a" "Align paragraphs model"                      tlon-paragraphs-infix-select-align-model)]])
 
 (provide 'tlon-paragraphs)
