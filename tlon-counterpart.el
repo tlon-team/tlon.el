@@ -415,17 +415,19 @@ the bare directory name of the original file. ORIG-LANG is the language code of
 the original file."
   (cond
    ((string-match tlon-translate-relative-links--cur-dir-pattern url)
-    (when-let ((parts (tlon-translate-relative-links--extract-file-part-and-anchor url tlon-translate-relative-links--cur-dir-pattern)))
+    (when-let ((parts (tlon-translate-relative-links--extract-file-part-and-anchor
+		       url tlon-translate-relative-links--cur-dir-pattern)))
       (let* ((file-part (nth 0 parts))
              (anchor (nth 1 parts))
              (local-path (expand-file-name file-part trans-dir)))
         (unless (file-exists-p local-path)
           (let ((orig-path (tlon-translate-relative-links--get-original-path
 			    file-part orig-root orig-bare trans-lang orig-lang)))
-            (when-let* ((trans-path (tlon-get-counterpart orig-path trans-lang)))
-              (let* ((rel (file-relative-name trans-path trans-dir))
-                     (new-url (concat "./" rel anchor)))
-                (tlon-translate-relative-links--replace-url start end new-url))))))))
+            (if-let* ((trans-path (tlon-get-counterpart orig-path trans-lang)))
+		(let* ((rel (file-relative-name trans-path trans-dir))
+		       (new-url (concat "./" rel anchor)))
+                  (tlon-translate-relative-links--replace-url start end new-url))
+	      (user-error "Could not find counterpart for original file `%s'" orig-path)))))))
    ((string-match tlon-translate-relative-links--parent-dir-pattern url)
     (when-let ((parts (tlon-translate-relative-links--extract-file-part-and-anchor
 		       url tlon-translate-relative-links--parent-dir-pattern)))
@@ -435,10 +437,11 @@ the original file."
         (unless (file-exists-p local-path)
           (let ((orig-path (tlon-translate-relative-links--get-original-path
 			    file-part orig-root orig-bare trans-lang orig-lang)))
-            (when-let* ((trans-path (tlon-get-counterpart orig-path trans-lang)))
-              (let* ((rel (file-relative-name trans-path trans-dir))
-                     (new-url (concat rel anchor)))
-                (tlon-translate-relative-links--replace-url start end new-url))))))))))
+            (if-let* ((trans-path (tlon-get-counterpart orig-path trans-lang)))
+		(let* ((rel (file-relative-name trans-path trans-dir))
+		       (new-url (concat rel anchor)))
+                  (tlon-translate-relative-links--replace-url start end new-url))
+	      (user-error "Could not find counterpart for original file `%s'" orig-path)))))))))
 
 (defun tlon-translate-relative-links--extract-file-part-and-anchor (url pattern)
   "Extract file part and anchor from URL using PATTERN.
@@ -480,7 +483,6 @@ where the URL ends. NEW-URL is the replacement URL string to insert."
 
 (defun tlon-get-counterpart-key (key &optional language)
   "Return the bibliography key that is the counterpart of KEY.
-
 If KEY belongs to a *translation* entry, return the original key
 stored in its ‘translation’ field.  Otherwise treat KEY as an
 *original* key and, provided LANGUAGE is non-nil, look for the
@@ -500,7 +502,6 @@ return its key.  When no counterpart exists, return nil."
 ;;;###autoload
 (defun tlon-counterpart-report-missing ()
   "Report files missing counterparts between two languages for an entity type.
-
 Prompt for an entity type (articles, authors or tags) and two languages, and
 list files of that type in each language that lack a counterpart in the other
 language within the current subproject."
