@@ -486,26 +486,38 @@ where the URL ends. NEW-URL is the replacement URL string to insert."
 (defun tlon-translate-relative-links-in-dired (&optional files)
   "Translate relative Markdown links in marked FILES in Dired.
 When called interactively in Dired, operate on all marked files. FILES, when
-non-nil, should be a list of absolute file paths to process."
+non-nil, should be a list of absolute file paths to process. When errors occur,
+also collect and display their messages in a dedicated buffer."
   (interactive)
   (let* ((files (or files
                     (when (derived-mode-p 'dired-mode)
                       (dired-get-marked-files))
                     (user-error "Call from Dired or provide FILES")))
          (processed 0)
-         (errors 0))
+         (errors 0)
+         (error-messages nil))
     (dolist (f files)
       (when (and (stringp f) (string-suffix-p ".md" f t))
-        (condition-case _
+        (condition-case err
             (with-current-buffer (find-file-noselect f)
               (save-excursion
                 (tlon-translate-relative-links nil))
               (setq processed (1+ processed)))
           (error
-           (setq errors (1+ errors))))))
+           (setq errors (1+ errors))
+           (push (format "%s: %s" f (error-message-string err)) error-messages)))))
     (message "Translated relative links in %d file%s (%d error%s)"
              processed (if (= processed 1) "" "s")
-             errors (if (= errors 1) "" "s"))))
+             errors (if (= errors 1) "" "s"))
+    (when (> errors 0)
+      (with-current-buffer (get-buffer-create "*tlon-translate-relative-links errors*")
+        (let ((inhibit-read-only t))
+          (erase-buffer)
+          (insert "Errors while translating relative links:\n\n")
+          (dolist (m (nreverse error-messages)) (insert "• " m "\n"))
+          (goto-char (point-min))
+          (view-mode 1))
+        (pop-to-buffer (current-buffer)))))) 
 
 ;;;;; bibtex keys
 
