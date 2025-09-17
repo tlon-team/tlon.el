@@ -55,13 +55,12 @@ This module provides functions for translating entire files using various transl
 
 #+findex: tlon-translate-file
 + ~tlon-translate-file~ :: Translates a file into a specified language.
-  1. Prompts for the source =FILE= to translate, defaulting to the file in the current buffer.
-  2. Prompts for the target =LANG= (language code).
-  3. Determines the path for the translated file. It first checks if a counterpart file for the target language already exists using ~tlon-get-counterpart-in-originals~.  If none exists, it translates the original title with ~tlon-translate-text~, slugifies it using ~simple-extras-slugify~, and proposes that as the default filename.
-  4. If a counterpart exists, it asks the user whether to overwrite it. If the user declines, they are prompted for a new file path.
-  5. If no counterpart file is found, it checks for a counterpart directory. If one exists, it prompts the user to save the file in that directory, defaulting to the slugified translated filename. Otherwise, it prompts for a full file path.
-  6. Based on the value of ~tlon-translation-engine~, it calls the appropriate translation function (e.g., ~tlon-deepl-translate~).
-  7. The content of the source file is read, translated, and then written to the target file, which is then opened.
+  - Prompts for the source =FILE= and the target =LANG= (two-letter code).
+  - Resolves the output path, preferring an existing counterpart if present (asking before overwriting). Otherwise proposes a default path based on the file category, determined by ~(tlon-get-bare-dir FILE t)~:
+    - Articles: requires a DB translation entry for the selected language; if none exists, an error is raised. The default filename is derived from the DB translation entry's title (slugified). After writing the translation, the YAML ~key~ is set to the DB translation key, translated tags are inserted, the buffer is saved, and associated images are copied.
+    - Tags/authors: the default filename is derived by translating the YAML ~title~ and slugifying it. After writing, the YAML ~title~ is overwritten with the translated title, the buffer is saved, and ~tlon-yaml-guess-english-counterpart~ is run on the new file.
+    - Other: falls back to the previous behavior (title-based default naming if available; otherwise a slugified basename) and writes the translated content.
+  - The content of the source file is read, translated with the selected engine, and then written to the target file, which is opened.
 
 #+findex: tlon-translate-missing-abstracts
 + ~tlon-translate-missing-abstracts~ :: Translate abstracts that are missing from two sources:
