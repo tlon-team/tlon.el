@@ -1172,6 +1172,39 @@ temporary buffer and return the list of file paths."
       (display-buffer buf))
     missing))
 
+;;;###autoload
+(defun tlon-yaml-delete-field-in-dir (&optional dir field)
+  "Delete YAML FIELD from all Markdown files in DIR, non-recursively.
+When DIR is nil, use `default-directory'. Prompt for FIELD from the union of
+valid keys present among file types in DIR. Display a summary and return the
+list of files modified."
+  (interactive)
+  (let* ((dir (file-name-as-directory (or dir default-directory)))
+         (files (directory-files dir t "\\.md\\'"))
+         (keys (let ((table (make-hash-table :test #'equal)))
+                 (dolist (f files)
+                   (ignore-errors
+                     (dolist (k (or (tlon-yaml-get-valid-keys f nil) '()))
+                       (puthash k t table))))
+                 (let (acc)
+                   (maphash (lambda (k _v) (push k acc)) table)
+                   (nreverse acc))))
+         (field (or field
+                    (if keys
+                        (completing-read "Field to delete: " keys nil t nil nil (car keys))
+                      (read-string "Field to delete: "))))
+         (deleted '()))
+    (dolist (f files)
+      (ignore-errors
+        (let ((meta (tlon-yaml-get-metadata f)))
+          (when (and meta (assoc field meta))
+            (tlon-yaml-delete-field field f)
+            (push f deleted)))))
+    (setq deleted (nreverse deleted))
+    (message "Deleted field `%s' from %d file%s in %s"
+             field (length deleted) (if (= (length deleted) 1) "" "s") dir)
+    deleted))
+
 ;;;;; menu
 
 (transient-define-infix tlon-yaml-infix-suggest-tags-model ()
