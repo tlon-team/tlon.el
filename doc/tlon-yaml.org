@@ -254,3 +254,9 @@ This module provides functions for reading, writing, and manipulating YAML front
   first word of each tag in the YAML ~tags~ field for every Markdown file under
   =/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-fr/articles=.
   Operates recursively and only updates files whose tags actually change.
+
+#+findex: tlon-yaml-delete-field-in-dir
++ ~tlon-yaml-delete-field-in-dir~ :: Deletes a YAML FIELD from all Markdown
+  files in DIR, non-recursively. Prompts for FIELD and DIR, with DIR defaulting
+  to the current directory. Displays a summary and returns the list of files
+  modified.
