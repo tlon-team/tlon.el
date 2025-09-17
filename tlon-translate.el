@@ -268,7 +268,6 @@ Branching rules:
 		 (t
 		  (let* ((default-name
 			  (cond
-			   ;; Articles: must have a DB translation entry for the selected LANG.
 			   ((string= bare-en "articles")
 			    (let* ((orig-key (tlon-yaml-get-key "key" source-file))
 				   (tkey (and orig-key
@@ -285,7 +284,6 @@ Branching rules:
 					(save-buffer)
 					(tlon-translate--copy-associated-images source-file target-file)))
 				(concat slug ext))))
-			   ;; Tags/authors: translate YAML title and use it.
 			   ((or (string= bare-en "tags") (string= bare-en "authors"))
 			    (let* ((orig-title (tlon-yaml-get-key "title" source-file))
 				   (src-code (tlon-get-language-in-file source-file))
@@ -300,7 +298,6 @@ Branching rules:
 				      (save-buffer)
 				      (tlon-yaml-guess-english-counterpart target-file)))
 			      (concat slug ext)))
-			   ;; Default behavior for other bare dirs.
 			   (t
 			    (tlon-translate--default-filename source-file target-lang-code))))
 			 (default-path (when default-name (file-name-concat counterpart-dir default-name))))
