@@ -282,6 +282,7 @@ in the other window."
     (message "Counterpart not found for file `%s'. Call `tlon-yaml-guess-english-counterpart' from translation" file)))
 
 (autoload 'dired-get-file-for-visit "dired")
+(autoload 'dired-get-marked-files "dired")
 (defun tlon-open-counterpart-in-dired (&optional arg file)
   "Open the counterpart of file in FILE in Dired.
 If FILE is nil, open the counterpart of the file at point.
@@ -479,6 +480,31 @@ where the URL ends. NEW-URL is the replacement URL string to insert."
   (insert new-url)
   1)
 
+;;;###autoload
+(defun tlon-translate-relative-links-in-dired (&optional files)
+  "Translate relative Markdown links in marked FILES in Dired.
+When called interactively in Dired, operate on all marked files. FILES, when
+non-nil, should be a list of absolute file paths to process."
+  (interactive)
+  (let* ((files (or files
+                    (when (derived-mode-p 'dired-mode)
+                      (dired-get-marked-files))
+                    (user-error "Call from Dired or provide FILES")))
+         (processed 0)
+         (errors 0))
+    (dolist (f files)
+      (when (and (stringp f) (string-suffix-p ".md" f t))
+        (condition-case _
+            (with-current-buffer (find-file-noselect f)
+              (save-excursion
+                (tlon-translate-relative-links nil))
+              (setq processed (1+ processed)))
+          (error
+           (setq errors (1+ errors))))))
+    (message "Translated relative links in %d file%s (%d error%s)"
+             processed (if (= processed 1) "" "s")
+             errors (if (= errors 1) "" "s"))))
+
 ;;;;; bibtex keys
 
 (defun tlon-get-counterpart-key (key &optional language)
@@ -670,7 +696,8 @@ counterpart in LANG-A."
     ("H-u" "visit counterpart other window"      tlon-open-counterpart-in-other-window-dwim)
     ("U" "open counterpart in Dired"             tlon-open-counterpart-in-dired)]
    ["Links"
-    ("l" "translate relative links"              tlon-translate-relative-links)]
+    ("l" "translate relative links"                tlon-translate-relative-links)
+    ("L" "translate relative links (marked files)" tlon-translate-relative-links-in-dired)]
    ["Metadata"
     ("o" "set ‘original_path’"                   tlon-yaml-insert-original-path)]
    ["Report missing"
