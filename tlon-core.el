@@ -1000,6 +1000,23 @@ non-nil, exclude the delimiters when returning the region position."
 
 ;;;;; Bare dirs
 
+(defun tlon-get-bare-dir (&optional file in-english)
+  "Get the bare directory of FILE.
+A file’s bare directory is its directory minus its repository. For example, the
+bare directory of `~/Dropbox/repos/uqbar-es/autores/' is `autores'.
+
+If FILE is nil, return the counterpart repo of the file visited by the current
+buffer. If IN-ENGLISH is non-nil, return the English translation of the bare
+directory."
+  (when-let* ((file (or file (buffer-file-name)))
+	      (repo (tlon-get-repo-from-file file)))
+    (when-let* ((relative-path (file-relative-name file repo))
+		(dir-name (file-name-directory relative-path))
+		(bare-dir (directory-file-name dir-name)))
+      (if in-english
+	  (tlon-get-bare-dir-translation "en" (tlon-get-language-in-file) bare-dir)
+	bare-dir))))
+
 (defun tlon-get-bare-dir-translation (target-lang source-lang bare-dir)
   "For BARE-DIR in SOURCE-LANG, get its translation into TARGET-LANG."
   (let (result)
@@ -1008,23 +1025,6 @@ non-nil, exclude the delimiters when returning the region position."
 	(when (and (equal (cdr inner) bare-dir)
 		   (equal (car inner) source-lang))
 	  (setq result (cdr (assoc target-lang outer))))))))
-
-(defun tlon-get-bare-dir (&optional file)
-  "Get the bare directory of FILE.
-A file’s bare directory is its directory minus its repository. For example, the
-bare directory of `~/Dropbox/repos/uqbar-es/autores/' is `autores'.
-
-If FILE is nil, return the counterpart repo of the file visited by the current
-buffer."
-  (when-let* ((file (or file (buffer-file-name)))
-	      (repo (tlon-get-repo-from-file file)))
-    (when-let* ((relative-path (file-relative-name file repo))
-		(dir-name (file-name-directory relative-path)))
-      ;; Only call directory-file-name if dir-name is non-nil.
-      ;; If dir-name is nil (e.g., file is at the relative root like "foo.md"),
-      ;; tlon-get-bare-dir will return nil.
-      (when dir-name
-	(directory-file-name dir-name)))))
 
 (defun tlon-select-bare-dir (lang)
   "Set the bare dir in LANG."
