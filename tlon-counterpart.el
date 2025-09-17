@@ -468,13 +468,13 @@ file."
       (file-name-concat orig-root orig-bare-other filename)))))
 
 (defun tlon-translate-relative-links--replace-url (start end new-url)
-  "Replace URL from START to END with NEW-URL and increment modifications counter.
+  "Replace URL from START to END with NEW-URL and return 1.
 START is the buffer position where the URL begins. END is the buffer position
 where the URL ends. NEW-URL is the replacement URL string to insert."
   (goto-char start)
   (delete-region start end)
   (insert new-url)
-  (1+ changes))
+  1)
 
 ;;;;; bibtex keys
 
