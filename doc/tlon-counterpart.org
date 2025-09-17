@@ -117,7 +117,8 @@ It provides the following groups and commands:
   + =H-u= :: Visit counterpart other window (~tlon-open-counterpart-in-other-window-dwim~)
   + =U= :: Open counterpart in Dired (~tlon-open-counterpart-in-dired~)
 + *Links*:
-  + =l= :: replace internal links                (~tlon-replace-internal-links~)
+  + =l= :: translate relative links (~tlon-translate-relative-links~)
+  + =L= :: translate relative links in marked files (~tlon-translate-relative-links-in-dired~)
 + *Metadata*:
   + =o= :: Set ‘original_path’ (~tlon-yaml-insert-original-path~)
 
@@ -160,6 +161,9 @@ This section lists non-interactive functions used internally or potentially usef
     - Increments a counter for successful replacements.
   - If no counterpart path is found or it's the same as the original, it skips the replacement. If not found, increments an error counter.
   - After processing, it displays a message summarizing the number of replacements and errors.
+
+#+findex: tlon-translate-relative-links-in-dired
++ ~tlon-translate-relative-links-in-dired~ :: When invoked in Dired with one or more files marked, applies ~tlon-translate-relative-links~ to each marked Markdown file. It skips non-Markdown files and, after processing, displays a summary indicating how many files were processed and how many errors occurred.
 
 *** Paragraph Handling Logic
 :PROPERTIES:
