@@ -431,7 +431,8 @@ URL is the URL string to process. START and END bound the URL in the buffer.
 TRANS-DIR is the translation file directory. TRANS-LANG is the translation
 language code. ORIG-ROOT is the originals repo root. ORIG-BARE is the originals
 bare directory. ORIG-LANG is the originals language code. PATTERN determines how
-to parse URL. When ADD-DOT-SLASH is non-nil, prefix the rewritten link with \"./\"."
+to parse URL. When ADD-DOT-SLASH is non-nil, prefix the rewritten link with
+\"./\"."
   (when-let ((parts (tlon-translate-relative-links--extract-file-part-and-anchor url pattern)))
     (let* ((file-part (nth 0 parts))
            (anchor (nth 1 parts))
