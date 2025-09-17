@@ -57,17 +57,19 @@ The format receives two integers: CURRENT paragraph and TOTAL paragraphs."
 ;;;;; Common
 
 (autoload 'markdown-forward-paragraph "markdown-mode" nil t)
-(defun tlon-with-paragraphs (file &optional fn return-positions)
+(defun tlon-with-paragraphs (file &optional fn return-positions include-metadata)
   "Execute FN for each paragraph in FILE.
 If FN is nil, return the paragraph contents. If RETURN-POSITIONS is non-nil,
 return list of (start . end) positions. Otherwise, return list of FN's results
-for each paragraph. If FILE is nil, use the current buffer."
+for each paragraph. If FILE is nil, use the current buffer. If INCLUDE-METADATA
+is non-nil, include the YAML front matter (metadata) in the paragraph list;
+otherwise, exclude it."
   (let ((buffer-to-use (if (stringp file)
                            (find-file-noselect file)
                          (current-buffer)))) ; Use current buffer if file is nil or buffer object
     (with-current-buffer buffer-to-use
       (save-excursion
-	(let* ((bounds (tlon-paragraphs--content-boundaries))
+	(let* ((bounds (tlon-paragraphs--content-boundaries include-metadata))
                (content-begin (car bounds))
                (content-end (cdr bounds))
                result)
@@ -88,13 +90,16 @@ for each paragraph. If FILE is nil, use the current buffer."
 			result)))))
           (nreverse result))))))
 
-(defun tlon-paragraphs--content-boundaries ()
-  "Return cons (BEGIN . END) for the current buffer's main content.
-BEGIN is the position just after the YAML front matter (if any) and END is the
-position just before the local variables section (if any)."
+(defun tlon-paragraphs--content-boundaries (&optional include-metadata)
+  "Return cons (BEGIN . END) for the current buffer's content.
+When INCLUDE-METADATA is non-nil, BEGIN is `point-min' (include YAML front
+matter). Otherwise BEGIN is just after the YAML front matter (if any). END is
+the position just before the local variables section (if any)."
   (save-excursion
-    (let ((begin (or (cdr (tlon-get-delimited-region-pos tlon-yaml-delimiter))
-                     (point-min)))
+    (let ((begin (if include-metadata
+                     (point-min)
+                   (or (cdr (tlon-get-delimited-region-pos tlon-yaml-delimiter))
+                       (point-min))))
           (end (or (car (tlon-get-delimited-region-pos
                          tlon-md-local-variables-line-start
                          tlon-md-local-variables-line-end))

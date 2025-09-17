@@ -926,8 +926,8 @@ TYPE can be `errors' or `flow'."
 	   (glossary-prompt (when glossary-file
 			      (format tlon-translate-glossary-prompt (file-name-nondirectory glossary-file))))
 	   (prompt (concat (apply 'format prompt-elts) glossary-prompt))
-	   (orig-paras  (tlon-with-paragraphs original-file))
-           (trans-paras (tlon-with-paragraphs translation-file))
+	   (orig-paras  (tlon-with-paragraphs original-file nil nil (eq type 'errors)))
+           (trans-paras (tlon-with-paragraphs translation-file nil nil (eq type 'errors)))
            (chunk-size  tlon-translate-revise-chunk-size)
            (total       (length orig-paras))
            (ranges '())
