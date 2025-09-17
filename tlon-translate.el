@@ -301,7 +301,7 @@ Branching rules:
 			   (t
 			    (tlon-translate--default-filename source-file target-lang-code))))
 			 (default-path (when default-name (file-name-concat counterpart-dir default-name))))
-		    (read-file-name "Save translation to: " counterpart-dir default-path nil default-name))))))))
+		    (read-file-name "Save translation to: " (file-name-as-directory counterpart-dir) default-path nil default-name))))))))
     (when target-file
       (tlon-translate--do-translate source-file target-file target-lang-code post-fn))))
 
