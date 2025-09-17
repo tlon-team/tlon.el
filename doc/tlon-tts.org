@@ -112,7 +112,7 @@ This section details the interactive commands provided by =tlon-tts.el=.
   3. Inserts `<!-- Chunk N -->` comments into the staging buffer based on the prepared chunks (~tlon-tts-insert-chunk-comments~).
   4. Iterates through the chunks, calling the appropriate engine's request function (~tlon-tts-generate-audio~) for each chunk, saving the audio to files named by chunk number (e.g., =filename-chunk-001.mp3=).
   5. Monitors the asynchronous audio generation processes.
-  6. Once all chunks are generated, no automatic finalization is performed. Use ~tlon-tts-finalize-audio-processing~ to append silence (if needed), optionally normalize (if ~tlon-tts-normalize-audio~ is non-nil), and join the chunks into the final output file.
+  6. Once all chunks are generated, no automatic finalization is performed. Use ~tlon-tts-finalize-audio-processing~ to normalize (if ~tlon-tts-normalize-audio~ is non-nil), then append silence (if needed), and join the chunks into the final output file.
 
 #+findex: tlon-tts-narrate-staged-chunks
 + ~tlon-tts-narrate-staged-chunks~ :: Asynchronously generates audio for specific chunk(s) in the TTS staging buffer. If a region is active, it generates audio for all chunks starting within that region. Otherwise, it generates audio for the chunk at the current cursor position. This command *always attempts* to generate the selected chunks, overwriting existing audio files if necessary. It identifies chunks by reading the number =N= from the =<!-- Chunk N -->= comment. *Important:* This command only generates the individual chunk audio files; it does *not* perform the final silence appending, normalization, or joining steps. Use ~tlon-tts-finalize-audio-processing~ for that.
@@ -123,7 +123,7 @@ This section details the interactive commands provided by =tlon-tts.el=.
 :END:
 
 #+findex: tlon-tts-finalize-audio-processing
-+ ~tlon-tts-finalize-audio-processing~ :: (Autoloaded) Manually triggers the final audio processing steps for a given base audio file. This includes appending silence (if applicable for the engine), optionally normalizing chunk audio files (if ~tlon-tts-normalize-audio~ is non-nil), and joining them into the final output file (e.g., =filename.mp3=). It also handles deleting original chunk files if ~tlon-tts-delete-file-chunks~ is set, and opens Dired and the final audio file. This command is useful after selectively regenerating chunks with ~tlon-tts-narrate-staged-chunks~.
++ ~tlon-tts-finalize-audio-processing~ :: (Autoloaded) Manually triggers the final audio processing steps for a given base audio file. This includes normalizing chunk audio files first (if ~tlon-tts-normalize-audio~ is non-nil), then appending silence (if applicable for the engine), and joining them into the final output file (e.g., =filename.mp3=). It also handles deleting original chunk files if ~tlon-tts-delete-file-chunks~ is set, and opens Dired and the final audio file. This command is useful after selectively regenerating chunks with ~tlon-tts-narrate-staged-chunks~.
 
 #+findex: tlon-tts-delete-chunks-of-file
 + ~tlon-tts-delete-chunks-of-file~ :: Deletes all audio chunk files associated with a base filename (e.g., =file-chunk-*.mp3=). Also kills the corresponding staging buffer if it exists. Operates on the file at point in Dired or prompts for a file.
@@ -349,7 +349,7 @@ This section lists key non-interactive functions, variables, and constants used 
 :CUSTOM_ID: h:tlon-tts-audio-internals
 :END:
 #+findex: tlon-tts-finish-processing
-+ ~tlon-tts-finish-processing~ :: Finalizes the TTS process after all API chunks are generated. It appends silence if needed (synchronously), then asynchronously normalizes (if enabled) and joins the chunks. Handles cleanup of temporary files and opens the final audio file.
++ ~tlon-tts-finish-processing~ :: Finalizes the TTS process after all API chunks are generated. It normalizes chunks asynchronously (if enabled), then (for engines that need it) appends silence and joins the chunks. Handles cleanup of temporary files and opens the final audio file.
 #+findex: tlon-tts-get-chunk-name
 + ~tlon-tts-get-chunk-name~ :: Generates the filename for an audio chunk based on the original filename and the 1-based chunk number (e.g., =basename-chunk-XXX.ext=). This number is assigned sequentially as chunks are created.
 #+findex: tlon-tts-get-list-of-chunks
