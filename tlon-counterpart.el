@@ -371,7 +371,7 @@ If no file is found, return nil."
 ;;;;; Translate relative links
 
 (defconst tlon-translate-relative-links--cur-dir-pattern
-  "\\`\\(\\.\\/[^/]+\\)\\(#[^) \t\n\r]*\\)?\\'"
+  "\\`\\(\\.\\/[^#) \t\n\r/]+\\)\\(#[^) \t\n\r]*\\)?\\'"
   "Regex pattern to match relative links in the current directory.")
 
 (defconst tlon-translate-relative-links--parent-dir-pattern
@@ -461,17 +461,18 @@ the translation file. ORIG-ROOT is the root directory of the original files.
 ORIG-BARE is the bare directory name of the original file. TRANS-LANG is the
 language code of the translation. ORIG-LANG is the language code of the original
 file."
-  (cond
-   ((string-prefix-p "./" file-part)
-    (let ((filename (file-name-nondirectory file-part)))
-      (file-name-concat orig-root orig-bare filename)))
-   ((string-prefix-p "../" file-part)
-    (let* ((after-dotdot (substring file-part 3))
-           (bare-other (car (split-string after-dotdot "/" t)))
-           (filename (file-name-nondirectory file-part))
-           (orig-bare-other-guess (tlon-get-bare-dir-translation orig-lang trans-lang bare-other))
-           (orig-bare-other (or orig-bare-other-guess bare-other)))
-      (file-name-concat orig-root orig-bare-other filename)))))
+  (let ((file-part (car (split-string file-part "#" t))))
+    (cond
+     ((string-prefix-p "./" file-part)
+      (let ((filename (file-name-nondirectory file-part)))
+        (file-name-concat orig-root orig-bare filename)))
+     ((string-prefix-p "../" file-part)
+      (let* ((after-dotdot (substring file-part 3))
+             (bare-other (car (split-string after-dotdot "/" t)))
+             (filename (file-name-nondirectory file-part))
+             (orig-bare-other-guess (tlon-get-bare-dir-translation orig-lang trans-lang bare-other))
+             (orig-bare-other (or orig-bare-other-guess bare-other)))
+        (file-name-concat orig-root orig-bare-other filename))))))
 
 (defun tlon-translate-relative-links--replace-url (start end new-url)
   "Replace URL from START to END with NEW-URL and return 1.
