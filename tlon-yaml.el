@@ -419,9 +419,10 @@ FIELDS is an alist, typically generated via `tlon-yaml-to-alist'."
 ;;;;; Interactive editing
 
 ;;;###autoload
-(defun tlon-yaml-insert-field (&optional key value)
+(defun tlon-yaml-insert-field (&optional key value overwrite)
   "Insert YAML field with KEY and VALUE in the metadata section.
-If KEY or VALUE are nil, prompt user to select from list of suitable candidates."
+If KEY or VALUE are nil, prompt user to select from list of suitable candidates.
+If OVERWRITE is non-nil, overwrite existing field without asking."
   (interactive)
   (save-excursion
     (goto-char (point-min))
@@ -430,7 +431,7 @@ If KEY or VALUE are nil, prompt user to select from list of suitable candidates.
     (let* ((candidates (tlon-yaml-get-valid-keys))
 	   (key (or key (completing-read "key:" candidates))))
       (when (tlon-yaml-get-key key)
-	(if (y-or-n-p (format "Field '%s' already exists; replace?" key))
+	(if (or overwrite (y-or-n-p (format "Field '%s' already exists; replace?" key)))
 	    (tlon-yaml-delete-field key)
 	  (user-error "Aborted")))
       (let* ((value (or value ;; This `value` is the raw string from AI or user input.
