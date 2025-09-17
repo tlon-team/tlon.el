@@ -354,9 +354,7 @@ slugified version of the original basename."
 	   (target-key (tlon-get-key-at-point)))
       (tlon-translate-file orig-file target-language-code target-file)
       (find-file target-file)
-      (tlon-yaml-delete-metadata)
-      (save-buffer)
-      (tlon-yaml-insert-field "key" target-key)
+      (tlon-yaml-insert-field "key" target-key 'overwrite)
       (tlon-yaml-insert-translated-tags)
       (save-buffer)
       (tlon-translate--copy-associated-images orig-file target-file))))
@@ -745,7 +743,7 @@ nil, use `tlon-project-target-languages'."
 	       key (string-join (reverse initiated-langs) ", ")))))
 
 (defun tlon-translate--suppress-file-change-prompt (thunk)
-  "Call THUNK while suppressing file-changed prompts, and refresh JSON.
+  "Call THUNK while suppressing file-changed prompting, and refresh JSON.
 THUNK is a nullary function. Temporarily set `revert-without-query' to match
 all files, invoke THUNK, then silently revert any live buffer visiting
 `tlon-file-abstract-translations'. Finally restore the original value."
