@@ -369,6 +369,14 @@ If no file is found, return nil."
 
 ;;;;; Translate relative links
 
+(defconst tlon-translate-relative-links--cur-dir-pattern
+  "\\`\\(\\.\\/[^/]+\\)\\(#[^) \t\n\r]*\\)?\\'"
+  "Regex pattern to match relative links in the current directory.")
+
+(defconst tlon-translate-relative-links--parent-dir-pattern
+  "\\`\\(\\.\\./[^/]+/[^#) \t\n\r]+\\)\\(#[^) \t\n\r]*\\)?\\'"
+  "Regex pattern to match relative links in the parent directory.")
+
 ;;;###autoload
 (defun tlon-translate-relative-links (&optional file)
   "Translate relative Markdown links in FILE.
@@ -391,43 +399,82 @@ forms, preserving anchors."
       (while (re-search-forward markdown-regex-link-inline nil t)
         (when-let ((url (match-string-no-properties 6)))
 	  (let ((start (match-beginning 6))
-		(end (match-end 6))
-		(cur-dir-pattern "\\`\\(\\./[^#) \t\n\r]+\\)\\(#[^) \t\n\r]*\\)?\\'")
-		(parent-dir-pattern "\\`\\(\\.\\./[^/]+/[^#) \t\n\r]+\\)\\(#[^) \t\n\r]*\\)?\\'"))
-            (cond
-             ((string-match cur-dir-pattern url)
-              (let* ((file-part (match-string 1 url))
-                     (anchor (or (match-string 2 url) ""))
-                     (local-path (expand-file-name file-part trans-dir)))
-                (unless (file-exists-p local-path)
-                  (let* ((filename (file-name-nondirectory file-part))
-                         (orig-path (file-name-concat orig-root orig-bare filename)))
-                    (when-let* ((trans-path (tlon-get-counterpart orig-path trans-lang)))
-                      (let* ((rel (file-relative-name trans-path trans-dir))
-                             (new-url (concat "./" rel anchor)))
-                        (goto-char start)
-                        (delete-region start end)
-                        (insert new-url)
-                        (setq changes (1+ changes))))))))
-             ((string-match parent-dir-pattern url)
-              (let* ((file-part (match-string 1 url))
-                     (anchor (or (match-string 2 url) ""))
-                     (local-path (expand-file-name file-part trans-dir)))
-                (unless (file-exists-p local-path)
-                  (let* ((after-dotdot (substring file-part 3))
-                         (bare-other (car (split-string after-dotdot "/" t)))
-                         (filename (file-name-nondirectory file-part))
-                         (orig-bare-other-guess (tlon-get-bare-dir-translation orig-lang trans-lang bare-other))
-                         (orig-bare-other (or orig-bare-other-guess bare-other))
-                         (orig-path (file-name-concat orig-root orig-bare-other filename)))
-                    (when-let* ((trans-path (tlon-get-counterpart orig-path trans-lang)))
-                      (let* ((rel (file-relative-name trans-path trans-dir))
-                             (new-url (concat rel anchor)))
-                        (goto-char start)
-                        (delete-region start end)
-                        (insert new-url)
-                        (setq changes (1+ changes))))))))))))
-      (message "Translated %d relative link%s" changes (if (= changes 1) "" "s")))))
+		(end (match-end 6)))
+            (when-let ((result (tlon-translate-relative-links--process-link
+				url start end trans-dir trans-lang orig-root orig-bare orig-lang)))
+              (setq changes (+ changes result)))))))
+    (message "Translated %d relative link%s" changes (if (= changes 1) "" "s"))))
+
+(defun tlon-translate-relative-links--process-link (url start end trans-dir trans-lang orig-root orig-bare orig-lang)
+  "Process a single relative link URL and return number of modifications made.
+URL is the relative link URL to process. START is the buffer position where the
+URL begins. END is the buffer position where the URL ends. TRANS-DIR is the
+directory of the translation file. TRANS-LANG is the language code of the
+translation. ORIG-ROOT is the root directory of the original files. ORIG-BARE is
+the bare directory name of the original file. ORIG-LANG is the language code of
+the original file."
+  (cond
+   ((string-match tlon-translate-relative-links--cur-dir-pattern url)
+    (when-let ((parts (tlon-translate-relative-links--extract-file-part-and-anchor url tlon-translate-relative-links--cur-dir-pattern)))
+      (let* ((file-part (nth 0 parts))
+             (anchor (nth 1 parts))
+             (local-path (expand-file-name file-part trans-dir)))
+        (unless (file-exists-p local-path)
+          (let ((orig-path (tlon-translate-relative-links--get-original-path
+			    file-part orig-root orig-bare trans-lang orig-lang)))
+            (when-let* ((trans-path (tlon-get-counterpart orig-path trans-lang)))
+              (let* ((rel (file-relative-name trans-path trans-dir))
+                     (new-url (concat "./" rel anchor)))
+                (tlon-translate-relative-links--replace-url start end new-url))))))))
+   ((string-match tlon-translate-relative-links--parent-dir-pattern url)
+    (when-let ((parts (tlon-translate-relative-links--extract-file-part-and-anchor
+		       url tlon-translate-relative-links--parent-dir-pattern)))
+      (let* ((file-part (nth 0 parts))
+             (anchor (nth 1 parts))
+             (local-path (expand-file-name file-part trans-dir)))
+        (unless (file-exists-p local-path)
+          (let ((orig-path (tlon-translate-relative-links--get-original-path
+			    file-part orig-root orig-bare trans-lang orig-lang)))
+            (when-let* ((trans-path (tlon-get-counterpart orig-path trans-lang)))
+              (let* ((rel (file-relative-name trans-path trans-dir))
+                     (new-url (concat rel anchor)))
+                (tlon-translate-relative-links--replace-url start end new-url))))))))))
+
+(defun tlon-translate-relative-links--extract-file-part-and-anchor (url pattern)
+  "Extract file part and anchor from URL using PATTERN.
+URL is the URL string to extract parts from. PATTERN is the regular expression
+pattern to match against URL."
+  (when (string-match pattern url)
+    (list (match-string 1 url)
+          (or (match-string 2 url) ""))))
+
+(defun tlon-translate-relative-links--get-original-path (file-part orig-root orig-bare trans-lang orig-lang)
+  "Get original path for FILE-PART.
+FILE-PART is the file part of the relative link. TRANS-DIR is the directory of
+the translation file. ORIG-ROOT is the root directory of the original files.
+ORIG-BARE is the bare directory name of the original file. TRANS-LANG is the
+language code of the translation. ORIG-LANG is the language code of the original
+file."
+  (cond
+   ((string-prefix-p "./" file-part)
+    (let ((filename (file-name-nondirectory file-part)))
+      (file-name-concat orig-root orig-bare filename)))
+   ((string-prefix-p "../" file-part)
+    (let* ((after-dotdot (substring file-part 3))
+           (bare-other (car (split-string after-dotdot "/" t)))
+           (filename (file-name-nondirectory file-part))
+           (orig-bare-other-guess (tlon-get-bare-dir-translation orig-lang trans-lang bare-other))
+           (orig-bare-other (or orig-bare-other-guess bare-other)))
+      (file-name-concat orig-root orig-bare-other filename)))))
+
+(defun tlon-translate-relative-links--replace-url (start end new-url)
+  "Replace URL from START to END with NEW-URL and increment modifications counter.
+START is the buffer position where the URL begins. END is the buffer position
+where the URL ends. NEW-URL is the replacement URL string to insert."
+  (goto-char start)
+  (delete-region start end)
+  (insert new-url)
+  (1+ changes))
 
 ;;;;; bibtex keys
 
