@@ -853,7 +853,7 @@ present value; otherwise return the value itself."
 ;;;;; `ffmpeg'
 
 (defconst tlon-tts-ffmpeg-normalize
-  "ffmpeg -i %%s -af loudnorm=I=%d:TP=-1.5:LRA=11 -y %%s"
+  "ffmpeg -i %s -af loudnorm=I=%d:TP=-1.5:LRA=11 -y %s"
   "Command template to normalize an audio file using ffmpeg loudnorm filter.
 -i: input file
 
@@ -861,7 +861,7 @@ present value; otherwise return the value itself."
   target (LUFS) - will be filled with `tlon-tts-loudness-target' TP=-1.5: True
   peak target (dBTP) LRA=11: Loudness range target (LU)
 
--y: overwrite output file without asking First %%s is input file, second %%s is
+-y: overwrite output file without asking. First %s is input file, second %s is
 output file, %d is the loudness target.")
 
 (defconst tlon-tts-ffmpeg-convert
@@ -2109,8 +2109,8 @@ created by appending silence, if any."
                         (unless (stringp output-file)
                           (error "Invalid output file (temp normalized) in normalization pair: %S (input: %S)" output-file input-file))
                         (format tlon-tts-ffmpeg-normalize
-                                tlon-tts-loudness-target
                                 (shell-quote-argument input-file)
+                                tlon-tts-loudness-target
                                 (shell-quote-argument output-file))))
                     (cl-mapcar #'list files-to-normalize temp-normalized-output-files)
                     " && "))) ; Chain commands with &&
@@ -2503,8 +2503,8 @@ one file. Each file is normalized in place, using the settings in
         (let* ((tmp (make-temp-file "tts_norm_" nil
         (concat "." (file-name-extension file))))
         (cmd (format tlon-tts-ffmpeg-normalize
-        tlon-tts-loudness-target
-        (shell-quote-argument file)
+                            (shell-quote-argument file)
+                            tlon-tts-loudness-target
                             (shell-quote-argument tmp))))
           (message "Normalizing %s..." (file-name-nondirectory file))
           (when (zerop (shell-command cmd))
