@@ -32,6 +32,7 @@
 (require 'tlon-core)
 (require 'tlon-counterpart)
 (require 'tlon-deepl)
+(require 'tlon-db)
 (require 'tlon-glossary)
 (require 'transient)
 (require 'magit)
@@ -218,6 +219,8 @@ Returns the translated text as a string, or nil if skipped."
 ;;;;;; file
 
 (declare-function tlon-get-counterpart-in-originals "tlon-counterpart")
+(declare-function tlon-db-get-translation-key "tlon-db")
+(declare-function tlon-yaml-guess-english-counterpart "tlon-yaml")
 ;;;###autoload
 (defun tlon-translate-file (&optional file lang target-file)
   "Translate FILE into LANG using `tlon-translate-engine'.
@@ -225,13 +228,25 @@ If FILE is not provided, prompt for one, defaulting to the current buffer's
 file. If LANG is not provided, prompt for a target language. TARGET-FILE is the
 file where the translation will be saved. If nil, determine it based on the
 source file and target language. If a counterpart already exists, prompt for
-confirmation before overwriting it."
+confirmation before overwriting it.
+
+Branching rules (via `(tlon-get-bare-dir FILE t)`):
+- If \"articles\": require a DB translation entry for LANG; use its title for
+  the default filename. After writing, set YAML key, insert translated tags,
+  save, and copy associated images.
+- If \"tags\" or \"authors\": take the title from YAML, translate it to LANG to
+  derive the default filename. After writing, overwrite YAML title with the
+  translated title, save, and run `tlon-yaml-guess-english-counterpart'.
+- Otherwise: fall back to the existing behavior."
   (interactive
    (list (read-file-name "Translate file: " nil nil t
 			 (file-relative-name (buffer-file-name) default-directory))
          (tlon-select-language 'code 'babel "Target language: " 'require-match)))
   (let* ((source-file file)
          (target-lang-code lang)
+	 (bare-en (tlon-get-bare-dir source-file t))
+	 (counterpart-dir (tlon-get-counterpart-dir source-file target-lang-code))
+	 (post-fn nil)
          (target-file
 	  (or target-file
 	      (let ((candidate (condition-case nil
@@ -246,12 +261,47 @@ confirmation before overwriting it."
 				    candidate)))
 		 (candidate candidate)
 		 (t
-		  (let* ((counterpart-dir (tlon-get-counterpart-dir source-file target-lang-code))
-			 (default-name (tlon-translate--default-filename source-file target-lang-code))
+		  (let* ((default-name
+			  (cond
+			   ;; Articles: must have a DB translation entry for the selected LANG.
+			   ((string= bare-en "articles")
+			    (let* ((orig-key (tlon-yaml-get-key "key" source-file))
+				   (tkey (and orig-key
+					      (tlon-db-get-translation-key orig-key target-lang-code))))
+			      (unless tkey
+				(user-error "No DB translation entry found for %s -> %s" orig-key target-lang-code))
+			      (let* ((title (tlon-bibliography-lookup "=key=" tkey "title"))
+				     (slug  (simple-extras-slugify title))
+				     (ext   (file-name-extension source-file t)))
+				(setq post-fn
+				      (lambda ()
+					(tlon-yaml-insert-field "key" tkey 'overwrite)
+					(tlon-yaml-insert-translated-tags)
+					(save-buffer)
+					(tlon-translate--copy-associated-images source-file target-file)))
+				(concat slug ext))))
+			   ;; Tags/authors: translate YAML title and use it.
+			   ((or (string= bare-en "tags") (string= bare-en "authors"))
+			    (let* ((orig-title (tlon-yaml-get-key "title" source-file))
+				   (src-code (tlon-get-language-in-file source-file))
+				   (translated (ignore-errors
+						(tlon-translate-text orig-title target-lang-code src-code nil t)))
+				   (final-title (or translated orig-title))
+				   (slug (simple-extras-slugify final-title))
+				   (ext  (file-name-extension source-file t)))
+			      (setq post-fn
+				    (lambda ()
+				      (tlon-yaml-insert-field "title" final-title 'overwrite)
+				      (save-buffer)
+				      (tlon-yaml-guess-english-counterpart target-file)))
+			      (concat slug ext)))
+			   ;; Default behavior for other bare dirs.
+			   (t
+			    (tlon-translate--default-filename source-file target-lang-code))))
 			 (default-path (when default-name (file-name-concat counterpart-dir default-name))))
 		    (read-file-name "Save translation to: " counterpart-dir default-path))))))))
     (when target-file
-      (tlon-translate--do-translate source-file target-file target-lang-code))))
+      (tlon-translate--do-translate source-file target-file target-lang-code post-fn))))
 
 (declare-function simple-extras-slugify "simple-extras")
 (defun tlon-translate--default-filename (source-file target-lang-code)
@@ -275,8 +325,9 @@ slugified version of the original basename."
 	 (ext  (file-name-extension source-file t)))
     (concat slug ext)))
 
-(defun tlon-translate--do-translate (source-file target-file target-lang-code)
-  "Translate SOURCE-FILE to TARGET-FILE into TARGET-LANG-CODE."
+(defun tlon-translate--do-translate (source-file target-file target-lang-code &optional after-fn)
+  "Translate SOURCE-FILE to TARGET-FILE into TARGET-LANG-CODE.
+If AFTER-FN is non-nil, call it after writing TARGET-FILE."
   (pcase tlon-translate-engine
     ('deepl
      (let* ((source-repo (tlon-get-repo-from-file source-file))
@@ -291,7 +342,9 @@ slugified version of the original basename."
                                    (with-temp-file target-file
                                      (insert translated-text))
                                    (message "Translated %s to %s" source-file target-file)
-                                   (find-file target-file)))))))
+                                   (find-file target-file)
+                                   (when (functionp after-fn)
+                                     (funcall after-fn))))))))
     ;; TODO: add `ai' case; adapt `tlon-ai-translate-file' (and then remove from `tlon-ai.el')
     (_ (user-error "Unsupported translation engine: %s" tlon-translate-engine))))
 
