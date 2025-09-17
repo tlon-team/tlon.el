@@ -230,13 +230,16 @@ file where the translation will be saved. If nil, determine it based on the
 source file and target language. If a counterpart already exists, prompt for
 confirmation before overwriting it.
 
-Branching rules (via `(tlon-get-bare-dir FILE t)`):
+Branching rules:
+
 - If \"articles\": require a DB translation entry for LANG; use its title for
   the default filename. After writing, set YAML key, insert translated tags,
   save, and copy associated images.
+
 - If \"tags\" or \"authors\": take the title from YAML, translate it to LANG to
   derive the default filename. After writing, overwrite YAML title with the
   translated title, save, and run `tlon-yaml-guess-english-counterpart'.
+
 - Otherwise: fall back to the existing behavior."
   (interactive
    (list (read-file-name "Translate file: " nil nil t
@@ -285,7 +288,7 @@ Branching rules (via `(tlon-get-bare-dir FILE t)`):
 			    (let* ((orig-title (tlon-yaml-get-key "title" source-file))
 				   (src-code (tlon-get-language-in-file source-file))
 				   (translated (ignore-errors
-						(tlon-translate-text orig-title target-lang-code src-code nil t)))
+						 (tlon-translate-text orig-title target-lang-code src-code nil t)))
 				   (final-title (or translated orig-title))
 				   (slug (simple-extras-slugify final-title))
 				   (ext  (file-name-extension source-file t)))
@@ -383,34 +386,6 @@ If AFTER-FN is non-nil, call it after writing TARGET-FILE."
          (first-translation (car translations)))
     (when first-translation
       (tlon-deepl--translation-text first-translation))))
-
-(declare-function tlon-get-key-at-point "tlon-bib")
-(declare-function tlon-yaml-insert-translated-tags "tlon-yaml")
-;;;###autoload
-(defun tlon-translate-current-file ()
-  "Create a file with the translation of the bibtex key at point."
-  (interactive)
-  (unless (derived-mode-p 'bibtex-mode 'ebib-entry-mode 'ebib-index-mode)
-    (user-error "This command should be run with point on the translation BibTeX entry"))
-  (let* ((mode-ebib-p   (derived-mode-p 'ebib-entry-mode 'ebib-index-mode))
-	 (get-field   (if mode-ebib-p #'ebib-extras-get-field #'bibtex-extras-get-field))
-	 (orig-key (funcall get-field "translation")))
-    (unless orig-key
-      (user-error "This command should be run with point on the *translation* BibTeX entry, not its original"))
-    (let* ((orig-file (tlon-counterpart--file-for-key orig-key "en"))
-	   (target-language (funcall get-field "langid"))
-	   (target-language-code (tlon-lookup tlon-languages-properties :code :name target-language))
-	   (title (funcall get-field "title"))
-	   (slug (simple-extras-slugify title))
-	   (filename (file-name-with-extension slug "md"))
-	   (target-file (file-name-concat (tlon-get-counterpart-dir orig-file target-language-code) filename))
-	   (target-key (tlon-get-key-at-point)))
-      (tlon-translate-file orig-file target-language-code target-file)
-      (find-file target-file)
-      (tlon-yaml-insert-field "key" target-key 'overwrite)
-      (tlon-yaml-insert-translated-tags)
-      (save-buffer)
-      (tlon-translate--copy-associated-images orig-file target-file))))
 
 (declare-function tlon-images-get-dir "tlon-images")
 (defun tlon-translate--copy-associated-images (orig-file target-file)
