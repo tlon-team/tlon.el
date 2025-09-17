@@ -163,7 +163,7 @@ This section lists non-interactive functions used internally or potentially usef
   - After processing, it displays a message summarizing the number of replacements and errors.
 
 #+findex: tlon-translate-relative-links-in-dired
-+ ~tlon-translate-relative-links-in-dired~ :: When invoked in Dired with one or more files marked, applies ~tlon-translate-relative-links~ to each marked Markdown file. It skips non-Markdown files and, after processing, displays a summary indicating how many files were processed and how many errors occurred.
++ ~tlon-translate-relative-links-in-dired~ :: When invoked in Dired with one or more files marked, applies ~tlon-translate-relative-links~ to each marked Markdown file. It skips non-Markdown files and, after processing, displays a summary indicating how many files were processed and how many errors occurred, and opens a buffer listing the individual error messages (one per line) when any errors are encountered.
 
 *** Paragraph Handling Logic
 :PROPERTIES:
