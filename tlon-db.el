@@ -1218,6 +1218,23 @@ EVENT is a list of the form (FILE ACTION)."
         (when-let* ((diff-output (tlon-db--get-diff-output tlon-db-file-db-upstream file)))
           (tlon-db--process-sync-changes diff-output file))))))
 
+;;;###autoload
+(defun tlon-db-sync-now ()
+  "Run the db sync process used by auto-sync.
+Save db.bib if modified, then diff it against db-upstream and process
+the changes. If there are no differences, report and do nothing."
+  (interactive)
+  (unless (file-exists-p tlon-db-file-db-upstream)
+    (user-error "Upstream db not found: %s" tlon-db-file-db-upstream))
+  (let ((buf (get-file-buffer tlon-db-file-db)))
+    (when (and buf (buffer-modified-p buf)
+               (y-or-n-p "Save db.bib before syncing? "))
+      (with-current-buffer buf (save-buffer))))
+  (let ((diff-output (tlon-db--get-diff-output tlon-db-file-db-upstream tlon-db-file-db)))
+    (if diff-output
+        (tlon-db--process-sync-changes diff-output tlon-db-file-db)
+      (message "No differences to sync"))))
+
 (defun tlon-db--process-sync-changes (diff-output file)
   "Process sync differences in DIFF-OUTPUT for FILE."
   (with-current-buffer (find-file-noselect file)
@@ -1329,6 +1346,7 @@ If there are no differences, return nil."
     ("c" "Check name" tlon-db-check-name)
     ("i" "Check or insert name" tlon-db-check-or-insert-name)
     ("s" "Set name" tlon-db-set-name)
+    ("y" "Sync db now" tlon-db-sync-now)
     ""
     ("a" "Authenticate" tlon-db-authenticate)]
    ["Options"

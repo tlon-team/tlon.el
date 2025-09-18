@@ -93,6 +93,13 @@ request fails.
   values. Author names are normalized by replacing non-breaking spaces with regular spaces. Requires authentication. Displays the result buffer when an error
   occurs or when ~tlon-debug~ is non-nil.
 
+#+findex: tlon-db-sync-now
++ ~tlon-db-sync-now~ :: Runs the same synchronization process used by automatic
+  sync, even when ~tlon-db-enable-auto-sync~ is nil. It saves ~db.bib~ if the
+  buffer is modified, diffs it against ~db-upstream.bib~, and applies the
+  resulting additions, modifications, and deletions. Shows a summary message
+  and logs details to the ~*Db Sync Log*~ buffer.
+
 ** Internal Functions and Variables
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-db-internals
