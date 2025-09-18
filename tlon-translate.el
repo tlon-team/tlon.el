@@ -434,6 +434,53 @@ consider for case (II). When nil, prompts the user."
   (tlon-translate--internal-abstracts)
   (tlon-translate--external-abstracts langs))
 
+;;;###autoload
+(defun tlon-translate-abstract-here ()
+  "Translate the abstract at point, choosing DB or JSON as destination.
+
+If point is on a DB translation entry that lacks an abstract, translate
+the original's abstract into the entry's language and write it into
+db.bib. Otherwise, translate the current entry's abstract into a
+user-selected language and store it in abstract-translations.json."
+  (interactive)
+  (when-let ((context (tlon-translate--get-abstract-context nil nil t)))
+    (cl-destructuring-bind (key text source-lang-code) context
+      (let* ((in-db (member key (tlon-bib-get-keys-in-file tlon-file-db)))
+             (translation-of (and in-db (tlon-bibliography-lookup "=key=" key "translation")))
+             (current-abstract (and in-db (tlon-bibliography-lookup "=key=" key "abstract"))))
+        (if (and in-db
+                 (stringp translation-of) (not (string-blank-p translation-of))
+                 (or (null current-abstract) (string-blank-p (string-trim current-abstract))))
+            (let* ((orig-abstract (tlon-bibliography-lookup "=key=" translation-of "abstract"))
+                   (orig-lang-name (tlon-bibliography-lookup "=key=" translation-of "langid"))
+                   (trans-lang-name (tlon-bibliography-lookup "=key=" key "langid"))
+                   (src-code (and orig-lang-name
+                                  (tlon-lookup tlon-languages-properties :code :name orig-lang-name)))
+                   (dst-code (and trans-lang-name
+                                  (tlon-lookup tlon-languages-properties :code :name trans-lang-name))))
+              (if (or (not (stringp orig-abstract))
+                      (string-blank-p (string-trim orig-abstract))
+                      (not (stringp src-code))
+                      (not (stringp dst-code)))
+                  (tlon-translate--log "Cannot translate abstract for %s: missing original abstract or language info" key)
+                (let* ((src-en (string= src-code "en"))
+                       (supports (member dst-code tlon-deepl-supported-glossary-languages))
+                       (glossary-id (and src-en supports
+                                         (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" dst-code))))
+                  (if (and src-en supports glossary-id)
+                      (progn
+                        (tlon-translate--log "Translating abstract of %s → setting into %s" translation-of key)
+                        (tlon-deepl-translate
+                         (tlon-bib-remove-braces orig-abstract) dst-code src-code
+                         (lambda ()
+                           (let ((translated (tlon-translate--get-deepl-translation-from-buffer)))
+                             (when (and translated (stringp translated)
+                                        (not (string-blank-p (string-trim translated))))
+                               (tlon-translate--db-set-abstract key translated)
+                               (tlon-translate--log "Set abstract for %s (from %s)" key translation-of))))
+                         nil))
+                    (tlon-translate--log "Skipping abstract for %s -> %s: no suitable glossary found" translation-of dst-code)))))
+          (tlon-translate-abstract-interactive key text source-lang-code))))))
 (defun tlon-translate--external-abstracts (&optional langs)
   "Translate missing abstracts for non-DB works into JSON store.
 LANGS is a list of language names such as \\='(\"spanish\" \"french\"). If nil,
@@ -1289,7 +1336,7 @@ If nil, use the default model."
   [["Translate"
     ("t t" "Translate text" tlon-translate-text)
     ("t f" "Translate file" tlon-translate-file)
-    ("t a" "Translate current abstract" (lambda () (interactive) (tlon-translate-abstract-dispatch nil nil nil t)))
+    ("t a" "Translate current abstract" tlon-translate-abstract-here)
     ("t A" "Translate missing abstracts" tlon-translate-missing-abstracts)
     ("t d" "Remove duplicate abstracts" tlon-translate-remove-duplicate-abstract-translations)
     ""
