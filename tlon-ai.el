@@ -466,7 +466,7 @@ Otherwise emit a message with the status provided by INFO."
   (if (not response)
       (tlon-ai-callback-fail info)
     (kill-new response)
-    (message response)))
+    (message "%s" response)))
 
 (defun tlon-ai-callback-save (file)
   "If a response is obtained, save it to FILE.
@@ -1603,7 +1603,7 @@ CONTENT is the content of the `Math' element. If RESPONSE is nil, return INFO.
 			 ('convert (list (car (tlon-get-tag-attribute-values "Math")) response))
 			 ('translate (list response content))))
 	(kill-new response)
-	(message response)))))
+	(message "%s" response)))))
 
 ;;;;; Meta Description Generation Helper
 
