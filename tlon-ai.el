@@ -677,15 +677,16 @@ callback that receives (RESPONSE INFO). _NO-GLOSSARY is ignored."
      (let* ((src tlon-translate-source-language)
             (tgt tlon-translate-target-language)
             (text tlon-translate-text)
-            (prompt (tlon-ai--build-translation-prompt src tgt))
             (req-buf (generate-new-buffer (format "*tlon-translate:%s->%s*" src tgt)))
             (user-callback (or callback #'tlon-ai-callback-copy))
-            (glossary-temp nil))
+            (glossary-temp nil)
+            (prompt nil))
        (when (fboundp 'gptel-extras-warn-when-context)
          (with-current-buffer req-buf
            (gptel-extras-warn-when-context)))
        (setq glossary-temp (with-current-buffer req-buf
                              (tlon-ai--maybe-add-glossary-to-context src tgt req-buf)))
+       (setq prompt (tlon-ai--build-translation-prompt src tgt glossary-temp))
        (tlon-make-gptel-request
         prompt text
         (lambda (response info)
@@ -707,14 +708,15 @@ callback that receives (RESPONSE INFO). _NO-GLOSSARY is ignored."
   "Translate TEXT from SOURCE-LANG into TARGET-LANG and call CALLBACK.
 TARGET-LANG and SOURCE-LANG are ISO 639-1 two-letter codes. CALLBACK is a
 gptel-style function that receives (RESPONSE INFO). _NO-GLOSSARY is ignored."
-  (let* ((prompt (tlon-ai--build-translation-prompt source-lang target-lang))
-         (req-buf (generate-new-buffer (format "*tlon-translate:%s->%s*" source-lang target-lang)))
-         (glossary-temp nil))
+  (let* ((req-buf (generate-new-buffer (format "*tlon-translate:%s->%s*" source-lang target-lang)))
+         (glossary-temp nil)
+         (prompt nil))
     (when (fboundp 'gptel-extras-warn-when-context)
       (with-current-buffer req-buf
         (gptel-extras-warn-when-context)))
     (setq glossary-temp (with-current-buffer req-buf
                           (tlon-ai--maybe-add-glossary-to-context source-lang target-lang req-buf)))
+    (setq prompt (tlon-ai--build-translation-prompt source-lang target-lang glossary-temp))
     (tlon-make-gptel-request
      prompt text
      (lambda (response info)
@@ -731,13 +733,18 @@ gptel-style function that receives (RESPONSE INFO). _NO-GLOSSARY is ignored."
      t
      req-buf)))
 
-(defun tlon-ai--build-translation-prompt (source-lang target-lang)
+(defun tlon-ai--build-translation-prompt (source-lang target-lang &optional glossary-file)
   "Return an LLM prompt to translate from SOURCE-LANG to TARGET-LANG.
-Both SOURCE-LANG and TARGET-LANG are ISO 639-1 codes."
-  (format "Translate the following text from %s to %s. Return only the translated text, without any quotes, backticks, or Markdown code fences:%s"
-          (tlon-lookup tlon-languages-properties :standard :code source-lang)
-          (tlon-lookup tlon-languages-properties :standard :code target-lang)
-          tlon-ai-string-wrapper))
+Both SOURCE-LANG and TARGET-LANG are ISO 639-1 codes.
+If GLOSSARY-FILE is non-nil, explicitly instruct the model to use the attached
+glossary file which maps English terms to TARGET-LANG."
+  (let* ((src-name (tlon-lookup tlon-languages-properties :standard :code source-lang))
+         (tgt-name (tlon-lookup tlon-languages-properties :standard :code target-lang))
+         (glossary-note (when glossary-file
+                          (format " Use the attached glossary file to map English terms to %s. Whenever a glossary term appears, translate it exactly as specified in the glossary. If a term is not in the glossary, choose the best translation consistent with glossary usage."
+                                  tgt-name))))
+    (format "Translate the following text from %s to %s.%s Return only the translated text, without any quotes, backticks, or Markdown code fences:%s"
+            src-name tgt-name (or glossary-note "") tlon-ai-string-wrapper)))
 
 ;;;;; Writing
 
