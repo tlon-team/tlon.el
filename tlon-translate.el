@@ -213,7 +213,7 @@ Returns the translated text as a string, or nil if skipped."
       (pcase tlon-translate-engine
 	('deepl (tlon-deepl-request-wrapper 'translate callback no-glossary))
 	('ai (tlon-ai-request-wrapper 'translate callback no-glossary))
-	(_ (user-error "Unsupported translation engine: %s" tlon-translate-engine)))))
+	(_ (user-error "Unsupported translation engine: %s" tlon-translate-engine))))))
 
 ;;;;;; file
 

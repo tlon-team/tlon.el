@@ -458,7 +458,7 @@ Otherwise emit a message with the status provided by INFO."
   (if (not response)
       (tlon-ai-callback-fail info)
     (kill-new response)
-    (message "Copied AI model response to kill ring.")))
+    (message response)))
 
 (defun tlon-ai-callback-save (file)
   "If a response is obtained, save it to FILE.
