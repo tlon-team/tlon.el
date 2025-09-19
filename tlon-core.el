@@ -678,6 +678,7 @@ the actual user.")
     "italian"
     "japanese"
     "korean"
+    "polish"
     "russian"
     "spanish"
     "turkish")
