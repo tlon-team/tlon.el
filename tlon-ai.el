@@ -686,30 +686,6 @@ Both SOURCE-LANG and TARGET-LANG are ISO 639-1 codes."
           (tlon-lookup tlon-languages-properties :standard :code target-lang)
           tlon-ai-string-wrapper))
 
-(defun tlon-ai--normalize-plain-text-response (response)
-  "Normalize plain-text RESPONSE by stripping code fences and enclosing quotes."
-  (let* ((s (string-trim response)))
-    ;; Strip triple backtick fences (with optional language tag)
-    (when (string-match "\\````[[:alnum:]_-]*[[:space:]]*\\(?:\n\\)?\\(\\(?:.\\|\n\\)*?\\)\\n```[[:space:]]*\\'" s)
-      (setq s (match-string 1 s)))
-    (setq s (string-trim s))
-    ;; Strip matching single or double quotes surrounding the whole string
-    (when (and (>= (length s) 2)
-               (let ((a (aref s 0)) (b (aref s (1- (length s)))))
-                 (or (and (eq a ?\") (eq b ?\"))
-                     (and (eq a ?\') (eq b ?\')))))
-      (setq s (substring s 1 (1- (length s)))))
-    (string-trim s)))
-
-(defun tlon-ai--wrap-plain-text-callback (callback)
-  "Wrap CALLBACK to normalize plain-text responses before delegating."
-  (lambda (response info)
-    (if (stringp response)
-        (funcall (or callback #'tlon-ai-callback-copy)
-                 (tlon-ai--normalize-plain-text-response response)
-                 info)
-      (funcall (or callback #'tlon-ai-callback-copy) response info))))
-
 ;;;;; Writing
 
 ;;;;;; Reference article
