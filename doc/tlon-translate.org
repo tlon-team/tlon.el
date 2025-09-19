@@ -112,6 +112,8 @@ It provides the following groups and commands:
   + =c= :: Commit changes after revision (~tlon-translate-infix-toggle-commit-changes~)
   + =n= :: Paragraph chunk size (~tlon-translate-infix-set-chunk-size~)
   + =e= :: Select Engine (~tlon-translation-engine-infix~) - Select the translation engine (e.g., 'deepl).
+  + =d= :: DeepL model (~tlon-deepl-model-type-infix~)
+  + =a= :: AI model (~tlon-ai-infix-select-translation-model~)
   + =m -e= :: Revise errors model (~tlon-translate-infix-select-revise-errors-model~)
   + =m -f= :: Revise flow model (~tlon-translate-infix-select-revise-flow-model~)
 
