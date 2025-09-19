@@ -111,6 +111,14 @@ default `gptel-model'."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-ai)
 
+(defcustom tlon-ai-translation-model nil
+  "Model to use for AI-powered translation when using the 'ai' engine.
+The value is a cons cell whose car is the BACKEND name (string) and whose cdr is
+the MODEL symbol. See `gptel-extras-ai-models' for available options. If nil,
+use the default `gptel-model'."
+  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
+  :group 'tlon-ai)
+
 
 ;;;; Variables
 
@@ -639,7 +647,8 @@ callback that receives (RESPONSE INFO). _NO-GLOSSARY is ignored."
             (tgt tlon-translate-target-language)
             (text tlon-translate-text)
             (prompt (tlon-ai--build-translation-prompt src tgt)))
-       (tlon-make-gptel-request prompt text (or callback #'tlon-ai-callback-copy))))
+       (tlon-make-gptel-request prompt text (or callback #'tlon-ai-callback-copy)
+                                tlon-ai-translation-model)))
     (_ (user-error "Unsupported AI request type: %s" type))))
 
 (defun tlon-ai-translate-text (text target-lang source-lang callback &optional _no-glossary)
@@ -647,7 +656,7 @@ callback that receives (RESPONSE INFO). _NO-GLOSSARY is ignored."
 TARGET-LANG and SOURCE-LANG are ISO 639-1 two-letter codes. CALLBACK is a
 gptel-style function that receives (RESPONSE INFO). _NO-GLOSSARY is ignored."
   (let ((prompt (tlon-ai--build-translation-prompt source-lang target-lang)))
-    (tlon-make-gptel-request prompt text callback)))
+    (tlon-make-gptel-request prompt text callback tlon-ai-translation-model)))
 
 (defun tlon-ai--build-translation-prompt (source-lang target-lang)
   "Return an LLM prompt to translate from SOURCE-LANG to TARGET-LANG.
@@ -2054,6 +2063,12 @@ If nil, use the default model."
 If nil, use the default model."
   :class 'tlon-model-selection-infix
   :variable 'tlon-ai-summarize-commit-diffs-model)
+
+(transient-define-infix tlon-ai-infix-select-translation-model ()
+  "AI model to use for translation.
+If nil, use the default model."
+  :class 'tlon-model-selection-infix
+  :variable 'tlon-ai-translation-model)
 
 ;;;;;; Main menu
 

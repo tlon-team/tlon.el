@@ -1357,7 +1357,8 @@ If nil, use the default model."
     ""
     "Options"
     ("t -t" "Translation engine" tlon-translate-engine-infix)
-    ("t -d" "DeepL model" tlon-deepl-model-type-infix)]
+    ("t -d" "DeepL model" tlon-deepl-model-type-infix)
+    ("t -a" "AI model" tlon-ai-infix-select-translation-model)]
    ["Revise"
     ("r e" "Spot errors" tlon-translate-revise-errors)
     ("r f" "Improve flow" tlon-translate-revise-flow)
