@@ -1347,7 +1347,7 @@ end of the buffer unconditionally."
 (defun tlon-md-end-of-metadata ()
   "Return the position of the end of the metadata section."
   (when-let ((cons (tlon-get-delimited-region-pos
-		    tlon-yaml-delimiter)))
+		    (concat "^" tlon-yaml-delimiter))))
     (cdr cons)))
 
 (defun tlon-md-get-local-variables ()
