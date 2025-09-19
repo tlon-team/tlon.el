@@ -662,10 +662,13 @@ callback that receives (RESPONSE INFO). _NO-GLOSSARY is ignored."
             (tgt tlon-translate-target-language)
             (text tlon-translate-text)
             (prompt (tlon-ai--build-translation-prompt src tgt)))
+       (when (fboundp 'gptel-extras-warn-when-context)
+         (gptel-extras-warn-when-context))
        (tlon-ai--maybe-add-glossary-to-context src tgt)
        (tlon-make-gptel-request prompt text
                                 (tlon-ai--wrap-plain-text-callback (or callback #'tlon-ai-callback-copy))
-                                tlon-ai-translation-model)))
+                                tlon-ai-translation-model
+                                t)))
     (_ (user-error "Unsupported AI request type: %s" type))))
 
 (defun tlon-ai-translate-text (text target-lang source-lang callback &optional _no-glossary)
@@ -673,10 +676,13 @@ callback that receives (RESPONSE INFO). _NO-GLOSSARY is ignored."
 TARGET-LANG and SOURCE-LANG are ISO 639-1 two-letter codes. CALLBACK is a
 gptel-style function that receives (RESPONSE INFO). _NO-GLOSSARY is ignored."
   (let ((prompt (tlon-ai--build-translation-prompt source-lang target-lang)))
+    (when (fboundp 'gptel-extras-warn-when-context)
+      (gptel-extras-warn-when-context))
     (tlon-ai--maybe-add-glossary-to-context source-lang target-lang)
     (tlon-make-gptel-request prompt text
                              (tlon-ai--wrap-plain-text-callback callback)
-                             tlon-ai-translation-model)))
+                             tlon-ai-translation-model
+                             t)))
 
 (defun tlon-ai--build-translation-prompt (source-lang target-lang)
   "Return an LLM prompt to translate from SOURCE-LANG to TARGET-LANG.
