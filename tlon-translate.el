@@ -210,11 +210,10 @@ Returns the translated text as a string, or nil if skipped."
       (setq tlon-translate-text text
             tlon-translate-source-language source-lang
             tlon-translate-target-language target-lang)
-      (pcase-exhaustive tlon-translate-engine
+      (pcase tlon-translate-engine
 	('deepl (tlon-deepl-request-wrapper 'translate callback no-glossary))
-	;; TODO: develop this
-	;; ('ai)
-	))))
+	('ai (tlon-ai-request-wrapper 'translate callback no-glossary))
+	(_ (user-error "Unsupported translation engine: %s" tlon-translate-engine)))))
 
 ;;;;;; file
 
@@ -347,7 +346,23 @@ If AFTER-FN is non-nil, call it after writing TARGET-FILE."
                                    (find-file target-file)
                                    (when (functionp after-fn)
                                      (funcall after-fn))))))))
-    ;; TODO: add `ai' case; adapt `tlon-ai-translate-file' (and then remove from `tlon-ai.el')
+    ('ai
+     (let* ((source-repo (tlon-get-repo-from-file source-file))
+            (source-lang-code (tlon-repo-lookup :language :dir source-repo))
+            (text (with-temp-buffer
+                    (insert-file-contents source-file)
+                    (buffer-string))))
+       (tlon-ai-translate-text
+        text target-lang-code source-lang-code
+        (lambda (response info)
+          (if (not response)
+              (tlon-ai-callback-fail info)
+            (with-temp-file target-file
+              (insert response))
+            (message "Translated %s to %s" source-file target-file)
+            (find-file target-file)
+            (when (functionp after-fn)
+              (funcall after-fn)))))))
     (_ (user-error "Unsupported translation engine: %s" tlon-translate-engine))))
 
 (declare-function tlon-metadata-in-repo "tlon-yaml")
