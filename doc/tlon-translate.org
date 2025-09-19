@@ -34,7 +34,7 @@ This module provides functions for translating entire files using various transl
 :END:
 
 #+vindex: tlon-translation-engine
-+ ~tlon-translation-engine~ :: Specifies the translation engine to use. Currently, the only supported value is ='deepl=.
++ ~tlon-translation-engine~ :: Specifies the translation engine to use. Supported values are ='deepl= (DeepL API) and ='ai= (LLM via gptel).
 #+vindex: tlon-translate-revise-errors-model
 + ~tlon-translate-revise-errors-model~ :: Model to use for spotting errors in translations.
 #+vindex: tlon-translate-revise-flow-model
