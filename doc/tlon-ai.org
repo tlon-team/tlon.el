@@ -97,6 +97,8 @@ Each option takes a cons cell =(BACKEND . MODEL)=, where =BACKEND= is a string (
   (setq tlon-ai-help-model '("Gemini" . gemini-2.0-flash-lite-preview-02-05))
   #+end_src
 
+#+vindex: tlon-ai-translation-model
++ ~tlon-ai-translation-model~ :: Model used for AI-powered translation when ~tlon-translate-engine~ is set to ='ai=. If nil, the default ~gptel-model~ is used. You can select it from the translate menu via ~tlon-ai-infix-select-translation-model~.
 
 ** Commands
 :PROPERTIES:
