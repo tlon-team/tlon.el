@@ -637,6 +637,21 @@ FILE is the file to translate."
 
 ;;;;;; Engine wrappers for tlon-translate
 
+(declare-function gptel-context-add-file "gptel-context")
+(declare-function tlon-extract-glossary "tlon-glossary")
+
+(defun tlon-ai--maybe-add-glossary-to-context (source-lang target-lang)
+  "Attach glossary for TARGET-LANG to AI context when translating from English.
+SOURCE-LANG and TARGET-LANG are ISO 639-1 codes. Does nothing if no glossary
+is available or when translating into English."
+  (when (and (string= source-lang "en")
+             (stringp target-lang)
+             (not (string= target-lang "en")))
+    (require 'tlon-glossary)
+    (when-let ((path (tlon-extract-glossary target-lang 'ai-revision)))
+      (when (and (stringp path) (file-exists-p path))
+        (gptel-context-add-file path)))))
+
 (defun tlon-ai-request-wrapper (type &optional callback _no-glossary)
   "Dispatch AI-backed request of TYPE for translation.
 TYPE is a symbol, currently only 'translate. CALLBACK is a gptel-style
@@ -647,6 +662,7 @@ callback that receives (RESPONSE INFO). _NO-GLOSSARY is ignored."
             (tgt tlon-translate-target-language)
             (text tlon-translate-text)
             (prompt (tlon-ai--build-translation-prompt src tgt)))
+       (tlon-ai--maybe-add-glossary-to-context src tgt)
        (tlon-make-gptel-request prompt text
                                 (tlon-ai--wrap-plain-text-callback (or callback #'tlon-ai-callback-copy))
                                 tlon-ai-translation-model)))
@@ -657,6 +673,7 @@ callback that receives (RESPONSE INFO). _NO-GLOSSARY is ignored."
 TARGET-LANG and SOURCE-LANG are ISO 639-1 two-letter codes. CALLBACK is a
 gptel-style function that receives (RESPONSE INFO). _NO-GLOSSARY is ignored."
   (let ((prompt (tlon-ai--build-translation-prompt source-lang target-lang)))
+    (tlon-ai--maybe-add-glossary-to-context source-lang target-lang)
     (tlon-make-gptel-request prompt text
                              (tlon-ai--wrap-plain-text-callback callback)
                              tlon-ai-translation-model)))
