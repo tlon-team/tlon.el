@@ -496,6 +496,13 @@ inserted at the point the request was sent."
 INFO is the response info."
   (message tlon-gptel-error-message (plist-get info :status)))
 
+(defun tlon-ai--wrap-plain-text-callback (callback)
+  "Wrap CALLBACK so it only handles plain-text responses or final results.
+This helps avoid calling CALLBACK for non-text streaming chunks."
+  (lambda (response info)
+    (when (or (null response) (stringp response))
+      (funcall callback response info))))
+
 ;;;;;; Other functions
 
 (autoload 'bibtex-next-entry "bibtex")
@@ -638,19 +645,28 @@ FILE is the file to translate."
 ;;;;;; Engine wrappers for tlon-translate
 
 (declare-function gptel-context-add-file "gptel-context")
+(declare-function gptel-context-remove-all "gptel-context")
 (declare-function tlon-extract-glossary "tlon-glossary")
 
-(defun tlon-ai--maybe-add-glossary-to-context (source-lang target-lang)
-  "Attach glossary for TARGET-LANG to AI context when translating from English.
-SOURCE-LANG and TARGET-LANG are ISO 639-1 codes. Does nothing if no glossary
-is available or when translating into English."
+(defun tlon-ai--maybe-add-glossary-to-context (source-lang target-lang &optional request-buffer)
+  "Attach a temporary glossary file for TARGET-LANG to the GPTel context.
+
+SOURCE-LANG and TARGET-LANG are ISO 639-1 codes. When translating from English
+to a non-English TARGET-LANG, copy/extract the glossary to a temporary file and
+add that file to the GPTel context associated with REQUEST-BUFFER (or the
+current buffer if nil). Return the temporary glossary file path, or nil if none
+was added."
   (when (and (string= source-lang "en")
              (stringp target-lang)
              (not (string= target-lang "en")))
     (require 'tlon-glossary)
-    (when-let ((path (tlon-extract-glossary target-lang 'ai-revision)))
-      (when (and (stringp path) (file-exists-p path))
-        (gptel-context-add-file path)))))
+    (when-let ((orig (tlon-extract-glossary target-lang 'ai-revision)))
+      (when (and (stringp orig) (file-exists-p orig))
+        (let ((tmp (make-temp-file (format "tlon-glossary-%s-" target-lang) nil ".txt")))
+          (copy-file orig tmp t)
+          (with-current-buffer (or request-buffer (current-buffer))
+            (gptel-context-add-file tmp))
+          tmp)))))
 
 (defun tlon-ai-request-wrapper (type &optional callback _no-glossary)
   "Dispatch AI-backed request of TYPE for translation.
@@ -661,28 +677,55 @@ callback that receives (RESPONSE INFO). _NO-GLOSSARY is ignored."
      (let* ((src tlon-translate-source-language)
             (tgt tlon-translate-target-language)
             (text tlon-translate-text)
-            (prompt (tlon-ai--build-translation-prompt src tgt)))
+            (prompt (tlon-ai--build-translation-prompt src tgt))
+            (req-buf (generate-new-buffer (format "*tlon-translate:%s->%s*" src tgt)))
+            (glossary-temp (with-current-buffer req-buf
+                             (tlon-ai--maybe-add-glossary-to-context src tgt req-buf)))
+            (user-callback (or callback #'tlon-ai-callback-copy)))
        (when (fboundp 'gptel-extras-warn-when-context)
          (gptel-extras-warn-when-context))
-       (tlon-ai--maybe-add-glossary-to-context src tgt)
-       (tlon-make-gptel-request prompt text
-                                (tlon-ai--wrap-plain-text-callback (or callback #'tlon-ai-callback-copy))
-                                tlon-ai-translation-model
-                                t)))
+       (tlon-make-gptel-request
+        prompt text
+        (lambda (response info)
+          (unwind-protect
+              (funcall (tlon-ai--wrap-plain-text-callback user-callback) response info)
+            (when (buffer-live-p req-buf)
+              (with-current-buffer req-buf
+                (ignore-errors (gptel-context-remove-all))))
+            (when (and glossary-temp (file-exists-p glossary-temp))
+              (ignore-errors (delete-file glossary-temp)))
+            (when (buffer-live-p req-buf)
+              (kill-buffer req-buf))))
+        tlon-ai-translation-model
+        t
+        req-buf)))
     (_ (user-error "Unsupported AI request type: %s" type))))
 
 (defun tlon-ai-translate-text (text target-lang source-lang callback &optional _no-glossary)
   "Translate TEXT from SOURCE-LANG into TARGET-LANG and call CALLBACK.
 TARGET-LANG and SOURCE-LANG are ISO 639-1 two-letter codes. CALLBACK is a
 gptel-style function that receives (RESPONSE INFO). _NO-GLOSSARY is ignored."
-  (let ((prompt (tlon-ai--build-translation-prompt source-lang target-lang)))
+  (let* ((prompt (tlon-ai--build-translation-prompt source-lang target-lang))
+         (req-buf (generate-new-buffer (format "*tlon-translate:%s->%s*" source-lang target-lang)))
+         (glossary-temp (with-current-buffer req-buf
+                          (tlon-ai--maybe-add-glossary-to-context source-lang target-lang req-buf))))
     (when (fboundp 'gptel-extras-warn-when-context)
       (gptel-extras-warn-when-context))
-    (tlon-ai--maybe-add-glossary-to-context source-lang target-lang)
-    (tlon-make-gptel-request prompt text
-                             (tlon-ai--wrap-plain-text-callback callback)
-                             tlon-ai-translation-model
-                             t)))
+    (tlon-make-gptel-request
+     prompt text
+     (lambda (response info)
+       (unwind-protect
+           (funcall (tlon-ai--wrap-plain-text-callback callback) response info)
+         (when (buffer-live-p req-buf)
+           (with-current-buffer req-buf
+             (ignore-errors (gptel-context-remove-all))))
+         (when (and glossary-temp (file-exists-p glossary-temp))
+           (ignore-errors (delete-file glossary-temp)))
+         (when (buffer-live-p req-buf)
+           (kill-buffer req-buf))))
+     tlon-ai-translation-model
+     t
+     req-buf)))
 
 (defun tlon-ai--build-translation-prompt (source-lang target-lang)
   "Return an LLM prompt to translate from SOURCE-LANG to TARGET-LANG.
