@@ -627,6 +627,36 @@ FILE is the file to translate."
 	  (insert response)
 	  (write-region (point-min) (point-max) target-path))))))
 
+;;;;;; Engine wrappers for tlon-translate
+
+(defun tlon-ai-request-wrapper (type &optional callback _no-glossary)
+  "Dispatch AI-backed request of TYPE for translation.
+TYPE is a symbol, currently only 'translate. CALLBACK is a gptel-style
+callback that receives (RESPONSE INFO). _NO-GLOSSARY is ignored."
+  (pcase type
+    ('translate
+     (let* ((src tlon-translate-source-language)
+            (tgt tlon-translate-target-language)
+            (text tlon-translate-text)
+            (prompt (tlon-ai--build-translation-prompt src tgt)))
+       (tlon-make-gptel-request prompt text (or callback #'tlon-ai-callback-copy))))
+    (_ (user-error "Unsupported AI request type: %s" type))))
+
+(defun tlon-ai-translate-text (text target-lang source-lang callback &optional _no-glossary)
+  "Translate TEXT from SOURCE-LANG into TARGET-LANG and call CALLBACK.
+TARGET-LANG and SOURCE-LANG are ISO 639-1 two-letter codes. CALLBACK is a
+gptel-style function that receives (RESPONSE INFO). _NO-GLOSSARY is ignored."
+  (let ((prompt (tlon-ai--build-translation-prompt source-lang target-lang)))
+    (tlon-make-gptel-request prompt text callback)))
+
+(defun tlon-ai--build-translation-prompt (source-lang target-lang)
+  "Return an LLM prompt to translate from SOURCE-LANG to TARGET-LANG.
+Both SOURCE-LANG and TARGET-LANG are ISO 639-1 codes."
+  (format "Translate the following text from %s to %s:%s"
+          (tlon-lookup tlon-languages-properties :standard :code source-lang)
+          (tlon-lookup tlon-languages-properties :standard :code target-lang)
+          tlon-ai-string-wrapper))
+
 ;;;;; Writing
 
 ;;;;;; Reference article
