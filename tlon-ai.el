@@ -679,11 +679,13 @@ callback that receives (RESPONSE INFO). _NO-GLOSSARY is ignored."
             (text tlon-translate-text)
             (prompt (tlon-ai--build-translation-prompt src tgt))
             (req-buf (generate-new-buffer (format "*tlon-translate:%s->%s*" src tgt)))
-            (glossary-temp (with-current-buffer req-buf
-                             (tlon-ai--maybe-add-glossary-to-context src tgt req-buf)))
-            (user-callback (or callback #'tlon-ai-callback-copy)))
+            (user-callback (or callback #'tlon-ai-callback-copy))
+            (glossary-temp nil))
        (when (fboundp 'gptel-extras-warn-when-context)
-         (gptel-extras-warn-when-context))
+         (with-current-buffer req-buf
+           (gptel-extras-warn-when-context)))
+       (setq glossary-temp (with-current-buffer req-buf
+                             (tlon-ai--maybe-add-glossary-to-context src tgt req-buf)))
        (tlon-make-gptel-request
         prompt text
         (lambda (response info)
@@ -707,10 +709,12 @@ TARGET-LANG and SOURCE-LANG are ISO 639-1 two-letter codes. CALLBACK is a
 gptel-style function that receives (RESPONSE INFO). _NO-GLOSSARY is ignored."
   (let* ((prompt (tlon-ai--build-translation-prompt source-lang target-lang))
          (req-buf (generate-new-buffer (format "*tlon-translate:%s->%s*" source-lang target-lang)))
-         (glossary-temp (with-current-buffer req-buf
-                          (tlon-ai--maybe-add-glossary-to-context source-lang target-lang req-buf))))
+         (glossary-temp nil))
     (when (fboundp 'gptel-extras-warn-when-context)
-      (gptel-extras-warn-when-context))
+      (with-current-buffer req-buf
+        (gptel-extras-warn-when-context)))
+    (setq glossary-temp (with-current-buffer req-buf
+                          (tlon-ai--maybe-add-glossary-to-context source-lang target-lang req-buf)))
     (tlon-make-gptel-request
      prompt text
      (lambda (response info)
