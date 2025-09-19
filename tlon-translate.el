@@ -452,7 +452,6 @@ consider for case (II). When nil, prompts the user."
 ;;;###autoload
 (defun tlon-translate-abstract-here ()
   "Translate the abstract at point, choosing DB or JSON as destination.
-
 If point is on a DB translation entry that lacks an abstract, translate
 the original's abstract into the entry's language and write it into
 db.bib. Otherwise, translate the current entry's abstract into a
