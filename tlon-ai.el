@@ -647,7 +647,8 @@ callback that receives (RESPONSE INFO). _NO-GLOSSARY is ignored."
             (tgt tlon-translate-target-language)
             (text tlon-translate-text)
             (prompt (tlon-ai--build-translation-prompt src tgt)))
-       (tlon-make-gptel-request prompt text (or callback #'tlon-ai-callback-copy)
+       (tlon-make-gptel-request prompt text
+                                (tlon-ai--wrap-plain-text-callback (or callback #'tlon-ai-callback-copy))
                                 tlon-ai-translation-model)))
     (_ (user-error "Unsupported AI request type: %s" type))))
 
@@ -656,15 +657,41 @@ callback that receives (RESPONSE INFO). _NO-GLOSSARY is ignored."
 TARGET-LANG and SOURCE-LANG are ISO 639-1 two-letter codes. CALLBACK is a
 gptel-style function that receives (RESPONSE INFO). _NO-GLOSSARY is ignored."
   (let ((prompt (tlon-ai--build-translation-prompt source-lang target-lang)))
-    (tlon-make-gptel-request prompt text callback tlon-ai-translation-model)))
+    (tlon-make-gptel-request prompt text
+                             (tlon-ai--wrap-plain-text-callback callback)
+                             tlon-ai-translation-model)))
 
 (defun tlon-ai--build-translation-prompt (source-lang target-lang)
   "Return an LLM prompt to translate from SOURCE-LANG to TARGET-LANG.
 Both SOURCE-LANG and TARGET-LANG are ISO 639-1 codes."
-  (format "Translate the following text from %s to %s:%s"
+  (format "Translate the following text from %s to %s. Return only the translated text, without any quotes, backticks, or Markdown code fences:%s"
           (tlon-lookup tlon-languages-properties :standard :code source-lang)
           (tlon-lookup tlon-languages-properties :standard :code target-lang)
           tlon-ai-string-wrapper))
+
+(defun tlon-ai--normalize-plain-text-response (response)
+  "Normalize plain-text RESPONSE by stripping code fences and enclosing quotes."
+  (let* ((s (string-trim response)))
+    ;; Strip triple backtick fences (with optional language tag)
+    (when (string-match "\\````[[:alnum:]_-]*[[:space:]]*\\(?:\n\\)?\\(\\(?:.\\|\n\\)*?\\)\\n```[[:space:]]*\\'" s)
+      (setq s (match-string 1 s)))
+    (setq s (string-trim s))
+    ;; Strip matching single or double quotes surrounding the whole string
+    (when (and (>= (length s) 2)
+               (let ((a (aref s 0)) (b (aref s (1- (length s)))))
+                 (or (and (eq a ?\") (eq b ?\"))
+                     (and (eq a ?\') (eq b ?\')))))
+      (setq s (substring s 1 (1- (length s)))))
+    (string-trim s)))
+
+(defun tlon-ai--wrap-plain-text-callback (callback)
+  "Wrap CALLBACK to normalize plain-text responses before delegating."
+  (lambda (response info)
+    (if (stringp response)
+        (funcall (or callback #'tlon-ai-callback-copy)
+                 (tlon-ai--normalize-plain-text-response response)
+                 info)
+      (funcall (or callback #'tlon-ai-callback-copy) response info))))
 
 ;;;;; Writing
 
