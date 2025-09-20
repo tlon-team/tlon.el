@@ -741,7 +741,7 @@ glossary file which maps English terms to TARGET-LANG."
   (let* ((src-name (tlon-lookup tlon-languages-properties :standard :code source-lang))
          (tgt-name (tlon-lookup tlon-languages-properties :standard :code target-lang))
          (glossary-note (when glossary-file
-                          (format " Use the attached glossary file to map English terms to %s. Whenever a glossary term appears, translate it exactly as specified in the glossary. If a term is not in the glossary, choose the best translation consistent with glossary usage."
+                          (format " Use the attached glossary file to map English terms to %s. Whenever a glossary term appears, translate it exactly as specified in the glossary."
                                   tgt-name))))
     (format "Translate the following text from %s to %s.%s Return only the translated text, without any quotes, backticks, or Markdown code fences:%s"
             src-name tgt-name (or glossary-note "") tlon-ai-string-wrapper)))
