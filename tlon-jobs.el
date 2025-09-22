@@ -29,6 +29,7 @@
 (require 'tlon-clock)
 (require 'tlon-core)
 (require 'tlon-forg)
+(require 'tlon-import)
 
 ;;;; Variables
 
