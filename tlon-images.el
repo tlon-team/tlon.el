@@ -186,7 +186,7 @@ BACKGROUND defaults to \"white\" if nil."
     (save-excursion
       (goto-char (point-min))
       (when (re-search-forward "\r?\n\r?\n" nil t) ; Move to start of body
-        (let ((magic (buffer-substring-no-properties (point) (min (point-max) (+ (point) 12)))))
+        (let* ((magic (buffer-substring-no-properties (point) (min (point-max) (+ (point) 256)))))
           (cond
            ((string-prefix-p "\xFF\xD8\xFF" magic) "jpg")
            ((string-prefix-p "\x89PNG\r\n\x1a\n" magic) "png")
@@ -195,6 +195,7 @@ BACKGROUND defaults to \"white\" if nil."
                  (string-prefix-p "RIFF" magic)
                  (string-equal "WEBP" (substring magic 8 12)))
             "webp")
+           ((string-match-p "\\`\\s-*\\(<\\?xml\\|<svg\\b\\)" magic) "svg")
            (t nil)))))))
 
 (defun tlon-images-process-image (source target command message-fmt)
@@ -423,15 +424,13 @@ relative to the repository root. For example, if FILE is
                      (headers (buffer-substring-no-properties (point-min) header-end))
                      (extension
                       (or (tlon-images--get-image-format-from-content (current-buffer))
-			  (let ((from-header
-				 (let ((case-fold-search t))
-				   (when (string-match "Content-Type: image/\\([a-zA-Z0-9-+]+\\)" headers)
-                                     (match-string 1 headers)))))
-                            (if (string-equal from-header "jpeg")
-				"jpg"
-                              from-header))
-			  (let ((path (url-filename (url-generic-parse-url url))))
-                            (when path (file-name-extension path))))))
+                          (let* ((case-fold-search t)
+                                 (raw (and (string-match "Content-Type: image/\\([a-zA-Z0-9-+]+\\)" headers)
+                                           (match-string 1 headers))))
+                            (tlon-images--normalize-image-extension raw))
+                          (let* ((path (url-filename (url-generic-parse-url url)))
+                                 (raw (and path (file-name-extension path))))
+                            (tlon-images--normalize-image-extension raw)))))
                 (if (not extension)
                     (progn
                       (message "Skipping %s (unknown or unsupported image type)" url)
@@ -450,6 +449,16 @@ relative to the repository root. For example, if FILE is
       (when tlon-images-open-after-processing
 	(dired target-dir))
       (message "Downloaded %d images to %s" (length image-urls) (file-relative-name target-dir repo-root)))))
+
+(defun tlon-images--normalize-image-extension (ext)
+  "Normalize image EXT from headers/URL to a usable file extension."
+  (when ext
+    (let* ((base (car (split-string (downcase ext) "\\+" t))))
+      (pcase base
+        ("jpeg" "jpg")
+        ("x-icon" "ico")
+        ("vnd.microsoft.icon" "ico")
+        (_ base)))))
 
 (defun tlon-images--get-image-urls-from-markdown (file)
   "Return a list of all image URLs in Markdown FILE."
