@@ -285,19 +285,26 @@ This replaces occurrences of:
 with:
   [^N]
 and removes the whole trailing link block."
+  ;; 1) Replace the full link form [<sup>N</sup>](#fn-N "...") → [^N]
+  (goto-char (point-min))
+  (let ((pattern "\\[<sup>\\([[:digit:]]\\{1,3\\}\\)</sup>\\](#fn-\\1\\(?:.\\|\n\\)*?)"))
+    (while (re-search-forward pattern nil t)
+      (replace-match (format "[^%s]" (match-string-no-properties 1)) t t)))
+  ;; 2) If we already have [^N] but the (#fn-N "...") tail remains, strip the tail.
+  (goto-char (point-min))
+  (let ((pattern "\\[\\^\\([[:digit:]]\\{1,3\\}\\)\\](#fn-\\1\\(?:.\\|\n\\)*?)"))
+    (while (re-search-forward pattern nil t)
+      (replace-match (format "[^%s]" (match-string-no-properties 1)) t t)))
+  ;; 3) Collapse duplicated patterns like "[<sup>N</sup>][^N]" to just "[^N]".
+  (goto-char (point-min))
+  (let ((pattern "\\[<sup>\\([[:digit:]]\\{1,3\\}\\)</sup>\\]\\s-*\\(\\[\\^\\1\\]\\)"))
+    (while (re-search-forward pattern nil t)
+      (replace-match (format "[^%s]" (match-string-no-properties 1)) t t)))
+  ;; 4) Fallback: convert any stray "[<sup>N</sup>]" (without a trailing link) to "[^N]".
   (goto-char (point-min))
   (let ((pattern "\\[<sup>\\([[:digit:]]\\{1,3\\}\\)</sup>\\]"))
     (while (re-search-forward pattern nil t)
-      (let* ((n (match-string-no-properties 1))
-             (end (match-end 0)))
-        (when (save-excursion
-                (goto-char end)
-                (looking-at (format "(#fn-%s" (regexp-quote n))))
-          ;; Replace the superscript with a Markdown footnote marker.
-          (replace-match (format "[^%s]" n) t t nil 0)
-          ;; Point is just after the replacement. Remove the parenthesized link.
-          (when (eq (char-after) ?\()
-            (tlon-cleanup--80k-delete-paren-block-at-point)))))))
+      (replace-match (format "[^%s]" (match-string-no-properties 1)) t t))))
 
 (defun tlon-cleanup-fix-80k-footnote-references ()
   "Convert 80,000 Hours footnote list items to standard Markdown footnotes.
