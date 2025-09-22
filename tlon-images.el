@@ -557,4 +557,3 @@ variable."
 
 (provide 'tlon-images)
 ;;; tlon-images.el ends here
-
