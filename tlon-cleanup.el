@@ -285,46 +285,28 @@ This replaces occurrences of:
 with:
   [^N]
 and removes the whole trailing link block."
-  ;; 1) Replace the full link form [<sup>N</sup>](#fn-N "...") → [^N]
-  (goto-char (point-min))
-  (let ((pattern "\\[<sup>\\([[:digit:]]\\{1,3\\}\\)</sup>\\](#fn-\\1\\(?:.\\|\n\\)*?)"))
-    (while (re-search-forward pattern nil t)
-      (replace-match (format "[^%s]" (match-string-no-properties 1)) t t)))
-  ;; 2) If we already have [^N] but the (#fn-N "...") tail remains, strip the tail.
-  (goto-char (point-min))
-  (let ((pattern "\\[\\^\\([[:digit:]]\\{1,3\\}\\)\\](#fn-\\1\\(?:.\\|\n\\)*?)"))
-    (while (re-search-forward pattern nil t)
-      (replace-match (format "[^%s]" (match-string-no-properties 1)) t t)))
-  ;; 3) Collapse duplicated patterns like "[<sup>N</sup>][^N]" to just "[^N]".
-  (goto-char (point-min))
-  (let ((pattern "\\[<sup>\\([[:digit:]]\\{1,3\\}\\)</sup>\\]\\s-*\\(\\[\\^\\1\\]\\)"))
-    (while (re-search-forward pattern nil t)
-      (replace-match (format "[^%s]" (match-string-no-properties 1)) t t)))
-  ;; 4) Fallback: convert any stray "[<sup>N</sup>]" (without a trailing link) to "[^N]".
-  (goto-char (point-min))
-  (let ((pattern "\\[<sup>\\([[:digit:]]\\{1,3\\}\\)</sup>\\]"))
-    (while (re-search-forward pattern nil t)
-      (replace-match (format "[^%s]" (match-string-no-properties 1)) t t)))
-  ;; 5) Remove trailing quoted HTML blobs erroneously left after the marker,
-  ;;    capturing until a quote that is immediately followed by one or two ')'.
-  (goto-char (point-min))
-  (let ((pattern "\\(\\[\\^\\([[:digit:]]\\{1,3\\}\\)\\]\\)[[:space:]]*\"\\(?:.\\|\n\\)*?\"[[:space:]]*)\\{1,2\\}"))
-    (while (re-search-forward pattern nil t)
-      (replace-match "\\1" t)))
-  ;; 6) Fallback: drop any stray closing parens right after a footnote marker.
-  (goto-char (point-min))
-  (let ((pattern "\\(\\[\\^\\([[:digit:]]\\{1,3\\}\\)\\]\\)[[:space:]]*)\\{1,3\\}"))
-    (while (re-search-forward pattern nil t)
-      (replace-match "\\1" t)))
-  ;; 7) Remove leaked inline payload after [^N] up to a characteristic closing '))'.
-  ;;    Example to fix:
-  ;;      ... 97.5%[^1], defined by ... many lines ...")) of ...
-  ;;    becomes:
-  ;;      ... 97.5%[^1]) of ...
-  (goto-char (point-min))
-  (let ((pattern "\\(\\[\\^\\([[:digit:]]\\{1,3\\}\\)\\]\\)\\(?:[[:space:]]*,\\)?\\(?:.\\|\n\\)*?[[:space:]]*))"))
-    (while (re-search-forward pattern nil t)
-      (replace-match "\\1)" t))))
+  (save-excursion
+    ;; Pass 1: Replace [<sup>N</sup>] with [^N] and delete the immediate
+    ;; parenthesized link tail that follows (which can span multiple lines).
+    (goto-char (point-min))
+    (let ((sup-re "\\[<sup>\\([[:digit:]]\\{1,3\\}\\)</sup>\\]"))
+      (while (re-search-forward sup-re nil t)
+        (let* ((n (match-string-no-properties 1)))
+          (replace-match (format "[^%s]" n) t t)
+          (skip-chars-forward " \t")
+          (when (eq (char-after) ?\()
+            (tlon-cleanup--80k-delete-paren-block-at-point)))))
+    ;; Pass 2: If any existing [^N] is immediately followed by a parenthesized
+    ;; link payload, remove that payload robustly using balanced paren deletion.
+    (goto-char (point-min))
+    (while (re-search-forward "\\[\\^\\([[:digit:]]\\{1,3\\}\\)\\]" nil t)
+      (skip-chars-forward " \t")
+      (when (eq (char-after) ?\()
+        (tlon-cleanup--80k-delete-paren-block-at-point)))
+    ;; Pass 3: Collapse duplicates like "[^N][^N]" into a single "[^N]".
+    (goto-char (point-min))
+    (while (re-search-forward "\\(\\[\\^\\([[:digit:]]\\{1,3\\}\\)\\]\\)\\s-*\\[\\^\\2\\]" nil t)
+      (replace-match "\\1" t))))
 
 (defun tlon-cleanup-fix-80k-footnote-references ()
   "Convert 80,000 Hours footnote list items to standard Markdown footnotes.
