@@ -30,8 +30,8 @@
 (require 'subr-x)
 
 (defvar-local tlon-cleanup--footnote-map nil
-  "Hash table mapping EA Forum footnote ids to sequential numbers in the current
-buffer.  It is populated by `tlon-cleanup-fix-eaf-footnotes' and consumed by
+  "Hash table mapping EA Forum footnote ids to sequential numbers.
+It is populated by `tlon-cleanup-fix-eaf-footnotes' and consumed by
 `tlon-cleanup-fix-eaf-footnote-references'.")
 
 ;;;; Functions
@@ -289,7 +289,6 @@ and removes the whole trailing link block."
   (let ((pattern "\\[<sup>\\([[:digit:]]\\{1,3\\}\\)</sup>\\]"))
     (while (re-search-forward pattern nil t)
       (let* ((n (match-string-no-properties 1))
-             (beg (match-beginning 0))
              (end (match-end 0)))
         (when (save-excursion
                 (goto-char end)
