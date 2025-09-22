@@ -81,6 +81,7 @@
 (declare-function tlon-yaml-insert-field "tlon-yaml")
 (declare-function tlon-yaml-suggest-tags "tlon-yaml")
 (declare-function tlon-images-download-from-markdown "tlon-images")
+(declare-function tlon-cleanup-80k "tlon-cleanup")
 ;;;###autoload
 (defun tlon-import-document ()
   "Import a new document from a URL or a PDF file."
@@ -203,6 +204,9 @@ for one."
      (format pandoc source target))
     (with-current-buffer (find-file-noselect target)
       (tlon-cleanup-common)
+      (when (and (simple-extras-string-is-url-p source)
+                 (string-match-p "\\`https?://\\(www\\.\\)?80000hours\\.org/" source))
+        (tlon-cleanup-80k))
       (tlon-autofix-all)
       ;; (delete-tlon-yaml-insert-field "type" (substring bare-dir 0 -1))
       )

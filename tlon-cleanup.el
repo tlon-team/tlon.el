@@ -269,6 +269,98 @@ It relies on the buffer-local `tlon-cleanup--footnote-map' populated by
     (while (re-search-forward string nil t)
       (replace-match ""))))
 
+;;;;; 80,000 Hours
+
+(defun tlon-cleanup-80k ()
+  "Cleanup 80,000 Hours footnotes in the current buffer."
+  (interactive)
+  (tlon-cleanup-fix-80k-footnotes)
+  (tlon-cleanup-fix-80k-footnote-references))
+
+(defun tlon-cleanup-fix-80k-footnotes ()
+  "Convert 80,000 Hours in-text footnote markers to `[^N]'.
+
+This replaces occurrences of:
+  [<sup>N</sup>](#fn-N \"...\")
+with:
+  [^N]
+and removes the whole trailing link block."
+  (goto-char (point-min))
+  (let ((pattern "\\[<sup>\\([[:digit:]]\\{1,3\\}\\)</sup>\\]"))
+    (while (re-search-forward pattern nil t)
+      (let* ((n (match-string-no-properties 1))
+             (beg (match-beginning 0))
+             (end (match-end 0)))
+        (when (save-excursion
+                (goto-char end)
+                (looking-at (format "(#fn-%s" (regexp-quote n))))
+          ;; Replace the superscript with a Markdown footnote marker.
+          (replace-match (format "[^%s]" n) t t nil 0)
+          ;; Point is just after the replacement. Remove the parenthesized link.
+          (when (eq (char-after) ?\()
+            (tlon-cleanup--80k-delete-paren-block-at-point)))))))
+
+(defun tlon-cleanup-fix-80k-footnote-references ()
+  "Convert 80,000 Hours footnote list items to standard Markdown footnotes.
+
+Transforms blocks like:
+  1. First paragraph
+
+     Continuation paragraph…
+
+     [↩](#fn-ref-1)
+
+into:
+  [^1]: First paragraph
+
+  Continuation paragraph…"
+  (let ((item-re "^\\([[:digit:]]\\{1,3\\}\\)\\.\\s-+"))
+    (goto-char (point-min))
+    (while (re-search-forward item-re nil t)
+      (let* ((n (match-string-no-properties 1))
+             (block-beg (match-beginning 0))
+             (content-beg (match-end 0))
+             (next (or (save-excursion
+                         (when (re-search-forward item-re nil t)
+                           (match-beginning 0)))
+                       (point-max)))
+             (raw (buffer-substring-no-properties content-beg next)))
+        ;; Only process if this block appears to be a footnote (has backref).
+        (when (string-match (format "#fn-\\(?:ref-\\)?%s\\b" (regexp-quote n)) raw)
+          (let* ((no-backref (tlon-cleanup--80k-strip-backrefs raw))
+                 (deindented (tlon-cleanup--80k-strip-indentation no-backref))
+                 (body (string-trim deindented))
+                 (definition (format "[^%s]: %s\n\n" n body)))
+            (delete-region block-beg next)
+            (insert definition)
+            ;; Restart scanning from beginning to keep anchors valid.
+            (goto-char (point-min))))))))
+
+(defun tlon-cleanup--80k-strip-backrefs (text)
+  "Remove 80,000 Hours backreference links from TEXT."
+  (let ((re "\\s-*\\[↩\\(?:︎\\)?\\](#fn-\\(?:ref-\\)?[[:digit:]]+)\\s-*"))
+    (replace-regexp-in-string re "" text t t)))
+
+(defun tlon-cleanup--80k-strip-indentation (text)
+  "Remove list indentation from multi-paragraph TEXT."
+  (setq text (replace-regexp-in-string "\\`[[:space:]]\\{4\\}" "" text t t))
+  (replace-regexp-in-string "\n[[:space:]]\\{4\\}" "\n" text t t))
+
+(defun tlon-cleanup--80k-delete-paren-block-at-point ()
+  "Delete the balanced parenthesized block starting at point.
+
+Point must be at an opening parenthesis."
+  (when (eq (char-after) ?\()
+    (let ((start (point))
+          (depth 1))
+      (forward-char 1)
+      (while (and (> depth 0) (not (eobp)))
+        (pcase (char-after)
+          (?\( (setq depth (1+ depth)))
+          (?\) (setq depth (1- depth))))
+        (forward-char 1))
+      (delete-region start (point)))))
+
 ;;;;; Non-EAF
 
 (defun tlon-cleanup-non-eaf ()
@@ -387,6 +479,7 @@ If DELETE is non-nil, delete the footnote."
   ["Cleanup"
    ("c" "Common" tlon-cleanup-common)
    ("e" "EA Forum" tlon-cleanup-eaf)
+   ("k" "80,000 Hours" tlon-cleanup-80k)
    ("n" "Non-EAF" tlon-cleanup-non-eaf)]
   ["Footnotes"
    ("s" "Split into paragraphs" tlon-cleanup-split-footnotes-into-paragraphs)
