@@ -315,7 +315,16 @@ and removes the whole trailing link block."
   (goto-char (point-min))
   (let ((pattern "\\(\\[\\^\\([[:digit:]]\\{1,3\\}\\)\\]\\)[[:space:]]*)\\{1,3\\}"))
     (while (re-search-forward pattern nil t)
-      (replace-match "\\1" t))))
+      (replace-match "\\1" t)))
+  ;; 7) Remove leaked inline payload after [^N] up to a characteristic closing '))'.
+  ;;    Example to fix:
+  ;;      ... 97.5%[^1], defined by ... many lines ...")) of ...
+  ;;    becomes:
+  ;;      ... 97.5%[^1]) of ...
+  (goto-char (point-min))
+  (let ((pattern "\\(\\[\\^\\([[:digit:]]\\{1,3\\}\\)\\]\\)\\(?:[[:space:]]*,\\)?\\(?:.\\|\n\\)*?[[:space:]]*))"))
+    (while (re-search-forward pattern nil t)
+      (replace-match "\\1)" t))))
 
 (defun tlon-cleanup-fix-80k-footnote-references ()
   "Convert 80,000 Hours footnote list items to standard Markdown footnotes.
