@@ -295,14 +295,16 @@ and removes the whole trailing link block."
         (let ((n (match-string-no-properties 1)))
           (replace-match (format "[^%s]" n) t t)
           (skip-chars-forward " \t")
-          (when (eq (char-after) ?\()
+          (when (and (eq (char-after) ?\()
+                     (looking-at-p "(#fn-"))
             (tlon-cleanup--80k-delete-paren-block-at-point)))))
     ;; Pass 2: If any existing [^N] is immediately followed by a parenthesized
     ;; link payload, remove that payload with balanced deletion as well.
     (goto-char (point-min))
     (while (re-search-forward "\\[\\^\\([[:digit:]]\\{1,3\\}\\)\\]" nil t)
       (skip-chars-forward " \t")
-      (when (eq (char-after) ?\()
+      (when (and (eq (char-after) ?\()
+                 (looking-at-p "(#fn-"))
         (tlon-cleanup--80k-delete-paren-block-at-point)))
     ;; Pass 3: Collapse duplicates like "[^N][^N]" into a single "[^N]".
     (goto-char (point-min))
@@ -358,15 +360,29 @@ into:
 (defun tlon-cleanup--80k-delete-paren-block-at-point ()
   "Delete the balanced parenthesized block starting at point.
 
-Point must be at an opening parenthesis."
+Point must be at an opening parenthesis. Parentheses inside
+double-quoted strings are ignored when computing balance. Escaped
+quotes (\\\") are respected."
   (when (eq (char-after) ?\()
     (let ((start (point))
-          (depth 1))
+          (depth 1)
+          (in-quote nil)
+          (prev nil)
+          ch)
       (forward-char 1)
       (while (and (> depth 0) (not (eobp)))
-        (pcase (char-after)
-          (?\( (setq depth (1+ depth)))
-          (?\) (setq depth (1- depth))))
+        (setq ch (char-after))
+        (cond
+         ;; Toggle quote state on unescaped double quote
+         ((and (eq ch ?\")
+               (not (eq prev ?\\)))
+          (setq in-quote (not in-quote)))
+         ;; Only count parens when not inside quotes
+         ((and (not in-quote) (eq ch ?\())
+          (setq depth (1+ depth)))
+         ((and (not in-quote) (eq ch ?\)))
+          (setq depth (1- depth))))
+        (setq prev ch)
         (forward-char 1))
       (delete-region start (point)))))
 
