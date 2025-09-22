@@ -108,6 +108,23 @@ These functions target cleanup tasks specific to content imported from the Effec
   - Licensing text (`*This work is licensed...*`)
   - Horizontal separators (`————————————————————————`)
 
+** 80,000 Hours specific cleanup
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-cleanup-80k
+:END:
+
+These functions target cleanup tasks specific to content imported from 80,000 Hours (80000hours.org), which uses inline superscript footnote links and a numbered footnote list at the end of the article.
+
+#+findex: tlon-cleanup-80k
++ ~tlon-cleanup-80k~ :: Runs both ~tlon-cleanup-fix-80k-footnotes~ and ~tlon-cleanup-fix-80k-footnote-references~ on the current buffer.
+
+#+findex: tlon-cleanup-fix-80k-footnotes
++ ~tlon-cleanup-fix-80k-footnotes~ :: Converts inline footnote markers of the form ~[<sup>N</sup>](#fn-N "...")~ into standard Markdown footnote references ~[^N]~ and removes the trailing link payload.
+
+#+findex: tlon-cleanup-fix-80k-footnote-references
++ ~tlon-cleanup-fix-80k-footnote-references~ :: Converts the numbered footnote list found at the end of 80,000 Hours articles (multi‑paragraph items ending with a backreference link ~[↩](#fn-ref-N)~) into proper Markdown footnote definitions:
+  ~[^N]: first paragraph~ followed by continuation paragraphs separated by blank lines. It removes backreference links and list indentation.
+
 ** Non-EAF Cleanup
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-cleanup-non-eaf-funcs

@@ -82,7 +82,7 @@ This module provides functions for importing documents from various sources (web
 + ~tlon-import-save-html-to-file~ :: Saves the fetched HTML content to a temporary file, returning the file path.
 
 #+findex: tlon-import-convert-html-to-markdown
-+ ~tlon-import-convert-html-to-markdown~ :: Converts an HTML SOURCE (file path or string) to Markdown format, likely using an external tool like Pandoc. Optionally uses a provided TITLE for metadata.
++ ~tlon-import-convert-html-to-markdown~ :: Converts an HTML SOURCE (file path or string) to Markdown format, likely using an external tool like Pandoc. Optionally uses a provided TITLE for metadata. When SOURCE is a URL under =https://80000hours.org/=, it automatically applies ~tlon-cleanup-80k~ after the common cleanup to fix 80,000 Hours–specific footnote formatting.
 
 *** Importing PDF
 :PROPERTIES:
