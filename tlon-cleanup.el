@@ -287,17 +287,18 @@ with:
 and removes the whole trailing link block."
   (save-excursion
     ;; Pass 1: Replace [<sup>N</sup>] with [^N] and delete the immediate
-    ;; parenthesized link tail that follows (which can span multiple lines).
+    ;; parenthesized link tail that follows (which can span multiple lines)
+    ;; using balanced-parentheses deletion (safe and non-greedy).
     (goto-char (point-min))
     (let ((sup-re "\\[<sup>\\([[:digit:]]\\{1,3\\}\\)</sup>\\]"))
       (while (re-search-forward sup-re nil t)
-        (let* ((n (match-string-no-properties 1)))
+        (let ((n (match-string-no-properties 1)))
           (replace-match (format "[^%s]" n) t t)
           (skip-chars-forward " \t")
           (when (eq (char-after) ?\()
             (tlon-cleanup--80k-delete-paren-block-at-point)))))
     ;; Pass 2: If any existing [^N] is immediately followed by a parenthesized
-    ;; link payload, remove that payload robustly using balanced paren deletion.
+    ;; link payload, remove that payload with balanced deletion as well.
     (goto-char (point-min))
     (while (re-search-forward "\\[\\^\\([[:digit:]]\\{1,3\\}\\)\\]" nil t)
       (skip-chars-forward " \t")
