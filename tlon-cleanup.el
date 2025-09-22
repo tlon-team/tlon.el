@@ -304,7 +304,18 @@ and removes the whole trailing link block."
   (goto-char (point-min))
   (let ((pattern "\\[<sup>\\([[:digit:]]\\{1,3\\}\\)</sup>\\]"))
     (while (re-search-forward pattern nil t)
-      (replace-match (format "[^%s]" (match-string-no-properties 1)) t t))))
+      (replace-match (format "[^%s]" (match-string-no-properties 1)) t t)))
+  ;; 5) Remove trailing quoted HTML blobs erroneously left after the marker,
+  ;;    capturing until a quote that is immediately followed by one or two ')'.
+  (goto-char (point-min))
+  (let ((pattern "\\(\\[\\^\\([[:digit:]]\\{1,3\\}\\)\\]\\)[[:space:]]*\"\\(?:.\\|\n\\)*?\"[[:space:]]*)\\{1,2\\}"))
+    (while (re-search-forward pattern nil t)
+      (replace-match "\\1" t)))
+  ;; 6) Fallback: drop any stray closing parens right after a footnote marker.
+  (goto-char (point-min))
+  (let ((pattern "\\(\\[\\^\\([[:digit:]]\\{1,3\\}\\)\\]\\)[[:space:]]*)\\{1,3\\}"))
+    (while (re-search-forward pattern nil t)
+      (replace-match "\\1" t))))
 
 (defun tlon-cleanup-fix-80k-footnote-references ()
   "Convert 80,000 Hours footnote list items to standard Markdown footnotes.
