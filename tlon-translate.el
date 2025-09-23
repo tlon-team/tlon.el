@@ -1201,7 +1201,8 @@ language code for the translation (currently unused). TOOLS specifies AI tools
 to be used in the request. ORIG-PARAS is a list of original paragraphs from the
 source text. TRANS-PARAS is a list of translated paragraphs to be revised.
 RESTRICT is a boolean indicating whether to restrict the revision to specific
-areas. AFTER-FN is an optional function to call after the revision is complete."
+areas. GLOSSARY-FILE is the glossary file. AFTER-FN is an optional function to
+call after the revision is complete."
   (let* ((start (car range))
          (end   (cdr range))
          (orig-chunk  (cl-subseq orig-paras start end))
