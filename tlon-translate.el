@@ -1151,7 +1151,8 @@ needed."
       (when (not fired)
         (setq fired t)
         (when (functionp after-fn)
-          (funcall after-fn))))))
+          (funcall after-fn))))
+    (gptel-context-remove-all)))
 
 (defun tlon-translate--kill-indirect-buffers-of-file (file)
   "Kill every indirect buffer created from FILE.
@@ -1265,7 +1266,7 @@ call after the revision is complete."
             (tlon-make-gptel-request
              prompt nil
              (tlon-translate--gptel-callback-simple translation-file type wrapped-after-fn)
-             model nil req-buf tools)))
+             model 'skip-context-check req-buf tools)))
     (push proc tlon-translate--active-revision-processes)
     proc))
 
