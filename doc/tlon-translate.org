@@ -93,6 +93,10 @@ This module provides functions for translating entire files using various transl
 #+findex: tlon-translate-revise-abort
 + ~tlon-translate-revise-abort~ :: Abort all ongoing revision requests, immediately stopping any remaining AI jobs.
 
+The revision agent is constrained to the =edit_file= tool and instructed to
+treat strings literally (not as regular expressions). This avoids failures on
+paragraphs that begin with special characters (for example, a leading asterisk).
+
 *** Transient Menu
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-translate-menu
