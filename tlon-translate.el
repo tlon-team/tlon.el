@@ -32,7 +32,6 @@
 (require 'tlon-core)
 (require 'tlon-counterpart)
 (require 'tlon-deepl)
-(require 'tlon-db)
 (require 'tlon-glossary)
 (require 'transient)
 (require 'magit)
@@ -42,8 +41,6 @@
 (require 'bibtex)
 (require 'citar-cache)
 (require 'subr-x)
-
-(declare-function bibtex-extras-set-field "bibtex-extras")
 
 ;;;; User options
 
@@ -679,6 +676,7 @@ If the original entry lacks an abstract, log a message and skip."
                        (next))))))))
         (next)))))
 
+(declare-function bibtex-extras-set-field "bibtex-extras")
 (defun tlon-translate--db-set-abstract (key text)
   "Set the ABSTRACT field of entry KEY in `tlon-file-db' to TEXT."
   (let ((buf (find-file-noselect tlon-file-db)))
@@ -1072,7 +1070,8 @@ translation file. ORIGINAL-FILE is the path to the original file. TYPE is the
 type of revision. PROMPT is the prompt to use for revision. MODEL is the AI
 model to use. TOOLS are the tools available for the revision. ORIG-PARAS are the
 original paragraphs. TRANS-PARAS are the translated paragraphs. RESTRICT is a
-boolean indicating whether to restrict the revision to specific areas."
+boolean indicating whether to restrict the revision to specific areas.
+GLOSSARY-FILE is the glossary file"
   (cl-loop for r in ranges
 	   for idx from 0
 	   do (tlon-translate--revise-send-range
@@ -1100,7 +1099,8 @@ PROMPT is the prompt text to use for the translation model. MODEL specifies
 which translation model to use. TOOLS are additional tools or parameters for the
 translation process. ORIG-PARAS contains the original paragraphs from the source
 text. TRANS-PARAS contains the translated paragraphs being revised. RESTRICT is
-a boolean indicating whether to restrict the revision to specific areas."
+a boolean indicating whether to restrict the revision to specific areas.
+GLOSSARY-FILE is the glossary file."
   (cl-labels
       ((process (remaining idx)
          (if (null remaining)

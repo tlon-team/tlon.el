@@ -112,7 +112,7 @@ default `gptel-model'."
   :group 'tlon-ai)
 
 (defcustom tlon-ai-translation-model nil
-  "Model to use for AI-powered translation when using the 'ai' engine.
+  "Model to use for AI-powered translation when using the `ai' engine.
 The value is a cons cell whose car is the BACKEND name (string) and whose cdr is
 the MODEL symbol. See `gptel-extras-ai-models' for available options. If nil,
 use the default `gptel-model'."
@@ -668,10 +668,13 @@ was added."
             (gptel-context-add-file tmp))
           tmp)))))
 
+(defvar tlon-translate-source-language)
+(defvar tlon-translate-target-language)
+(defvar tlon-translate-text)
 (defun tlon-ai-request-wrapper (type &optional callback _no-glossary)
   "Dispatch AI-backed request of TYPE for translation.
-TYPE is a symbol, currently only 'translate. CALLBACK is a gptel-style
-callback that receives (RESPONSE INFO). _NO-GLOSSARY is ignored."
+TYPE is a symbol, currently only `translate'. CALLBACK is a gptel-style callback
+that receives (RESPONSE INFO)."
   (pcase type
     ('translate
      (let* ((src tlon-translate-source-language)
