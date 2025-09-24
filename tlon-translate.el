@@ -132,6 +132,10 @@ message is appended to the buffer named by
 
 ;;;; Variables
 
+(defconst tlon-translate-revise-tools
+  '("edit_file" "apply_diff" "replace_file_contents")
+  "List of tools available to the AI for translation revision.")
+
 (defconst tlon-translate--engine-choices
   '(("DeepL" . deepl)
     ("AI" . ai))
@@ -999,7 +1003,6 @@ TYPE can be `errors' or `flow'."
            (model (pcase type
                     ('errors tlon-translate-revise-errors-model)
                     ('flow tlon-translate-revise-flow-model)))
-           (tools '("edit_file" "apply_diff" "replace_file_contents"))
            (prompt-template (pcase type
                               ('errors tlon-translate-revise-errors-prompt)
                               ('flow tlon-translate-revise-flow-prompt)))
@@ -1048,12 +1051,12 @@ TYPE can be `errors' or `flow'."
 	    ;; Few enough chunks → process them all in parallel.
 	    (tlon-translate--revise-parallel
 	     ranges translation-file original-file type prompt model
-	     tools orig-paras trans-paras restrict glossary-file)
+	     orig-paras trans-paras restrict glossary-file)
 	  ;; More chunks than the parallel cap → process in parallel *batches*
 	  ;; of `tlon-translate-revise-max-parallel'.
 	  (tlon-translate--revise-parallel-batches
 	   ranges translation-file original-file type prompt model
-	   tools orig-paras trans-paras restrict glossary-file))))))
+	   orig-paras trans-paras restrict glossary-file))))))
 
 (defun tlon-translate--build-chunk-ranges (total chunk-size)
   "Build chunk ranges (START . END) for TOTAL items with CHUNK-SIZE."
@@ -1064,20 +1067,19 @@ TYPE can be `errors' or `flow'."
       (setq i (+ i chunk-size)))
     (nreverse ranges)))
 
-(defun tlon-translate--revise-parallel (ranges translation-file original-file type prompt model tools orig-paras trans-paras restrict glossary-file)
+(defun tlon-translate--revise-parallel (ranges translation-file original-file type prompt model orig-paras trans-paras restrict glossary-file)
   "Use parallel processing to revise translation in RANGES.
 RANGES is a list of ranges to revise. TRANSLATION-FILE is the path to the
 translation file. ORIGINAL-FILE is the path to the original file. TYPE is the
 type of revision. PROMPT is the prompt to use for revision. MODEL is the AI
-model to use. TOOLS are the tools available for the revision. ORIG-PARAS are the
-original paragraphs. TRANS-PARAS are the translated paragraphs. RESTRICT is a
-boolean indicating whether to restrict the revision to specific areas.
-GLOSSARY-FILE is the glossary file"
+model to use. ORIG-PARAS are the original paragraphs. TRANS-PARAS are the
+translated paragraphs. RESTRICT is a boolean indicating whether to restrict the
+revision to specific areas. GLOSSARY-FILE is the glossary file"
   (cl-loop for r in ranges
 	   for idx from 0
 	   do (tlon-translate--revise-send-range
 	       r translation-file original-file type
-	       prompt model tools
+	       prompt model tlon-translate-revise-tools
 	       orig-paras trans-paras restrict glossary-file))
   (tlon-translate--message-revise-request translation-file ranges t))
 
@@ -1091,7 +1093,7 @@ PARALLEL-P indicates whether processing is parallel or sequential."
 
 (defun tlon-translate--revise-parallel-batches
     (ranges translation-file original-file type prompt model
-            tools orig-paras trans-paras restrict glossary-file)
+            orig-paras trans-paras restrict glossary-file)
   "Process RANGES in parallel batches of `tlon-translate-revise-max-parallel'.
 RANGES is a list of ranges to process. TRANSLATION-FILE is the path to the
 translation file being revised. ORIGINAL-FILE is the path to the original file
@@ -1118,7 +1120,7 @@ GLOSSARY-FILE is the glossary file."
              (dolist (r batch)
                (tlon-translate--revise-send-range
                 r translation-file original-file type prompt model
-                tools orig-paras trans-paras restrict glossary-file
+                tlon-translate-revise-tools orig-paras trans-paras restrict glossary-file
                 (lambda ()
                   (setq pending (1- pending))
                   (when (= pending 0)
