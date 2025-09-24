@@ -1154,8 +1154,7 @@ needed."
       (when (not fired)
         (setq fired t)
         (when (functionp after-fn)
-          (funcall after-fn))))
-    (gptel-context-remove-all)))
+          (funcall after-fn))))))
 
 (defun tlon-translate--kill-indirect-buffers-of-file (file)
   "Kill every indirect buffer created from FILE.
