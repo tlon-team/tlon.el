@@ -492,6 +492,7 @@ user-selected language and store it in abstract-translations.json."
                          nil))
                     (tlon-translate--log "Skipping abstract for %s -> %s: no suitable glossary found" translation-of dst-code)))))
           (tlon-translate-abstract-interactive key text source-lang-code))))))
+
 (defun tlon-translate--external-abstracts (&optional langs)
   "Translate missing abstracts for non-DB works into JSON store.
 LANGS is a list of language names such as \\='(\"spanish\" \"french\"). If nil,
