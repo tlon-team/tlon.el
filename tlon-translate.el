@@ -999,7 +999,7 @@ TYPE can be `errors' or `flow'."
            (model (pcase type
                     ('errors tlon-translate-revise-errors-model)
                     ('flow tlon-translate-revise-flow-model)))
-           (tools '("edit_file"))
+           (tools '("edit_file" "apply_diff" "replace_file_contents"))
            (prompt-template (pcase type
                               ('errors tlon-translate-revise-errors-prompt)
                               ('flow tlon-translate-revise-flow-prompt)))
