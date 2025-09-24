@@ -146,7 +146,7 @@ message is appended to the buffer named by
   "Prefix for translation revision prompts.")
 
 (defconst tlon-translate-prompt-revise-suffix
-  "Only after you are done comparing the paragraphs and determining all the changes that should be made to the translation, write your changes to \"%1$s\" using the 'edit_file' tool. You must use this tool ONLY ONCE, to make all your changes in one go. Treat all strings literally (do not use regex); if special characters occur (e.g., *, [, ], (, ), {, }), escape them as needed. Note that the file (\"%1$s\") may include other paragraphs besides those I shared with you; you should only modify the paragraphs that I shared with you, leaving the rest of the file unchanged.\n\nHere are the paragraph pairs:\n\n"
+  "Only after you are done comparing the paragraphs and determining all the changes that should be made to the translation, write your changes to \"%1$s\" using the 'edit_file' tool. Only if this tool doesn't work, try the other tools available. Note that the file (\"%1$s\") may include other paragraphs besides those I shared with you; you should only modify the paragraphs that I shared with you, leaving the rest of the file unchanged.\n\nHere are the paragraph pairs:\n\n"
   "Suffix for translation revision prompts.")
 
 (declare-function tlon-md-tag-list "tlon-md")
