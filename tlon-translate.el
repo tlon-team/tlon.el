@@ -53,19 +53,19 @@
   :group 'tlon-translate
   :type '(choice (const :tag "DeepL" deepl)))
 
-(defcustom tlon-translate-revise-errors-model
+(defcustom tlon-translate-spot-errors-model
   '("Gemini" . gemini-2.5-pro)
   "Model to use for spotting errors in translations.
-See `tlon-translate-revise-errors'. The value is a cons cell whose car is the
+See `tlon-translate-spot-errors'. The value is a cons cell whose car is the
 backend and whose cdr is the model itself. See `gptel-extras-ai-models' for the
 available options. If nil, use the default `gptel-model'."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-translate)
 
-(defcustom tlon-translate-revise-flow-model
+(defcustom tlon-translate-improve-flow-model
   '("Gemini" . gemini-2.5-pro)
   "Model to use for improving the flow of translations.
-See `tlon-translate-revise-flow'. The value is a cons cell whose car is the
+See `tlon-translate-improve-flow'. The value is a cons cell whose car is the
 backend and whose cdr is the model itself. See `gptel-extras-ai-models' for the
 available options. If nil, use the default `gptel-model'."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
@@ -150,13 +150,13 @@ message is appended to the buffer named by
   "Suffix for translation revision prompts.")
 
 (declare-function tlon-md-tag-list "tlon-md")
-(defconst tlon-translate-revise-errors-prompt
+(defconst tlon-translate-spot-errors-prompt
   (concat tlon-translate-prompt-revise-prefix
 	  (format "Your task is to read both carefully and try to spot errors in the translation: the code surrounding the translation may have been corrupted, there may be sentences and even paragraphs missing, the abbreviations may be used wrongly or inconsistently, etc. In addition, the custom tags we use, which should remain invariant, may have been inadvertently translated; if so, you should restore them to their original form. This is an exhaustive list of all our custom tags: %S. Do not modify any URLs or BibTeX keys. Similarly, the fields in the YAML metadata section at the beginning of the file (delimited by ‘%s’) may have been modified. The only admissible YAML fields are: (\"title\" \"html_title\" \"key\" \"original_path\" \"tags\" \"publication_status\" \"meta\" \"snippet\"). If you find a field with any other name, you should onvert it to the closest valid alternative. For example, if you find \"titre\", you should convert it to \"title\". " (tlon-md-tag-list) tlon-yaml-delimiter)
 	  tlon-translate-prompt-revise-suffix)
   "Prompt for revising translation errors.")
 
-(defconst tlon-translate-revise-flow-prompt
+(defconst tlon-translate-improve-flow-prompt
   (concat tlon-translate-prompt-revise-prefix
 	  "Your task is to to read both carefully and try improve the translation for a better flow. Do not modify URLS, BibTeX keys, or tags enclosed in angular brackets (such as \"<Roman>\", \"<LiteralLink>\", etc.)"
 	  tlon-translate-prompt-revise-suffix)
@@ -904,32 +904,32 @@ how many originals were pruned entirely."
 ;;;;; Revision
 
 ;;;###autoload
-(defun tlon-translate-revise-errors ()
+(defun tlon-translate-spot-errors ()
   "Use AI to spot errors in a translation file."
   (interactive)
   (tlon-translate--revise-common 'errors))
 
 ;;;###autoload
-(defun tlon-translate-revise-flow ()
+(defun tlon-translate-improve-flow ()
   "Use AI to improve the flow of a translation file."
   (interactive)
   (tlon-translate--revise-common 'flow))
 
 ;;;###autoload
-(defun tlon-translate-revise-errors-in-range ()
+(defun tlon-translate-spot-errors-in-range ()
   "Use AI to spot errors in a translation file within a paragraph range."
   (interactive)
   (let ((range (tlon-translate--read-paragraph-range)))
     (let ((tlon-translate-restrict-revision-to-paragraphs range))
-      (tlon-translate-revise-errors))))
+      (tlon-translate-spot-errors))))
 
 ;;;###autoload
-(defun tlon-translate-improve-errors-in-range ()
+(defun tlon-translate-improve-flow-in-range ()
   "Use AI to improve the flow of a translation file within a paragraph range."
   (interactive)
   (let ((range (tlon-translate--read-paragraph-range)))
     (let ((tlon-translate-restrict-revision-to-paragraphs range))
-      (tlon-translate-revise-flow))))
+      (tlon-translate-improve-flow))))
 
 (defun tlon-translate--read-paragraph-range ()
   "Prompt for a paragraph range and return it as a cons (START . END).
@@ -1001,11 +1001,11 @@ TYPE can be `errors' or `flow'."
     (let* ((lang-code (tlon-get-language-in-file translation-file))
            (language (tlon-lookup tlon-languages-properties :standard :code lang-code))
            (model (pcase type
-                    ('errors tlon-translate-revise-errors-model)
-                    ('flow tlon-translate-revise-flow-model)))
+                    ('errors tlon-translate-spot-errors-model)
+                    ('flow tlon-translate-improve-flow-model)))
            (prompt-template (pcase type
-                              ('errors tlon-translate-revise-errors-prompt)
-                              ('flow tlon-translate-revise-flow-prompt)))
+                              ('errors tlon-translate-spot-errors-prompt)
+                              ('flow tlon-translate-improve-flow-prompt)))
 	   (prompt-elts (delq nil (list prompt-template translation-file (capitalize language))))
 	   (glossary-type 'ai-revision)
 	   (glossary-file (when (and (eq type 'flow)
@@ -1320,17 +1320,17 @@ END is the ending paragraph number."
   :reader 'tlon-translate-engine-reader
   :prompt "Translation Engine: ")
 
-(transient-define-infix tlon-translate-infix-select-revise-errors-model ()
+(transient-define-infix tlon-translate-infix-select-spot-errors-model ()
   "AI model to use for spotting errors in translations.
 If nil, use the default model."
   :class 'tlon-model-selection-infix
-  :variable 'tlon-translate-revise-errors-model)
+  :variable 'tlon-translate-spot-errors-model)
 
-(transient-define-infix tlon-translate-infix-select-revise-flow-model ()
+(transient-define-infix tlon-translate-infix-select-improve-flow-model ()
   "AI model to use for improving the flow of translations.
 If nil, use the default model."
   :class 'tlon-model-selection-infix
-  :variable 'tlon-translate-revise-flow-model)
+  :variable 'tlon-translate-improve-flow-model)
 
 (transient-define-infix tlon-translate-infix-toggle-commit-changes ()
   "Toggle whether to commit changes after an AI revision."
@@ -1365,17 +1365,17 @@ If nil, use the default model."
     ("t -d" "DeepL model" tlon-deepl-model-type-infix)
     ("t -a" "AI model" tlon-ai-infix-select-translation-model)]
    ["Revise"
-    ("r e" "Spot errors" tlon-translate-revise-errors)
-    ("r f" "Improve flow" tlon-translate-revise-flow)
-    ("r E" "Spot errors in range" tlon-translate-revise-errors-in-range)
-    ("r F" "Improve flow in range" tlon-translate-improve-errors-in-range)
+    ("r e" "Spot errors" tlon-translate-spot-errors)
+    ("r f" "Improve flow" tlon-translate-improve-flow)
+    ("r E" "Spot errors in range" tlon-translate-spot-errors-in-range)
+    ("r F" "Improve flow in range" tlon-translate-improve-flow-in-range)
     ""
     ("r l" "Show log" tlon-translate-show-log)
     ("r a" "Abort revision" tlon-translate-revise-abort)
     ""
     "Options"
-    ("r -e" "Spot errors model" tlon-translate-infix-select-revise-errors-model)
-    ("r -f" "Improve flow model" tlon-translate-infix-select-revise-flow-model)
+    ("r -e" "Spot errors model" tlon-translate-infix-select-spot-errors-model)
+    ("r -f" "Improve flow model" tlon-translate-infix-select-improve-flow-model)
     ""
     ("r -c" "Chunk size"     tlon-translate-infix-set-chunk-size)
     ("r -p" "Max parallel" tlon-translate-infix-set-max-parallel)]
