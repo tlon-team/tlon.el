@@ -35,10 +35,10 @@ This module provides functions for translating entire files using various transl
 
 #+vindex: tlon-translation-engine
 + ~tlon-translation-engine~ :: Specifies the translation engine to use. Supported values are ='deepl= (DeepL API) and ='ai= (LLM via gptel).
-#+vindex: tlon-translate-revise-errors-model
-+ ~tlon-translate-revise-errors-model~ :: Model to use for spotting errors in translations.
-#+vindex: tlon-translate-revise-flow-model
-+ ~tlon-translate-revise-flow-model~ :: Model to use for improving the flow of translations.
+#+vindex: tlon-translate-spot-errors-model
++ ~tlon-translate-spot-errors-model~ :: Model to use for spotting errors in translations.
+#+vindex: tlon-translate-improve-flow-model
++ ~tlon-translate-improve-flow-model~ :: Model to use for improving the flow of translations.
 #+vindex: tlon-translate-revise-commit-changes
 + ~tlon-translate-revise-commit-changes~ :: Whether to commit changes after an AI revision.
 #+vindex: tlon-translate-revise-chunk-size
@@ -78,17 +78,17 @@ This module provides functions for translating entire files using various transl
 :CUSTOM_ID: h:tlon-translate-revision
 :END:
 
-#+findex: tlon-translate-revise-errors
-+ ~tlon-translate-revise-errors~ :: Use an AI agent to spot errors in a translation. The agent is instructed to compare the translation with the original and correct any errors found, such as missing content, corrupted code, or inconsistent use of abbreviations.
+#+findex: tlon-translate-spot-errors
++ ~tlon-translate-spot-errors~ :: Use an AI agent to spot errors in a translation. The agent is instructed to compare the translation with the original and correct any errors found, such as missing content, corrupted code, or inconsistent use of abbreviations.
 
-#+findex: tlon-translate-revise-flow
-+ ~tlon-translate-revise-flow~ :: Use an AI agent to improve the flow of a translation. The agent is instructed to make the translation less literal, while respecting the terminology in the relevant glossary.
+#+findex: tlon-translate-improve-flow
++ ~tlon-translate-improve-flow~ :: Use an AI agent to improve the flow of a translation. The agent is instructed to make the translation less literal, while respecting the terminology in the relevant glossary.
 
-#+findex: tlon-translate-revise-errors-in-range
-+ ~tlon-translate-revise-errors-in-range~ :: Spot errors but only within a user-specified inclusive paragraph range.
+#+findex: tlon-translate-spot-errors-in-range
++ ~tlon-translate-spot-errors-in-range~ :: Spot errors but only within a user-specified inclusive paragraph range.
 
-#+findex: tlon-translate-improve-errors-in-range
-+ ~tlon-translate-improve-errors-in-range~ :: Improve the flow only within a user-specified inclusive paragraph range.
+#+findex: tlon-translate-improve-flow-in-range
++ ~tlon-translate-improve-flow-in-range~ :: Improve the flow only within a user-specified inclusive paragraph range.
 
 #+findex: tlon-translate-revise-abort
 + ~tlon-translate-revise-abort~ :: Abort all ongoing revision requests, immediately stopping any remaining AI jobs.
@@ -104,18 +104,18 @@ It provides the following groups and commands:
 + *Translate*:
   + =f= :: Translate file (~tlon-translate-file~)
 + *Revise*:
-  + =e= :: Spot errors (~tlon-translate-revise-errors~)
-  + =f= :: Improve flow (~tlon-translate-revise-flow~)
-  + =E= :: Spot errors in range (~tlon-translate-revise-errors-in-range~)
-  + =F= :: Improve flow in range (~tlon-translate-improve-errors-in-range~)
+  + =e= :: Spot errors (~tlon-translate-spot-errors~)
+  + =f= :: Improve flow (~tlon-translate-improve-flow~)
+  + =E= :: Spot errors in range (~tlon-translate-spot-errors-in-range~)
+  + =F= :: Improve flow in range (~tlon-translate-improve-flow-in-range~)
 + *Options*:
   + =c= :: Commit changes after revision (~tlon-translate-infix-toggle-commit-changes~)
   + =n= :: Paragraph chunk size (~tlon-translate-infix-set-chunk-size~)
   + =e= :: Select Engine (~tlon-translation-engine-infix~) - Select the translation engine (e.g., 'deepl).
   + =d= :: DeepL model (~tlon-deepl-model-type-infix~)
   + =a= :: AI model (~tlon-ai-infix-select-translation-model~)
-  + =m -e= :: Revise errors model (~tlon-translate-infix-select-revise-errors-model~)
-  + =m -f= :: Revise flow model (~tlon-translate-infix-select-revise-flow-model~)
+  + =m -e= :: Revise errors model (~tlon-translate-infix-select-spot-errors-model~)
+  + =m -f= :: Revise flow model (~tlon-translate-infix-select-improve-flow-model~)
 
 ** Internal Functions
 :PROPERTIES:
@@ -146,11 +146,11 @@ It provides the following groups and commands:
 #+findex: tlon-translation-engine-infix
 + ~tlon-translation-engine-infix~ :: The transient infix command for selecting the translation engine via ~tlon-translation-engine~.
 
-#+findex: tlon-translate-infix-select-revise-errors-model
-+ ~tlon-translate-infix-select-revise-errors-model~ :: The transient infix command for selecting the AI model for spotting errors.
+#+findex: tlon-translate-infix-select-spot-errors-model
++ ~tlon-translate-infix-select-spot-errors-model~ :: The transient infix command for selecting the AI model for spotting errors.
 
-#+findex: tlon-translate-infix-select-revise-flow-model
-+ ~tlon-translate-infix-select-revise-flow-model~ :: The transient infix command for selecting the AI model for improving flow.
+#+findex: tlon-translate-infix-select-improve-flow-model
++ ~tlon-translate-infix-select-improve-flow-model~ :: The transient infix command for selecting the AI model for improving flow.
 
 #+findex: tlon-translate-infix-toggle-commit-changes
 + ~tlon-translate-infix-toggle-commit-changes~ :: The transient infix command for toggling whether to commit changes after an AI revision.
