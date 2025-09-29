@@ -428,6 +428,42 @@ and sets the value of the field for all entries to `Tlön'."
     (when (string= (buffer-file-name) file)
       (tlon-add-database-field file))))
 
+;;;;; Modify fields
+
+(declare-function citar-extras-goto-bibtex-entry "citar-extras")
+;;;###autoload
+(defun tlon-bib-swap-colon-in-title (&optional key)
+  "Swap colon and modified letter colon in the title of a BibTeX entry.
+Prompt for KEY, jump to the entry using `citar-extras-goto-bibtex-entry',
+replace all occurrences of \":\" with \"꞉\" or vice versa in the title field,
+save the buffer, and display an appropriate message."
+  (interactive)
+  (let ((key (citar-extras-goto-bibtex-entry key)))
+    (bibtex-narrow-to-entry)
+    (let ((bounds (bibtex-search-forward-field "title" t))
+	  direction)
+      (unless bounds
+	(user-error "Entry %s has no title field" key))
+      (let* ((title (bibtex-text-in-field-bounds bounds t))
+	     (new-title
+	      (cond
+	       ((string-match-p "꞉" title)
+		(setq direction 'modified-to-colon)
+		(replace-regexp-in-string "꞉" ":" title nil t))
+	       ((string-match-p ":" title)
+		(setq direction 'colon-to-modified)
+		(replace-regexp-in-string ":" "꞉" title nil t))
+	       (t
+		(user-error "Title for %s contains neither \":\" nor \"꞉\"" key))))
+	     (message (format (if (eq direction 'colon-to-modified)
+				  "Replaced colon with modified letter colon in title of %s"
+				"Replaced modified letter colon with colon in title of %s")
+			      key)))
+	(bibtex-set-field "title" new-title)
+	(save-buffer)
+	(kill-buffer)
+	(run-with-timer 0.5 nil (lambda () (message message)))))))
+
 ;;;;; Cleanup
 
 (declare-function bibtex-extras-escape-special-characters "bibtex-extras")
@@ -1593,7 +1629,10 @@ If nil, use the default model."
     ""
     "Remove"
     ("b d" "Remove URLs when DOI present"            tlon-bib-remove-url-fields-with-doi)
-    ("b i" "Remove URLs when ISBN present"           tlon-bib-remove-url-fields-with-isbn)]])
+    ("b i" "Remove URLs when ISBN present"           tlon-bib-remove-url-fields-with-isbn)
+    ""
+    "Modify"
+    ("b :" "Swap colon character in title"           tlon-bib-swap-colon-in-title)]])
 
 (provide 'tlon-bib)
 ;;; tlon-bib.el ends here

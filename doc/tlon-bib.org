@@ -175,6 +175,9 @@ This section details the interactive commands provided by =tlon-bib.el=.
 #+findex: bibtex-extras-escape-special-characters
 + ~bibtex-extras-escape-special-characters~ :: Escapes special characters ($, %, #, &) with a backslash within the current BibTeX buffer, excluding =url= and =file= fields.
 
+#+findex: tlon-bib-swap-colon-in-title
++ ~tlon-bib-swap-colon-in-title~ :: Prompts for a BibTeX key, jumps to the entry in its source BibTeX file using =citar-extras-goto-bibtex-entry=, swaps all occurrences of \":\" and \"꞉\" in the =title= field, saves the file, and reports whether a colon was replaced with the modified letter colon or vice versa.
+
 *** URL Management
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-bib-url-commands
