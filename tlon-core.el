@@ -1198,7 +1198,7 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
     (json-pretty-print-buffer)))
 
 (defun tlon-get-keys (data)
-  "Get keys from hash table DATA."
+  "Get keys from hash table JSON DATA."
   (let ((keys '()))
     (maphash (lambda (k _v) (push k keys)) data)
     keys))
