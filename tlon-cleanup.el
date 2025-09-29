@@ -194,21 +194,32 @@ entry is added."
   "Convert EAF in-text footnote markers to `[^N]' and record the mapping.
 Each EA Forum footnote marker looks like:
   ^[\\[3\\]](#fn<id>)^
+or (after conversion) like:
+  [^[3]^](#fn<id>)
 We sequentially number them in order of appearance, replace the
 marker with `[^N]', and store an id→N mapping in the buffer-local
 variable `tlon-cleanup--footnote-map', ready for
 `tlon-cleanup-fix-eaf-footnote-references'."
   (setq-local tlon-cleanup--footnote-map (make-hash-table :test #'equal))
-  (let ((pattern "\\^\\[\\\\?\\[?\\([[:digit:]]+\\)\\\\?\\]?\\](#fn\\([^)]*\\))\\^")
+  (let ((pattern
+         (concat
+          "\\(?:"
+          "\\^\\[\\\\?\\[?\\([[:digit:]]+\\)\\\\?\\]?\\](#fn\\([^)]*\\))\\^" ; caret-wrapped variant
+          "\\|" 
+          "\\[\\^\\[\\([[:digit:]]\\{1,3\\}\\)\\]\\^\\](#fn\\([^)]*\\))"      ; bracket-wrapped variant
+          "\\)"))
         (counter 1))
     (goto-char (point-min))
     (while (re-search-forward pattern nil t)
-      (let* ((id (match-string-no-properties 2))
-             (n  (or (gethash id tlon-cleanup--footnote-map)
+      (let* ((num-str (or (match-string-no-properties 1)
+                          (match-string-no-properties 3)))
+             (id      (or (match-string-no-properties 2)
+                          (match-string-no-properties 4)))
+             (n  (or (and id (gethash id tlon-cleanup--footnote-map))
                      (prog1 counter
-                       (puthash id counter tlon-cleanup--footnote-map)
+                       (when id (puthash id counter tlon-cleanup--footnote-map))
                        (setq counter (1+ counter))))))
-        (replace-match (format "[^%d]" n))))))
+        (replace-match (format "[^%d]" n) t t)))))
 
 (defun tlon-cleanup-fix-eaf-footnote-references ()
   "Convert EA Forum footnote reference blocks to standard Markdown.
