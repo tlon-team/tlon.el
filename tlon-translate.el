@@ -612,7 +612,8 @@ If the original entry lacks an abstract, log a message and skip."
   (let* ((buf (find-file-noselect tlon-file-db))
          (index (make-hash-table :test #'equal))
          (work '())
-         (scheduled 0))
+         (scheduled 0)
+         (changed-p nil))
     (with-current-buffer buf
       (save-excursion
         (save-restriction
@@ -656,7 +657,11 @@ If the original entry lacks an abstract, log a message and skip."
           ((next ()
              (let ((item (pop work)))
 	       (if (null item)
-                   (tlon-translate--log "Finished internal abstract translation queue (%d scheduled)" scheduled)
+                   (progn
+                     (tlon-translate--log "Finished internal abstract translation queue (%d scheduled)" scheduled)
+                     (when (and changed-p
+                                (y-or-n-p "Abstracts were written to db.bib. Synchronize database now? "))
+                       (tlon-db-sync-now)))
                  (setq scheduled (1+ scheduled))
                  (let ((text (plist-get item :text))
 		       (src  (plist-get item :src))
@@ -675,6 +680,7 @@ If the original entry lacks an abstract, log a message and skip."
                             (let ((translated (tlon-translate--get-deepl-translation-from-buffer)))
                               (when (and translated (stringp translated) (not (string-blank-p (string-trim translated))))
                                 (tlon-translate--db-set-abstract tkey translated)
+                                (setq changed-p t)
                                 (tlon-translate--log "Set abstract for %s (from %s)" tkey skey)))
                             (next)))
                        (tlon-translate--log "Skipping abstract for %s -> %s: no suitable glossary found" skey dst)
