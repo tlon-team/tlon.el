@@ -276,6 +276,7 @@ argument to enable this check bypass."
 (declare-function bibtex-extras-insert-entry "bibtex-extras")
 (declare-function ebib-extras-get-field "ebib-extras")
 (declare-function tlon-get-key-at-point "tlon-bib")
+(declare-function tlon-yaml-get-key "tlon-yaml")
 (cl-defun tlon-db-post-entry (&optional key attempt)
   "Create or update KEY in the EA International API.
 If called interactively, post the entry at point; otherwise use KEY.
@@ -762,6 +763,116 @@ RESULT is a plist with :status, :data, and :raw-text."
       (insert "Status: Validation Error (422)\n")
       (when data
         (insert (format "%s\n" data))))
+     (t
+      (insert (format "Status: Error (HTTP %d)\n" status))
+      (insert (or raw "No content."))))))
+
+;;;;;; Set publication status
+
+(defun tlon-db-set-publication-status (&optional entry-id status)
+  "Set publication STATUS for ENTRY-ID using the EA International API.
+When called interactively, determine ENTRY-ID from context: in BibTeX/Ebib
+buffers use the BibTeX key at point; in Markdown buffers read the YAML
+\"key\" field via `tlon-yaml-get-key'.  Offer one of \"production\",
+\"testing\" or \"unpublished\", defaulting to the entry's current status
+when known.  On success, show a concise message; on error or when
+`tlon-debug' is non-nil, display details in *Db API Result*."
+  (interactive)
+  (tlon-db-ensure-auth)
+  (let* ((id (or entry-id
+                 (tlon-db--entry-id-from-context)
+                 (read-string "Entry key: ")))
+         (current (or (tlon-db--get-publication-status id) "production"))
+         (choices '("production" "testing" "unpublished"))
+         (pub-status (or status
+                         (completing-read "Publication status: " choices nil t nil nil current)))
+         (data (json-encode `(("publication_status" . ,pub-status))))
+         (headers '(("Content-Type" . "application/json")
+                    ("accept" . "application/json")))
+         (endpoint (format "/api/publication_status/set/%s" (url-hexify-string id)))
+         status-code response-data raw-response-text response-buffer)
+    (setq response-buffer (tlon-db--make-request "POST" endpoint data headers t))
+    (when response-buffer
+      (setq raw-response-text (with-current-buffer response-buffer (buffer-string)))
+      (setq status-code (tlon-db--get-response-status-code response-buffer))
+      (setq response-data (tlon-db--parse-json-response response-buffer))
+      (kill-buffer response-buffer))
+    (let ((result (list :status status-code
+                        :data response-data
+                        :raw-text raw-response-text)))
+      (if (or tlon-debug (not (and status-code (= status-code 200))))
+          (tlon-db--display-result-buffer
+           (format "Set publication status (Status: %s)"
+                   (if status-code (number-to-string status-code) "N/A"))
+           #'tlon-db--format-set-publication-status-result
+           result)
+        (message "Publication status for “%s” set to “%s”." id pub-status))
+      result)))
+
+(defun tlon-db--get-publication-status (entry-id)
+  "Return publication status for ENTRY-ID, or nil on failure."
+  (let* ((endpoint (format "/api/publication_status/get/%s"
+                           (url-hexify-string entry-id)))
+         (headers '(("accept" . "application/json")))
+         (buf (tlon-db--make-request "GET" endpoint nil headers t))
+         code data)
+    (when buf
+      (setq code (tlon-db--get-response-status-code buf))
+      (setq data (tlon-db--parse-json-response buf))
+      (kill-buffer buf))
+    (when (and code (= code 200))
+      (cond
+       ((stringp data) (downcase data))
+       ((hash-table-p data)
+        (let ((val (or (gethash "publication_status" data)
+                       (gethash "status" data))))
+          (and val (downcase val))))
+       (t nil)))))
+
+(defun tlon-db--entry-id-from-context ()
+  "Return BibTeX key from current context or nil if not found."
+  (cond
+   ((derived-mode-p 'markdown-mode)
+    (tlon-yaml-get-key "key"))
+   (t
+    (tlon-get-key-at-point))))
+
+(defun tlon-db--format-set-publication-status-result (result)
+  "Format RESULT from `tlon-db-set-publication-status' for display."
+  (let ((status (plist-get result :status))
+        (data   (plist-get result :data))
+        (raw    (plist-get result :raw-text)))
+    (cond
+     ((null status)
+      (insert "Status: Request Failed\n")
+      (insert (or raw "No specific error message.")))
+     ((= status 200)
+      (insert "Status: Success (200)\n")
+      (cond
+       ((hash-table-p data)
+        (maphash (lambda (k v)
+                   (insert (format "%s: %s\n" k v)))
+                 data))
+       (data
+        (insert (format "%s\n" data)))
+       (t
+        (insert (or raw "No content returned.")))))
+     ((= status 422)
+      (insert "Status: Validation Error (422)\n")
+      (when data
+        (let ((detail (and (hash-table-p data) (gethash "detail" data))))
+          (cond
+           ((listp detail)
+            (dolist (item detail)
+              (if (hash-table-p item)
+                  (insert (format "  - Field: %s, Error: %s\n"
+                                  (mapconcat #'identity (gethash "loc" item) ".")
+                                  (gethash "msg" item "")))
+                (insert (format "  - %s\n" item)))))
+           (t
+            (insert (format "%s\n" data))))))
+      (when raw
+        (insert "\nRaw server response:\n" raw)))
      (t
       (insert (format "Status: Error (HTTP %d)\n" status))
       (insert (or raw "No content."))))))
@@ -1345,7 +1456,8 @@ If there are no differences, return nil."
     ("d" "Delete entry" tlon-db-delete-entry)
     ("c" "Check name" tlon-db-check-name)
     ("i" "Check or insert name" tlon-db-check-or-insert-name)
-    ("s" "Set name" tlon-db-set-name)
+    ("n" "Set name" tlon-db-set-name)
+    ("s" "Set publication status" tlon-db-set-publication-status)
     ("y" "Sync db now" tlon-db-sync-now)
     ""
     ("a" "Authenticate" tlon-db-authenticate)]
