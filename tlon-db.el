@@ -769,6 +769,10 @@ RESULT is a plist with :status, :data, and :raw-text."
 
 ;;;;;; Set publication status
 
+(defconst tlon-db-publication-statuses
+  '("production" "testing" "unpublished")
+  "List of valid publication statuses for entries.")
+
 (defun tlon-db-set-publication-status (&optional entry-id status)
   "Set publication STATUS for ENTRY-ID using the EA International API.
 When called interactively, determine ENTRY-ID from context: in BibTeX/Ebib
@@ -783,9 +787,8 @@ when known.  On success, show a concise message; on error or when
                  (tlon-db--entry-id-from-context)
                  (read-string "Entry key: ")))
          (current (or (tlon-db--get-publication-status id) "production"))
-         (choices '("production" "testing" "unpublished"))
          (pub-status (or status
-                         (completing-read "Publication status: " choices nil t nil nil current)))
+                         (completing-read "Publication status: " tlon-db-publication-statuses nil t nil nil current)))
          (data (json-encode `(("publication_status" . ,pub-status))))
          (headers '(("Content-Type" . "application/json")
                     ("accept" . "application/json")))
