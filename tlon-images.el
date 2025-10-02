@@ -303,7 +303,7 @@ it instead."
   ;; we warn here because this command adds files to the context, so the usual
   ;; check downstream must be bypassed via `no-context-check'
   (gptel-extras-warn-when-context)
-  (let* ((previous-context gptel-context--alist)
+  (let* ((previous-context gptel-context)
 	 (file (tlon-images-read-image-file file))
 	 (language (tlon-get-language-in-file file))
 	 (default-prompt (tlon-lookup tlon-images-describe-image-prompt :prompt :language language))
@@ -317,14 +317,14 @@ it instead."
   "Handle the response from `tlon-images-describe-image'.
 If ORIGINAL-CALLBACK is non-nil, call it with RESPONSE and INFO.
 Otherwise, message RESPONSE or an error based on INFO.
-Finally, restore `gptel-context--alist' to PREVIOUS-CONTEXT."
+Finally, restore `gptel-context' to PREVIOUS-CONTEXT."
   (when original-callback
     (funcall original-callback response info))
   (unless original-callback
     (if response
 	(message response)
       (user-error "Error: %s" (plist-get info :status))))
-  (setq gptel-context--alist previous-context))
+  (setq gptel-context previous-context))
 
 (declare-function tlon-get-tag-attribute-values "tlon-md")
 (declare-function tlon-md-insert-attribute-value "tlon-md")
