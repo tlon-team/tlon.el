@@ -205,7 +205,7 @@ variable `tlon-cleanup--footnote-map', ready for
          (concat
           "\\(?:"
           "\\^\\[\\\\?\\[?\\([[:digit:]]+\\)\\\\?\\]?\\](#fn\\([^)]*\\))\\^" ; caret-wrapped variant
-          "\\|" 
+          "\\|"
           "\\[\\^\\[\\([[:digit:]]\\{1,3\\}\\)\\]\\^\\](#fn\\([^)]*\\))"      ; bracket-wrapped variant
           "\\)"))
         (counter 1))
