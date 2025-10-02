@@ -537,6 +537,33 @@ If OVERWRITE is non-nil, overwrite existing field without asking."
     ((or "date" "original_path" "original_key" "translation_key" "publication_status" "description")
      (tlon-yaml-insert-string value))))
 
+(autoload 'dired-get-file-for-visit "dired")
+(defvar tlon-db-publication-statuses)
+
+;;;###autoload
+(defun tlon-yaml-set-publication-status ()
+  "Set the YAML publication_status of the Markdown file at point.
+Prompt for a status from `tlon-db-publication-statuses', defaulting to
+the existing value. Signal an error for non-Markdown files. When the
+file is an article, signal an error suggesting
+`tlon-db-set-publication-status' instead."
+  (interactive)
+  (let* ((file (or (buffer-file-name)
+                   (when (derived-mode-p 'dired-mode) (dired-get-file-for-visit))
+                   (user-error "No file at point")))
+         (ext (file-name-extension file)))
+    (unless (and ext (string= ext "md"))
+      (user-error "This command only works on Markdown files"))
+    (when (string= (tlon-yaml-get-type file) "article")
+      (user-error "To set the publication status of an article, please use `tlon-db-set-publication-status` instead"))
+    (let* ((current (tlon-yaml-get-key "publication_status" file))
+           (choices tlon-db-publication-statuses)
+           (status (completing-read "Publication status: " choices nil t current nil current)))
+      (with-current-buffer (find-file-noselect file)
+        (tlon-yaml-insert-field "publication_status" status t)
+        (save-buffer))
+      status)))
+
 ;;;;; tags format normalization
 
 ;;;###autoload
@@ -1227,6 +1254,7 @@ If nil, use the default model."
   [["General"
     ("i" "insert or edit field" tlon-yaml-insert-field)
     ("m" "list files missing field in dir" tlon-yaml-list-files-missing-field-in-dir)
+    ("s" "set publication status" tlon-yaml-set-publication-status)
     ""
     "Tags"
     ("t s" "suggest tags"   tlon-yaml-suggest-tags)
