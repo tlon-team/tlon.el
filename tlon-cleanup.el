@@ -211,14 +211,12 @@ variable `tlon-cleanup--footnote-map', ready for
         (counter 1))
     (goto-char (point-min))
     (while (re-search-forward pattern nil t)
-      (let* ((num-str (or (match-string-no-properties 1)
-                          (match-string-no-properties 3)))
-             (id      (or (match-string-no-properties 2)
-                          (match-string-no-properties 4)))
-             (n  (or (and id (gethash id tlon-cleanup--footnote-map))
-                     (prog1 counter
-                       (when id (puthash id counter tlon-cleanup--footnote-map))
-                       (setq counter (1+ counter))))))
+      (let* ((id (or (match-string-no-properties 2)
+                     (match-string-no-properties 4)))
+             (n (or (and id (gethash id tlon-cleanup--footnote-map))
+                    (prog1 counter
+                      (when id (puthash id counter tlon-cleanup--footnote-map))
+                      (setq counter (1+ counter))))))
         (replace-match (format "[^%d]" n) t t)))))
 
 (defun tlon-cleanup-fix-eaf-footnote-references ()
