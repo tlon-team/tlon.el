@@ -26,7 +26,6 @@
 ;;; Code:
 
 (require 'gptel)
-(require 'gptel-curl)
 (require 'gptel-extras)
 (require 'json)
 (require 'shut-up)
