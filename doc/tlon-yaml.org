@@ -179,6 +179,9 @@ This module provides functions for reading, writing, and manipulating YAML front
 #+findex: tlon-yaml-sort-fields
 + ~tlon-yaml-sort-fields~ :: Sorts a list of YAML FIELDS based on a specified list of KEYS. If NO-ERROR is non-nil, it suppresses errors for missing keys.
 
+#+findex: tlon-yaml-set-publication-status
++ ~tlon-yaml-set-publication-status~ :: Prompts to select the publication status for the Markdown file at point and sets the YAML =publication_status= field. Uses ~tlon-db-publication-statuses~. Errors for non-Markdown files and for article files (use ~tlon-db-set-publication-status~ instead).
+
 *** File and Translation Management
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-yaml-file-management
