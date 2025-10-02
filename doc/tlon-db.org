@@ -93,6 +93,16 @@ request fails.
   values. Author names are normalized by replacing non-breaking spaces with regular spaces. Requires authentication. Displays the result buffer when an error
   occurs or when ~tlon-debug~ is non-nil.
 
+#+findex: tlon-db-set-publication-status
++ ~tlon-db-set-publication-status~ :: Sets the publication status of the entry
+  at point by posting to the =/api/publication_status/set/{entry_id}= endpoint.
+  When in a BibTeX/Ebib buffer, uses the key at point; when in a Markdown
+  buffer, reads the key from the YAML front matter using ~tlon-yaml-get-key~
+  with the ="key"= field. Prompts for one of: =production=, =testing=, or
+  =unpublished=, defaulting to the entry's current status when available.
+  Requires authentication. Shows the result buffer on error or when ~tlon-debug~
+  is non-nil; otherwise shows a concise success message.
+
 #+findex: tlon-db-sync-now
 + ~tlon-db-sync-now~ :: Runs the same synchronization process used by automatic
   sync, even when ~tlon-db-enable-auto-sync~ is nil. It saves ~db.bib~ if the
