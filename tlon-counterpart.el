@@ -522,21 +522,21 @@ also collect and display their messages in a dedicated buffer."
 
 ;;;;; bibtex keys
 
+(declare-function tlon-db-get-translation-key "tlon-db")
 (defun tlon-get-counterpart-key (key &optional language)
   "Return the bibliography key that is the counterpart of KEY.
-If KEY belongs to a *translation* entry, return the original key
-stored in its ‘translation’ field.  Otherwise treat KEY as an
-*original* key and, provided LANGUAGE is non-nil, look for the
-corresponding translation in the repository for LANGUAGE and
-return its key.  When no counterpart exists, return nil."
+If KEY belongs to a translation entry, return the original key stored in its
+\"translation\" field. Otherwise treat KEY as an original key and, when LANGUAGE
+is non-nil, return the translation key for LANGUAGE via a direct database
+lookup. When no counterpart exists, return nil."
   (or
-   ;; KEY is a translation → original
+   ;; translation → original
    (tlon-bibliography-lookup "=key=" key "translation")
-   ;; KEY is an original → translation (only when LANGUAGE provided)
+   ;; original → translation
    (when language
-     (when-let* ((orig-file (tlon-counterpart--file-for-key key "en"))
-		 (tr-file  (tlon-get-counterpart-in-originals orig-file language)))
-       (tlon-yaml-get-key "key" tr-file)))))
+     (condition-case _err
+         (tlon-db-get-translation-key key language)
+       (error nil)))))
 
 ;;;; Reports
 
