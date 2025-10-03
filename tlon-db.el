@@ -275,8 +275,6 @@ argument to enable this check bypass."
 (declare-function bibtex-extras-delete-entry "bibtex-extras")
 (declare-function bibtex-extras-insert-entry "bibtex-extras")
 (declare-function ebib-extras-get-field "ebib-extras")
-(declare-function tlon-get-key-at-point "tlon-bib")
-(declare-function tlon-yaml-get-key "tlon-yaml")
 (cl-defun tlon-db-post-entry (&optional key attempt)
   "Create or update KEY in the EA International API.
 If called interactively, post the entry at point; otherwise use KEY.
@@ -420,6 +418,33 @@ If KEY is nil, use the key of the entry at point."
                     (lambda ()
                       (message "Entry \"%s\" added to db and removed from \"%s\"." key filename)))))
 
+(declare-function tlon-yaml-get-key "tlon-yaml")
+(declare-function tlon-get-bibtex-key "tlon-yaml")
+(declare-function tlon-get-key-at-point "tlon-bib")
+(declare-function ebib-extras-get-file-of-key "ebib-extras")
+(declare-function bibtex-extras-get-field "bibtex-extras")
+(declare-function tlon-get-counterpart-key "tlon-counterpart")
+(declare-function citar-extras-refresh-bibliography "citar-extras")
+;;;###autoload
+(defun tlon-db-move-entry-pair ()
+  "Move the entry at point and its counterpart to the database."
+  (interactive)
+  (let* ((key (or (tlon-yaml-get-key "key") (tlon-get-key-at-point) (tlon-get-bibtex-key)))
+	 (file (ebib-extras-get-file-of-key key))
+	 orig-key trans-key)
+    (with-current-buffer (find-file-noselect file)
+      (widen)
+      (bibtex-search-entry key)
+      (apply #'setq (if (bibtex-extras-get-field "translation") trans-key orig-key) key))
+    (citar-extras-refresh-bibliography file 'force)
+    (if trans-key
+	(setq orig-key (tlon-get-counterpart-key key "en"))
+      (let ((lang (tlon-select-language 'code 'babel "Translation language: ")))
+	(setq trans-key (tlon-get-counterpart-key key lang))))
+    (tlon-db-move-entry orig-key)
+    (if trans-key
+	(tlon-db-move-entry trans-key)
+      (message "No translation entry found. Call `M-x tlon-db-move-entry' manually from the translated BibTeX entry."))))
 ;;;;;; Delete entry
 
 (defun tlon-db-delete-entry (key &optional no-confirm locally)
@@ -1456,6 +1481,7 @@ If there are no differences, return nil."
     ("k" "Get translation key" tlon-db-get-translation-key)
     ("p" "Post entry" tlon-db-post-entry)
     ("m" "Move entry to db" tlon-db-move-entry)
+    ("M" "Move entry and its counterpart to db")
     ("d" "Delete entry" tlon-db-delete-entry)
     ("c" "Check name" tlon-db-check-name)
     ("i" "Check or insert name" tlon-db-check-or-insert-name)

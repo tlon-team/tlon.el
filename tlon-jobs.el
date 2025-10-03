@@ -456,35 +456,6 @@ COMMIT is non-nil, commit the change."
   (interactive)
   (zotra-extras-add-entry nil nil tlon-file-fluid))
 
-(declare-function tlon-yaml-get-key "tlon-yaml")
-(declare-function tlon-get-bibtex-key "tlon-yaml")
-(declare-function tlon-get-key-at-point "tlon-bib")
-(declare-function ebib-extras-get-file-of-key "ebib-extras")
-(declare-function bibtex-extras-get-field "bibtex-extras")
-(declare-function tlon-get-counterpart-key "tlon-counterpart")
-(declare-function tlon-db-move-entry "tlon-db")
-(declare-function citar-extras-refresh-bibliography "citar-extras")
-;;;###autoload
-(defun tlon-move-entries-to-db ()
-  "Move entries to the Tlön database."
-  (interactive)
-  (let* ((key (or (tlon-yaml-get-key "key") (tlon-get-key-at-point) (tlon-get-bibtex-key)))
-	 (file (ebib-extras-get-file-of-key key))
-	 orig-key trans-key)
-    (with-current-buffer (find-file-noselect file)
-      (widen)
-      (bibtex-search-entry key)
-      (apply #'setq (if (bibtex-extras-get-field "translation") trans-key orig-key) key))
-    (citar-extras-refresh-bibliography file 'force)
-    (if trans-key
-	(setq orig-key (tlon-get-counterpart-key key "en"))
-      (let ((lang (tlon-select-language 'code 'babel "Translation language: ")))
-	(setq trans-key (tlon-get-counterpart-key key lang))))
-    (tlon-db-move-entry orig-key)
-    (if trans-key
-	(tlon-db-move-entry trans-key)
-      (message "No translation entry found. Call `M-x tlon-db-move-entry' manually from the translated BibTeX entry."))))
-
 ;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-jobs-menu "tlon-jobs" nil t)
@@ -498,7 +469,7 @@ COMMIT is non-nil, commit the change."
     ("2" "add translation bibtex entry"         tlon-create-bibtex-translation)
     ("3" "import original document"             tlon-import-document)
     ("4" "translate original document"          tlon-translate-file)
-    ("5" "move entries to db"                   tlon-move-entries-to-db)]
+    ("5" "move entries to db"                   tlon-db-move-entry-pair)]
    ["Add or modify"
     ("a s" "section correspondence"             tlon-section-correspondence-dwim)
     ("a u" "URL correspondence"                 tlon-edit-url-correspondences)]
