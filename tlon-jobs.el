@@ -447,15 +447,6 @@ COMMIT is non-nil, commit the change."
 	  (add-text-properties (match-beginning 0) (match-end 0)
 			       `(font-lock-face ,highlight-face)))))))
 
-;;;;; Misc
-
-(declare-function zotra-extras-add-entry "zotra-extras")
-;;;###autoload
-(defun tlon-create-bibtex-original ()
-  "Add a new original BibTeX entry."
-  (interactive)
-  (zotra-extras-add-entry nil nil tlon-file-fluid))
-
 ;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-jobs-menu "tlon-jobs" nil t)
