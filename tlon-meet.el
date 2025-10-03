@@ -108,20 +108,19 @@ The %s will be replaced with the transcript text.")
   "Create or visit issue in DIR for a meeting on DATE."
   (let ((default-directory dir))
     (tlon-wait-until-forge-updates)
-    (if-let ((issue (tlon-issue-lookup date dir)))
-	(forge-visit-issue issue)
-      (tlon-create-and-visit-issue date dir))))
+    (or (when-let ((issue (tlon-issue-lookup date dir)))
+          (forge-visit-issue issue))
+        (progn
+          ;; Belt-and-braces: force a fresh sync and check again before creating
+          (tlon-wait-until-forge-updates)
+          (if-let ((issue2 (tlon-issue-lookup date dir)))
+              (forge-visit-issue issue2)
+            (tlon-create-and-visit-issue date dir))))))
 
 (defun tlon-wait-until-forge-updates ()
-  "Wait until Forge is finished updating the repo."
-  (when-let ((repo (forge-get-repository :tracked?)))
-    (let* ((get-last-updated (lambda () (oref repo updated)))
-           (last-updated (funcall get-last-updated))
-           (count 0))
-      (forge--pull repo)
-      (while (and (< count 25) (string= last-updated (funcall get-last-updated)))
-        (sleep-for 0.1)
-        (setq count (1+ count))))))
+  "Synchronously pull Forge data for the current repo."
+  (when-let ((repo (forge-get-repository :tracked)))
+    (tlon-forg--pull-sync repo)))
 
 ;; TODO: generate the next three functions with function
 ;;;###autoload
@@ -184,15 +183,20 @@ If GROUP is non-nil, include the \"group\" option in the prompt."
   "Create an issue with TITLE in DIR and visit it."
   (with-temp-buffer
     (cd dir)
-    (when-let ((repo (forge-get-repository :tracked?)))
-      (tlon-create-issue title dir)
-      (forge--pull repo)
-      (while (not (tlon-issue-lookup title dir))
-	(sleep-for 0.1))
-      (forge-visit-issue (tlon-issue-lookup title dir))
+    (when-let ((repo (forge-get-repository :tracked)))
+      ;; Ensure we see the latest state and avoid duplicates
+      (tlon-forg--pull-sync repo)
+      (if-let ((existing (tlon-issue-lookup title dir)))
+          (forge-visit-issue existing)
+        (progn
+          (tlon-create-issue title dir)
+          (tlon-forg--pull-sync repo)
+          (while (not (tlon-issue-lookup title dir))
+            (sleep-for 0.1))
+          (forge-visit-issue (tlon-issue-lookup title dir))))
       (format "*forge: %s %s*"
-	      (oref repo slug)
-	      (oref (forge-current-topic) slug)))))
+              (oref repo slug)
+              (oref (forge-current-topic) slug)))))
 
 ;; TODO: generalize to all possible meetings
 (defun tlon-discuss-issue-in-meeting ()
