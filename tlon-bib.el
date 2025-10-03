@@ -1201,6 +1201,13 @@ ORIG-FUN is the original function, ARGS are the arguments passed to it."
 				   urls)))
     (zotra-extras-add-multiple-urls missing-urls tlon-file-fluid)))
 
+(declare-function zotra-extras-add-entry "zotra-extras")
+;;;###autoload
+(defun tlon-create-bibtex-original ()
+  "Add a new original BibTeX entry."
+  (interactive)
+  (zotra-extras-add-entry nil nil tlon-file-fluid))
+
 ;;;;; Bibliographic Reference Extraction
 
 (defconst tlon-bib-get-bibkeys-prompt
