@@ -792,19 +792,31 @@ prompt the user for confirmation before overwriting."
   (let* ((excluded-lang (list (tlon-lookup tlon-languages-properties :standard :code source-lang-code)))
          (target-lang (tlon-select-language 'code 'babel "Target language: " 'require-match nil nil excluded-lang)))
     (when target-lang
-      (let ((existing-translation (tlon-translate--get-existing-abstract-translation key target-lang))
-            (target-lang-name (tlon-lookup tlon-languages-properties :standard :code target-lang)))
-        (if (and existing-translation
-                 (not (y-or-n-p (format "Translation for %s into %s already exists. Retranslate?"
-                                        key target-lang-name))))
-            (message "Translation for %s into %s aborted by user." key target-lang-name)
-          (message "Initiating translation for %s -> %s (%s)" key target-lang-name source-lang-code)
-          (tlon-translate-text (tlon-bib-remove-braces text) target-lang source-lang-code
-                               (lambda ()
-                                 (tlon-translate--suppress-file-change-prompt
-                                  (lambda ()
-                                    (tlon-translate-abstract-callback key target-lang 'overwrite))))
-                               nil))))))
+      (let* ((existing-translation (tlon-translate--get-existing-abstract-translation key target-lang))
+             (target-lang-name (tlon-lookup tlon-languages-properties :standard :code target-lang)))
+        ;; Skip creating a JSON translation if a DB translation already exists for this target language.
+        (when (tlon-translate--has-translating-entry-p key target-lang-name (tlon-bib-get-keys-in-file tlon-file-db))
+          (message "Skipping %s -> %s: DB translation entry exists" key target-lang-name)
+          (cl-return-from tlon-translate-abstract-interactive nil))
+        ;; Enforce DeepL + glossary constraint (English source + supported target + glossary available).
+        (let* ((src-en (string= source-lang-code "en"))
+               (supports (member target-lang tlon-deepl-supported-glossary-languages))
+               (glossary-id (and src-en supports
+                                 (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" target-lang))))
+          (if (not glossary-id)
+              (message "Skipping %s -> %s: no suitable glossary found" key target-lang)
+            (if (and existing-translation
+                     (not (y-or-n-p (format "Translation for %s into %s already exists. Retranslate?"
+                                            key target-lang-name))))
+                (message "Translation for %s into %s aborted by user." key target-lang-name)
+              (message "Initiating translation for %s -> %s (%s)" key target-lang-name source-lang-code)
+              (tlon-deepl-translate
+               (tlon-bib-remove-braces text) target-lang source-lang-code
+               (lambda ()
+                 (tlon-translate--suppress-file-change-prompt
+                  (lambda ()
+                    (tlon-translate-abstract-callback key target-lang 'overwrite))))
+               nil))))))))
 
 (defvar tlon-project-target-languages)
 (defun tlon-translate-abstract-non-interactive (key text source-lang-code langs)
@@ -818,8 +830,8 @@ nil, use `tlon-project-target-languages'."
                          tlon-project-target-languages)))
       (dolist (language languages)
         (let ((target-lang (tlon-lookup tlon-languages-properties :code :name language)))
-          (unless (and (string= source-lang-code target-lang)
-                       (tlon-translate--get-existing-abstract-translation key target-lang))
+          (unless (or (string= source-lang-code target-lang)
+                      (tlon-translate--get-existing-abstract-translation key target-lang))
             (let* ((src-en (string= source-lang-code "en"))
                    (supports (member target-lang tlon-deepl-supported-glossary-languages))
                    (glossary-id (and src-en supports
