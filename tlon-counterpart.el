@@ -518,7 +518,7 @@ also collect and display their messages in a dedicated buffer."
           (dolist (m (nreverse error-messages)) (insert "• " m "\n"))
           (goto-char (point-min))
           (view-mode 1))
-        (pop-to-buffer (current-buffer)))))) 
+        (pop-to-buffer (current-buffer))))))
 
 ;;;;; bibtex keys
 
