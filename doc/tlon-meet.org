@@ -194,7 +194,7 @@ This section lists non-interactive functions used internally or potentially usef
 + ~tlon-create-or-visit-meeting-issue-date~ :: The core logic for finding or creating a meeting issue. Takes a =DATE= string and the target repository =DIR=. It waits for Forge updates (~tlon-wait-until-forge-updates~), looks up an existing issue matching the date (~tlon-issue-lookup~), and either visits it (~forge-visit-issue~) or creates a new one (~tlon-create-and-visit-issue~).
 
 #+findex: tlon-wait-until-forge-updates
-+ ~tlon-wait-until-forge-updates~ :: Pulls changes using =forge-pull= and waits (with a timeout) until the repository's =updated= timestamp changes, ensuring local data is synchronized before proceeding.
++ ~tlon-wait-until-forge-updates~ :: Performs a synchronous Forge pull and returns only after local data has been refreshed, ensuring subsequent lookups see the latest issues.
 
 #+findex: tlon-create-and-visit-issue
 + ~tlon-create-and-visit-issue~ :: Creates a new Forge issue with the given =TITLE= in the specified =DIR= using ~tlon-create-issue~, pulls changes, waits for the issue to appear locally, and then visits it.
