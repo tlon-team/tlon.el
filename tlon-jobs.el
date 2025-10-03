@@ -463,8 +463,7 @@ COMMIT is non-nil, commit the change."
 (declare-function bibtex-extras-get-field "bibtex-extras")
 (declare-function tlon-get-counterpart-key "tlon-counterpart")
 (declare-function tlon-db-move-entry "tlon-db")
-(declare-function citar-cache--update-bibliography "citar-cache")
-(declare-function citar-cache--get-bibliography "citar-cache")
+(declare-function citar-extras-refresh-bibliography "citar-extras")
 ;;;###autoload
 (defun tlon-move-entries-to-db ()
   "Move entries to the Tlön database."
@@ -474,21 +473,12 @@ COMMIT is non-nil, commit the change."
 	 orig-key trans-key)
     (with-current-buffer (find-file-noselect file)
       (widen)
-      (goto-char (point-min))
-      (re-search-forward (format "@.*?{%s" key))
-      (if (bibtex-extras-get-field "translation")
-	  (setq trans-key key)
-	(setq orig-key key)))
-    ;; rebuild cache
-    (citar-cache--update-bibliography
-     (citar-cache--get-bibliography
-      file
-      t))
+      (bibtex-search-entry key)
+      (apply #'setq (if (bibtex-extras-get-field "translation") trans-key orig-key) key))
+    (citar-extras-refresh-bibliography file 'force)
     (if trans-key
 	(setq orig-key (tlon-get-counterpart-key key "en"))
       (let ((lang (tlon-select-language 'code 'babel "Translation language: ")))
-	;; TODO: Revise counterpart functionality to ensure `trans-key' is
-	;; always set, then remove conditional below
 	(setq trans-key (tlon-get-counterpart-key key lang))))
     (tlon-db-move-entry orig-key)
     (if trans-key
