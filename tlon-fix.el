@@ -215,7 +215,7 @@ non-breaking."
 
 ;;;###autoload
 (defun tlon-autofix-superscripts ()
-  "Replace carets with `<sup'> tags."
+  "Replace carets with \"<sup>\" tags."
   (interactive)
   (tlon-autofix '("\\^\\(?1:[[:digit:]]+\\)\\^")
 		"<sup>\\1</sup>"))
