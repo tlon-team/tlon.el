@@ -604,6 +604,7 @@ prompt using `tlon-read-multiple-languages'."
                        total initiated-count skipped (if (= skipped 1) "y" "ies")))))
       (setq tlon-translate--external-abstracts-running nil))))
 
+(declare-function tlon-db-sync-now "tlon-db")
 (defun tlon-translate--internal-abstracts ()
   "Translate missing abstracts for translation entries in `tlon-file-db'.
 For each DB entry with a non-empty \"translation\" field and empty/missing
