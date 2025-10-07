@@ -1764,38 +1764,42 @@ determined."
 
 ;;;###autoload
 (defun tlon-ai-propagate-changes ()
-  "Propagate modifications from all files in the latest commit of the current repo.
-For each file changed in the latest commit of the current repository, get its
+  "Propagate modifications from all files in a chosen commit of the current repo.
+If called from `magit-status-mode' with point on a commit, use that commit.
+Otherwise, use the latest commit.
+For each file changed in the selected commit of the current repository, get its
 diff. Then, for each corresponding file in other \"uqbar\" content
 repositories (originals and translations), ask the AI to apply the semantically
 equivalent changes. Finally, commit the changes made by the AI in each target
 repository."
   (interactive)
   (when (magit-extras-repo-is-dirty-p)
-    (user-error "This command propagates changes from the most recent commit, but you have uncommitted changes"))
+    (user-error "You have uncommitted changes; please commit or stash before propagating changes"))
   (let* ((source-repo (tlon-get-repo 'no-prompt)) ; Get current repo, or prompt
 	 (_ (unless source-repo (user-error "Could not determine current repository")))
 	 (source-repo-name (tlon-repo-lookup :name :dir source-repo))
 	 (_ (unless source-repo-name (user-error "Could not determine repository name for %s" source-repo)))
 	 (source-lang (tlon-repo-lookup :language :dir source-repo))
-	 (latest-commit (tlon-get-latest-commit source-repo)) ; Get latest commit for the repo
-	 (_ (unless latest-commit (user-error "Could not find the latest commit for repository %s" source-repo-name)))
-	 (source-files-in-commit (tlon-ai--get-files-changed-in-commit latest-commit source-repo))
+	 (selected-commit (and (derived-mode-p 'magit-status-mode)
+			       (ignore-errors (magit-commit-at-point))))
+	 (commit-hash (or selected-commit (tlon-get-latest-commit source-repo))) ; Commit to propagate
+	 (_ (unless commit-hash (user-error "Could not determine a commit to propagate in repository %s" source-repo-name)))
+	 (source-files-in-commit (tlon-ai--get-files-changed-in-commit commit-hash source-repo))
 	 (_ (unless source-files-in-commit (user-error "No files found in commit %s for repository %s. Aborting"
-						       (substring latest-commit 0 7) source-repo-name)))
+						       (substring commit-hash 0 7) source-repo-name)))
 	 (all-content-repos (append (tlon-lookup-all tlon-repos :dir :subproject "uqbar" :subtype 'originals)
 				    (tlon-lookup-all tlon-repos :dir :subproject "uqbar" :subtype 'translations)))
 	 (target-repos (remove source-repo all-content-repos)))
     (unless target-repos
       (user-error "No target repositories found to propagate changes to"))
     (message "Found commit %s in %s. Propagating changes for %d file(s)..."
-	     (substring latest-commit 0 7) source-repo-name (length source-files-in-commit))
+	     (substring commit-hash 0 7) source-repo-name (length source-files-in-commit))
     (dolist (source-file source-files-in-commit)
       (message "Processing source file: %s" (file-relative-name source-file source-repo))
-      (let ((diff (tlon-ai--get-commit-diff latest-commit source-file source-repo)))
+      (let ((diff (tlon-ai--get-commit-diff commit-hash source-file source-repo)))
 	(if (not diff)
 	    (message "  No effective changes found for %s in commit %s. Skipping."
-		     (file-relative-name source-file source-repo) (substring latest-commit 0 7))
+		     (file-relative-name source-file source-repo) (substring commit-hash 0 7))
 	  (dolist (target-repo target-repos)
 	    (let* ((target-lang (tlon-repo-lookup :language :dir target-repo))
 		   (target-file (tlon-ai--find-target-file source-file source-repo target-repo)))
@@ -1816,7 +1820,7 @@ repository."
 			 prompt nil
 			 (lambda (response info)
 			   (tlon-ai--propagate-changes-callback
-			    response info target-file target-repo source-repo-name latest-commit))
+			    response info target-file target-repo source-repo-name commit-hash))
 			 nil t (current-buffer)))))
 		(message "  No target file found in repo %s for source file %s. Skipping."
 			 (file-name-nondirectory target-repo) (file-name-nondirectory source-file))))))))

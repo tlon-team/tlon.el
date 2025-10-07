@@ -296,9 +296,9 @@ These collected files are added to the =gptel= context. The user's question, alo
 :CUSTOM_ID: h:tlon-ai-propagate-changes
 :END:
 #+findex: tlon-ai-propagate-changes
-The command ~tlon-ai-propagate-changes~ attempts to automatically apply changes made in the latest commit of the current repository to corresponding files in other ~tlon~ content repositories (originals and translations).
+The command ~tlon-ai-propagate-changes~ attempts to automatically apply changes made in a commit to corresponding files in other ~tlon~ content repositories (originals and translations). If invoked from =magit-status-mode= with point on a commit, that commit is used; otherwise, the latest commit in the current repository is used.
 
-1. It identifies the current repository and its latest commit using ~tlon~ and Git functions.
+1. It identifies the current repository and the commit to use: if invoked from =magit-status-mode= with point on a commit, it uses that commit; otherwise, it uses the latest commit.
 2. It retrieves a list of all files modified in that commit within the source repository.
 3. For each modified source file:
    a. It retrieves the diff for that file from the commit using =git show=.

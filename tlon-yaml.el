@@ -541,11 +541,11 @@ If OVERWRITE is non-nil, overwrite existing field without asking."
 (defvar tlon-db-publication-statuses)
 
 ;;;###autoload
-(defun tlon-yaml-set-publication-status ()
-  "Set the YAML publication_status of the Markdown file at point.
-Prompt for a status from `tlon-db-publication-statuses', defaulting to
-the existing value. Signal an error for non-Markdown files. When the
-file is an article, signal an error suggesting
+(defun tlon-yaml-set-publication-status (&optional status)
+  "Set the YAML publication_status of the Markdown file at point to STATUS.
+If STATUS is nil, prompt for a status from `tlon-db-publication-statuses',
+defaulting to the existing value. Signal an error for non-Markdown files. When
+the file is an article, signal an error suggesting
 `tlon-db-set-publication-status' instead."
   (interactive)
   (let* ((file (or (buffer-file-name)
@@ -558,11 +558,12 @@ file is an article, signal an error suggesting
       (user-error "To set the publication status of an article, please use `tlon-db-set-publication-status` instead"))
     (let* ((current (tlon-yaml-get-key "publication_status" file))
            (choices tlon-db-publication-statuses)
-           (status (completing-read "Publication status: " choices nil t current nil current)))
+           (final-status (or status
+                             (completing-read "Publication status: " choices nil t current nil current))))
       (with-current-buffer (find-file-noselect file)
-        (tlon-yaml-insert-field "publication_status" status t)
+        (tlon-yaml-insert-field "publication_status" final-status t)
         (save-buffer))
-      status)))
+      final-status)))
 
 ;;;;; tags format normalization
 
