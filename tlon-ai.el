@@ -1808,9 +1808,10 @@ repository."
 		  (let* ((target-content (with-temp-buffer
 					   (insert-file-contents target-file)
 					   (buffer-string)))
-			 (prompt (format tlon-ai-propagate-changes-prompt source-lang
-					 (file-relative-name source-file source-repo)
-					 diff target-lang target-content)))
+			 (prompt (tlon-ai-maybe-edit-prompt
+				  (format tlon-ai-propagate-changes-prompt source-lang
+					  (file-relative-name source-file source-repo)
+					  diff target-lang target-content))))
 		    (message "  Requesting AI to update %s (lang: %s) in repo %s (target for %s)..."
 			     (file-name-nondirectory target-file) target-lang
 			     (file-name-nondirectory target-repo)
