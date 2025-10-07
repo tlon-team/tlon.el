@@ -1951,11 +1951,13 @@ commit hash."
       (message "AI provided changes for %s. Applying..." (file-name-nondirectory target-file))
       ;; Overwrite the target file with the AI's response
       (condition-case err
-	  (with-temp-file target-file ; Overwrites atomically
-	    (insert response))
+	  (let ((buf (find-file-noselect target-file)))
+	    (with-current-buffer buf
+	      (erase-buffer)
+	      (insert response)
+	      (save-buffer)))
 	(error (message "Error writing AI changes to %s: %s" target-file err)
 	       nil)) ; Prevent commit if write fails
-
       ;; If write succeeded, commit the changes
       (when (file-exists-p target-file) ; Double check write didn't fail silently
 	(let ((commit-message (format "AI: Propagate changes from commit %s in %s"
