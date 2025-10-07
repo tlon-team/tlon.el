@@ -1767,6 +1767,7 @@ determined."
   "Propagate modifications from all files in a chosen commit of the current repo.
 If called from `magit-status-mode' with point on a commit, use that commit.
 Otherwise, use the latest commit.
+
 For each file changed in the selected commit of the current repository, get its
 diff. Then, for each corresponding file in other \"uqbar\" content
 repositories (originals and translations), ask the AI to apply the semantically
