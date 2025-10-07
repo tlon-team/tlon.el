@@ -229,7 +229,6 @@ Do not perform these replacements if the terms occur in math formulae, links, or
 match certain words that should not be altered, such as \"80,000 Hours\"."
   (interactive)
   (let* ((exclusions `(,(tlon-md-get-tag-pattern "Math")
-		       ;; ,markdown-regex-link-inline ; why is this included?
 		       ,ffap-url-regexp
 		       "80,000 Hours"))
 	 (exclusion-patterns (mapconcat #'identity exclusions "\\|"))
