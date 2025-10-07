@@ -440,11 +440,13 @@ to parse URL. When ADD-DOT-SLASH is non-nil, prefix the rewritten link with
       (unless (file-exists-p local-path)
         (let ((orig-path (tlon-translate-relative-links--get-original-path
                           file-part orig-root orig-bare trans-lang orig-lang)))
-          (if-let* ((trans-path (tlon-get-counterpart orig-path trans-lang)))
-              (let* ((rel (file-relative-name trans-path trans-dir))
-                     (new-url (concat (if add-dot-slash "./" "") rel anchor)))
-                (tlon-translate-relative-links--replace-url start end new-url))
-            (user-error "Could not find counterpart for original file `%s'" orig-path)))))))
+          (when (and orig-path (file-exists-p orig-path))
+            (condition-case _err
+                (when-let* ((trans-path (tlon-get-counterpart orig-path trans-lang)))
+                  (let* ((rel (file-relative-name trans-path trans-dir))
+                         (new-url (concat (if add-dot-slash "./" "") rel anchor)))
+                    (tlon-translate-relative-links--replace-url start end new-url)))
+              (error nil))))))))
 
 (defun tlon-translate-relative-links--extract-file-part-and-anchor (url pattern)
   "Extract file part and anchor from URL using PATTERN.
