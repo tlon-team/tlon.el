@@ -1481,7 +1481,7 @@ If there are no differences, return nil."
     ("k" "Get translation key" tlon-db-get-translation-key)
     ("p" "Post entry" tlon-db-post-entry)
     ("m" "Move entry to db" tlon-db-move-entry)
-    ("M" "Move entry and its counterpart to db")
+    ("M" "Move entry and its counterpart to db" tlon-db-move-entry-pair)
     ("d" "Delete entry" tlon-db-delete-entry)
     ("c" "Check name" tlon-db-check-name)
     ("i" "Check or insert name" tlon-db-check-or-insert-name)
