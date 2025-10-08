@@ -233,30 +233,29 @@ Returns the translated text as a string, or nil if parsing fails."
 If NO-GLOSSARY is non-nil, don't ask for confirmation when no glossary is
 found or applicable.
 
-Glossaries are only used if the source language is \"en\" and a matching
-glossary for the target language exists in `tlon-deepl-glossaries'."
-  (let* ((source-is-en (string= "en" tlon-translate-source-language))
-         (glossary-id (when source-is-en ; Only lookup if source is English
-                        (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" tlon-translate-target-language)))
+Glossaries are used when both source and target languages support
+DeepL glossaries and a matching source/target glossary exists in
+`tlon-deepl-glossaries'."
+  (let* ((src tlon-translate-source-language)
+         (tgt tlon-translate-target-language)
+         (pair-supported (and (member src tlon-deepl-supported-glossary-languages)
+                              (member tgt tlon-deepl-supported-glossary-languages)))
+         (glossary-id (when pair-supported
+                        (tlon-lookup tlon-deepl-glossaries
+                                     "glossary_id"
+                                     "source_lang" src
+                                     "target_lang" tgt)))
          (processed-text (tlon-deepl--preprocess-text tlon-translate-text))
          (text (vector processed-text))
-         (target-supports-glossary (member tlon-translate-target-language tlon-deepl-supported-glossary-languages))
          (proceed nil))
     ;; Determine if we should proceed without a glossary or prompt the user
     (setq proceed
-          (or glossary-id ; Glossary found and will be used
-              no-glossary ; Caller allows no glossary
-              (not target-supports-glossary) ; Target language doesn't support glossaries anyway
-              ;; Prompt needed: Glossary applicable but not found, or source not "en"
-              (let ((prompt-message
-                     (cond
-                      ((not source-is-en) ; Source language issue
-                       "Glossaries require English source language.")
-                      (target-supports-glossary ; Source is EN, target supports, but lookup failed
-                       (format "No \"en-%s\" glossary found in local cache." tlon-translate-target-language))
-                      (t ; Should not happen due to (not target-supports-glossary) check above
-                       "Glossary not applicable."))))
-                (y-or-n-p (concat prompt-message " Translate anyway?")))))
+          (or glossary-id                      ; Glossary found and will be used
+              no-glossary                      ; Caller allows no glossary
+              (not pair-supported)             ; Pair doesn't support glossaries
+              ;; Prompt needed: Glossary applicable but not found
+              (y-or-n-p (format "No \"%s-%s\" glossary found in local cache. Translate anyway?"
+                                src tgt))))
     (unless proceed
       (user-error "Aborted: Glossary required or confirmation denied"))
     (let ((json-encoding-pretty-print nil)
@@ -264,19 +263,23 @@ glossary for the target language exists in `tlon-deepl-glossaries'."
           (json-encoding-lisp-style-closings nil)
           (json-encoding-object-sort-predicate nil))
       (json-encode `(("text" . ,text)
-                     ("source_lang" . ,tlon-translate-source-language)
-                     ("target_lang" . ,tlon-translate-target-language)
-                     ;; Include glossary_id only if it was found and source is "en"
+                     ("source_lang" . ,src)
+                     ("target_lang" . ,tgt)
+                     ;; Include glossary_id only if it was found
                      ,@(when glossary-id `(("glossary_id" . ,glossary-id)))
-		     ;; disabled because it fails to respect newlines
-		     ("model_type" . ,tlon-deepl-model-type))))))
+                     ;; disabled because it fails to respect newlines
+                     ("model_type" . ,tlon-deepl-model-type))))))
 
-(defun tlon-deepl-get-language-glossary (language)
-  "Return the glossary ID for LANGUAGE.
-Looks up the glossary ID in `tlon-deepl-glossaries' based on the target
-LANGUAGE. Returns nil if `tlon-translate-source-language' is not \"en\"."
-  (when (string= "en" tlon-translate-source-language)
-    (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" language)))
+(defun tlon-deepl-get-language-glossary (language &optional source)
+  "Return the glossary ID for LANGUAGE paired with SOURCE.
+Looks up `tlon-deepl-glossaries' based on SOURCE (defaults to
+`tlon-translate-source-language') and target LANGUAGE. Returns nil
+if no matching glossary is found."
+  (let ((src (or source tlon-translate-source-language)))
+    (tlon-lookup tlon-deepl-glossaries
+                 "glossary_id"
+                 "source_lang" src
+                 "target_lang" language)))
 
 ;;;;;; “quality_optimized” model newlines workaround
 
@@ -338,24 +341,27 @@ even if the caller passes data."
 ;;;;;; Create glossary
 
 ;;;###autoload
-(defun tlon-deepl-glossary-create (language)
-  "Create a DeepL glossary for LANGUAGE."
-  (interactive (list (tlon-select-language 'code 'babel)))
-  (tlon-extract-glossary language 'deepl-api)
-  (setq tlon-translate-target-language language)
+(defun tlon-deepl-glossary-create (source-language target-language)
+  "Create a DeepL glossary for SOURCE-LANGUAGE → TARGET-LANGUAGE."
+  (interactive (list (tlon-select-language 'code 'babel "Source language: ")
+                     (tlon-select-language 'code 'babel "Target language: ")))
+  (tlon-extract-glossary source-language target-language 'deepl-api)
+  (setq tlon-translate-source-language source-language
+        tlon-translate-target-language target-language)
   (tlon-deepl-request-wrapper 'glossary-create))
 
 ;;;###autoload
-(defun tlon-deepl-glossary-update (language)
-  "Update a DeepL glossary for LANGUAGE by deleting and recreating it.
+(defun tlon-deepl-glossary-update (source-language target-language)
+  "Update a DeepL glossary for SOURCE-LANGUAGE → TARGET-LANGUAGE.
 
 The heavy lifting is delegated to `tlon-deepl-glossary-delete' and
 `tlon-deepl-glossary-create'."
-  (interactive (list (tlon-select-language 'code 'babel)))
+  (interactive (list (tlon-select-language 'code 'babel "Source language: ")
+                     (tlon-select-language 'code 'babel "Target language: ")))
   (tlon-deepl-glossary-delete
-   language
+   (cons source-language target-language)
    (lambda ()
-     (tlon-deepl-glossary-create language))))
+     (tlon-deepl-glossary-create source-language target-language))))
 
 ;;;###autoload
 (defun tlon-deepl-maybe-glossary-update (language)
@@ -366,19 +372,21 @@ The heavy lifting is delegated to `tlon-deepl-glossary-delete' and
 (defun tlon-deepl-glossary-create-encode (&rest _)
   "Return a JSON representation of the glossary to be created."
   (let* ((extension "tsv")
-	 (file (tlon-glossary-make-file (upcase tlon-translate-target-language) extension))
-	 (name (file-name-base file))
-	 entries)
+         (file (tlon-glossary-make-file tlon-translate-source-language
+                                        tlon-translate-target-language
+                                        extension))
+         (name (file-name-base file))
+         entries)
     (with-temp-buffer
       (insert-file-contents file) ; Assumes file is UTF-8
       ;; Pass the raw buffer string directly to json-encode.
       ;; json-encode handles JSON string escaping correctly.
       (setq entries (buffer-string))
       (json-encode `(("name" . ,name)
-		     ("source_lang" . "en")
-		     ("target_lang" . ,tlon-translate-target-language)
-		     ("entries" . ,entries)
-		     ("entries_format" . ,extension))))))
+                     ("source_lang" . ,tlon-translate-source-language)
+                     ("target_lang" . ,tlon-translate-target-language)
+                     ("entries" . ,entries)
+                     ("entries_format" . ,extension))))))
 
 (defun tlon-deepl-glossary-create-callback ()
   "Callback for `tlon-deepl-glossary-create'."
@@ -425,17 +433,22 @@ Returns the selected model string value."
 (defun tlon-deepl-glossary-delete (&optional language-or-id callback)
   "Delete a DeepL glossary.
 If called interactively, prompt the user to choose a glossary unless
-LANGUAGE-OR-ID is supplied.  Programmatically, supply either a target
-language code (≤ 3 chars, e.g., \"es\") or a glossary ID.
+LANGUAGE-OR-ID is supplied. Programmatically, supply either:
+- a target language code (≤ 3 chars, e.g., \"es\"),
+- a cons pair (SOURCE . TARGET), or
+- a glossary ID string.
 
 After successful deletion, execute CALLBACK (if non-nil)."
   (interactive)
   (let* ((id
           (cond
            ((not language-or-id) nil)
-           ;; language code supplied
+           ;; pair supplied (SOURCE . TARGET)
+           ((consp language-or-id)
+            (tlon-deepl-get-language-glossary (cdr language-or-id) (car language-or-id)))
+           ;; language code supplied (target only, source defaults to current)
            ((and (stringp language-or-id)
-		 (<= (length language-or-id) 3))
+                 (<= (length language-or-id) 3))
             (tlon-deepl-get-language-glossary language-or-id))
            ;; id supplied directly
            ((stringp language-or-id) language-or-id))))
@@ -443,8 +456,8 @@ After successful deletion, execute CALLBACK (if non-nil)."
       (tlon-deepl-request-wrapper
        'glossary-delete
        (lambda ()
-	 (tlon-deepl-glossary-delete-callback)
-	 (when callback (funcall callback)))))))
+         (tlon-deepl-glossary-delete-callback)
+         (when callback (funcall callback)))))))
 
 (defun tlon-deepl-glossary-delete-formatter ()
   "URL formatter for `tlon-deepl-glossary-delete'."
