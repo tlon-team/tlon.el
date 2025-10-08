@@ -411,39 +411,36 @@ RECIPIENT can be `human', `deepl-editor', `deepl-api', `ai-revision' or `sieve'.
   "Insert a formatted glossary from JSON data for SOURCE-LANGUAGE → TARGET-LANGUAGE.
 Format depends on RECIPIENT: `human'/`deepl-editor' CSV, `deepl-api' TSV,
 `sieve' JSON."
-  (let ((src-key (intern source-language))
-        (tgt-key (intern target-language)))
+  (let* ((src-key (intern source-language))
+         (tgt-key (intern target-language)))
     (if (eq recipient 'sieve)
         (tlon-insert-sieve-glossary json source-language target-language)
-      (dolist (item json)
-        (when-let* ((source-term (alist-get src-key item))
-                    (target-term (alist-get tgt-key item))
-                    (entry (pcase recipient
-                             ((or 'human 'ai-revision)
-                              (format "\"%s\",\"%s\"\n" source-term target-term))
-                             ('deepl-editor
-                              (format "\"%s\",\"%s\",\"%s\",\"%s\"\n"
-                                      source-term target-term
-                                      (upcase source-language) (upcase target-language)))
-                             ('deepl-api (format "%s\t%s\n" source-term target-term)))))
-          (when (or (member recipient '(deepl-editor deepl-api))
-                    (string= (alist-get 'type item) "variable"))
-            (insert entry)))))))
+      (let ((pairs (tlon--glossary-build-mapping json src-key tgt-key recipient)))
+        (pcase recipient
+          ((or 'human 'ai-revision)
+           (dolist (p pairs)
+             (insert (format "\"%s\",\"%s\"\n" (car p) (cdr p)))))
+          ('deepl-editor
+           (dolist (p pairs)
+             (insert (format "\"%s\",\"%s\",\"%s\",\"%s\"\n"
+                             (car p) (cdr p)
+                             (upcase source-language) (upcase target-language)))))
+          ('deepl-api
+           (dolist (p pairs)
+             (insert (format "%s\t%s\n" (car p) (cdr p))))))))))
 
 (defun tlon-insert-sieve-glossary (json source-language target-language)
   "Insert a sieve-formatted glossary for SOURCE-LANGUAGE → TARGET-LANGUAGE.
 Creates a JSON object mapping source terms to target terms. Replace ASCII
 apostrophes (') with typographic apostrophes (’) on both sides."
-  (let ((glossary-object '())
-        (src-key (intern source-language))
-        (tgt-key (intern target-language)))
-    (dolist (item json)
-      (when-let* ((raw-source-term (alist-get src-key item))
-                  (raw-target-term (alist-get tgt-key item)))
-        (let ((source-term (replace-regexp-in-string "'" "’" raw-source-term))
-              (target-term (replace-regexp-in-string "'" "’" raw-target-term)))
-          (push (cons source-term target-term) glossary-object))))
-    (insert (json-encode (nreverse glossary-object)))))
+  (let* ((src-key (intern source-language))
+         (tgt-key (intern target-language))
+         (pairs (tlon--glossary-build-mapping json src-key tgt-key 'sieve))
+         (fixed (mapcar (lambda (p)
+                          (cons (replace-regexp-in-string "'" "’" (car p))
+                                (replace-regexp-in-string "'" "’" (cdr p))))
+                        pairs)))
+    (insert (json-encode fixed))))
 
 (defvar tlon-email-language)
 (declare-function tlon-email-send "tlon-email")

@@ -263,6 +263,10 @@ This section lists non-interactive functions and variables used internally or po
   - For =deepl-editor= recipients, it includes all types and formats them as CSV lines with the selected source and target codes in the last two columns.
   - For =deepl-api= recipients, it includes all types and formats them as TSV lines.
   - For =sieve= recipients, it includes all types (that have a translation) and formats the entire glossary as a single JSON object mapping source terms to target terms. Standard apostrophes (') in both source terms (keys) and target terms (values) are replaced with typographic apostrophes (’).
+  Additionally, terms are normalized before emission: leading/trailing whitespace is
+  trimmed, empty terms are skipped, and duplicate source terms are collapsed. When
+  duplicates occur, entries of type =variable= take precedence over =invariant=. A brief
+  summary is messaged indicating how many duplicates were collapsed.
 
 *** Git Integration (Currently Unused/TODO)
 :PROPERTIES:
