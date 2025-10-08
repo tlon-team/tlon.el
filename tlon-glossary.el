@@ -154,7 +154,16 @@ SOURCE-LANG is a language code string."
     (if translation
         (setcdr translation (funcall read-translation))
       (setq entry (append entry (list (cons lang-key (funcall read-translation))))))
-    (tlon-deepl-maybe-glossary-update language)
+    (let* ((src-key (car (seq-find (lambda (cell)
+                                     (and (symbolp (car cell))
+                                          (not (eq (car cell) 'type))
+                                          (stringp (cdr cell))
+                                          (string= (cdr cell) term)))
+                                   entry)))
+           (src-code (and src-key (symbol-name src-key))))
+      (if src-code
+          (tlon-deepl-maybe-glossary-update (cons src-code language))
+        (tlon-deepl-maybe-glossary-update language)))
     entry))
 
 (defun tlon-update-glossary (glossary entry term key-lang)

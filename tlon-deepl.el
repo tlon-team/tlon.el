@@ -364,10 +364,16 @@ The heavy lifting is delegated to `tlon-deepl-glossary-delete' and
      (tlon-deepl-glossary-create source-language target-language))))
 
 ;;;###autoload
-(defun tlon-deepl-maybe-glossary-update (language)
-  "If LANGUAGE is supported by DeepL, update its glossary."
-  (when (member language tlon-deepl-supported-glossary-languages)
-    (tlon-deepl-glossary-update language)))
+(defun tlon-deepl-maybe-glossary-update (language-or-pair)
+  "Update a DeepL glossary when supported.
+If LANGUAGE-OR-PAIR is a cons (SRC . TGT), update that pair when both
+languages support glossaries. If it is a string code, update EN → that
+language for backward compatibility."
+  (let* ((src (if (consp language-or-pair) (car language-or-pair) "en"))
+         (tgt (if (consp language-or-pair) (cdr language-or-pair) language-or-pair)))
+    (when (and (member src tlon-deepl-supported-glossary-languages)
+               (member tgt tlon-deepl-supported-glossary-languages))
+      (tlon-deepl-glossary-update src tgt))))
 
 (defun tlon-deepl-glossary-create-encode (&rest _)
   "Return a JSON representation of the glossary to be created."
