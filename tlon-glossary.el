@@ -473,8 +473,8 @@ apostrophes (') with typographic apostrophes (’) on both sides."
 
 (defun tlon--glossary-normalize-term (s)
   "Trim surrounding whitespace in S and return nil if empty."
-  (let ((t (and (stringp s) (string-trim s))))
-    (and t (> (length t) 0) t)))
+  (let ((trimmed (and (stringp s) (string-trim s))))
+    (and trimmed (> (length trimmed) 0) trimmed)))
 
 (defvar tlon-email-language)
 (declare-function tlon-email-send "tlon-email")
