@@ -494,8 +494,8 @@ user-selected language and store it in abstract-translations.json."
                                (tlon-translate--db-set-abstract key translated)
                                (tlon-translate--log "Set abstract for %s (from %s)" key translation-of))))
                          nil))
-                    (tlon-translate--log "Skipping abstract for %s -> %s: no suitable glossary found" translation-of dst-code)))))
-          (tlon-translate-abstract-interactive key text source-lang-code))))))
+                    (tlon-translate--log "Skipping abstract for %s -> %s: %s-%s glossary missing" translation-of dst-code (upcase src-code) (upcase dst-code)))))
+              (tlon-translate-abstract-interactive key text source-lang-code)))))))
 
 (defun tlon-translate--external-abstracts (&optional langs)
   "Translate missing abstracts for non-DB works into JSON store.
@@ -684,7 +684,7 @@ If the original entry lacks an abstract, log a message and skip."
                                 (setq changed-p t)
                                 (tlon-translate--log "Set abstract for %s (from %s)" tkey skey)))
                             (next)))
-                       (tlon-translate--log "Skipping abstract for %s -> %s: no suitable glossary found" skey dst)
+                       (tlon-translate--log "Skipping abstract for %s -> %s: %s-%s glossary missing" skey dst (upcase src) (upcase dst))
                        (next))))))))
         (next)))))
 
@@ -805,7 +805,7 @@ prompt the user for confirmation before overwriting."
                (glossary-id (and src-en supports
                                  (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" target-lang))))
           (if (not glossary-id)
-              (message "Skipping %s -> %s: no suitable glossary found" key target-lang)
+              (message "Skipping %s -> %s: %s-%s glossary missing" key target-lang (upcase source-lang-code) (upcase target-lang))
             (if (and existing-translation
                      (not (y-or-n-p (format "Translation for %s into %s already exists. Retranslate?"
                                             key target-lang-name))))
@@ -847,10 +847,10 @@ nil, use `tlon-project-target-languages'."
                                              (lambda ()
                                                (tlon-translate-abstract-callback key target-lang 'overwrite))))
                                           nil))
-                (message "Skipping %s -> %s: no suitable glossary found" key target-lang)))))))
-    (when initiated-langs
-      (message "Finished initiating translations for abstract of `%s' into: %s"
-	       key (string-join (reverse initiated-langs) ", ")))))
+                (message "Skipping %s -> %s: %s-%s glossary missing" key target-lang (upcase source-lang-code) (upcase target-lang)))))))
+      (when initiated-langs
+	(message "Finished initiating translations for abstract of `%s' into: %s"
+		 key (string-join (reverse initiated-langs) ", "))))))
 
 (defun tlon-translate--suppress-file-change-prompt (thunk)
   "Call THUNK while suppressing file-changed prompting, and refresh JSON.
