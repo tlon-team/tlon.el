@@ -85,12 +85,12 @@ This section details the interactive commands provided by =tlon-glossary.el=.
 The command ~tlon-edit-glossary~ provides an interactive way to create or update entries in the glossary file (~tlon-file-glossary-source~).
 
 1. It parses the existing glossary using ~tlon-parse-glossary~.
-2. It prompts the user to choose an existing English term (using completion) or add a new one.
+2. It prompts the user to select a source language and then choose an existing term in that language (using completion) or add a new one.
 3. If the term is new:
    - It prompts the user to select the term type (=variable= or =invariant=) using ~tlon-select-term-type~.
-   - It creates a new entry structure using ~tlon-create-entry~. For invariant terms, it automatically adds entries for all target languages, using the English term as the initial translation.
+   - It creates a new entry structure using ~tlon-create-entry~. For invariant terms, it automatically adds entries for all target languages, using the source term as the initial translation.
 4. If the term exists or is newly created and is not of type =invariant=:
-   - It calls ~tlon-edit-translation-in-entry~ to prompt the user for a target language and the corresponding translation for the selected English term. It updates the entry with the new or modified translation.
+   - It calls ~tlon-edit-translation-in-entry~ to prompt the user for a target language and the corresponding translation for the selected source term. It updates the entry with the new or modified translation.
 5. It updates the main glossary data structure with the modified or new entry using ~tlon-update-glossary~.
 6. It writes the updated glossary back to the JSON file using ~tlon-write-data~.
 
@@ -99,15 +99,15 @@ The command ~tlon-edit-glossary~ provides an interactive way to create or update
 :CUSTOM_ID: h:tlon-extract-glossary
 :END:
 #+findex: tlon-extract-glossary
-The command ~tlon-extract-glossary~ extracts a language-specific glossary from the main JSON file and saves it in a format suitable for a specified recipient.
+The command ~tlon-extract-glossary~ extracts a glossary for an arbitrary language pair from the main JSON file and saves it in a format suitable for a specified recipient.
 
-1. It prompts the user to select the target =LANGUAGE= using ~tlon-select-language~.
+1. It prompts the user to select the source and target =LANGUAGE= codes using ~tlon-select-language~.
 2. It prompts the user to select the =RECIPIENT= type (=human=, =deepl-editor=, =deepl-api=, or =sieve=) using completion.
-3. It determines the target file path and extension based on the language and recipient using ~tlon-glossary-target-path~.
+3. It determines the target file path and extension based on the languages and recipient using ~tlon-glossary-target-path~.
 4. It reads the source glossary JSON file.
 5. It creates or opens the target file and inserts the formatted glossary content using ~tlon-insert-formatted-glossary~, filtering and formatting entries based on the recipient:
    - =human=: Includes only "variable" type entries, formatted as CSV (="Source","Target"=).
-   - =deepl-editor=: Includes all entries, formatted as CSV (="Source","Target","EN","LANG"=).
+   - =deepl-editor=: Includes all entries, formatted as CSV (="Source","Target","SRC","TGT"=) using the selected language codes.
    - =deepl-api=: Includes all entries, formatted as TSV (=Source\tTarget=).
    - =sieve=: Includes all entries that have a translation, formatted as a JSON object (={"Source": "Target", ...}=). Standard apostrophes (') in both source terms (keys) and target terms (values) are replaced with typographic apostrophes (’).
 6. It saves the target file.
@@ -123,11 +123,11 @@ The command ~tlon-extract-multilingual-glossary~ writes a CSV file containing
 all existing translations for every term in the master glossary. It is useful
 for translators onboarding a new target language.
 
-- It detects all language keys present across entries (including ~en~).
+- It detects all language keys present across entries (including any source language).
 - It writes a header row with the language codes.
 - Each subsequent row contains the translation for that term in each language
   (empty if missing).
-- The file is saved to your downloads directory as =EN-ALL.csv=.
+- The file is saved to your downloads directory as =ALL.csv=.
 
 *** Share Glossary
 :PROPERTIES:
@@ -160,31 +160,31 @@ The command ~tlon-glossary-menu~ activates a =transient= menu interface providin
 :CUSTOM_ID: h:tlon-ai-create-glossary-language
 :END:
 #+findex: tlon-ai-create-glossary-language
-The command ~tlon-ai-create-glossary-language~ uses an AI model to generate translations for *missing* terms for a specified target language in the glossary. This command can be run iteratively to gradually complete a language's glossary.
+The command ~tlon-ai-create-glossary-language~ uses an AI model to generate translations for missing terms from a chosen source language into a chosen target language. This command can be run iteratively to gradually complete a language's glossary.
 
-1. It prompts the user to select the target language code (e.g., "de") using ~tlon-select-language~.
+1. It prompts the user to select the source and target language codes using ~tlon-select-language~.
 2. It reads the current glossary data from ~tlon-file-glossary-source~.
-3. It filters the glossary to find entries that *do not* have a translation for the selected target language.
-4. It extracts the English terms (=en= value) from these missing entries.
-5. If no terms are missing for the target language, it informs the user and exits.
-6. It formats a prompt (~tlon-ai-create-glossary-language-prompt~) instructing the first AI (model defined by ~tlon-ai-glossary-model~) to generate translations for the provided list of English terms into the target language. The prompt asks the AI to return *only* the plain text translations, one per line.
-7. It sends the request (containing the missing English terms as a newline-separated plain text list) to the first AI using ~tlon-make-gptel-request~.
+3. It filters the glossary to find entries that have a term in the selected source language but lack a translation for the selected target language.
+4. It extracts the source-language terms from these missing entries.
+5. If no terms are missing for the chosen language pair, it informs the user and exits.
+6. It formats a prompt (~tlon-ai-create-glossary-language-prompt~) instructing the first AI (model defined by ~tlon-ai-glossary-model~) to generate translations for the provided list of source-language terms into the target language. The prompt asks the AI to return only the plain text translations, one per line.
+7. It sends the request (containing the missing source terms as a newline-separated plain text list) to the first AI using ~tlon-make-gptel-request~.
 8. The first callback function (~tlon-ai-create-glossary-language-callback~) receives the raw response from the first AI.
-9. It saves this raw response to a temporary file in the downloads directory (e.g., =ai-glossary-fr-raw-temp.txt=).
-10. This callback then formats a *second* prompt (~tlon-ai-verify-glossary-translations-prompt~) instructing a second AI (model defined by ~tlon-ai-glossary-verify-model~) to clean and verify the raw response. This prompt asks the AI to ensure the output is a plain text list with exactly the expected number of lines, removing any extraneous text or formatting and using placeholders if necessary.
+9. It saves this raw response to a temporary file in the downloads directory (e.g., =ai-glossary-ES-IT-raw-temp.txt=).
+10. This callback then formats a second prompt (~tlon-ai-verify-glossary-translations-prompt~) instructing a second AI (model defined by ~tlon-ai-glossary-verify-model~) to clean and verify the raw response. This prompt asks the AI to ensure the output is a plain text list with exactly the expected number of lines, removing any extraneous text or formatting and using placeholders if necessary.
 11. It sends the verification request to the second AI.
 12. The second callback function (~tlon-ai-process-verified-translations-callback~) handles the response from the verification AI:
     - It cleans the verified response (removes potential markdown fences).
     - It splits the cleaned response string into a list of translation strings using newlines as delimiters (=received-translations=).
-    - It checks if the number of translation lines received matches the number of English terms originally sent (=missing-en-terms=). If not, it issues a warning message but *continues processing*.
-    - It reconstructs the list of pairs by combining the original =missing-en-terms= list with the verified =received-translations=, processing only up to the minimum of the number expected and the number received. *Crucially, it skips any translation that is exactly the string =\"[TRANSLATION_UNAVAILABLE]\"=.*
-    - It iterates through the reconstructed (and filtered) =["en_term", "translation"]= pairs:
-      - It finds the corresponding entry in the *full* glossary data where the English term matches =en_term=.
-      - If found, it adds the new language key-value pair (e.g., =("de" . "translation")=) to that entry (or updates it if it somehow already existed).
-    - It writes the *entire updated glossary data structure* back to ~tlon-file-glossary-source~ using ~tlon-write-data~.
-    - It reports the number of *non-placeholder* translations successfully merged.
-    - *On success*, it deletes the temporary raw response file saved earlier.
-    - If any step fails (AI error in either step, invalid format in verified response), it reports an error, logs the relevant AI response, and *leaves the temporary raw response file* in the downloads directory for inspection.
+    - It checks if the number of translation lines received matches the number of source terms originally sent (=source-terms=). If not, it issues a warning message but continues processing.
+    - It reconstructs the list of pairs by combining the original =source-terms= list with the verified =received-translations=, processing only up to the minimum of the number expected and the number received. It skips any translation that is exactly the string =\"[TRANSLATION_UNAVAILABLE]\"=.
+    - It iterates through the reconstructed (and filtered) =[\"source_term\", \"translation\"]= pairs:
+      - It finds the corresponding entry in the full glossary data where the source-language term matches =source_term=.
+      - If found, it adds the new target language key-value pair (e.g., =(\"it\" . \"traduzione\")=) to that entry (or updates it if it already existed).
+    - It writes the entire updated glossary data structure back to ~tlon-file-glossary-source~ using ~tlon-write-data~.
+    - It reports the number of non-placeholder translations successfully merged.
+    - On success, it deletes the temporary raw response file saved earlier.
+    - If any step fails (AI error in either step, invalid format in verified response), it reports an error, logs the relevant AI response, and leaves the temporary raw response file in the downloads directory for inspection.
 
 ** Internal Functions and Variables
 :PROPERTIES:
@@ -199,25 +199,25 @@ This section lists non-interactive functions and variables used internally or po
 :END:
 
 #+findex: tlon-parse-glossary
-+ ~tlon-parse-glossary~ :: Reads and parses the JSON glossary file specified by ~tlon-file-glossary-source~ into an Emacs Lisp alist using ~tlon-read-json~.
++ ~tlon-parse-glossary~ :: Reads and parses the JSON glossary file specified by ~tlon-file-glossary-source~ into an Emacs Lisp alist using ~tlon-read-json~ with symbol keys.
 
-#+findex: tlon-get-english-terms
-+ ~tlon-get-english-terms~ :: Extracts a list of all English terms (the =en= value) from the parsed glossary alist. Used for completion in ~tlon-edit-glossary~.
+#+findex: tlon-get-terms
++ ~tlon-get-terms~ :: Extracts a list of all terms for a given source language code from the parsed glossary alist. Used for completion in ~tlon-edit-glossary~.
 
-#+findex: tlon-find-entry-by-term
-+ ~tlon-find-entry-by-term~ :: Searches the parsed glossary alist for an entry whose English term (=en= value) matches the given =TERM=. Returns the matching entry alist or nil.
+#+findex: tlon-find-entry-by-term-in-lang
++ ~tlon-find-entry-by-term-in-lang~ :: Searches the parsed glossary alist for an entry whose term in the specified source language matches the given =TERM=. Returns the matching entry alist or nil.
 
 #+findex: tlon-select-term-type
 + ~tlon-select-term-type~ :: Prompts the user with completion to select a term type (=variable= or =invariant=) and returns the selected string.
 
 #+findex: tlon-create-entry
-+ ~tlon-create-entry~ :: Creates a new glossary entry alist for a given English =TERM= and =TYPE=. If the type is =invariant=, it pre-populates translations for all ~tlon-project-target-languages~ with the English term itself.
++ ~tlon-create-entry~ :: Creates a new glossary entry alist for a given =TERM=, =TYPE=, and source language code. If the type is =invariant=, it pre-populates translations for all ~tlon-project-target-languages~ with the source term itself.
 
 #+findex: tlon-edit-translation-in-entry
-+ ~tlon-edit-translation-in-entry~ :: Interactively prompts the user to select a target language and provide or update the translation for the given English =TERM= within the provided =ENTRY= alist. Returns the modified entry.
++ ~tlon-edit-translation-in-entry~ :: Interactively prompts the user to select a target language and provide or update the translation for the given source =TERM= within the provided =ENTRY= alist. Returns the modified entry.
 
 #+findex: tlon-update-glossary
-+ ~tlon-update-glossary~ :: Takes the main glossary alist, a potentially modified =ENTRY=, and the corresponding English =TERM=. If an entry for =TERM= already exists in the glossary, it replaces it with =ENTRY=. If not, it appends =ENTRY= to the glossary. Returns the updated glossary alist.
++ ~tlon-update-glossary~ :: Takes the main glossary alist, a potentially modified =ENTRY=, the corresponding =TERM=, and the language code used as the key. If an entry for =TERM= already exists in the glossary under that key, it replaces it with =ENTRY=. If not, it appends =ENTRY= to the glossary. Returns the updated glossary alist.
 
 *** AI Glossary Generation Helpers
 :PROPERTIES:
@@ -226,7 +226,7 @@ This section lists non-interactive functions and variables used internally or po
 #+findex: tlon-ai-create-glossary-language-callback
 + ~tlon-ai-create-glossary-language-callback~ :: Callback for the first AI call (translation generation) in ~tlon-ai-create-glossary-language~. Saves the raw response and initiates the second AI call for verification.
 #+findex: tlon-ai-process-verified-translations-callback
-+ ~tlon-ai-process-verified-translations-callback~ :: Callback for the second AI call (verification). Parses the cleaned list, merges translations, writes the updated glossary, and handles success/failure logging.
++ ~tlon-ai-process-verified-translations-callback~ :: Callback for the second AI call (verification). Parses the cleaned list, merges translations keyed by the selected source language, writes the updated glossary, and handles success/failure logging.
 #+findex: tlon-ai--clean-verified-response
 + ~tlon-ai--clean-verified-response~ :: Cleans the verified AI response string by removing markdown fences and trimming whitespace.
 #+findex: tlon-ai--parse-verified-translations
@@ -252,15 +252,15 @@ This section lists non-interactive functions and variables used internally or po
 :END:
 
 #+findex: tlon-glossary-target-path
-+ ~tlon-glossary-target-path~ :: Determines the full output file path for an extracted glossary based on the target =LANGUAGE= and =RECIPIENT=. It sets the file extension to =.csv= for =human= and =deepl-editor=, =.tsv= for =deepl-api=, and =.json= for =sieve=. Uses ~tlon-glossary-make-file~ internally.
++ ~tlon-glossary-target-path~ :: Determines the full output file path for an extracted glossary based on the source and target =LANGUAGE= codes and =RECIPIENT=. It sets the file extension to =.csv= for =human= and =deepl-editor=, =.tsv= for =deepl-api=, and =.json= for =sieve=. Uses ~tlon-glossary-make-file~ internally.
 
 #+findex: tlon-glossary-make-file
-+ ~tlon-glossary-make-file~ :: Constructs the filename (e.g., =EN-FR.csv=) and combines it with the user's download directory path (~paths-dir-downloads~).
++ ~tlon-glossary-make-file~ :: Constructs the filename (e.g., =ES-IT.csv=) and combines it with the user's download directory path (~paths-dir-downloads~).
 
 #+findex: tlon-insert-formatted-glossary
-+ ~tlon-insert-formatted-glossary~ :: Iterates through the parsed =JSON= glossary data. For each entry, it extracts the source (=en=) and target (=language=) terms. Based on the =RECIPIENT=, it formats the entry and inserts it into the current buffer.
++ ~tlon-insert-formatted-glossary~ :: Iterates through the parsed =JSON= glossary data. For each entry, it extracts the source and target terms corresponding to the selected language codes. Based on the =RECIPIENT=, it formats the entry and inserts it into the current buffer.
   - For =human= recipients, it only includes entries of type =variable= and formats them as CSV lines.
-  - For =deepl-editor= recipients, it includes all types and formats them as CSV lines.
+  - For =deepl-editor= recipients, it includes all types and formats them as CSV lines with the selected source and target codes in the last two columns.
   - For =deepl-api= recipients, it includes all types and formats them as TSV lines.
   - For =sieve= recipients, it includes all types (that have a translation) and formats the entire glossary as a single JSON object mapping source terms to target terms. Standard apostrophes (') in both source terms (keys) and target terms (values) are replaced with typographic apostrophes (’).
 
