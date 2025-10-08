@@ -100,7 +100,7 @@ This section details the interactive commands provided by =tlon-deepl.el=.
 
 #+findex: tlon-deepl-translate
 + ~tlon-deepl-translate~ :: Translates text using the DeepL API.
-  1. Prompts for source language (defaulting to "en") using ~tlon-select-language~.
+  1. Prompts for source language using ~tlon-select-language~.
   2. Prompts for target language using ~tlon-select-language~ (excluding the source language).
   3. Prompts for the text to translate, defaulting to the active region or the word at point.
   4. Sets the internal state variables (~tlon-translate-text~, ~tlon-translate-source-language~, ~tlon-translate-target-language~).
@@ -137,16 +137,16 @@ This section details the interactive commands provided by =tlon-deepl.el=.
 + ~tlon-deepl-get-glossaries~ :: Retrieves the list of available glossaries from the DeepL API. Calls ~tlon-deepl-request-wrapper~ with the =glossary-get= type. The callback (~tlon-deepl-glossary-get-callback~) updates the ~tlon-deepl-glossaries~ variable. This command is also called automatically after glossary creation or deletion, and on module load.
 
 #+findex: tlon-deepl-glossary-create
-+ ~tlon-deepl-glossary-create~ :: Creates a new DeepL glossary for a specified language.
-  1. Prompts for the target =LANGUAGE= using ~tlon-select-language~.
-  2. Extracts the glossary data for that language into the appropriate format (TSV for DeepL API) using ~tlon-extract-glossary~.
-  3. Sets the internal ~tlon-translate-target-language~ variable.
++ ~tlon-deepl-glossary-create~ :: Creates a new DeepL glossary for a specified source/target language pair.
+  1. Prompts for the source and target =LANGUAGE= codes using ~tlon-select-language~.
+  2. Extracts the glossary data for that pair in TSV format using ~tlon-extract-glossary~.
+  3. Sets the internal ~tlon-translate-source-language~ and ~tlon-translate-target-language~ variables.
   4. Calls ~tlon-deepl-request-wrapper~ with the =glossary-create= type. The callback (~tlon-deepl-glossary-create-callback~) refreshes the local glossary list and messages the API response.
 
 #+findex: tlon-deepl-glossary-update
-+ ~tlon-deepl-glossary-update~ :: Updates a DeepL glossary for a specified language by deleting it (if it exists) and then recreating it with the current local glossary data.
-  1. Prompts for the target =LANGUAGE= using ~tlon-select-language~.
-  2. Calls ~tlon-deepl-glossary-delete~ for the specified language, with a callback to then call ~tlon-deepl-glossary-create~ for the same language. This ensures the creation happens after successful deletion (or proceeds directly if no glossary existed to delete).
++ ~tlon-deepl-glossary-update~ :: Updates a DeepL glossary for a specified source/target language pair by deleting it (if it exists) and then recreating it with the current local glossary data.
+  1. Prompts for the source and target =LANGUAGE= codes using ~tlon-select-language~.
+  2. Calls ~tlon-deepl-glossary-delete~ for the specified pair, with a callback to then call ~tlon-deepl-glossary-create~ for the same pair. This ensures the creation happens after successful deletion (or proceeds directly if no glossary existed to delete).
   3. Provides progress messages throughout the process.
 
 #+findex: tlon-deepl-glossary-delete
@@ -237,10 +237,10 @@ This section lists non-interactive functions and variables used internally or po
 
 #+findex: tlon-deepl-translate-encode
 + ~tlon-deepl-translate-encode~ :: Generates the JSON payload for a translation request. Includes the text (as a vector), source language, target language, and potentially a glossary ID.
-+   - Glossaries are only included if the source language is "en", the target language supports glossaries, and a matching glossary is found in the local cache (~tlon-deepl-glossaries~) via ~tlon-deepl-get-language-glossary~.
-+   - If a glossary is applicable but not found (or source is not "en"), prompts the user for confirmation unless =NO-GLOSSARY= is non-nil. The prompt message clarifies the reason (source language vs. missing cache entry). Handles potential user abortion.
++   - Glossaries are only included if both the source and target languages support DeepL glossaries and a matching source/target glossary is found in the local cache (~tlon-deepl-glossaries~).
++   - If a glossary is applicable but not found, prompts the user for confirmation unless =NO-GLOSSARY= is non-nil. Handles potential user abortion.
 #+findex: tlon-deepl-glossary-create-encode
-+ ~tlon-deepl-glossary-create-encode~ :: Generates the JSON payload for creating a glossary. Determines the glossary file path (~tlon-glossary-make-file~), reads its content (as a UTF-8 string), and includes the glossary name, source language ("en"), target language, the raw entries string, and format ("tsv") in the JSON object. ~json-encode~ handles the necessary escaping for the entries string.
++ ~tlon-deepl-glossary-create-encode~ :: Generates the JSON payload for creating a glossary. Determines the glossary file path for the selected language pair (~tlon-glossary-make-file~), reads its content (as a UTF-8 string), and includes the glossary name, source language, target language, the raw entries string, and format ("tsv") in the JSON object. ~json-encode~ handles the necessary escaping for the entries string.
 
 #+findex: tlon-deepl-glossary-delete-formatter
 + ~tlon-deepl-glossary-delete-formatter~ :: Function used by ~tlon-deepl-request-wrapper~ to generate the specific URL for deleting a glossary. It calls ~tlon-deepl-select-glossary~ to get the ID and appends it to the base glossaries endpoint.
@@ -268,7 +268,7 @@ This section lists non-interactive functions and variables used internally or po
 + ~tlon-deepl-get-list-of-glossaries~ :: Formats the data in ~tlon-deepl-glossaries~ into a list of strings suitable for display in ~completing-read~ (used by ~tlon-deepl-select-glossary~). Each string includes name, languages, entry count, and ID. Returns a cons cell =(DISPLAY-STRING . ID)=.
 
 #+findex: tlon-deepl-get-language-glossary
-+ ~tlon-deepl-get-language-glossary~ :: Finds the glossary ID for a specific target =LANGUAGE= from the cached ~tlon-deepl-glossaries~ list. Returns nil if the global variable ~tlon-translate-source-language~ is not "en". Uses ~tlon-lookup~.
++ ~tlon-deepl-get-language-glossary~ :: Finds the glossary ID for a specific source/target language pair from the cached ~tlon-deepl-glossaries~ list. Takes a target language code and optionally a source language code (defaults to ~tlon-translate-source-language~). Uses ~tlon-lookup~.
 #+findex: tlon-translate--get-existing-abstract-translation
 + ~tlon-translate--get-existing-abstract-translation~ :: Internal helper function used by ~tlon-translate-abstract-non-interactive~ and ~tlon-translate-missing-abstracts~. Takes a BibTeX =KEY= and a =TARGET-LANG= code. Reads the abstract translations JSON file (~tlon-file-abstract-translations~) using ~tlon-read-abstract-translations~ and returns the translation string if found for the given key and language, and if it's non-empty. Returns =nil= otherwise.
 #+findex: tlon-translate--get-abstract-context
