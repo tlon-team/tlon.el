@@ -53,14 +53,17 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
   :group 'tlon-glossary)
 
 (defconst tlon-ai-create-glossary-language-prompt
-  "You are an expert multilingual glossary creator.\n\nYour task is to generate translations for a list of English terms into the target language: *%s*.\n\nI will provide you with a list of English terms that currently lack a translation in the target language (one term per line).\n\nHere is the list of English terms needing translation:\n```text\n%s\n```\n\nPlease return *only* the translations for these terms into the target language (%s), one translation per line.\n\nExample output format:\n```text\nTranslation 1\nTranslation 2\nTranslation 3\n...\n```\n\n- Provide *exactly one* translation line for *every* English term in the input list.\n- Maintain the exact order of the translations corresponding to the input terms.\n- If you are unsure about a translation, provide your best guess or use the placeholder string \"[TRANSLATION_UNAVAILABLE]\". *Do not omit any terms.*\n- The total number of lines in your response *must* equal the number of lines in the input list.\n- Do *not* include the original English terms in your response.\n- Do *not* include any explanations, introductory text, numbering, bullet points, or any JSON/Markdown formatting. Return only the plain text translations, one per line."
-  ;; %s will be the target language name (e.g., "German")
-  ;; %s will be the newline-separated list of English terms needing translation
-  ;; %s will be the target language name again (for the prompt text)
+  "You are an expert multilingual glossary creator.\n\nYour task is to generate translations from the source language (%s) into the target language (%s).\n\nI will provide you with a list of terms in %s (one term per line) that currently lack a translation in %s.\n\nHere is the list of source-language terms needing translation:\n```text\n%s\n```\n\nPlease return *only* the translations for these terms into %s, one translation per line.\n\nExample output format:\n```text\nTranslation 1\nTranslation 2\nTranslation 3\n...\n```\n\n- Provide *exactly one* translation line for *every* input term.\n- Maintain the exact order of the translations corresponding to the input terms.\n- If you are unsure about a translation, provide your best guess or use the placeholder string \"[TRANSLATION_UNAVAILABLE]\". *Do not omit any terms.*\n- The total number of lines in your response *must* equal the number of lines in the input list.\n- Do *not* include the original source terms in your response.\n- Do *not* include any explanations, introductory text, numbering, bullet points, or any JSON/Markdown formatting. Return only the plain text translations, one per line."
+  ;; %s = source language name
+  ;; %s = target language name
+  ;; %s = source language name
+  ;; %s = target language name
+  ;; %s = newline-separated list of source terms
+  ;; %s = target language name
   "Prompt for generating translations for missing terms in a glossary language.")
 
 (defconst tlon-ai-verify-glossary-translations-prompt
-  "You are a text cleaning expert. I received the following text block which is *supposed* to be a list of translations into %s, one per line, corresponding to %d English terms. However, it might contain errors, extra text, incorrect formatting, or an incorrect number of lines.\n\nPlease analyze the following text block:\n```text\n%s\n```\n\nYour task is to return *only* the cleaned list of translations, one per line.\n- Ensure there are *exactly* %d lines in your output.\n- Each line should contain only the translation for the corresponding term.\n- Remove any introductory text, explanations, numbering, bullet points, JSON/Markdown formatting, or other extraneous content.\n- If the input seems corrupt or unusable for a specific line, use the placeholder \"[TRANSLATION_UNAVAILABLE]\".\n- If the input has fewer lines than expected, add placeholder lines at the end to reach the expected count.\n- If the input has more lines than expected, truncate it to the expected count.\n- Return *only* the plain text translations, one per line."
+  "You are a text cleaning expert. I received the following text block which is *supposed* to be a list of translations into %s, one per line, corresponding to %d source terms. However, it might contain errors, extra text, incorrect formatting, or an incorrect number of lines.\n\nPlease analyze the following text block:\n```text\n%s\n```\n\nYour task is to return *only* the cleaned list of translations, one per line.\n- Ensure there are *exactly* %d lines in your output.\n- Each line should contain only the translation for the corresponding term.\n- Remove any introductory text, explanations, numbering, bullet points, JSON/Markdown formatting, or other extraneous content.\n- If the input seems corrupt or unusable for a specific line, use the placeholder \"[TRANSLATION_UNAVAILABLE]\".\n- If the input has fewer lines than expected, add placeholder lines at the end to reach the expected count.\n- If the input has more lines than expected, truncate it to the expected count.\n- Return *only* the plain text translations, one per line."
   ;; %s = target language name
   ;; %d = expected number of translations
   ;; %s = raw response from first AI
@@ -84,96 +87,92 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
   "Create or update a glossary entry."
   (interactive)
   (let* ((glossary (tlon-parse-glossary))
-         (english-terms (tlon-get-english-terms glossary))
-         ;; Allow user to type new term or select existing (case-insensitive match)
-         (input-term (completing-read "Choose or add a term: " english-terms nil nil ""))
-         ;; Check if input matches an existing term case-insensitively
-         (matched-term (seq-find (lambda (et) (string-equal input-term et)) english-terms))
-         ;; Declare variables for the term to use and the entry to save/modify
+         (source-lang (tlon-select-language 'code 'babel "Source language for term: "))
+         (source-terms (tlon-get-terms glossary source-lang))
+         (input-term (completing-read "Choose or add a term: " source-terms nil nil ""))
+         (matched-term (seq-find (lambda (t) (string-equal input-term t)) source-terms))
          term-to-use
          entry-to-save)
-    ;; Determine term-to-use and entry-to-save based on whether a match was found
     (if matched-term
-        ;; Case 1: Existing term selected (potentially with different casing)
         (progn
-          (setq term-to-use matched-term) ; Use the correctly cased term from glossary
-          ;; Find the existing entry using the correctly cased term (guaranteed to exist)
-          (setq entry-to-save (tlon-find-entry-by-term glossary term-to-use)))
-      ;; Case 2: Genuinely new term entered
+          (setq term-to-use matched-term)
+          (setq entry-to-save (tlon-find-entry-by-term-in-lang glossary term-to-use source-lang)))
       (progn
-        (setq term-to-use input-term) ; Use the user's input casing
-        ;; Prompt for type and create the new entry structure
+        (setq term-to-use input-term)
         (let ((type (tlon-select-term-type)))
-          (setq entry-to-save (tlon-create-entry term-to-use type)))))
-    ;; Now entry-to-save holds either the existing entry or the newly created one
-    ;; Ensure entry-to-save is valid before proceeding (should always be unless error)
+          (setq entry-to-save (tlon-create-entry term-to-use type source-lang)))))
     (when entry-to-save
-      ;; Edit translations unless it's an invariant term
-      (let ((type (cdr (assoc "type" entry-to-save))))
+      (let ((type (cdr (assoc 'type entry-to-save))))
         (unless (and type (string= type "invariant"))
           (setq entry-to-save (tlon-edit-translation-in-entry entry-to-save term-to-use))))
-      ;; Update the main glossary list using the final entry state and correct term
-      (setq glossary (tlon-update-glossary glossary entry-to-save term-to-use))
-      ;; Save the updated glossary
+      (setq glossary (tlon-update-glossary glossary entry-to-save term-to-use source-lang))
       (tlon-write-data tlon-file-glossary-source glossary))))
 
 (defun tlon-parse-glossary ()
-  "Parse the glossary file into Emacs Lisp."
-  (tlon-read-json tlon-file-glossary-source))
+  "Parse the glossary file into Emacs Lisp using symbol keys."
+  (tlon-read-json tlon-file-glossary-source nil 'list 'symbol))
 
-(defun tlon-get-english-terms (glossary)
-  "Extract all English terms from GLOSSARY."
-  (mapcar (lambda (entry)
-            (cdr (assoc "en" entry)))
-          glossary))
+(defun tlon-get-terms (glossary source-lang)
+  "Extract all terms in SOURCE-LANG from GLOSSARY.
+SOURCE-LANG is a language code string (e.g., \"en\")."
+  (let ((key (intern source-lang)))
+    (mapcar (lambda (entry) (alist-get key entry)) glossary)))
 
-(defun tlon-find-entry-by-term (glossary term)
-  "Find an entry in GLOSSARY by its English TERM."
-  (seq-find (lambda (entry) (string= (cdr (assoc "en" entry)) term))
-            glossary))
+(defun tlon-find-entry-by-term-in-lang (glossary term source-lang)
+  "Find ENTRY in GLOSSARY whose term in SOURCE-LANG equals TERM.
+SOURCE-LANG is a language code string."
+  (let ((key (intern source-lang)))
+    (seq-find (lambda (entry)
+                (string= (alist-get key entry) term))
+              glossary)))
 
 (defun tlon-select-term-type ()
   "Prompt the user to select a type for a new term and return the selection."
   (completing-read "Select type (variable/invariant): " '("variable" "invariant") nil t))
 
-(defun tlon-create-entry (term type)
-  "Create a new entry for a TERM of a given TYPE."
-  (let ((entry (list (cons "en" term) (cons "type" type))))
+(defun tlon-create-entry (term type source-lang)
+  "Create a new ENTRY for TERM of TYPE in SOURCE-LANG.
+SOURCE-LANG is a language code string."
+  (let* ((src-key (intern source-lang))
+         (entry (list (cons src-key term) (cons 'type type))))
     (when (string= type "invariant")
       (dolist (lang tlon-project-target-languages)
-        (setq entry (append entry (list (cons lang term))))))
+        (setf entry (append entry (list (cons (intern lang) term))))))
     entry))
 
 (declare-function tlon-deepl-maybe-glossary-update "tlon-deepl")
 (defun tlon-edit-translation-in-entry (entry term)
-  "Create or update a translation in an ENTRY for a TERM."
+  "Create or update a translation in ENTRY for TERM."
   (let* ((language (tlon-select-language 'code 'babel))
-         (translation (assoc language entry))
-	 (initial-input (when translation (cdr translation)))
-	 (read-translation (lambda ()
-			     (read-string (format "Translation for \"%s\" (%s): " term language) initial-input))))
+         (lang-key (intern language))
+         (translation (assoc lang-key entry))
+         (initial-input (when translation (cdr translation)))
+         (read-translation (lambda ()
+                             (read-string (format "Translation for \"%s\" (%s): "
+                                                  term language)
+                                          initial-input))))
     (if translation
-	(setcdr translation (funcall read-translation))
-      (setq entry (append entry (list (cons language (funcall read-translation))))))
+        (setcdr translation (funcall read-translation))
+      (setq entry (append entry (list (cons lang-key (funcall read-translation))))))
     (tlon-deepl-maybe-glossary-update language)
     entry))
 
-(defun tlon-update-glossary (glossary entry term)
-  "Update GLOSSARY with a new or modified ENTRY for a TERM.
-Returns a new glossary list with the updated or appended entry."
-  (let ((result nil)
-        (found nil))
-    ;; Build the list in reverse, replacing the target entry if found
+(defun tlon-update-glossary (glossary entry term key-lang)
+  "Update GLOSSARY with ENTRY for TERM keyed by KEY-LANG.
+KEY-LANG is a language code string used to identify the entry to update.
+Return a new glossary list with the updated or appended entry."
+  (let* ((key (intern key-lang))
+         (result nil)
+         (found nil))
     (dolist (e glossary)
-      (if (and (not found) (equal (assoc "en" e) (cons "en" term)))
+      (if (and (not found)
+               (equal (alist-get key e) term))
           (progn
-            (push entry result) ; Push the new/modified entry instead of e
+            (push entry result)
             (setq found t))
-        (push e result))) ; Push the original entry
-    ;; If not found after iterating, add the new entry (it will be first after nreverse)
+        (push e result)))
     (unless found
       (push entry result))
-    ;; Reverse the final list to restore original order (or append new entry)
     (nreverse result)))
 
 ;;;;; AI Glossary Generation
@@ -181,84 +180,84 @@ Returns a new glossary list with the updated or appended entry."
 (declare-function tlon-make-gptel-request "tlon-ai")
 ;;;###autoload
 (defun tlon-ai-create-glossary-language ()
-  "Use AI to generate translations for MISSING glossary terms in language.
-Prompts for a target language, identifies terms missing a translation for that
-language, sends only those terms to an AI model, and merges the AI-generated
-translations back into the glossary file. Can be run iteratively."
+  "Use AI to generate translations for missing terms in a target language.
+Prompts for source and target languages, identifies terms that have a value in
+the source but are missing in the target, sends only those source terms to an AI
+model, and merges the AI-generated translations back into the glossary file."
   (interactive)
   (require 'tlon-ai)
-  (let* ((new-lang-code (tlon-select-language 'code 'babel "Target language: "))
-         (new-lang-name (tlon-lookup tlon-languages-properties :name :code new-lang-code))
+  (let* ((src-lang-code (tlon-select-language 'code 'babel "Source language: "))
+         (tgt-lang-code (tlon-select-language 'code 'babel "Target language: "))
+         (src-lang-name (tlon-lookup tlon-languages-properties :name :code src-lang-code))
+         (tgt-lang-name (tlon-lookup tlon-languages-properties :name :code tgt-lang-code))
          (glossary-data (tlon-parse-glossary))
-         ;; Filter entries missing the target language
-         (missing-entries (cl-remove-if (lambda (entry) (assoc new-lang-code entry))
-                                        glossary-data))
-         ;; Extract English terms from missing entries
-         (missing-en-terms (mapcar (lambda (entry) (cdr (assoc "en" entry)))
-                                   missing-entries)))
-    (unless missing-en-terms
-      (message "All terms already have a translation for %s (%s)." new-lang-name new-lang-code)
+         (src-key (intern src-lang-code))
+         (tgt-key (intern tgt-lang-code))
+         ;; Entries that have a source term but lack a target translation
+         (missing-entries (cl-remove-if (lambda (entry) (assoc tgt-key entry))
+                                        (cl-remove-if-not (lambda (entry) (alist-get src-key entry))
+                                                          glossary-data)))
+         ;; Extract source terms from missing entries
+         (source-terms (mapcar (lambda (entry) (alist-get src-key entry))
+                               missing-entries)))
+    (unless source-terms
+      (message "No missing %s translations for terms present in %s." tgt-lang-name src-lang-name)
       (cl-return-from tlon-ai-create-glossary-language))
-    ;; Format missing terms as a simple newline-separated string for the prompt
-    (let* ((missing-terms-text (mapconcat #'identity missing-en-terms "\n"))
+    (let* ((missing-terms-text (mapconcat #'identity source-terms "\n"))
            (prompt (format tlon-ai-create-glossary-language-prompt
-                           new-lang-name missing-terms-text new-lang-name))) ; Pass lang name twice
-      (message "Requesting AI to generate %d missing translations for %s (%s)..."
-               (length missing-en-terms) new-lang-name new-lang-code)
+                           src-lang-name tgt-lang-name src-lang-name tgt-lang-name
+                           missing-terms-text tgt-lang-name)))
+      (message "Requesting AI to generate %d translations %s → %s..."
+               (length source-terms) src-lang-name tgt-lang-name)
       (tlon-make-gptel-request prompt nil
                                (lambda (response info)
                                  (tlon-ai-create-glossary-language-callback
-                                  response info new-lang-code glossary-data missing-en-terms))
+                                  response info src-lang-code tgt-lang-code glossary-data source-terms))
                                tlon-ai-glossary-model
                                'no-context-check))))
 
 (declare-function tlon-ai-callback-fail "tlon-ai")
-(defun tlon-ai-create-glossary-language-callback (raw-response info new-lang-code full-glossary-data missing-en-terms)
-  "Callback function for `tlon-ai-create-glossary-language'.
-Receives the RAW-RESPONSE from the first AI (translation generation). Initiates
-a second AI call for verification and cleaning. INFO contains the request
-information. NEW-LANG-CODE is the target language code. FULL-GLOSSARY-DATA is
-the original glossary data. MISSING-EN-TERMS is the list of English terms that
-were sent to the AI."
+(defun tlon-ai-create-glossary-language-callback (raw-response info src-lang-code tgt-lang-code full-glossary-data source-terms)
+  "Callback for `tlon-ai-create-glossary-language'.
+Saves RAW-RESPONSE, then requests verification. INFO contains request info.
+SRC-LANG-CODE and TGT-LANG-CODE are language codes. FULL-GLOSSARY-DATA is the
+original data. SOURCE-TERMS are the terms sent to the AI."
   (if (not raw-response)
-      (tlon-ai-callback-fail info) ; Use the fail callback from tlon-ai
-    (let* ((num-expected (length missing-en-terms))
-           (target-lang-name (tlon-lookup tlon-languages-properties :name :code new-lang-code))
-           ;; Define temp file path for raw response
+      (tlon-ai-callback-fail info)
+    (let* ((num-expected (length source-terms))
+           (target-lang-name (tlon-lookup tlon-languages-properties :name :code tgt-lang-code))
            (raw-response-file (file-name-concat paths-dir-downloads
-                                                (format "ai-glossary-%s-raw-temp.txt" new-lang-code)))
+                                                (format "ai-glossary-%s-%s-raw-temp.txt"
+                                                        src-lang-code tgt-lang-code)))
            (verify-prompt (format tlon-ai-verify-glossary-translations-prompt
                                   target-lang-name num-expected raw-response num-expected)))
-      ;; Save the raw response before verification
       (with-temp-file raw-response-file
         (insert raw-response))
       (message "Received initial translations (saved to %s). Requesting AI verification/cleaning..."
                (file-name-nondirectory raw-response-file))
       (tlon-make-gptel-request verify-prompt nil
                                (lambda (verified-response verify-info)
-                                 ;; Pass temp file path and other data to the final processing callback
                                  (tlon-ai-process-verified-translations-callback
-                                  verified-response verify-info new-lang-code full-glossary-data missing-en-terms raw-response-file))
-                               tlon-ai-glossary-verify-model ; Use specific verify model
+                                  verified-response verify-info src-lang-code tgt-lang-code full-glossary-data source-terms raw-response-file))
+                               tlon-ai-glossary-verify-model
                                'no-context-check))))
 
-(defun tlon-ai-process-verified-translations-callback (verified-response info new-lang-code full-glossary-data missing-en-terms raw-response-file)
-  "Callback function to process the VERIFIED-RESPONSE from the cleaning AI.
-Parses the cleaned list, merges translations, writes the updated glossary, and
-deletes RAW-RESPONSE-FILE on success. INFO contains the request information.
-NEW-LANG-CODE is the target language code. FULL-GLOSSARY-DATA is the original
-glossary data. MISSING-EN-TERMS is the list of English terms that were sent to
-the AI."
+(defun tlon-ai-process-verified-translations-callback (verified-response info src-lang-code tgt-lang-code full-glossary-data source-terms raw-response-file)
+  "Process VERIFIED-RESPONSE from the cleaning AI.
+Merge translations and write the updated glossary. Keep RAW-RESPONSE-FILE on
+failure. INFO contains request info. SRC-LANG-CODE and TGT-LANG-CODE are
+language codes. FULL-GLOSSARY-DATA is the original glossary data. SOURCE-TERMS
+are the source terms sent to the AI."
   (if (not verified-response)
       (tlon-ai--handle-verification-failure info raw-response-file)
     (condition-case err
         (let* ((clean-response (tlon-ai--clean-verified-response verified-response))
                (received-translations (tlon-ai--parse-verified-translations clean-response))
-               (validated-translations (tlon-ai--validate-translation-list received-translations missing-en-terms))
-               (translation-pairs (tlon-ai--create-translation-pairs validated-translations missing-en-terms))
+               (validated-translations (tlon-ai--validate-translation-list received-translations source-terms))
+               (translation-pairs (tlon-ai--create-translation-pairs validated-translations source-terms))
                (glossary-copy (copy-sequence full-glossary-data))
-               (updated-count (tlon-ai--merge-translations-into-glossary translation-pairs new-lang-code glossary-copy)))
-          (tlon-ai--handle-verification-success glossary-copy updated-count new-lang-code raw-response-file))
+               (updated-count (tlon-ai--merge-translations-into-glossary translation-pairs tgt-lang-code glossary-copy src-lang-code)))
+          (tlon-ai--handle-verification-success glossary-copy updated-count tgt-lang-code raw-response-file))
       (error
        (tlon-ai--handle-processing-error err verified-response raw-response-file)))))
 
@@ -302,28 +301,28 @@ Ensures translations are strings."
           (push (cons en-term translation) translation-pairs))))
     (nreverse translation-pairs)))
 
-(defun tlon-ai--update-glossary-entry (entry new-lang-code translation)
-  "Update a single glossary ENTRY (alist) with TRANSLATION for NEW-LANG-CODE.
-Modifies ENTRY in place."
-  (if (assoc new-lang-code entry)
-      (setcdr (assoc new-lang-code entry) translation)
-    ;; Append to the end of the alist
-    (setcdr (last entry)
-            (append (cdr (last entry))
-                    (list (cons new-lang-code translation))))))
+(defun tlon-ai--update-glossary-entry (entry new-lang-key translation)
+  "Update ENTRY (alist) with TRANSLATION for NEW-LANG-KEY.
+NEW-LANG-KEY is a symbol key. Modify ENTRY in place."
+  (let ((cell (assoc new-lang-key entry)))
+    (if cell
+        (setcdr cell translation)
+      (setcdr (last entry) (list (cons new-lang-key translation))))))
 
-(defun tlon-ai--merge-translations-into-glossary (translation-pairs new-lang-code glossary-data)
-  "Merge TRANSLATION-PAIRS into GLOSSARY-DATA for NEW-LANG-CODE.
-Returns the number of entries successfully merged."
-  (let ((updated-count 0))
+(defun tlon-ai--merge-translations-into-glossary (translation-pairs new-lang-code glossary-data src-lang-code)
+  "Merge TRANSLATION-PAIRS into GLOSSARY-DATA.
+NEW-LANG-CODE and SRC-LANG-CODE are language code strings. Return number merged."
+  (let* ((src-key (intern src-lang-code))
+         (tgt-key (intern new-lang-code))
+         (updated-count 0))
     (dolist (pair translation-pairs)
-      (let* ((en-term (car pair))
+      (let* ((src-term (car pair))
              (translation (cdr pair))
              (entry-to-update (cl-find-if (lambda (entry)
-                                            (string= (cdr (assoc "en" entry)) en-term))
+                                            (string= (alist-get src-key entry) src-term))
                                           glossary-data)))
         (when entry-to-update
-          (tlon-ai--update-glossary-entry entry-to-update new-lang-code translation)
+          (tlon-ai--update-glossary-entry entry-to-update tgt-key translation)
           (cl-incf updated-count))))
     updated-count))
 
@@ -357,91 +356,90 @@ response file."
 ;;;;; Extraction
 
 ;;;###autoload
-(defun tlon-extract-glossary (language recipient)
-  "Extract a LANGUAGE glossary from our multilingual glossary.
-RECIPIENT can be `human', `deepl-editor', `deepl-api', `ai-revision' and
-`sieve'.
+(defun tlon-extract-glossary (source-language target-language recipient)
+  "Extract a glossary from SOURCE-LANGUAGE to TARGET-LANGUAGE for RECIPIENT.
+RECIPIENT can be `human', `deepl-editor', `deepl-api', `ai-revision' or `sieve'.
 
-- `human': extracts a glossary intended to be shared with another human being.
- Includes only entries of type \"variable\", saves them to a \"csv\" file, and
- prompts the user to share the glossary with translators.
+- `human': includes only entries of type \"variable\", saves to CSV, and can
+  optionally be shared with translators.
 
-- `deepl-editor': extracts a glossary intended to be uploaded to the DeepL
-  editor. Includes all entries and saves them to a \"csv\" file.
+- `deepl-editor': includes all entries and saves to CSV. Writes language codes
+  for both source and target.
 
-- `deepl-api': extracts a glossary intended to be sent via the DeepL API.
-  Includes all entries and saves them a \"tsv\" file.
+- `deepl-api': includes all entries and saves to TSV.
 
-- `ai-revision': extracts a glossary intended to be shared with an AI model.
- Includes only entries of type \"variable\" and saves them to a \"csv\" file.
+- `ai-revision': includes only entries of type \"variable\" and saves to CSV.
 
-- `sieve': extracts a glossary as a JSON object with source terms as keys and
-  target terms as values. Includes all entries and saves them to a \"json\"
-  file."
-  (interactive (list (tlon-select-language 'code 'babel)
-		     (intern (completing-read "Recipient? " '(human deepl-editor deepl-api ai-revision sieve) nil t))))
+- `sieve': includes entries that have a translation, saves to JSON mapping
+  source terms to target terms."
+  (interactive (list (tlon-select-language 'code 'babel "Source language: ")
+                     (tlon-select-language 'code 'babel "Target language: ")
+                     (intern (completing-read "Recipient? " '(human deepl-editor deepl-api ai-revision sieve) nil t))))
   (let* ((source-path tlon-file-glossary-source)
-	 (target-path (tlon-glossary-target-path language recipient))
-	 (json (tlon-read-json source-path nil 'list 'symbol))
-         ;; Render the glossary in a temporary buffer and capture its contents
+         (target-path (tlon-glossary-target-path source-language target-language recipient))
+         (json (tlon-read-json source-path nil 'list 'symbol))
          (formatted-content (with-temp-buffer
-                              (tlon-insert-formatted-glossary json language recipient)
+                              (tlon-insert-formatted-glossary json source-language target-language recipient)
                               (buffer-string)))
          (trimmed (string-trim formatted-content)))
-    ;; If no terms exist for LANGUAGE, do nothing and return nil.
     (unless (or (string= trimmed "")
                 (string= trimmed "[]"))
       (with-temp-file target-path
         (insert formatted-content))
       (pcase recipient
         ('human (when (y-or-n-p "Share glossary with translators? ")
-		  (tlon-share-glossary target-path language)))
-        ((or 'deepl-editor 'deepl-api 'ai-revision 'sieve) (message "Glossary extracted to `%s'" target-path)))
+                  (tlon-share-glossary target-path target-language)))
+        ((or 'deepl-editor 'deepl-api 'ai-revision 'sieve)
+         (message "Glossary extracted to `%s'" target-path)))
       target-path)))
 
 ;;;###autoload
-(defun tlon-glossary-target-path (language recipient)
-  "Return the target path for a glossary in LANGUAGE for RECIPIENT."
+(defun tlon-glossary-target-path (source-language target-language recipient)
+  "Return the target path for a glossary from SOURCE-LANGUAGE to TARGET-LANGUAGE."
   (let ((target-extension (pcase recipient
-			    ((or 'human 'deepl-editor 'ai-revision) "csv")
-			    ('deepl-api "tsv")
-			    ('sieve "json"))))
-    (tlon-glossary-make-file language target-extension)))
+                            ((or 'human 'deepl-editor 'ai-revision) "csv")
+                            ('deepl-api "tsv")
+                            ('sieve "json"))))
+    (tlon-glossary-make-file source-language target-language target-extension)))
 
-(defun tlon-glossary-make-file (language extension)
-  "Make a glossary file for LANGUAGE with EXTENSION."
+(defun tlon-glossary-make-file (source-language target-language extension)
+  "Make a glossary file for SOURCE-LANGUAGE to TARGET-LANGUAGE with EXTENSION."
   (file-name-concat paths-dir-downloads
-		    (format "EN-%s.%s" (upcase language) extension)))
+                    (format "%s-%s.%s" (upcase source-language) (upcase target-language) extension)))
 
-(defun tlon-insert-formatted-glossary (json language recipient)
-  "Insert a properly formatted glossary in LANGUAGE from JSON data.
-Format the glossary based on its RECIPIENT: if `human' or `deepl-editor', in
-\"csv\" format; if `deepl-api', in \"tsv\" format; if `sieve', in JSON format.
-\\=(DeepL requires different formats depending on whether the glossary is meant
-to be uploaded to the editor or via the API.)"
-  (if (eq recipient 'sieve)
-      (tlon-insert-sieve-glossary json language)
-    (dolist (item json)
-      (when-let* ((source-term (alist-get 'en item))
-		  (target-term (alist-get (intern language) item))
-		  (entry (pcase recipient
-			   ((or 'human 'ai-revision) (format "\"%s\",\"%s\"\n" source-term target-term))
-			   ('deepl-editor
-			    (format "\"%s\",\"%s\",\"EN\",\"%s\"\n" source-term target-term (upcase language)))
-			   ('deepl-api (format "%s\t%s\n" source-term target-term)))))
-	(when (or (member recipient '(deepl-editor deepl-api))
-		  (string= (alist-get 'type item) "variable"))
-	  (insert entry))))))
+(defun tlon-insert-formatted-glossary (json source-language target-language recipient)
+  "Insert a formatted glossary from JSON data for SOURCE-LANGUAGE → TARGET-LANGUAGE.
+Format depends on RECIPIENT: `human'/`deepl-editor' CSV, `deepl-api' TSV,
+`sieve' JSON."
+  (let ((src-key (intern source-language))
+        (tgt-key (intern target-language)))
+    (if (eq recipient 'sieve)
+        (tlon-insert-sieve-glossary json source-language target-language)
+      (dolist (item json)
+        (when-let* ((source-term (alist-get src-key item))
+                    (target-term (alist-get tgt-key item))
+                    (entry (pcase recipient
+                             ((or 'human 'ai-revision)
+                              (format "\"%s\",\"%s\"\n" source-term target-term))
+                             ('deepl-editor
+                              (format "\"%s\",\"%s\",\"%s\",\"%s\"\n"
+                                      source-term target-term
+                                      (upcase source-language) (upcase target-language)))
+                             ('deepl-api (format "%s\t%s\n" source-term target-term)))))
+          (when (or (member recipient '(deepl-editor deepl-api))
+                    (string= (alist-get 'type item) "variable"))
+            (insert entry)))))))
 
-(defun tlon-insert-sieve-glossary (json language)
-  "Insert a sieve-formatted glossary in LANGUAGE from JSON data.
-Creates a JSON object with source terms as keys and target terms as values.
-Standard apostrophes (') in both source and target terms are replaced with
-typographic apostrophes (’) to prevent Sieve errors."
-  (let ((glossary-object '()))
+(defun tlon-insert-sieve-glossary (json source-language target-language)
+  "Insert a sieve-formatted glossary for SOURCE-LANGUAGE → TARGET-LANGUAGE.
+Creates a JSON object mapping source terms to target terms. Replace ASCII
+apostrophes (') with typographic apostrophes (’) on both sides."
+  (let ((glossary-object '())
+        (src-key (intern source-language))
+        (tgt-key (intern target-language)))
     (dolist (item json)
-      (when-let* ((raw-source-term (alist-get 'en item))
-		  (raw-target-term (alist-get (intern language) item)))
+      (when-let* ((raw-source-term (alist-get src-key item))
+                  (raw-target-term (alist-get tgt-key item)))
         (let ((source-term (replace-regexp-in-string "'" "’" raw-source-term))
               (target-term (replace-regexp-in-string "'" "’" raw-target-term)))
           (push (cons source-term target-term) glossary-object))))
@@ -477,7 +475,7 @@ typographic apostrophes (’) to prevent Sieve errors."
 
 (defun tlon--glossary-multilingual-target-path ()
   "Return the target filepath for the multilingual CSV."
-  (file-name-concat paths-dir-downloads "EN-ALL.csv"))
+  (file-name-concat paths-dir-downloads "ALL.csv"))
 
 (defun tlon--glossary-make-csv-row (fields)
   "Return a CSV row for FIELDS."
