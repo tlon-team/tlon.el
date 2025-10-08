@@ -478,14 +478,10 @@ user-selected language and store it in abstract-translations.json."
                       (not (stringp src-code))
                       (not (stringp dst-code)))
                   (tlon-translate--log "Cannot translate abstract for %s: missing original abstract or language info" key)
-                (let* ((src-en (string= src-code "en"))
-                       (supports (member dst-code tlon-deepl-supported-glossary-languages))
-                       (glossary-id (and src-en supports
-                                         (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" dst-code))))
-                  (let* ((pair-supported (and (member src-code tlon-deepl-supported-glossary-languages)
-                                              (member dst-code tlon-deepl-supported-glossary-languages)))
-                         (glossary-id (and pair-supported
-                                           (tlon-deepl-get-language-glossary dst-code src-code))))
+                (let* ((pair-supported (and (member src-code tlon-deepl-supported-glossary-languages)
+                                            (member dst-code tlon-deepl-supported-glossary-languages)))
+                       (glossary-id (and pair-supported
+                                         (tlon-deepl-get-language-glossary dst-code src-code))))
                     (if (and pair-supported glossary-id)
                         (progn
                           (tlon-translate--log "Translating abstract of %s → setting into %s" translation-of key)
@@ -498,7 +494,7 @@ user-selected language and store it in abstract-translations.json."
                                  (tlon-translate--db-set-abstract key translated)
                                  (tlon-translate--log "Set abstract for %s (from %s)" key translation-of))))
                            nil))
-                      (tlon-translate--log "Skipping abstract for %s -> %s: %s-%s glossary missing" translation-of dst-code (upcase src-code) (upcase dst-code)))))))
+                      (tlon-translate--log "Skipping abstract for %s -> %s: %s-%s glossary missing" translation-of dst-code (upcase src-code) (upcase dst-code))))))
               (tlon-translate-abstract-interactive key text source-lang-code))))))
 
 (defun tlon-translate--external-abstracts (&optional langs)
