@@ -442,6 +442,40 @@ apostrophes (') with typographic apostrophes (’) on both sides."
                         pairs)))
     (insert (json-encode fixed))))
 
+(defun tlon--glossary-build-mapping (json src-key tgt-key recipient)
+  "Return ordered unique SRC-KEY→TGT-KEY pairs from JSON for RECIPIENT.
+- Trim whitespace from both source and target terms.
+- Skip pairs with empty source or target.
+- For duplicates on the source term, prefer entries of type \"variable\"
+  over \"invariant\"; otherwise keep the first seen. Emit a summary message
+  when duplicates are collapsed."
+  (let ((pairs '())
+        (collisions 0))
+    (dolist (item json)
+      (when (or (member recipient '(deepl-editor deepl-api sieve))
+                (string= (alist-get 'type item) "variable"))
+        (let* ((raw-src (alist-get src-key item))
+               (raw-tgt (alist-get tgt-key item))
+               (src (tlon--glossary-normalize-term raw-src))
+               (tgt (tlon--glossary-normalize-term raw-tgt)))
+          (when (and src tgt)
+            (let ((existing (assoc src pairs)))
+              (if (not existing)
+                  (push (cons src tgt) pairs)
+                (setq collisions (1+ collisions))
+                (when (and (string= (alist-get 'type item) "variable")
+                           (not (string= (cdr existing) tgt)))
+                  (setcdr existing tgt))))))))
+    (when (> collisions 0)
+      (message "Note: collapsed %d duplicate source terms for %s→%s"
+               collisions (symbol-name src-key) (symbol-name tgt-key)))
+    (nreverse pairs)))
+
+(defun tlon--glossary-normalize-term (s)
+  "Trim surrounding whitespace in S and return nil if empty."
+  (let ((t (and (stringp s) (string-trim s))))
+    (and t (> (length t) 0) t)))
+
 (defvar tlon-email-language)
 (declare-function tlon-email-send "tlon-email")
 ;;;###autoload
