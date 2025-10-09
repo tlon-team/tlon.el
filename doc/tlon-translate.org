@@ -93,6 +93,10 @@ This module provides functions for translating entire files using various transl
 #+findex: tlon-translate-revise-abort
 + ~tlon-translate-revise-abort~ :: Abort all ongoing revision requests, immediately stopping any remaining AI jobs.
 
+The revision log buffer is updated in the background and is not auto-displayed
+when chunks finish. Use ~tlon-translate-show-log~ or the “Show log” menu command
+to view it when you want.
+
 *** Transient Menu
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-translate-menu
