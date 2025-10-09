@@ -54,7 +54,7 @@
   :type '(choice (const :tag "DeepL" deepl)))
 
 (defcustom tlon-translate-spot-errors-model
-  '("Gemini" . gemini-2.5-pro)
+  '("Gemini" . gemini-2.5-flash)
   "Model to use for spotting errors in translations.
 See `tlon-translate-spot-errors'. The value is a cons cell whose car is the
 backend and whose cdr is the model itself. See `gptel-extras-ai-models' for the
