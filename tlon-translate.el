@@ -1316,7 +1316,14 @@ END is the ending paragraph number."
 				      ('errors "Check errors in %s (AI)")
 				      ('flow "Improve flow in %s (AI)"))
 				    (tlon-get-key-from-file file))
-			    file))))))
+			    file)))
+    (when (eq type 'errors)
+      (condition-case err
+          (with-current-buffer (or (get-file-buffer file)
+                                   (find-file-noselect file))
+            (tlon-translate-relative-links))
+        (error (tlon-translate--log "tlon-translate-relative-links failed: %s"
+                                    (error-message-string err))))))))
 
 ;;;;; Menu
 
