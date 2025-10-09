@@ -998,8 +998,7 @@ commands are killed.  If there are no such processes, do nothing."
     (tlon-translate--log (if (> total 0)
                              "Aborted %d tlon-translate revision request%s."
                            "No tlon-translate revision requests in progress.")
-                         total (if (= total 1) "" "s"))
-    (tlon-translate-show-log)))
+                         total (if (= total 1) "" "s"))))
 
 (defvar tlon-translate-revert-without-query-original
   revert-without-query
@@ -1129,8 +1128,7 @@ GLOSSARY-FILE is the glossary file."
              (progn
                (tlon-translate--log "Completed processing all %d chunk%s of %s"
                                     idx (if (= idx 1) "" "s")
-                                    (file-name-nondirectory translation-file))
-               (tlon-translate-show-log))
+                                    (file-name-nondirectory translation-file)))
            (let* ((batch (cl-subseq remaining
                                     0 (min tlon-translate-revise-max-parallel
                                            (length remaining))))
@@ -1257,8 +1255,7 @@ call after the revision is complete."
                                    (tlon-get-number-of-paragraphs-in-file translation-file)
                                    (file-name-nondirectory translation-file)))
             (when (null tlon-translate--active-revision-processes)
-              (setq revert-without-query tlon-translate-revert-without-query-original)
-              (tlon-translate-show-log))
+              (setq revert-without-query tlon-translate-revert-without-query-original))
             (when (functionp after-fn)
               (funcall after-fn)))))
     ;; Clean up the transient indirect buffers created for COMPARISON.
