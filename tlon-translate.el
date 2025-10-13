@@ -1059,9 +1059,13 @@ commands are killed.  If there are no such processes, do nothing."
 TYPE can be `errors' or `flow'."
   (gptel-extras-warn-when-context)
   (let* ((translation-file (expand-file-name (read-file-name "Translation file: " (buffer-file-name))))
-	 (original-file (if-let* ((counterpart (tlon-get-counterpart translation-file)))
-			    (expand-file-name counterpart)
-			  (read-file-name "Original file: "))))
+	 (original-file
+	  (let ((counterpart (condition-case _err
+				 (tlon-get-counterpart translation-file)
+			       (error nil))))
+	    (if counterpart
+		(expand-file-name counterpart)
+	      (read-file-name "Original file: ")))))
     (unless (tlon-paragraph-files-are-aligned-p translation-file original-file)
       (user-error "Files have different paragraph counts; align them first with `tlon-paragraphs-align-with-ai'"))
     (let* ((lang-code (tlon-get-language-in-file translation-file))
