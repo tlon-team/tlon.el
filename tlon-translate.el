@@ -1068,8 +1068,10 @@ TYPE can be `errors' or `flow'."
 	      (read-file-name "Original file: ")))))
     (unless (tlon-paragraph-files-are-aligned-p translation-file original-file)
       (user-error "Files have different paragraph counts; align them first with `tlon-paragraphs-align-with-ai'"))
-    (let* ((lang-code (tlon-get-language-in-file translation-file))
-           (language (tlon-lookup tlon-languages-properties :standard :code lang-code))
+    (let* ((lang-code (or (tlon-get-language-in-file translation-file)
+                          (tlon-select-language 'code 'babel "Language of translation file: " t)))
+           (language (or (tlon-lookup tlon-languages-properties :standard :code lang-code)
+                         lang-code))
            (model (pcase type
                     ('errors tlon-translate-spot-errors-model)
                     ('flow tlon-translate-improve-flow-model)))
