@@ -429,21 +429,31 @@ If KEY is nil, use the key of the entry at point."
 (defun tlon-db-move-entry-pair ()
   "Move the entry at point and its counterpart to the database."
   (interactive)
-  (let* ((key (or (tlon-yaml-get-key "key") (tlon-get-key-at-point) (tlon-get-bibtex-key)))
-	 (file (ebib-extras-get-file-of-key key))
-	 orig-key trans-key)
+  (let* ((key (or (tlon-get-key-at-point)
+                  (tlon-get-bibtex-key)
+                  (when (derived-mode-p 'markdown-mode)
+                    (tlon-yaml-get-key "key"))))
+         (file (and key (ebib-extras-get-file-of-key key)))
+         orig-key trans-key)
+    (unless key
+      (user-error "Could not determine BibTeX key"))
+    (unless file
+      (user-error "Could not locate file for key “%s”" key))
     (with-current-buffer (find-file-noselect file)
       (widen)
       (bibtex-search-entry key)
-      (apply #'setq (if (bibtex-extras-get-field "translation") trans-key orig-key) key))
+      (if (bibtex-extras-get-field "translation")
+          (setq trans-key key)
+        (setq orig-key key)))
     (citar-extras-refresh-bibliography file 'force)
     (if trans-key
-	(setq orig-key (tlon-get-counterpart-key key "en"))
+        (setq orig-key (tlon-get-counterpart-key key "en"))
       (let ((lang (tlon-select-language 'code 'babel "Translation language: ")))
-	(setq trans-key (tlon-get-counterpart-key key lang))))
-    (tlon-db-move-entry orig-key)
+        (setq trans-key (tlon-get-counterpart-key key lang))))
+    (when orig-key
+      (tlon-db-move-entry orig-key))
     (if trans-key
-	(tlon-db-move-entry trans-key)
+        (tlon-db-move-entry trans-key)
       (message "No translation entry found. Call `M-x tlon-db-move-entry' manually from the translated BibTeX entry."))))
 ;;;;;; Delete entry
 
