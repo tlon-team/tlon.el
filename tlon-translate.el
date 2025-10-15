@@ -363,7 +363,7 @@ If AFTER-FN is non-nil, call it after writing TARGET-FILE."
                                      (if file-type
                                          (when (functionp after-fn)
                                            (funcall after-fn))
-                                       (message "Skipping post-processing for %s: could not determine file type"
+                                       (message "Skipping post-processing for %s: could not determine file type; tags will not be inserted"
                                                 (file-name-nondirectory target-file))))))))))
     ('ai
      (let* ((source-repo (tlon-get-repo-from-file source-file))
@@ -390,7 +390,7 @@ If AFTER-FN is non-nil, call it after writing TARGET-FILE."
               (if file-type
                   (when (functionp after-fn)
                     (funcall after-fn))
-                (message "Skipping post-processing for %s: could not determine file type"
+                (message "Skipping post-processing for %s: could not determine file type; tags will not be inserted"
                          (file-name-nondirectory target-file)))))))))
     (_ (user-error "Unsupported translation engine: %s" tlon-translate-engine))))
 
