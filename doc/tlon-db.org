@@ -38,7 +38,7 @@ This module provides functionality for interacting with an external bibliographi
 + ~tlon-db-enable-auto-sync~ :: When non-nil, changes in =db.bib= detected by
   the file-watch automatically trigger synchronization requests to the remote
   API.  Set to nil to disable automatic synchronization while still keeping
-  the watch active.  Default is t.
+  the watch active.  Default is nil.
 
 + =tlon-core=
 + =transient=
@@ -141,7 +141,7 @@ This section lists non-interactive functions and variables used internally.
 + ~tlon-db-auth-token-expiry~ :: Stores the calculated expiry time for the current authentication token.
 
 #+vindex: tlon-db-api-base-url
-+ ~tlon-db-api-base-url~ :: The base URL for the EA International API endpoint. Defaults to ="https://local-dev.ea.international"=.
++ ~tlon-db-api-base-url~ :: The base URL for the EA International API endpoint. Defaults to ="https://ea.international"=.
 
 #+vindex: tlon-db-api-username
 + ~tlon-db-api-username~ :: The username for API authentication. Derived from the user's full name via ~tlon-user-lookup~.

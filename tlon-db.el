@@ -151,7 +151,7 @@ Set to t to enable verbose logging from url.el.")
 (declare-function citar-select-ref "citar")
 (defun tlon-db-get-db-entries ()
   "Prompt the user to select a work in the db and return its key."
-  (let ((citar-bibliography (list tlon-file-db)))
+  (let ((citar-bibliography (list tlon-db-file-db)))
     (citar-select-ref)))
 
 ;;;;; API
