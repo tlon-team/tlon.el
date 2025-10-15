@@ -406,30 +406,43 @@ If KEY is nil, use the key of the entry at point."
   (interactive)
   (tlon-ensure-bib)
   (let* ((key (or key (tlon-get-key-at-point)))
-	 filename)
+         current-file
+         filename)
     (citar-extras-goto-bibtex-entry key)
-    (setq filename (file-name-nondirectory (buffer-file-name)))
-    (tlon-db-post-entry)
-    (bibtex-kill-entry)
-    (save-buffer)
-    (kill-buffer)
-    (let* ((db-index (ebib-extras-get-db-number tlon-db-file-db))
-           (db (cond
-                 ((and (vectorp ebib--databases)
-                       (integerp db-index)
-                       (>= db-index 0)
-                       (< db-index (length ebib--databases)))
-                  (aref ebib--databases db-index))
-                 ((and (listp ebib--databases)
-                       (integerp db-index))
-                  (nth db-index ebib--databases))
-                 (t nil))))
-      (if db
-          (ebib-extras-reload-database-no-confirm db)
-        (message "Ebib database for %s not found; skipped reload" tlon-db-file-db)))
-    (run-with-timer 3 nil
-                    (lambda ()
-                      (message "Entry \"%s\" added to db and removed from \"%s\"." key filename)))))
+    (setq current-file (buffer-file-name))
+    (setq filename (and current-file (file-name-nondirectory current-file)))
+    (if (and current-file
+             (or (file-equal-p (expand-file-name current-file)
+                               (expand-file-name tlon-db-file-db))
+                 (file-equal-p (expand-file-name current-file)
+                               (expand-file-name tlon-db-file-db-upstream))))
+        (message "Entry \"%s\" is already in db; no action taken." key)
+      (tlon-db-post-entry)
+      (bibtex-kill-entry)
+      (save-buffer)
+      (kill-buffer)
+      (let* ((db-index (ebib-extras-get-db-number tlon-db-file-db))
+             (db (tlon-db--get-ebib-database db-index)))
+        (if db
+            (ebib-extras-reload-database-no-confirm db)
+          (message "Ebib database for %s not found; skipped reload" tlon-db-file-db)))
+      (run-with-timer 3 nil
+                      (lambda ()
+                        (message "Entry \"%s\" added to db and removed from \"%s\"." key filename))))))
+
+(defun tlon-db--get-ebib-database (db-index)
+  "Return the Ebib database object at DB-INDEX or nil if not found.
+Handles both vector and list representations of `ebib--databases'."
+  (cond
+   ((and (vectorp ebib--databases)
+         (integerp db-index)
+         (>= db-index 0)
+         (< db-index (length ebib--databases)))
+    (aref ebib--databases db-index))
+   ((and (listp ebib--databases)
+         (integerp db-index))
+    (nth db-index ebib--databases))
+   (t nil)))
 
 (declare-function tlon-yaml-get-key "tlon-yaml")
 (declare-function tlon-get-bibtex-key "tlon-yaml")
