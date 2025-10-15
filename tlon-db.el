@@ -413,7 +413,20 @@ If KEY is nil, use the key of the entry at point."
     (bibtex-kill-entry)
     (save-buffer)
     (kill-buffer)
-    (ebib-extras-reload-database-no-confirm (nth (ebib-extras-get-db-number tlon-db-file-db) ebib--databases))
+    (let* ((db-index (ebib-extras-get-db-number tlon-db-file-db))
+           (db (cond
+                 ((and (vectorp ebib--databases)
+                       (integerp db-index)
+                       (>= db-index 0)
+                       (< db-index (length ebib--databases)))
+                  (aref ebib--databases db-index))
+                 ((and (listp ebib--databases)
+                       (integerp db-index))
+                  (nth db-index ebib--databases))
+                 (t nil))))
+      (if db
+          (ebib-extras-reload-database-no-confirm db)
+        (message "Ebib database for %s not found; skipped reload" tlon-db-file-db)))
     (run-with-timer 3 nil
                     (lambda ()
                       (message "Entry \"%s\" added to db and removed from \"%s\"." key filename)))))
