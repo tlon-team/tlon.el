@@ -56,6 +56,12 @@ This section details the interactive commands provided by =tlon-db.el=.
 #+findex: tlon-db-post-entry
 + ~tlon-db-post-entry~ :: If called interactively, posts the BibTeX entry at point to the =/api/entries= endpoint. If called from Lisp with a =KEY=, it posts the corresponding entry. Requires authentication. The content is sent as =text/plain=. On success, it replaces the local BibTeX entry with the version returned by the API, which may have reordered fields. If the API responds with a 400 error because one or more author names are missing from the database, the command offers to create the missing names automatically via ~tlon-db-set-name~ and, if confirmed, retries the post once. If the operation is not successful (HTTP status is not 200) or if ~tlon-debug~ is non-nil, displays the server's response in a temporary buffer named ~*Db API Result*~. Otherwise, a success message is shown.
 
+#+findex: tlon-db-move-entry
++ ~tlon-db-move-entry~ :: Moves the BibTeX entry with =KEY= into the local database file (=db.bib=) and mirrors it to =db-upstream.bib= by posting it to the API. When the entry is already in the database, the command performs no action and prints a no-action message. After moving, it triggers an Ebib database reload when possible.
+
+#+findex: tlon-db-move-entry-pair
++ ~tlon-db-move-entry-pair~ :: Moves both the entry at point and its counterpart (original or translation) into the database, if present. If one or both entries are already present in the database, they are skipped with a no-action message. Prompts for the translation language when needed.
+
 #+findex: tlon-db-delete-entry
 + ~tlon-db-delete-entry~ :: Deletes the BibTeX entry with =KEY= from the EA International API. It uses the entry's key to identify which entry to delete. Requires authentication. If the =LOCALLY= argument is non-nil (the default), the entry is also removed from the local database file. Interactively, a prefix argument skips the confirmation prompt. If the operation is not successful (HTTP status is not 200) or if ~tlon-debug~ is non-nil, displays the server's response in a temporary buffer named ~*Db API Result*~. Otherwise, a success message is shown.
 
@@ -162,6 +168,9 @@ This section lists non-interactive functions and variables used internally.
 
 #+findex: tlon-db--parse-json-response
 + ~tlon-db--parse-json-response~ :: Parses the JSON content found after the headers in a response =BUFFER=. Returns a hash-table or =nil= on error.
+
+#+findex: tlon-db--get-ebib-database
++ ~tlon-db--get-ebib-database~ :: Given a database index returned by Ebib, return the corresponding database object, handling both vector and list representations of =ebib--databases=. Returns =nil= if the index is invalid or cannot be resolved.
 
 *** Result Display
 :PROPERTIES:
