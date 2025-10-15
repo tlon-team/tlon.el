@@ -458,9 +458,9 @@ COMMIT is non-nil, commit the change."
    ["Job creation"
     ("1" "add original bibtex entry"            tlon-create-bibtex-original)
     ("2" "add translation bibtex entry"         tlon-create-bibtex-translation)
-    ("3" "import original document"             tlon-import-document)
-    ("4" "translate original document"          tlon-translate-file)
-    ("5" "move entries to db"                   tlon-db-move-entry-pair)]
+    ("3" "move entries to db"                   tlon-db-move-entry-pair)
+    ("4" "import original document"             tlon-import-document)
+    ("5" "translate original document"          tlon-translate-file)]
    ["Add or modify"
     ("a s" "section correspondence"             tlon-section-correspondence-dwim)
     ("a u" "URL correspondence"                 tlon-edit-url-correspondences)]
