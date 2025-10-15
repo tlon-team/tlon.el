@@ -473,6 +473,7 @@ Handles both vector and list representations of `ebib--databases'."
     (if trans-key
         (tlon-db-move-entry trans-key)
       (message "No translation entry found. Call `M-x tlon-db-move-entry' manually from the translated BibTeX entry."))))
+
 ;;;;;; Delete entry
 
 (defun tlon-db-delete-entry (key &optional no-confirm locally)
