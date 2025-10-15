@@ -347,21 +347,27 @@ If AFTER-FN is non-nil, call it after writing TARGET-FILE."
        (tlon-deepl-translate
         text target-lang-code source-lang-code
         (lambda ()
-          (let ((translated-text (tlon-translate--get-deepl-translation-from-buffer)))
-            (when translated-text
-              (with-temp-file target-file
-                (insert translated-text))
-              (tlon-translate--finalize-written-translation source-file target-file after-fn))))))
+          (tlon-translate--write-and-finalize
+           (tlon-translate--get-deepl-translation-from-buffer)
+           source-file target-file after-fn))))
       ('ai
        (tlon-ai-translate-text
-        text target-lang-code source-lang-code
-        (lambda (response info)
+	text target-lang-code source-lang-code
+	(lambda (response info)
           (if (not response)
               (tlon-ai-callback-fail info)
-            (with-temp-file target-file
-              (insert response))
-            (tlon-translate--finalize-written-translation source-file target-file after-fn))))))
-      (_ (user-error "Unsupported translation engine: %s" tlon-translate-engine))))
+            (tlon-translate--write-and-finalize response source-file target-file after-fn)))))
+      (_ (user-error "Unsupported translation engine: %s" tlon-translate-engine)))))
+
+(defun tlon-translate--write-and-finalize (content source-file target-file after-fn)
+  "Write CONTENT to TARGET-FILE and finalize translation of SOURCE-FILE.
+If CONTENT is a non-empty string, write it and call
+`tlon-translate--finalize-written-translation' with SOURCE-FILE, TARGET-FILE,
+and AFTER-FN."
+  (when (and (stringp content) (> (length (string-trim content)) 0))
+    (with-temp-file target-file
+      (insert content))
+    (tlon-translate--finalize-written-translation source-file target-file after-fn)))
 
 (defun tlon-translate--finalize-written-translation (source-file target-file after-fn)
   "Finalize steps after writing TARGET-FILE translated from SOURCE-FILE.
