@@ -56,7 +56,7 @@ This module provides functions for translating entire files using various transl
 #+findex: tlon-translate-file
 + ~tlon-translate-file~ :: Translates a file into a specified language.
   - Prompts for the source =FILE= and the target =LANG= (two-letter code).
-  - Resolves the output path, preferring an existing counterpart if present (asking before overwriting). Otherwise proposes a default path based on the file category, determined by ~(tlon-get-bare-dir FILE t)~:
+  - Resolves the output path, preferring an existing counterpart if present (asking before overwriting). If the counterpart directory cannot be determined, you will be prompted to select one. Otherwise proposes a default path based on the file category, determined by ~(tlon-get-bare-dir FILE t)~:
     - Articles: requires a DB translation entry for the selected language; if none exists, an error is raised. The default filename is derived from the DB translation entry's title (slugified). After writing the translation, the YAML ~key~ is set to the DB translation key, translated tags are inserted, the buffer is saved, and associated images are copied.
     - Tags/authors: the default filename is derived by translating the YAML ~title~ and slugifying it. After writing, the YAML ~title~ is overwritten with the translated title, the buffer is saved, and ~tlon-yaml-guess-english-counterpart~ is run on the new file.
     - Other: falls back to the previous behavior (title-based default naming if available; otherwise a slugified basename) and writes the translated content.
