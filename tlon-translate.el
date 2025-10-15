@@ -338,39 +338,21 @@ slugified version of the original basename."
 (defun tlon-translate--do-translate (source-file target-file target-lang-code &optional after-fn)
   "Translate SOURCE-FILE to TARGET-FILE into TARGET-LANG-CODE.
 If AFTER-FN is non-nil, call it after writing TARGET-FILE."
-  (pcase tlon-translate-engine
-    ('deepl
-     (let* ((source-repo (tlon-get-repo-from-file source-file))
-            (source-lang-code (tlon-repo-lookup :language :dir source-repo))
-            (text (with-temp-buffer
-                    (insert-file-contents source-file)
-                    (buffer-string))))
-       (tlon-deepl-translate text target-lang-code source-lang-code
-                             (lambda ()
-                               (let ((translated-text (tlon-translate--get-deepl-translation-from-buffer)))
-                                 (when translated-text
-                                   (with-temp-file target-file
-                                     (insert translated-text))
-                                   (message "Translated %s to %s" source-file target-file)
-                                   (condition-case err
-                                       (find-file target-file)
-                                     (error (message "Opening translation failed for %s: %s"
-                                                     (file-name-nondirectory target-file)
-                                                     (error-message-string err))))
-                                   (let ((file-type (condition-case nil
-                                                        (tlon-yaml-get-type target-file)
-                                                      (error nil))))
-                                     (if file-type
-                                         (when (functionp after-fn)
-                                           (funcall after-fn))
-                                       (message "Skipping post-processing for %s: could not determine file type; tags will not be inserted"
-                                                (file-name-nondirectory target-file))))))))))
-    ('ai
-     (let* ((source-repo (tlon-get-repo-from-file source-file))
-            (source-lang-code (tlon-repo-lookup :language :dir source-repo))
-            (text (with-temp-buffer
-                    (insert-file-contents source-file)
-                    (buffer-string))))
+  (let* ((source-lang-code (tlon-repo-lookup :language :dir (tlon-get-repo-from-file source-file)))
+         (text (with-temp-buffer
+                 (insert-file-contents source-file)
+                 (buffer-string))))
+    (pcase tlon-translate-engine
+      ('deepl
+       (tlon-deepl-translate
+        text target-lang-code source-lang-code
+        (lambda ()
+          (let ((translated-text (tlon-translate--get-deepl-translation-from-buffer)))
+            (when translated-text
+              (with-temp-file target-file
+                (insert translated-text))
+              (tlon-translate--finalize-written-translation source-file target-file after-fn))))))
+      ('ai
        (tlon-ai-translate-text
         text target-lang-code source-lang-code
         (lambda (response info)
@@ -378,21 +360,26 @@ If AFTER-FN is non-nil, call it after writing TARGET-FILE."
               (tlon-ai-callback-fail info)
             (with-temp-file target-file
               (insert response))
-            (message "Translated %s to %s" source-file target-file)
-            (condition-case err
-                (find-file target-file)
-              (error (message "Opening translation failed for %s: %s"
-                              (file-name-nondirectory target-file)
-                              (error-message-string err))))
-            (let ((file-type (condition-case nil
-                                 (tlon-yaml-get-type target-file)
-                               (error nil))))
-              (if file-type
-                  (when (functionp after-fn)
-                    (funcall after-fn))
-                (message "Skipping post-processing for %s: could not determine file type; tags will not be inserted"
-                         (file-name-nondirectory target-file)))))))))
-    (_ (user-error "Unsupported translation engine: %s" tlon-translate-engine))))
+            (tlon-translate--finalize-written-translation source-file target-file after-fn))))))
+      (_ (user-error "Unsupported translation engine: %s" tlon-translate-engine))))
+
+(defun tlon-translate--finalize-written-translation (source-file target-file after-fn)
+  "Finalize steps after writing TARGET-FILE translated from SOURCE-FILE.
+If AFTER-FN is non-nil and the file type can be determined, call it."
+  (message "Translated %s to %s" source-file target-file)
+  (condition-case err
+      (find-file target-file)
+    (error (message "Opening translation failed for %s: %s"
+                    (file-name-nondirectory target-file)
+                    (error-message-string err))))
+  (let ((file-type (condition-case nil
+                       (tlon-yaml-get-type target-file)
+                     (error nil))))
+    (if file-type
+        (when (functionp after-fn)
+          (funcall after-fn))
+      (message "Skipping post-processing for %s: could not determine file type; tags will not be inserted"
+               (file-name-nondirectory target-file)))))
 
 (declare-function tlon-metadata-in-repo "tlon-yaml")
 (defun tlon-translate--get-translation-from-original (original-file lang-code)
