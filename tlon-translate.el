@@ -219,6 +219,7 @@ Returns the translated text as a string, or nil if skipped."
 ;;;;;; file
 
 (declare-function tlon-get-counterpart-in-originals "tlon-counterpart")
+(declare-function tlon-get-counterpart "tlon-counterpart")
 (declare-function tlon-db-get-translation-key "tlon-db")
 (declare-function tlon-yaml-guess-english-counterpart "tlon-yaml")
 ;;;###autoload
@@ -250,6 +251,13 @@ Branching rules:
 	 (bare-en (tlon-get-bare-dir source-file t))
 	 (counterpart-dir (tlon-get-counterpart-dir source-file target-lang-code))
 	 (post-fn nil)
+         (target-base-dir (or counterpart-dir
+                              (let* ((maybe-cp (condition-case nil
+                                                   (tlon-get-counterpart source-file target-lang-code)
+                                                 (error nil))))
+                                (or (and maybe-cp (file-name-directory (expand-file-name maybe-cp)))
+                                    (read-directory-name "Counterpart directory for saving translation: "
+                                                         (file-name-directory source-file))))))
          (target-file
 	  (or target-file
 	      (let ((candidate (condition-case nil
@@ -300,8 +308,8 @@ Branching rules:
 			      (concat slug ext)))
 			   (t
 			    (tlon-translate--default-filename source-file target-lang-code))))
-			 (default-path (when default-name (file-name-concat counterpart-dir default-name))))
-		    (read-file-name "Save translation to: " (file-name-as-directory counterpart-dir) default-path nil default-name))))))))
+			 (default-path (when default-name (file-name-concat target-base-dir default-name))))
+		    (read-file-name "Save translation to: " (file-name-as-directory target-base-dir) default-path nil default-name))))))))
     (when target-file
       (tlon-translate--do-translate source-file target-file target-lang-code post-fn))))
 
@@ -405,13 +413,15 @@ If AFTER-FN is non-nil, call it after writing TARGET-FILE."
 (declare-function tlon-images-get-dir "tlon-images")
 (defun tlon-translate--copy-associated-images (orig-file target-file)
   "Copy images associated with ORIG-FILE into TARGET-FILE’s corresponding paths."
-  (when-let ((files (directory-files-recursively (tlon-images-get-dir orig-file) ".*")))
-    (let ((img-dir (tlon-images-get-dir target-file))
-	  (lang (tlon-get-language-in-file target-file)))
-      (unless (file-directory-p img-dir)
-	(make-directory img-dir))
-      (dolist (file files)
-	(copy-file file (tlon-get-image-counterpart file lang))))))
+  (let ((src-dir (tlon-images-get-dir orig-file)))
+    (when (and src-dir (file-directory-p src-dir))
+      (let ((files (directory-files-recursively src-dir ".*"))
+            (img-dir (tlon-images-get-dir target-file))
+            (lang (tlon-get-language-in-file target-file)))
+        (unless (file-directory-p img-dir)
+          (make-directory img-dir t))
+        (dolist (file files)
+          (copy-file file (tlon-get-image-counterpart file lang)))))))
 
 ;;;;;; abstract
 
