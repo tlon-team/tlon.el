@@ -116,14 +116,6 @@ Set to t to enable verbose logging from url.el.")
 
 ;;;;; Files
 
-(defvar tlon-db-file-db
-  (file-name-concat tlon-bibtex-dir "db.bib")
-  "File containing the local BibTeX database, intended for user edits.")
-
-(defvar tlon-db-file-db-upstream
-  (file-name-concat tlon-bibtex-dir "db-upstream.bib")
-  "File containing the BibTeX database state from the remote API.")
-
 (defconst tlon-db--result-buffer-name "*Db API Result*"
   "Name of the buffer used to display API call results.")
 
@@ -144,14 +136,14 @@ Set to t to enable verbose logging from url.el.")
 (defun tlon-db-initialize ()
   "Initialize the `tlon-db' package."
   (tlon-db--initialize-sync)
-  (append paths-files-bibliography-all (list tlon-db-file-db))
-  (citar-extras-refresh-bibliography tlon-db-file-db))
+  (append paths-files-bibliography-all (list tlon-file-db))
+  (citar-extras-refresh-bibliography tlon-file-db))
 
 (defvar citar-bibliography)
 (declare-function citar-select-ref "citar")
 (defun tlon-db-get-db-entries ()
   "Prompt the user to select a work in the db and return its key."
-  (let ((citar-bibliography (list tlon-db-file-db)))
+  (let ((citar-bibliography (list tlon-file-db)))
     (citar-select-ref)))
 
 ;;;;; API
@@ -212,17 +204,17 @@ If NO-CONFIRM is non-nil, bypass the check that ensures `db.bib' and
 argument to enable this check bypass."
   (interactive "P")
   (let ((no-confirm (or no-confirm current-prefix-arg)))
-    (when (and (get-file-buffer tlon-db-file-db)
-               (buffer-modified-p (get-file-buffer tlon-db-file-db)))
-      (user-error "Buffer for %s has unsaved changes. Save it first" (file-name-nondirectory tlon-db-file-db)))
+    (when (and (get-file-buffer tlon-file-db)
+               (buffer-modified-p (get-file-buffer tlon-file-db)))
+      (user-error "Buffer for %s has unsaved changes. Save it first" (file-name-nondirectory tlon-file-db)))
     (when (and (not no-confirm)
-               (file-exists-p tlon-db-file-db)
-               (file-exists-p tlon-db-file-db-upstream)
-               (not (tlon-db--files-have-same-content-p tlon-db-file-db tlon-db-file-db-upstream)))
-      (ediff tlon-db-file-db tlon-db-file-db-upstream)
+               (file-exists-p tlon-file-db)
+               (file-exists-p tlon-file-db-upstream)
+               (not (tlon-db--files-have-same-content-p tlon-file-db tlon-file-db-upstream)))
+      (ediff tlon-file-db tlon-file-db-upstream)
       (user-error "Files %s and %s are not in sync. Resolve differences before fetching entries"
-                  (file-name-nondirectory tlon-db-file-db)
-		  (file-name-nondirectory tlon-db-file-db-upstream)))
+                  (file-name-nondirectory tlon-file-db)
+		  (file-name-nondirectory tlon-file-db-upstream)))
     (let (entries-text)
       (when-let* ((response-buffer (tlon-db--make-request "GET" "/api/entries" nil
 							  '(("accept" . "text/plain"))
@@ -242,9 +234,9 @@ argument to enable this check bypass."
               (let ((coding-system-for-write 'utf-8-unix))
 		(insert entries-text)
 		(bibtex-extras-escape-special-characters)
-		(write-file tlon-db-file-db-upstream)
-		(write-file tlon-db-file-db)
-		(message "Updated %s and %s." tlon-db-file-db tlon-db-file-db-upstream)
+		(write-file tlon-file-db-upstream)
+		(write-file tlon-file-db)
+		(message "Updated %s and %s." tlon-file-db tlon-file-db-upstream)
 		(bibtex-count-entries))))
 	(user-error "Failed to retrieve entries")))))
 
@@ -373,7 +365,7 @@ Return the modified entry string."
 (defun tlon-db--replace-entry-locally (key entry)
   "Replace KEY with ENTRY text in both local databases."
   (let ((coding-system-for-write 'utf-8-with-signature))
-    (dolist (file (list tlon-db-file-db tlon-db-file-db-upstream))
+    (dolist (file (list tlon-file-db tlon-file-db-upstream))
       (with-current-buffer (find-file-noselect file)
         (bibtex-mode)
         (goto-char (point-min))
@@ -413,19 +405,19 @@ If KEY is nil, use the key of the entry at point."
     (setq filename (and current-file (file-name-nondirectory current-file)))
     (if (and current-file
              (or (file-equal-p (expand-file-name current-file)
-                               (expand-file-name tlon-db-file-db))
+                               (expand-file-name tlon-file-db))
                  (file-equal-p (expand-file-name current-file)
-                               (expand-file-name tlon-db-file-db-upstream))))
+                               (expand-file-name tlon-file-db-upstream))))
         (message "Entry \"%s\" is already in db; no action taken." key)
       (tlon-db-post-entry)
       (bibtex-kill-entry)
       (save-buffer)
       (kill-buffer)
-      (let* ((db-index (ebib-extras-get-db-number tlon-db-file-db))
+      (let* ((db-index (ebib-extras-get-db-number tlon-file-db))
              (db (tlon-db--get-ebib-database db-index)))
         (if db
             (ebib-extras-reload-database-no-confirm db)
-          (message "Ebib database for %s not found; skipped reload" tlon-db-file-db)))
+          (message "Ebib database for %s not found; skipped reload" tlon-file-db)))
       (run-with-timer 3 nil
                       (lambda ()
                         (message "Entry \"%s\" added to db and removed from \"%s\"." key filename))))))
@@ -511,7 +503,7 @@ Interactively, NO-CONFIRM is set with a prefix argument, and LOCALLY is t."
   (let ((deleted nil))
     (let ((coding-system-for-write 'utf-8-unix))
       ;; db.bib
-      (with-current-buffer (find-file-noselect tlon-db-file-db)
+      (with-current-buffer (find-file-noselect tlon-file-db)
         (bibtex-mode)
         (when (bibtex-search-entry key)
           (setq deleted t)
@@ -519,7 +511,7 @@ Interactively, NO-CONFIRM is set with a prefix argument, and LOCALLY is t."
           (unless tlon-db--sync-in-progress
             (save-buffer))))
       ;; db-upstream.bib
-      (with-current-buffer (find-file-noselect tlon-db-file-db-upstream)
+      (with-current-buffer (find-file-noselect tlon-file-db-upstream)
         (bibtex-mode)
         (when (bibtex-search-entry key)
           (setq deleted t)
@@ -1200,18 +1192,18 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
 
 (defun tlon-db-ensure-key-is-unique (key)
   "Return an error if KEY exists in a file other than \"db.bib\"."
-  (let ((bibtex-files (remove tlon-db-file-db bibtex-files)))
+  (let ((bibtex-files (remove tlon-file-db bibtex-files)))
     (when (bibtex-search-entry key t)
       (user-error "Key \"%s\" exists outside of \"db.bib\". Remove the duplicate and try again" key))))
 
 ;;;;;; Sync
 
 (defun tlon-db--initialize-sync ()
-  "Set up file notification to sync `tlon-db-file-db` on change."
-  (when (and (not tlon-db--db-watch-descriptor) (file-exists-p tlon-db-file-db))
+  "Set up file notification to sync `tlon-file-db` on change."
+  (when (and (not tlon-db--db-watch-descriptor) (file-exists-p tlon-file-db))
     ;; Add the watch.
     (setq tlon-db--db-watch-descriptor
-          (file-notify-add-watch tlon-db-file-db '(change) #'tlon-db--sync-on-change))
+          (file-notify-add-watch tlon-file-db '(change) #'tlon-db--sync-on-change))
     ;; Ensure cleanup on exit.
     (add-hook 'kill-emacs-hook #'tlon-db-remove-file-notify-watch nil t)))
 
@@ -1386,11 +1378,11 @@ EVENT is a list of the form (FILE ACTION)."
         (file (nth 2 event)))
     (when (and tlon-db-enable-auto-sync
                (eq action 'changed)
-               (string-equal file (expand-file-name tlon-db-file-db))
-               (file-exists-p tlon-db-file-db-upstream))
+               (string-equal file (expand-file-name tlon-file-db))
+               (file-exists-p tlon-file-db-upstream))
       (if tlon-db--sync-in-progress
           (message "Db sync already in progress, skipping this change.")
-        (when-let* ((diff-output (tlon-db--get-diff-output tlon-db-file-db-upstream file)))
+        (when-let* ((diff-output (tlon-db--get-diff-output tlon-file-db-upstream file)))
           (tlon-db--process-sync-changes diff-output file))))))
 
 ;;;###autoload
@@ -1399,15 +1391,15 @@ EVENT is a list of the form (FILE ACTION)."
 Save db.bib if modified, then diff it against db-upstream and process
 the changes. If there are no differences, report and do nothing."
   (interactive)
-  (unless (file-exists-p tlon-db-file-db-upstream)
-    (user-error "Upstream db not found: %s" tlon-db-file-db-upstream))
-  (let ((buf (get-file-buffer tlon-db-file-db)))
+  (unless (file-exists-p tlon-file-db-upstream)
+    (user-error "Upstream db not found: %s" tlon-file-db-upstream))
+  (let ((buf (get-file-buffer tlon-file-db)))
     (when (and buf (buffer-modified-p buf)
                (y-or-n-p "Save db.bib before syncing? "))
       (with-current-buffer buf (save-buffer))))
-  (let ((diff-output (tlon-db--get-diff-output tlon-db-file-db-upstream tlon-db-file-db)))
+  (let ((diff-output (tlon-db--get-diff-output tlon-file-db-upstream tlon-file-db)))
     (if diff-output
-        (tlon-db--process-sync-changes diff-output tlon-db-file-db)
+        (tlon-db--process-sync-changes diff-output tlon-file-db)
       (message "No differences to sync"))))
 
 (defun tlon-db--process-sync-changes (diff-output file)
@@ -1439,7 +1431,7 @@ the changes. If there are no differences, report and do nothing."
                   (setq created-count (1+ created-count))
                   (tlon-db--log-sync-action "Created" key))
                 (dolist (key modified)
-                  (let ((before-text (with-current-buffer (find-file-noselect tlon-db-file-db-upstream)
+                  (let ((before-text (with-current-buffer (find-file-noselect tlon-file-db-upstream)
                                        (bibtex-extras-get-entry-as-string key nil))))
                     (tlon-db-post-entry key)
                     (setq modified-count (1+ modified-count))
