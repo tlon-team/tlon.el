@@ -112,6 +112,14 @@
 	   :language "ru"
 	   :key "l r u"
 	   :help t)
+    (:name "polish-translations"
+	   :project "babel"
+	   :subproject "babel"
+	   :abbrev "polish-translations"
+	   :type content
+	   :subtype translations
+	   :language "pl"
+	   :help nil)
     (:name "uqbar"
 	   :project "babel"
 	   :subproject "uqbar"
