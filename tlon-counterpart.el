@@ -80,7 +80,7 @@ prompt to disambiguate."
   (let* ((repo (tlon-get-repo-from-file file))
          (uqbar (tlon-counterpart--uqbar-repo-p repo))
          (tr-key (ignore-errors (tlon-yaml-get-key "key" file)))
-         (orig-key (and tr-key (if uqbar (tlon-get-counterpart-key tr-key) tr-key)))
+         (orig-key (and tr-key (tlon-get-counterpart-key tr-key)))
          (repos (tlon-counterpart--original-repos "en"))
          (hits nil))
     (unless orig-key
@@ -101,10 +101,9 @@ TARGET-LANGUAGE-CODE is the target translation language code. If nil,
 the user may be prompted to select a language.
 
 This searches explicitly across all repos registered with
-:language TARGET-LANGUAGE-CODE and :subtype 'translations. For Uqbar
-translation repos, a file’s YAML ‘key’ is a translation key that must
-be mapped to the original key via the bibliography. For non‑Uqbar
-translation repos, the YAML ‘key’ is taken to be the original key.
+:language TARGET-LANGUAGE-CODE and :subtype 'translations. In all
+translation repos, a file’s YAML ‘key’ is the translation key and must
+be mapped to the original key via the bibliography.
 
 If exactly one match is found, return its absolute path; if none,
 return nil; if multiple, prompt to disambiguate."
@@ -321,10 +320,8 @@ corresponding translation file paths within that repository.")
 (defun tlon-counterpart--translation-table-for-repo (repo-dir target-language)
   "Return a hash table mapping original keys to translation files in REPO-DIR.
 
-The mapping differs by repo type:
-- Uqbar translation repos: YAML ‘key’ is a translation key; map it to
-  the original key via `tlon-get-counterpart-key'.
-- Non‑Uqbar translation repos: YAML ‘key’ is the original key.
+All translation repos store YAML ‘key’ as the translation key; map it to
+the original key via `tlon-get-counterpart-key'.
 
 The table is cached in `tlon-counterpart--orig->trans-cache'."
   (or (gethash repo-dir tlon-counterpart--orig->trans-cache)
@@ -334,9 +331,7 @@ The table is cached in `tlon-counterpart--orig->trans-cache'."
               (table (make-hash-table :test #'equal)))
          (dolist (file (directory-files-recursively repo-dir "\\.md\\'"))
            (when-let ((tr-key (ignore-errors (tlon-yaml-get-key "key" file))))
-             (let ((orig-key (if uqbar
-                                 (tlon-get-counterpart-key tr-key target-language)
-                               tr-key)))
+             (let ((orig-key (tlon-get-counterpart-key tr-key)))
                (when orig-key
                  (puthash orig-key file table)))))
          table)
