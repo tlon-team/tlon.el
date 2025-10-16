@@ -79,7 +79,7 @@ return its absolute path; if none, return nil; if multiple,
 prompt to disambiguate."
   (let* ((repo (tlon-get-repo-from-file file))
          (uqbar (tlon-counterpart--uqbar-repo-p repo))
-         (tr-key (tlon-yaml-get-key "key" file))
+         (tr-key (ignore-errors (tlon-yaml-get-key "key" file)))
          (orig-key (and tr-key (if uqbar (tlon-get-counterpart-key tr-key) tr-key)))
          (repos (tlon-counterpart--original-repos "en"))
          (hits nil))
@@ -109,7 +109,7 @@ translation repos, the YAML ‘key’ is taken to be the original key.
 If exactly one match is found, return its absolute path; if none,
 return nil; if multiple, prompt to disambiguate."
   (let* ((target-language-code (or target-language-code (tlon-select-language 'code 'babel)))
-         (orig-key (tlon-yaml-get-key "key" file))
+         (orig-key (ignore-errors (tlon-yaml-get-key "key" file)))
          (repos (tlon-counterpart--translation-repos target-language-code))
          (hits nil))
     (unless orig-key
@@ -333,7 +333,7 @@ The table is cached in `tlon-counterpart--orig->trans-cache'."
        (let* ((uqbar (tlon-counterpart--uqbar-repo-p repo-dir))
               (table (make-hash-table :test #'equal)))
          (dolist (file (directory-files-recursively repo-dir "\\.md\\'"))
-           (when-let ((tr-key (tlon-yaml-get-key "key" file)))
+           (when-let ((tr-key (ignore-errors (tlon-yaml-get-key "key" file))))
              (let ((orig-key (if uqbar
                                  (tlon-get-counterpart-key tr-key target-language)
                                tr-key)))
@@ -354,7 +354,7 @@ The table is cached in `tlon-counterpart--orig-key->orig-file-cache'."
        repo-dir
        (let ((table (make-hash-table :test #'equal)))
          (dolist (file (directory-files-recursively repo-dir "\\.md\\'"))
-           (when-let ((ok (tlon-yaml-get-key "key" file)))
+           (when-let ((ok (ignore-errors (tlon-yaml-get-key "key" file))))
              (puthash ok file table)))
          table)
        tlon-counterpart--orig-key->orig-file-cache)))
@@ -579,16 +579,16 @@ language within the current subproject."
 (defun tlon-counterpart--find-original-for-translation (file)
   "Return absolute path to original counterpart of translation FILE, or nil."
   (let* ((dir (tlon-get-counterpart-dir file "en"))
-         (op (tlon-yaml-get-key "original_path" file)))
+         (op (ignore-errors (tlon-yaml-get-key "original_path" file))))
     (cond
      ((and dir op)
       (let ((path (expand-file-name op dir)))
         (when (file-exists-p path) path)))
      (dir
-      (let* ((tr-key (tlon-yaml-get-key "key" file))
+      (let* ((tr-key (ignore-errors (tlon-yaml-get-key "key" file)))
              (orig-key (and tr-key (tlon-get-counterpart-key tr-key))))
         (when orig-key
-          (seq-find (lambda (f) (string= orig-key (tlon-yaml-get-key "key" f)))
+          (seq-find (lambda (f) (string= orig-key (ignore-errors (tlon-yaml-get-key "key" f))))
                     (tlon-counterpart--list-md-nonrecursive dir))))))))
 
 (defun tlon-counterpart--counterpart-exists-p (file target-language-code)
