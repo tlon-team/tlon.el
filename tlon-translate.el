@@ -1103,9 +1103,10 @@ TYPE can be `errors' or `flow'."
                               ('flow tlon-translate-improve-flow-prompt)))
 	   (prompt-elts (delq nil (list prompt-template translation-file (capitalize language))))
 	   (glossary-type 'ai-revision)
+	   (src-code "en")
 	   (glossary-file (when (and (eq type 'flow)
-				     (tlon-extract-glossary lang-code glossary-type))
-			    (tlon-glossary-target-path lang-code glossary-type)))
+				     (tlon-extract-glossary src-code lang-code glossary-type))
+			    (tlon-glossary-target-path src-code lang-code glossary-type)))
 	   (glossary-prompt (when glossary-file
 			      (format tlon-translate-glossary-prompt (file-name-nondirectory glossary-file))))
 	   (prompt (concat (apply 'format prompt-elts) glossary-prompt))
