@@ -41,12 +41,12 @@ This module provides functionality for finding, opening, and comparing "counterp
 
 #+findex: tlon-get-counterpart
 + ~tlon-get-counterpart~ :: (Autoloaded) Calculates and returns the full path to the counterpart file of =FILE= (or the current buffer's file).
-  - If the file is in a repository marked as =translations= (based on its =:subtype= property), it mirrors the file's relative directory into the originals repository, uses the =key= field together with the bibliography mapping to locate the matching original, and only prompts when several plausible matches remain.
-  - If the file is in a repository marked as =originals=, it prompts the user to select a target language, mirrors the relative directory into the translations repository, uses the =key= field together with the bibliography mapping to locate the matching translation, and only prompts when several plausible matches remain.
+  - If the file is in a repository marked as =translations= (based on its =:subtype= property), it determines whether the repo belongs to subproject "uqbar". For Uqbar repos, it interprets the YAML =key= as a translation key and maps it to the original key via the bibliography; for non‑Uqbar repos, it interprets the YAML =key= as the original key. It then searches across all repos with =:language= "en" and =:subtype= 'originals and opens the unique match, prompting only to disambiguate when multiple matches are found.
+  - If the file is in a repository marked as =originals=, it prompts the user to select a target language, enumerates all repos with that =:language= and =:subtype= 'translations, and resolves the translation by original key. In Uqbar translation repos, the YAML =key= is a translation key that is mapped back to the original via the bibliography; in non‑Uqbar translation repos, the YAML =key= is the original key. It opens the unique match, prompting only if multiple remain.
   - Signals an error if the repository subtype is neither =originals= nor =translations=, or if necessary metadata is missing.
 
 #+findex: tlon-get-counterpart-dir
-+ ~tlon-get-counterpart-dir~ :: Calculates and returns the directory path where the counterpart of =FILE= (or the current buffer's file) should reside. It determines the counterpart repository (~tlon-get-counterpart-repo~) and translates the relative directory structure within the source repository to the equivalent structure in the target repository using ~tlon-get-bare-dir-translation~.
++ ~tlon-get-counterpart-dir~ :: Calculates and returns the directory path where the counterpart of =FILE= (or the current buffer's file) should reside. It determines the counterpart repository (~tlon-get-counterpart-repo~) and translates the relative directory structure within the source repository to the equivalent structure in the target repository using ~tlon-get-bare-dir-translation~. For counterpart repositories not in the "uqbar" subproject, this function returns the repository root.
 
 #+findex: tlon-get-counterpart-repo
 + ~tlon-get-counterpart-repo~ :: Returns the full path to the repository directory containing the counterpart of =FILE= (or the current buffer's file). It identifies the source repository, its subproject, determines the counterpart language (~tlon-get-counterpart-language~), and looks up the repository matching the subproject and counterpart language using ~tlon-repo-lookup~.
@@ -135,10 +135,10 @@ This section lists non-interactive functions used internally or potentially usef
 :END:
 
 #+findex: tlon-get-counterpart-in-translations
-+ ~tlon-get-counterpart-in-translations~ :: For a translation file, it derives the original key via the bibliography mapping, looks in the mirrored directory for the file whose =key= matches that value, and prompts only when more than one candidate remains.
++ ~tlon-get-counterpart-in-translations~ :: For a translation file, it determines the original key based on the repo type (Uqbar: map translation key via bibliography; non‑Uqbar: YAML key equals original key) and searches across all repos with =:language= "en" and =:subtype= 'originals, prompting only when more than one candidate remains.
 
 #+findex: tlon-get-counterpart-in-originals
-+ ~tlon-get-counterpart-in-originals~ :: For an original file, it derives the expected translation via the bibliography mapping, looks in the mirrored directory for the file whose =key= matches that expectation, and prompts only when several candidates remain.
++ ~tlon-get-counterpart-in-originals~ :: For an original file, it enumerates all repos with the selected target language and =:subtype= 'translations, interprets keys per repo type (Uqbar: translation key mapped via bibliography; non‑Uqbar: YAML key equals original key), and returns the unique matching translation or prompts to disambiguate when several candidates remain.
 
 *** Link Handling Logic
 :PROPERTIES:
