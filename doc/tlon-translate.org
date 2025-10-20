@@ -17,6 +17,15 @@
 
 This module provides functions for translating entire files using various translation engines.
 
+Note on counterpart resolution:
++ Articles: counterparts are resolved by key. The YAML key of the original maps
+  to the translation via the bibliography database; the YAML key of a translation
+  maps back to the original key via its “translation” field. Do not use
+  original_path for articles.
++ Tags/authors: counterparts are resolved by original_path. This field stores the
+  basename of the English original and is resolved under the English counterpart
+  directory.
+
 ** Dependencies
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-translate-dependencies

@@ -65,45 +65,83 @@ language, unless TARGET-LANGUAGE-CODE is provided."
 (defun tlon-get-counterpart-in-translations (file)
   "Return the original counterpart of translation FILE.
 
-Require YAML field `original_path' (basename of the English original) and
-resolve it deterministically under the English counterpart directory derived
-from FILE. Signal an error when `original_path' is missing or the resolved file
-does not exist."
-  (let* ((op (tlon-yaml-get-key "original_path" file))
-         (op* (and (stringp op) (string-trim op)))
-         (dir (tlon-get-counterpart-dir file "en")))
-    (unless (and op* (not (string-empty-p op*)))
-      (user-error "Translation file %s is missing required original_path" file))
-    (unless dir
-      (user-error "Could not resolve English counterpart directory for %s" file))
-    (let ((p (file-name-concat dir op*)))
-      (if (file-exists-p p)
-          p
-        (user-error "Original %s does not exist under %s" op* dir)))))
+For articles, resolve by YAML key via the bibliography (translation key → original
+key) and locate the original by key in the English originals repos. For tags and
+authors, require YAML field `original_path' (basename of the English original)
+and resolve it under the English counterpart directory derived from FILE."
+  (let ((yaml-type (tlon-yaml-get-type file)))
+    (pcase yaml-type
+      ("article"
+       (let* ((tr-key (tlon-yaml-get-key "key" file))
+              (orig-key (and tr-key (tlon-get-counterpart-key tr-key)))
+              (repos (tlon-counterpart--original-repos "en"))
+              (hits '()))
+         (unless orig-key
+           (user-error "Translation file %s has no usable key" file))
+         (dolist (r repos)
+           (let* ((table (tlon-counterpart--original-table-for-repo r))
+                  (hit (and table (gethash orig-key table))))
+             (when hit (push hit hits))))
+         (pcase (length hits)
+           (1 (car hits))
+           (0 (user-error "No original found for translation key %s" tr-key))
+           (_ (completing-read "Disambiguate original: " (nreverse hits) nil t)))))
+      ((or "tag" "author")
+       (let* ((op (tlon-yaml-get-key "original_path" file))
+              (op* (and (stringp op) (string-trim op)))
+              (dir (tlon-get-counterpart-dir file "en")))
+         (unless (and op* (not (string-empty-p op*)))
+           (user-error "Translation file %s is missing required original_path" file))
+         (unless dir
+           (user-error "Could not resolve English counterpart directory for %s" file))
+         (let ((p (file-name-concat dir op*)))
+           (if (file-exists-p p) p
+             (user-error "Original %s does not exist under %s" op* dir)))))
+      (_
+       (user-error "Unsupported YAML type %s for counterpart lookup" yaml-type)))))
 
 (defun tlon-get-counterpart-in-originals (file &optional target-language-code)
   "Return the translation counterpart of original FILE.
-TARGET-LANGUAGE-CODE is the target translation language code. If nil,
-the user may be prompted to select a language.
+TARGET-LANGUAGE-CODE is the target translation language code. If nil, prompt.
 
-Search across all translation repos for TARGET-LANGUAGE-CODE whose metadata
-records `original_path' equal to the basename of FILE. If exactly one match is
-found, return it; if none, signal an error; if multiple, prompt to disambiguate."
+For articles, resolve by YAML key across translation repos (original key → translation
+file). For tags and authors, search translation metadata for entries whose
+`original_path' equals the basename of FILE."
   (let* ((target-language-code (or target-language-code (tlon-select-language 'code 'babel)))
-         (orig-base (file-name-nondirectory file))
-         (repos (tlon-counterpart--translation-repos target-language-code))
-         (hits '()))
-    (dolist (repo repos)
-      (let* ((meta (tlon-metadata-in-repo repo))
-             (all (ignore-errors
-                    (tlon-metadata-lookup-all meta "file" "original_path" orig-base))))
-        (dolist (h all) (push h hits))))
-    (setq hits (delete-dups hits))
-    (pcase (length hits)
-      (1 (car hits))
-      (0 (user-error "No translation found for %s in %s"
-                     (file-name-nondirectory file) target-language-code))
-      (_ (completing-read "Disambiguate translation: " (nreverse hits) nil t)))))
+         (yaml-type (tlon-yaml-get-type file)))
+    (pcase yaml-type
+      ("article"
+       (let* ((orig-key (tlon-yaml-get-key "key" file))
+              (repos (tlon-counterpart--translation-repos target-language-code))
+              (hits '()))
+         (unless orig-key
+           (user-error "Original file %s has no key" file))
+         (dolist (repo repos)
+           (let* ((table (tlon-counterpart--translation-table-for-repo repo))
+                  (hit (and table (gethash orig-key table))))
+             (when hit (push hit hits))))
+         (pcase (length hits)
+           (1 (car hits))
+           (0 (user-error "No translation found for %s in %s"
+                          (file-name-nondirectory file) target-language-code))
+           (_ (completing-read "Disambiguate translation: " (nreverse hits) nil t)))))
+      ((or "tag" "author")
+       (let* ((orig-base (file-name-nondirectory file))
+              (repos (tlon-counterpart--translation-repos target-language-code))
+              (hits '()))
+         (dolist (repo repos)
+           (let* ((meta (tlon-metadata-in-repo repo))
+                  (all (ignore-errors
+                         (tlon-metadata-lookup-all meta "file" "original_path" orig-base))))
+             (dolist (h all) (push h hits))))
+         (setq hits (delete-dups hits))
+         (pcase (length hits)
+           (1 (car hits))
+           (0 (user-error "No translation found for %s in %s"
+                          (file-name-nondirectory file) target-language-code))
+           (_ (completing-read "Disambiguate translation: " (nreverse hits) nil t)))))
+      (_
+       (user-error "Unsupported YAML type %s for counterpart lookup" yaml-type)))))
 
 (defun tlon-get-counterpart-repo (&optional file)
   "Get the counterpart repo of FILE.
