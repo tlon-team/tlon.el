@@ -75,21 +75,31 @@ Determine the original key to search for as follows:
 Then, search across all repositories registered with `:language' \"en\" and
 `:subtype' `originals', using a per-repo cache that maps original keys to files.
 If exactly one match is found, return its absolute path; if none, return nil; if
-multiple, prompt to disambiguate."
-  (let* ((tr-key (ignore-errors (tlon-yaml-get-key "key" file)))
-	 (orig-key (and tr-key (tlon-get-counterpart-key tr-key)))
-	 (repos (tlon-counterpart--original-repos "en"))
-	 (hits nil))
-    (unless orig-key
-      (user-error "Translation file %s has no usable key" file))
-    (dolist (r repos)
-      (let* ((table (tlon-counterpart--original-table-for-repo r))
-             (hit (and table (gethash orig-key table))))
-        (when hit (push hit hits))))
-    (pcase (length hits)
-      (0 nil)
-      (1 (car hits))
-      (_ (completing-read "Disambiguate original: " (nreverse hits) nil t)))))
+multiple, prompt to disambiguate.
+
+Additionally, if the YAML field `original_path' is present in the translation,
+use it to locate the original without requiring any keys."
+  (let* ((op (ignore-errors (tlon-yaml-get-key "original_path" file)))
+         (orig-from-path
+          (when (and (stringp op) (not (string-empty-p (string-trim op))))
+            (when-let ((dir (tlon-get-counterpart-dir file "en")))
+              (let ((p (file-name-concat dir op)))
+                (when (file-exists-p p) p)))))
+         (tr-key (ignore-errors (tlon-yaml-get-key "key" file)))
+         (orig-key (and tr-key (tlon-get-counterpart-key tr-key)))
+         (repos (tlon-counterpart--original-repos "en"))
+         (hits nil))
+    (or orig-from-path
+        (progn
+          (when orig-key
+            (dolist (r repos)
+              (let* ((table (tlon-counterpart--original-table-for-repo r))
+                     (hit (and table (gethash orig-key table))))
+                (when hit (push hit hits)))))
+          (pcase (length hits)
+            (0 nil)
+            (1 (car hits))
+            (_ (completing-read "Disambiguate original: " (nreverse hits) nil t)))))))
 
 (defun tlon-get-counterpart-in-originals (file &optional target-language-code)
   "Return the translation counterpart of original FILE.
@@ -102,21 +112,37 @@ file’s YAML \"key\" is the translation key and must be mapped to the original
 key via the bibliography.
 
 If exactly one match is found, return its absolute path; if none,
-return nil; if multiple, prompt to disambiguate."
+return nil; if multiple, prompt to disambiguate.
+
+Additionally, first try to locate the translation by matching the
+original's relative path against the `original_path' field recorded
+in translation repo metadata."
   (let* ((target-language-code (or target-language-code (tlon-select-language 'code 'babel)))
-         (orig-key (ignore-errors (tlon-yaml-get-key "key" file)))
+         (original-repo (tlon-get-repo-from-file file))
+         (orig-rel (file-relative-name file original-repo))
          (repos (tlon-counterpart--translation-repos target-language-code))
          (hits nil))
-    (unless orig-key
-      (user-error "Original file %s has no key" file))
+    ;; Preferred: look up by original_path in translation repo metadata.
     (dolist (repo repos)
-      (let* ((table (tlon-counterpart--translation-table-for-repo repo))
-             (hit (and table (gethash orig-key table))))
+      (let ((hit (tlon-metadata-lookup (tlon-metadata-in-repo repo)
+                                       "file" "original_path" orig-rel)))
         (when hit (push hit hits))))
-    (pcase (length hits)
-      (0 nil)
-      (1 (car hits))
-      (_ (completing-read "Disambiguate translation: " (nreverse hits) nil t)))))
+    (cond
+     ((= (length hits) 1) (car hits))
+     ((> (length hits) 1) (completing-read "Disambiguate translation: " (nreverse hits) nil t))
+     (t
+      ;; Fallback: key-based lookup when available.
+      (let* ((orig-key (ignore-errors (tlon-yaml-get-key "key" file)))
+             (hits2 nil))
+        (when orig-key
+          (dolist (repo repos)
+            (let* ((table (tlon-counterpart--translation-table-for-repo repo))
+                   (hit (and table (gethash orig-key table))))
+              (when hit (push hit hits2)))))
+        (pcase (length hits2)
+          (0 nil)
+          (1 (car hits2))
+          (_ (completing-read "Disambiguate translation: " (nreverse hits2) nil t))))))))
 
 (defun tlon-get-counterpart-repo (&optional file)
   "Get the counterpart repo of FILE.
