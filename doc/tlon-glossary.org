@@ -214,8 +214,9 @@ Workflow:
    =SRC-TGT-FILTERED-[basename(FILE)].csv=.
 
 If the AI returns no valid terms, but the deterministic scan found some, the
-command falls back to writing the deterministic filtered glossary. Returned
-terms not present in the candidate list are ignored.
+command falls back to writing the deterministic filtered glossary. If neither AI
+nor the deterministic scan finds any terms, it writes an empty CSV file to your
+downloads directory. Returned terms not present in the candidate list are ignored.
 
 You can trigger it from the ~tlon-glossary-menu~ under “AI Actions → AI Filter
 Glossary”.

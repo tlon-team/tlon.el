@@ -420,7 +420,11 @@ from FILE and prompt for TARGET-LANGUAGE."
               (when seed-terms
                 (tlon--glossary-write-filtered out-path pairs seed-terms)
                 (message "AI failed. Wrote deterministic filtered glossary with %d term(s) to %s"
-                         (length seed-terms) (file-name-nondirectory out-path))))
+                         (length seed-terms) (file-name-nondirectory out-path)))
+              (unless seed-terms
+                (tlon--glossary-write-filtered out-path pairs '())
+                (message "AI failed. Wrote empty filtered glossary to %s"
+                         (file-name-nondirectory out-path))))
           (let* ((lines (seq-uniq (split-string (string-trim response) "\n" t)))
                  (valid (seq-filter (lambda (t) (member t candidate-terms)) lines)))
             (if (null valid)
@@ -429,7 +433,9 @@ from FILE and prompt for TARGET-LANGUAGE."
                       (tlon--glossary-write-filtered out-path pairs seed-terms)
                       (message "AI returned no valid terms. Wrote deterministic filtered glossary with %d term(s) to %s"
                                (length seed-terms) (file-name-nondirectory out-path)))
-                  (message "No relevant terms found by AI or deterministic scan."))
+                  (tlon--glossary-write-filtered out-path pairs '())
+                  (message "No relevant terms found by AI or deterministic scan. Wrote empty filtered glossary to %s"
+                           (file-name-nondirectory out-path)))
               (tlon--glossary-write-filtered out-path pairs valid)
               (message "Wrote AI-filtered glossary with %d term(s) to %s"
                        (length valid) (file-name-nondirectory out-path)))))))
