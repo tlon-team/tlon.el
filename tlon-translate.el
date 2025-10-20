@@ -1102,57 +1102,61 @@ TYPE can be `errors' or `flow'."
                               ('errors tlon-translate-spot-errors-prompt)
                               ('flow tlon-translate-improve-flow-prompt)))
 	   (prompt-elts (delq nil (list prompt-template translation-file (capitalize language))))
-	   (glossary-type 'ai-revision)
-	   (src-code "en")
-	   (glossary-file (when (and (eq type 'flow)
-				     (tlon-extract-glossary src-code lang-code glossary-type))
-			    (tlon-glossary-target-path src-code lang-code glossary-type)))
-	   (glossary-prompt (when glossary-file
-			      (format tlon-translate-glossary-prompt (file-name-nondirectory glossary-file))))
-	   (prompt (concat (apply 'format prompt-elts) glossary-prompt))
-	   (orig-paras  (tlon-with-paragraphs original-file nil nil (eq type 'errors)))
-           (trans-paras (tlon-with-paragraphs translation-file nil nil (eq type 'errors)))
-           (chunk-size  tlon-translate-revise-chunk-size)
-           (total       (length orig-paras))
-           (ranges '())
-	   (restrict tlon-translate-restrict-revision-to-paragraphs)
-           (start-idx (if (and restrict (car restrict))
-                          (max 0 (1- (car restrict)))
-                        0))
-           (end-idx   (if (and restrict (cdr restrict))
-                          (min total (cdr restrict))
-                        total)))
-      (when (>= start-idx end-idx)
-        (user-error "Invalid paragraph range %S" restrict))
-      (let* ((selected-count (- end-idx start-idx))
-             (base-ranges (tlon-translate--build-chunk-ranges selected-count chunk-size)))
-        (setq ranges
-              (mapcar (lambda (pr)
-                        (cons (+ start-idx (car pr))
-                              (+ start-idx (cdr pr))))
-                      base-ranges)))
-      (when ranges
-	(if restrict
-            (tlon-translate--log "\nSending %d revision chunk%s (in range %d–%d) of %s…"
-                                 (length ranges)
-                                 (if (= (length ranges) 1) "" "s")
-                                 (or (car restrict) 1)
-                                 (or (cdr restrict) total)
-				 (file-name-nondirectory translation-file))
-          (tlon-translate--log "\nSending %d revision chunk%s of %s…"
-                               (length ranges)
-                               (if (= (length ranges) 1) "" "s")
-			       (file-name-nondirectory translation-file)))
-	(if (<= (length ranges) tlon-translate-revise-max-parallel)
-	    ;; Few enough chunks → process them all in parallel.
-	    (tlon-translate--revise-parallel
-	     ranges translation-file original-file type prompt model
-	     orig-paras trans-paras restrict glossary-file)
-	  ;; More chunks than the parallel cap → process in parallel *batches*
-	  ;; of `tlon-translate-revise-max-parallel'.
-	  (tlon-translate--revise-parallel-batches
-	   ranges translation-file original-file type prompt model
-	   orig-paras trans-paras restrict glossary-file))))))
+	   (src-code "en"))
+      (cl-labels
+	  ((do-start (glossary-file)
+	     (let* ((glossary-prompt (when glossary-file
+				       (format tlon-translate-glossary-prompt
+					       (file-name-nondirectory glossary-file))))
+		    (prompt (concat (apply 'format prompt-elts) glossary-prompt))
+		    (orig-paras  (tlon-with-paragraphs original-file nil nil (eq type 'errors)))
+		    (trans-paras (tlon-with-paragraphs translation-file nil nil (eq type 'errors)))
+		    (chunk-size  tlon-translate-revise-chunk-size)
+		    (total       (length orig-paras))
+		    (ranges '())
+		    (restrict tlon-translate-restrict-revision-to-paragraphs)
+		    (start-idx (if (and restrict (car restrict))
+				   (max 0 (1- (car restrict)))
+				 0))
+		    (end-idx   (if (and restrict (cdr restrict))
+				   (min total (cdr restrict))
+				 total)))
+	       (when (>= start-idx end-idx)
+		 (user-error "Invalid paragraph range %S" restrict))
+	       (let* ((selected-count (- end-idx start-idx))
+		      (base-ranges (tlon-translate--build-chunk-ranges selected-count chunk-size)))
+		 (setq ranges
+		       (mapcar (lambda (pr)
+				 (cons (+ start-idx (car pr))
+				       (+ start-idx (cdr pr))))
+			       base-ranges)))
+	       (when ranges
+		 (if restrict
+		     (tlon-translate--log "\nSending %d revision chunk%s (in range %d–%d) of %s…"
+					  (length ranges)
+					  (if (= (length ranges) 1) "" "s")
+					  (or (car restrict) 1)
+					  (or (cdr restrict) total)
+					  (file-name-nondirectory translation-file))
+		   (tlon-translate--log "\nSending %d revision chunk%s of %s…"
+					(length ranges)
+					(if (= (length ranges) 1) "" "s")
+					(file-name-nondirectory translation-file)))
+		 (if (<= (length ranges) tlon-translate-revise-max-parallel)
+		     ;; Few enough chunks → process them all in parallel.
+		     (tlon-translate--revise-parallel
+		      ranges translation-file original-file type prompt model
+		      orig-paras trans-paras restrict glossary-file)
+		   ;; More chunks than the parallel cap → process in parallel *batches*
+		   ;; of `tlon-translate-revise-max-parallel'.
+		   (tlon-translate--revise-parallel-batches
+		    ranges translation-file original-file type prompt model
+		    orig-paras trans-paras restrict glossary-file))))))
+	(if (eq type 'flow)
+	    (tlon-translate--ensure-filtered-glossary
+	     src-code lang-code original-file
+	     (lambda (filtered-path) (do-start filtered-path)))
+	  (do-start nil))))))
 
 (defun tlon-translate--build-chunk-ranges (total chunk-size)
   "Build chunk ranges (START . END) for TOTAL items with CHUNK-SIZE."
@@ -1221,6 +1225,39 @@ GLOSSARY-FILE is the glossary file."
                     ;; Batch finished – launch next one.
                     (process rest (+ idx (length batch)))))))))))
     (process ranges 0)))
+
+(declare-function tlon-ai-extract-relevant-glossary "tlon-glossary")
+(declare-function tlon--glossary-filtered-target-path "tlon-glossary")
+(defun tlon-translate--ensure-filtered-glossary (src-lang tgt-lang original-file callback)
+  "Ensure filtered glossary for SRC-LANG→TGT-LANG and ORIGINAL-FILE exists.
+
+If a filtered glossary CSV already exists in `paths-dir-downloads', call
+CALLBACK with its path. Otherwise, generate the full glossary for AI revision,
+request the AI-filtered glossary, and poll until the filtered file appears (or
+timeout), then call CALLBACK with the path (or nil on timeout/failure)."
+  (let* ((filtered (tlon--glossary-filtered-target-path src-lang tgt-lang original-file)))
+    (if (and (stringp filtered) (file-exists-p filtered))
+	(funcall callback filtered)
+      (let ((full (tlon-extract-glossary src-lang tgt-lang 'ai-revision)))
+	(if (not (and (stringp full) (file-exists-p full)))
+	    ;; No full glossary available; proceed without attaching one.
+	    (funcall callback nil)
+	  ;; Ask AI to build the filtered glossary, then poll for it.
+	  (tlon-ai-extract-relevant-glossary full original-file src-lang tgt-lang)
+	  (let ((tries 0)
+		(max-tries 120)) ; ~60s with 0.5s interval
+	    (cl-labels
+		((poll ()
+		   (if (file-exists-p filtered)
+		       (funcall callback filtered)
+		     (if (>= tries max-tries)
+			 (progn
+			   (message "Timed out waiting for filtered glossary: %s"
+				    (file-name-nondirectory filtered))
+			   (funcall callback nil))
+		       (setq tries (1+ tries))
+		       (run-with-timer 0.5 nil #'poll)))))
+	      (poll))))))))
 
 ;;;;;; chunk helpers
 
