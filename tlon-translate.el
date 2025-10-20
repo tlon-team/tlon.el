@@ -1442,7 +1442,8 @@ paragraphs does not match, log a message and still return the parsed list."
 Returns the number of successfully applied replacements.
 Searches sequentially from the beginning of the file to reduce the chance of
 false matches when paragraphs are similar. Falls back to a whitespace-tolerant
-regex match if an exact search fails."
+regex match if an exact search fails. Preserves leading and trailing whitespace
+(including blank lines) from the original paragraph region."
   (let ((applied 0))
     (with-current-buffer (find-file-noselect file)
       (save-excursion
@@ -1458,17 +1459,33 @@ regex match if an exact search fails."
                     (pos
                      (let* ((end pos)
                             (beg (- end (length old))))
-                       (goto-char beg)
-                       (delete-region beg end)
-                       (insert new)
-                       (setq applied (1+ applied))))
+                       (let* ((matched (buffer-substring-no-properties beg end))
+                              (prefix  (progn (string-match "\\`[ \t]*" matched)
+                                              (or (match-string 0 matched) "")))
+                              (suffix  (progn (string-match "[ \t\n\r]*\\'" matched)
+                                              (or (match-string 0 matched) "")))
+                              (to-insert (concat prefix new suffix)))
+                         (goto-char beg)
+                         (delete-region beg end)
+                         (insert to-insert)
+                         (setq applied (1+ applied)))))
                     (t
                      ;; Fallback: whitespace-flexible regex
                      (goto-char (point-min))
                      (let* ((regex (tlon-translate--create-fuzzy-regex old)))
                        (when (re-search-forward regex nil t)
-                         (replace-match new t t)
-                         (setq applied (1+ applied))))))))))
+                         (let* ((mbeg (match-beginning 0))
+                                (mend (match-end 0))
+                                (matched (match-string-no-properties 0))
+                                (prefix  (progn (string-match "\\`[ \t]*" matched)
+                                                (or (match-string 0 matched) "")))
+                                (suffix  (progn (string-match "[ \t\n\r]*\\'" matched)
+                                                (or (match-string 0 matched) "")))
+                                (to-insert (concat prefix new suffix)))
+                           (goto-char mbeg)
+                           (delete-region mbeg mend)
+                           (insert to-insert)
+                           (setq applied (1+ applied)))))))))))
            originals replacements)
           (save-buffer))))
     applied))
