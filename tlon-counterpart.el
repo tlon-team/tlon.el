@@ -86,53 +86,24 @@ does not exist."
 TARGET-LANGUAGE-CODE is the target translation language code. If nil,
 the user may be prompted to select a language.
 
-This searches explicitly across all repos registered with `:language'
-TARGET-LANGUAGE-CODE and `:subtype' `translations'. In all translation repos, a
-file’s YAML \"key\" is the translation key and must be mapped to the original
-key via the bibliography.
-
-If exactly one match is found, return its absolute path; if none,
-return nil; if multiple, prompt to disambiguate.
-
-Additionally, first try to locate the translation by matching the
-original's relative path against the `original_path' field recorded
-in translation repo metadata."
+Search across all translation repos for TARGET-LANGUAGE-CODE whose metadata
+records `original_path' equal to the basename of FILE. If exactly one match is
+found, return it; if none, signal an error; if multiple, prompt to disambiguate."
   (let* ((target-language-code (or target-language-code (tlon-select-language 'code 'babel)))
-         (original-repo (tlon-get-repo-from-file file))
-         (orig-rel (file-relative-name file original-repo))
          (orig-base (file-name-nondirectory file))
          (repos (tlon-counterpart--translation-repos target-language-code))
-         (hits nil))
-    ;; Preferred: look up by original_path in translation repo metadata.
+         (hits '()))
     (dolist (repo repos)
       (let* ((meta (tlon-metadata-in-repo repo))
-             (hit-rel (tlon-metadata-lookup meta "file" "original_path" orig-rel))
-             (hit-base (or hit-rel
-                           (tlon-metadata-lookup meta "file" "original_path" orig-base))))
-        (when hit-base (push hit-base hits))))
+             (all (ignore-errors
+                    (tlon-metadata-lookup-all meta "file" "original_path" orig-base))))
+        (dolist (h all) (push h hits))))
     (setq hits (delete-dups hits))
-    (cond
-     ((= (length hits) 1) (car hits))
-     ((> (length hits) 1) (completing-read "Disambiguate translation: " (nreverse hits) nil t))
-     (t
-      ;; Fallback 1: construct path in counterpart dir using filename only.
-      (let* ((cp-dir (ignore-errors (tlon-get-counterpart-dir file target-language-code)))
-             (guess (and cp-dir (file-name-concat cp-dir (file-name-nondirectory file)))))
-        (cond
-         ((and guess (file-exists-p guess)) guess)
-         (t
-          ;; Fallback 2: key-based lookup when available.
-          (let* ((orig-key (ignore-errors (tlon-yaml-get-key "key" file)))
-                 (hits2 nil))
-            (when orig-key
-              (dolist (repo repos)
-                (let* ((table (tlon-counterpart--translation-table-for-repo repo))
-                       (hit (and table (gethash orig-key table))))
-                  (when hit (push hit hits2)))))
-            (pcase (length hits2)
-              (0 nil)
-              (1 (car hits2))
-              (_ (completing-read "Disambiguate translation: " (nreverse hits2) nil t)))))))))))
+    (pcase (length hits)
+      (1 (car hits))
+      (0 (user-error "No translation found for %s in %s"
+                     (file-name-nondirectory file) target-language-code))
+      (_ (completing-read "Disambiguate translation: " (nreverse hits) nil t)))))
 
 (defun tlon-get-counterpart-repo (&optional file)
   "Get the counterpart repo of FILE.
