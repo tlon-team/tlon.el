@@ -276,6 +276,11 @@
     ;; :type content
     ;; :key "w"
     ;; :help t)
+    (:name "effectivealtruism.org"
+	   :project "other"
+	   :abbrev "effectivealtruism-org"
+	   :type development
+	   :help t)
     (:name "80k-podcast"
 	   :project "other"
 	   :subproject "80k-podcast"
