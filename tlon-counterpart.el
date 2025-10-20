@@ -120,29 +120,39 @@ in translation repo metadata."
   (let* ((target-language-code (or target-language-code (tlon-select-language 'code 'babel)))
          (original-repo (tlon-get-repo-from-file file))
          (orig-rel (file-relative-name file original-repo))
+         (orig-base (file-name-nondirectory file))
          (repos (tlon-counterpart--translation-repos target-language-code))
          (hits nil))
     ;; Preferred: look up by original_path in translation repo metadata.
     (dolist (repo repos)
-      (let ((hit (tlon-metadata-lookup (tlon-metadata-in-repo repo)
-                                       "file" "original_path" orig-rel)))
-        (when hit (push hit hits))))
+      (let* ((meta (tlon-metadata-in-repo repo))
+             (hit-rel (tlon-metadata-lookup meta "file" "original_path" orig-rel))
+             (hit-base (or hit-rel
+                           (tlon-metadata-lookup meta "file" "original_path" orig-base))))
+        (when hit-base (push hit-base hits))))
+    (setq hits (delete-dups hits))
     (cond
      ((= (length hits) 1) (car hits))
      ((> (length hits) 1) (completing-read "Disambiguate translation: " (nreverse hits) nil t))
      (t
-      ;; Fallback: key-based lookup when available.
-      (let* ((orig-key (ignore-errors (tlon-yaml-get-key "key" file)))
-             (hits2 nil))
-        (when orig-key
-          (dolist (repo repos)
-            (let* ((table (tlon-counterpart--translation-table-for-repo repo))
-                   (hit (and table (gethash orig-key table))))
-              (when hit (push hit hits2)))))
-        (pcase (length hits2)
-          (0 nil)
-          (1 (car hits2))
-          (_ (completing-read "Disambiguate translation: " (nreverse hits2) nil t))))))))
+      ;; Fallback 1: construct path in counterpart dir using filename only.
+      (let* ((cp-dir (ignore-errors (tlon-get-counterpart-dir file target-language-code)))
+             (guess (and cp-dir (file-name-concat cp-dir (file-name-nondirectory file)))))
+        (cond
+         ((and guess (file-exists-p guess)) guess)
+         (t
+          ;; Fallback 2: key-based lookup when available.
+          (let* ((orig-key (ignore-errors (tlon-yaml-get-key "key" file)))
+                 (hits2 nil))
+            (when orig-key
+              (dolist (repo repos)
+                (let* ((table (tlon-counterpart--translation-table-for-repo repo))
+                       (hit (and table (gethash orig-key table))))
+                  (when hit (push hit hits2)))))
+            (pcase (length hits2)
+              (0 nil)
+              (1 (car hits2))
+              (_ (completing-read "Disambiguate translation: " (nreverse hits2) nil t))))))))))
 
 (defun tlon-get-counterpart-repo (&optional file)
   "Get the counterpart repo of FILE.
