@@ -146,7 +146,7 @@ message is appended to the buffer named by
   "Prefix for translation revision prompts.")
 
 (defconst tlon-translate-prompt-revise-suffix
-  "Only after you are done comparing the paragraphs and determining all the changes that should be made to the translation, write your changes to \"%1$s\" using the 'edit_file' tool. Only if this tool doesn't work, try the other tools available. Note that the file (\"%1$s\") may include other paragraphs besides those I shared with you; you should only modify the paragraphs that I shared with you, leaving the rest of the file unchanged.\n\nHere are the paragraph pairs:\n\n"
+  "Only after you are done comparing the paragraphs and determining all the changes that should be made to the translation, return ONLY the revised translation paragraph(s) corresponding to what I shared, in the same order, and nothing else. Do not include the original paragraphs. Do not include any explanation, comments, or Markdown code fences. Output plain text only. You must not modify any other parts of the file (\"%1$s\"); only modify the paragraphs I shared with you.\n\nHere are the paragraph pairs:\n\n"
   "Suffix for translation revision prompts.")
 
 (declare-function tlon-md-tag-list "tlon-md")
@@ -1307,9 +1307,13 @@ call after the revision is complete."
          (trans-chunk (cl-subseq trans-paras start end))
          (comparison (tlon-paragraphs--get-comparison-buffer-content
                       translation-file original-file trans-chunk orig-chunk nil))
-         (prompt (tlon-ai-maybe-edit-prompt (concat
-					     prompt-template
-					     comparison)))
+         (prompt (tlon-ai-maybe-edit-prompt
+                  (concat
+                   prompt-template
+                   (format "Please return exactly %d paragraph%s, in the same order, separated by a blank line.\n\n"
+                           (- end start)
+                           (if (= (- end start) 1) "" "s"))
+                   comparison)))
          (single-p (= end (1+ start)))
          (chunk-desc (if single-p
 			 (format "%d" (1+ start))
@@ -1361,10 +1365,120 @@ call after the revision is complete."
       (setq proc
             (tlon-make-gptel-request
              prompt nil
-             (tlon-translate--gptel-callback-simple translation-file type wrapped-after-fn)
-             model 'skip-context-check req-buf tools)))
+             (tlon-translate--gptel-callback-apply-paragraphs translation-file start end trans-chunk type wrapped-after-fn)
+             model 'skip-context-check req-buf nil)))
     (push proc tlon-translate--active-revision-processes)
     proc))
+
+(defun tlon-translate--gptel-callback-apply-paragraphs (translation-file start end originals type after-fn)
+  "Return a gptel callback that applies revised paragraphs to TRANSLATION-FILE.
+START and END are zero-based paragraph indices delimiting the chunk being revised.
+ORIGINALS is the list of original translation paragraphs for this chunk.
+TYPE is the revision type symbol ('errors or 'flow). AFTER-FN is called once
+when processing the response is finished (success or failure)."
+  (let ((expected-count (- end start)))
+    (lambda (response info)
+      (unwind-protect
+          (cond
+           ;; Error path
+           ((or (not response)
+                (plist-get info :error)
+                (let ((st (plist-get info :status)))
+                  (and (numberp st) (>= st 400))))
+            (tlon-ai-callback-fail info))
+           ;; Success path
+           (t
+            (let* ((revised (tlon-translate--split-response-into-paragraphs response expected-count))
+                   (applied (and revised
+                                 (tlon-translate--apply-paragraph-replacements
+                                  translation-file originals revised))))
+              ;; Refresh file buffer if it wasn't manually edited while we wrote it.
+              (run-at-time
+               0 nil
+               (lambda (f)
+                 (when-let ((buf (get-file-buffer f)))
+                   (with-current-buffer buf
+                     (unless (buffer-modified-p)
+                       (revert-buffer :ignore-auto :noconfirm))))) translation-file)
+              ;; Optional post-processing and commit
+              (when (and applied (> applied 0))
+                (when (eq type 'errors)
+                  (condition-case err
+                      (with-current-buffer (or (get-file-buffer translation-file)
+                                               (find-file-noselect translation-file))
+                        (tlon-translate-relative-links))
+                    (error (tlon-translate--log "tlon-translate-relative-links failed: %s"
+                                                (error-message-string err)))))
+                (when tlon-translate-revise-commit-changes
+                  (let ((default-directory (tlon-get-repo-from-file translation-file)))
+                    (magit-stage-files (list translation-file))
+                    (tlon-create-commit
+                     (format (pcase type
+                               ('errors "Check errors in %s (AI)")
+                               ('flow "Improve flow in %s (AI)"))
+                             (tlon-get-key-from-file translation-file))
+                     translation-file)))))))
+        (when (functionp after-fn)
+          (funcall after-fn))))))
+
+(defun tlon-translate--split-response-into-paragraphs (text expected-count)
+  "Split TEXT into paragraphs, trimming and removing code fences.
+Return a list of paragraphs. If EXPECTED-COUNT is non-nil and the number of
+paragraphs does not match, log a message and still return the parsed list."
+  (when (and (stringp text) (> (length (string-trim text)) 0))
+    (let* ((no-fences (replace-regexp-in-string
+                       "^```[[:alnum:]-]*[ \t]*\n\\|^```[ \t]*$\\|\\(^\\|\\)```[ \t]*$" "" text))
+           (parts (mapcar #'string-trim
+                          (split-string no-fences "\n\\{2,\\}" t "[ \t\n\r]+")))
+           (filtered (seq-filter (lambda (s) (> (length s) 0)) parts)))
+      (when (and expected-count (/= (length filtered) expected-count))
+        (tlon-translate--log
+         "Warning: expected %d paragraph%s, but model returned %d. Proceeding with best-effort application."
+         expected-count (if (= expected-count 1) "" "s") (length filtered)))
+      filtered)))
+
+(defun tlon-translate--apply-paragraph-replacements (file originals replacements)
+  "Replace in FILE each of ORIGINALS with the corresponding REPLACEMENTS.
+Returns the number of successfully applied replacements.
+Searches sequentially from the beginning of the file to reduce the chance of
+false matches when paragraphs are similar. Falls back to a whitespace-tolerant
+regex match if an exact search fails."
+  (let ((applied 0))
+    (with-current-buffer (find-file-noselect file)
+      (save-excursion
+        (save-restriction
+          (widen)
+          (goto-char (point-min))
+          (cl-mapc
+           (lambda (old new)
+             (when (and (stringp new) (stringp old))
+               (unless (string= (string-trim old) (string-trim new))
+                 (let ((pos (save-excursion (search-forward old nil t))))
+                   (cond
+                    (pos
+                     (let* ((end pos)
+                            (beg (- end (length old))))
+                       (goto-char beg)
+                       (delete-region beg end)
+                       (insert new)
+                       (setq applied (1+ applied))))
+                    (t
+                     ;; Fallback: whitespace-flexible regex
+                     (goto-char (point-min))
+                     (let* ((regex (tlon-translate--create-fuzzy-regex old)))
+                       (when (re-search-forward regex nil t)
+                         (replace-match new t t)
+                         (setq applied (1+ applied))))))))))
+           originals replacements)
+          (save-buffer))))
+    applied))
+
+(defun tlon-translate--create-fuzzy-regex (string)
+  "Return a regex matching STRING allowing flexible whitespace sections."
+  (let ((escaped (regexp-quote string)))
+    (replace-regexp-in-string "\\\\[ \t\n\r]+"
+                              "[ \t\n\r]+"
+                              escaped)))
 
 (declare-function magit-stage-files "magit-apply")
 (defun tlon-translate--revise-callback (response info file type)
