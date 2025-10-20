@@ -65,41 +65,21 @@ language, unless TARGET-LANGUAGE-CODE is provided."
 (defun tlon-get-counterpart-in-translations (file)
   "Return the original counterpart of translation FILE.
 
-Determine the original key to search for as follows:
-- If FILE is in an Uqbar translation repo, interpret its YAML \"key\"
-  as a translation key and map it to the original key via the
-  bibliography with `tlon-get-counterpart-key'.
-- If FILE is in a non‑Uqbar translation repo, interpret its YAML
-  \"key\" as the original key directly.
-
-Then, search across all repositories registered with `:language' \"en\" and
-`:subtype' `originals', using a per-repo cache that maps original keys to files.
-If exactly one match is found, return its absolute path; if none, return nil; if
-multiple, prompt to disambiguate.
-
-Additionally, if the YAML field `original_path' is present in the translation,
-use it to locate the original without requiring any keys."
-  (let* ((op (ignore-errors (tlon-yaml-get-key "original_path" file)))
-         (orig-from-path
-          (when (and (stringp op) (not (string-empty-p (string-trim op))))
-            (when-let ((dir (tlon-get-counterpart-dir file "en")))
-              (let ((p (file-name-concat dir op)))
-                (when (file-exists-p p) p)))))
-         (tr-key (ignore-errors (tlon-yaml-get-key "key" file)))
-         (orig-key (and tr-key (tlon-get-counterpart-key tr-key)))
-         (repos (tlon-counterpart--original-repos "en"))
-         (hits nil))
-    (or orig-from-path
-        (progn
-          (when orig-key
-            (dolist (r repos)
-              (let* ((table (tlon-counterpart--original-table-for-repo r))
-                     (hit (and table (gethash orig-key table))))
-                (when hit (push hit hits)))))
-          (pcase (length hits)
-            (0 nil)
-            (1 (car hits))
-            (_ (completing-read "Disambiguate original: " (nreverse hits) nil t)))))))
+Require YAML field `original_path' (basename of the English original) and
+resolve it deterministically under the English counterpart directory derived
+from FILE. Signal an error when `original_path' is missing or the resolved file
+does not exist."
+  (let* ((op (tlon-yaml-get-key "original_path" file))
+         (op* (and (stringp op) (string-trim op)))
+         (dir (tlon-get-counterpart-dir file "en")))
+    (unless (and op* (not (string-empty-p op*)))
+      (user-error "Translation file %s is missing required original_path" file))
+    (unless dir
+      (user-error "Could not resolve English counterpart directory for %s" file))
+    (let ((p (file-name-concat dir op*)))
+      (if (file-exists-p p)
+          p
+        (user-error "Original %s does not exist under %s" op* dir)))))
 
 (defun tlon-get-counterpart-in-originals (file &optional target-language-code)
   "Return the translation counterpart of original FILE.
