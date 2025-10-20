@@ -412,26 +412,29 @@ from FILE and prompt for TARGET-LANGUAGE."
              (length candidate-terms) (length seed-terms))
     (tlon-make-gptel-request
      prompt nil
-     (lambda (response info)
-       (if (not response)
-           (progn
-             (tlon-ai-callback-fail info)
-             (when seed-terms
-               (tlon--glossary-write-filtered out-path pairs seed-terms)
-               (message "AI failed. Wrote deterministic filtered glossary with %d term(s) to %s"
-                        (length seed-terms) (file-name-nondirectory out-path))))
-         (let* ((lines (seq-uniq (split-string (string-trim response) "\n" t)))
-                (valid (seq-filter (lambda (t) (member t candidate-terms)) lines)))
-           (if (null valid)
-               (if seed-terms
-                   (progn
-                     (tlon--glossary-write-filtered out-path pairs seed-terms)
-                     (message "AI returned no valid terms. Wrote deterministic filtered glossary with %d term(s) to %s"
-                              (length seed-terms) (file-name-nondirectory out-path)))
-                 (message "No relevant terms found by AI or deterministic scan."))
-             (tlon--glossary-write-filtered out-path pairs valid)
-             (message "Wrote AI-filtered glossary with %d term(s) to %s"
-                      (length valid) (file-name-nondirectory out-path)))))))
+     (tlon-ai--wrap-plain-text-callback
+      (lambda (response info)
+        (if (not response)
+            (progn
+              (tlon-ai-callback-fail info)
+              (when seed-terms
+                (tlon--glossary-write-filtered out-path pairs seed-terms)
+                (message "AI failed. Wrote deterministic filtered glossary with %d term(s) to %s"
+                         (length seed-terms) (file-name-nondirectory out-path))))
+          (let* ((lines (seq-uniq (split-string (string-trim response) "\n" t)))
+                 (valid (seq-filter (lambda (t) (member t candidate-terms)) lines)))
+            (if (null valid)
+                (if seed-terms
+                    (progn
+                      (tlon--glossary-write-filtered out-path pairs seed-terms)
+                      (message "AI returned no valid terms. Wrote deterministic filtered glossary with %d term(s) to %s"
+                               (length seed-terms) (file-name-nondirectory out-path)))
+                  (message "No relevant terms found by AI or deterministic scan."))
+              (tlon--glossary-write-filtered out-path pairs valid)
+              (message "Wrote AI-filtered glossary with %d term(s) to %s"
+                       (length valid) (file-name-nondirectory out-path)))))))
+     tlon-ai-glossary-model
+     'no-context-check)
     out-path))
 
 (defun tlon--glossary-read-csv-pairs (file)
