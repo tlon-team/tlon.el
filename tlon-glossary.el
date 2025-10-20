@@ -362,6 +362,125 @@ response file."
   (message "AI verification/cleaning step failed. Raw response kept at: %s" raw-response-file)
   (tlon-ai-callback-fail info))
 
+;;;;; AI Glossary Filtering
+
+(defconst tlon-ai-filter-glossary-prompt
+  "You will receive (1) the full text of a source document in %s and (2) a \
+list of candidate glossary terms (one per line).\n\nYour task is to return \
+only the subset of candidate terms that are relevant to the document.\n\nA \
+term is relevant if the exact term appears in the document (case-insensitive) \
+or if a very obvious inflectional or spacing/hyphenation variant appears \
+(e.g., plural/singular, capitalization, hyphen vs. space). Do not include \
+synonyms or paraphrases that are not in the candidate list.\n\nReturn only the \
+selected terms, one per line, exactly as they appear in the candidate list. Do \
+not add explanations, numbering, bullet points, or any other formatting.\n\n\
+Document:%sCandidate terms:%s"
+  "Prompt for filtering a glossary to terms relevant to a specific document.")
+
+;;;###autoload
+(defun tlon-ai-extract-relevant-glossary (full-glossary file &optional source-language target-language)
+  "Create a filtered glossary CSV for FILE using FULL-GLOSSARY.
+
+FULL-GLOSSARY is a CSV with at least two columns: Source, Target. FILE is a
+source-language file (normally English). The command asks an AI model to select
+only the source terms relevant to FILE and writes a filtered two-column CSV
+(Source, Target) to the downloads directory.
+
+When SOURCE-LANGUAGE or TARGET-LANGUAGE are nil, try to infer SOURCE-LANGUAGE
+from FILE and prompt for TARGET-LANGUAGE."
+  (interactive
+   (list (read-file-name "Full glossary CSV: " paths-dir-downloads nil t)
+         (read-file-name "Source document file: " nil nil t (buffer-file-name))))
+  (let* ((src-lang (or source-language
+                       (tlon-get-language-in-file file)
+                       (tlon-select-language 'code 'babel "Source language code: ")))
+         (tgt-lang (or target-language
+                       (tlon-select-language 'code 'babel "Target language code: ")))
+         (doc-text (tlon-get-string-dwim file))
+         (pairs (tlon--glossary-read-csv-pairs full-glossary))
+         (candidate-terms (mapcar #'car pairs))
+         (seed-terms (tlon--glossary-terms-present doc-text candidate-terms))
+         (doc-wrapped (format tlon-ai-string-wrapper doc-text))
+         (cands-wrapped (format tlon-ai-string-wrapper
+                                (mapconcat #'identity candidate-terms "\n")))
+         (prompt (format tlon-ai-filter-glossary-prompt
+                         (tlon-lookup tlon-languages-properties :standard :code src-lang)
+                         doc-wrapped cands-wrapped))
+         (out-path (tlon--glossary-filtered-target-path src-lang tgt-lang file)))
+    (message "Filtering glossary with AI for %s → %s (candidates: %d, seeds: %d)..."
+             (upcase src-lang) (upcase tgt-lang)
+             (length candidate-terms) (length seed-terms))
+    (tlon-make-gptel-request
+     prompt nil
+     (lambda (response info)
+       (if (not response)
+           (progn
+             (tlon-ai-callback-fail info)
+             (when seed-terms
+               (tlon--glossary-write-filtered out-path pairs seed-terms)
+               (message "AI failed. Wrote deterministic filtered glossary with %d term(s) to %s"
+                        (length seed-terms) (file-name-nondirectory out-path))))
+         (let* ((lines (seq-uniq (split-string (string-trim response) "\n" t)))
+                (valid (seq-filter (lambda (t) (member t candidate-terms)) lines)))
+           (if (null valid)
+               (if seed-terms
+                   (progn
+                     (tlon--glossary-write-filtered out-path pairs seed-terms)
+                     (message "AI returned no valid terms. Wrote deterministic filtered glossary with %d term(s) to %s"
+                              (length seed-terms) (file-name-nondirectory out-path)))
+                 (message "No relevant terms found by AI or deterministic scan."))
+             (tlon--glossary-write-filtered out-path pairs valid)
+             (message "Wrote AI-filtered glossary with %d term(s) to %s"
+                      (length valid) (file-name-nondirectory out-path)))))))
+    out-path))
+
+(defun tlon--glossary-read-csv-pairs (file)
+  "Return a list of (SOURCE . TARGET) pairs parsed from CSV FILE.
+Assumes the first two fields are source and target, quoted with double quotes.
+Unescapes doubled quotes inside fields. Skips empty or malformed lines."
+  (with-temp-buffer
+    (insert-file-contents file)
+    (goto-char (point-min))
+    (let (pairs)
+      (while (not (eobp))
+        (let ((line (buffer-substring-no-properties
+                     (line-beginning-position) (line-end-position))))
+          (pcase line
+            ((and (pred (string-match-p "^\\s-*$")) _) nil)
+            (_
+             (when (string-match "^\"\\([^\"]*\\)\"\\s-*,\\s-*\"\\([^\"]*\\)\"" line)
+               (let* ((src (replace-regexp-in-string "\"\"" "\"" (match-string 1 line) t t))
+                      (tgt (replace-regexp-in-string "\"\"" "\"" (match-string 2 line) t t)))
+                 (push (cons src tgt) pairs))))))
+        (forward-line 1))
+      (nreverse pairs))))
+
+(defun tlon--glossary-terms-present (text terms)
+  "Return TERMS that are present in TEXT with simple heuristics.
+Case-insensitive. Matches whole words around the escaped term."
+  (let ((case-fold-search t))
+    (cl-loop for term in terms
+             for rx = (concat "\\b" (regexp-quote term) "\\b")
+             when (string-match-p rx text)
+             collect term)))
+
+(defun tlon--glossary-write-filtered (out-path pairs selected-terms)
+  "Write a two-column CSV to OUT-PATH for SELECTED-TERMS using PAIRS.
+PAIRS is an alist of (SOURCE . TARGET). SELECTED-TERMS is a list of source terms."
+  (let* ((table (make-hash-table :test 'equal)))
+    (dolist (p pairs) (puthash (car p) (cdr p) table))
+    (with-temp-file out-path
+      (dolist (src selected-terms)
+        (let ((tgt (or (gethash src table) "")))
+          (insert (tlon--glossary-make-csv-row (list src tgt))))))))
+
+(defun tlon--glossary-filtered-target-path (src-lang tgt-lang file)
+  "Return target path for filtered glossary for SRC-LANG→TGT-LANG and FILE."
+  (file-name-concat
+   paths-dir-downloads
+   (format "%s-%s-FILTERED-%s.csv"
+           (upcase src-lang) (upcase tgt-lang) (file-name-base file))))
+
 ;;;;; Extraction
 
 ;;;###autoload
@@ -577,6 +696,7 @@ If nil, use the default model."
     ("s" "Share glossary"          tlon-share-glossary)]
    ["AI Actions"
     ("a" "AI Create Language"    tlon-ai-create-glossary-language)
+    ("g" "AI Filter Glossary"    tlon-ai-extract-relevant-glossary)
     ""
     "Models"
     ("m -g" "Glossary generation" tlon-ai-infix-select-glossary-model)

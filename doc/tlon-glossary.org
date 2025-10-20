@@ -186,6 +186,40 @@ The command ~tlon-ai-create-glossary-language~ uses an AI model to generate tran
     - On success, it deletes the temporary raw response file saved earlier.
     - If any step fails (AI error in either step, invalid format in verified response), it reports an error, logs the relevant AI response, and leaves the temporary raw response file in the downloads directory for inspection.
 
+*** AI Filter Glossary
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ai-extract-relevant-glossary
+:END:
+#+findex: tlon-ai-extract-relevant-glossary
+The command ~tlon-ai-extract-relevant-glossary~ builds a minimal glossary
+tailored to a specific source document. It takes:
+
+- =FULL-GLOSSARY=: a CSV with at least two columns, Source and Target (as
+  produced by =tlon-extract-glossary= for =human= or =ai-revision=).
+- =FILE=: a file in the source language (normally English), i.e., the source
+  text of the translation to be revised.
+
+Workflow:
+
+1. It parses the CSV to obtain (Source . Target) pairs.
+2. It reads the plain content of =FILE= (for Markdown files, YAML/front matter
+   is ignored).
+3. It performs a quick deterministic scan to seed likely matches (terms that
+   appear verbatim in the document, case-insensitively).
+4. It sends the document text and the list of candidate source terms to an AI
+   model (~tlon-ai-glossary-model~), asking it to return only the relevant
+   source terms (one per line).
+5. It maps the returned source terms back to their target translations and
+   writes a two-column CSV (Source, Target) to your downloads directory as:
+   =SRC-TGT-FILTERED-[basename(FILE)].csv=.
+
+If the AI returns no valid terms, but the deterministic scan found some, the
+command falls back to writing the deterministic filtered glossary. Returned
+terms not present in the candidate list are ignored.
+
+You can trigger it from the ~tlon-glossary-menu~ under “AI Actions → AI Filter
+Glossary”.
+
 ** Internal Functions and Variables
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-glossary-internals
