@@ -152,7 +152,7 @@ in translation repo metadata."
             (pcase (length hits2)
               (0 nil)
               (1 (car hits2))
-              (_ (completing-read "Disambiguate translation: " (nreverse hits2) nil t))))))))))
+              (_ (completing-read "Disambiguate translation: " (nreverse hits2) nil t)))))))))))
 
 (defun tlon-get-counterpart-repo (&optional file)
   "Get the counterpart repo of FILE.
