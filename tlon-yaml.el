@@ -1354,15 +1354,15 @@ With a prefix argument, prompt for DIR."
              dir)))
 
 ;;;###autoload
-(defun tlon-yaml-lowercase-fr-tag-titles (&optional dir)
+(defun tlon-yaml-lowercase-it-tag-titles (&optional dir)
   "Lowercase only the first word of the YAML title field for al files in DIR.
 When DIR is nil, default to
-\"/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-fr/sujets\".
+\"/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-it/soggetti\".
 Operate recursively and only update files whose title changes. This is
 a temporary clean-up helper."
   (interactive)
   (let* ((dir (file-name-as-directory
-               (or dir "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-fr/sujets")))
+               (or dir "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-it/soggetti")))
          (files (directory-files-recursively dir "\\.md\\'"))
          (updated 0)
          (skipped 0))
