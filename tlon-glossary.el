@@ -90,7 +90,7 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
          (source-lang (tlon-select-language 'code 'babel "Source language for term: "))
          (source-terms (tlon-get-terms glossary source-lang))
          (input-term (completing-read "Choose or add a term: " source-terms nil nil ""))
-         (matched-term (seq-find (lambda (t) (string-equal input-term t)) source-terms))
+         (matched-term (and (member input-term source-terms) input-term))
          term-to-use
          entry-to-save)
     (if matched-term
@@ -404,7 +404,8 @@ RECIPIENT can be `human', `deepl-editor', `deepl-api', `ai-revision' or `sieve'.
 
 ;;;###autoload
 (defun tlon-glossary-target-path (source-language target-language recipient)
-  "Return the target path for a glossary from SOURCE-LANGUAGE to TARGET-LANGUAGE."
+  "Return the target path for a glossary from SOURCE-LANGUAGE to TARGET-LANGUAGE.
+The file extension is chosen based on RECIPIENT."
   (let ((target-extension (pcase recipient
                             ((or 'human 'deepl-editor 'ai-revision) "csv")
                             ('deepl-api "tsv")
@@ -417,7 +418,7 @@ RECIPIENT can be `human', `deepl-editor', `deepl-api', `ai-revision' or `sieve'.
                     (format "%s-%s.%s" (upcase source-language) (upcase target-language) extension)))
 
 (defun tlon-insert-formatted-glossary (json source-language target-language recipient)
-  "Insert a formatted glossary from JSON data for SOURCE-LANGUAGE → TARGET-LANGUAGE.
+  "Insert a glossary from JSON data for SOURCE-LANGUAGE → TARGET-LANGUAGE.
 Format depends on RECIPIENT: `human'/`deepl-editor' CSV, `deepl-api' TSV,
 `sieve' JSON."
   (let* ((src-key (intern source-language))
