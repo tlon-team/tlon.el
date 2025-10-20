@@ -370,7 +370,7 @@ and AFTER-FN."
     (tlon-translate--finalize-written-translation source-file target-file after-fn)))
 
 (defun tlon-translate--finalize-written-translation (source-file target-file after-fn)
-  "Finalize steps after writing TARGET-FILE translated from SOURCE-FILE.
+  "Finalize step after writing TARGET-FILE translated from SOURCE-FILE.
 If AFTER-FN is non-nil and the file type can be determined, call it."
   (message "Translated %s to %s" source-file target-file)
   (condition-case err
@@ -1442,7 +1442,7 @@ Returns the number of successfully applied replacements. Searches sequentially
 from the beginning of the file to reduce the chance of false matches when
 paragraphs are similar. Falls back to a whitespace-tolerant regex match if an
 exact search fails. Preserves leading and trailing whitespace
-(including blank lines) from the original paragraph region."
+\\=(including blank lines) from the original paragraph region."
   (let ((applied 0))
     (with-current-buffer (find-file-noselect file)
       (save-excursion
