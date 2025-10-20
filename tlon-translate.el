@@ -1175,8 +1175,7 @@ revision to specific areas. GLOSSARY-FILE is the glossary file"
 	   for idx from 0
 	   do (tlon-translate--revise-send-range
 	       r translation-file original-file type
-	       prompt model tlon-translate-revise-tools
-	       orig-paras trans-paras restrict glossary-file))
+	       prompt model orig-paras trans-paras restrict glossary-file))
   (tlon-translate--message-revise-request translation-file ranges t))
 
 (defun tlon-translate--message-revise-request (translation-file ranges parallel-p)
@@ -1215,7 +1214,7 @@ GLOSSARY-FILE is the glossary file."
              (dolist (r batch)
                (tlon-translate--revise-send-range
                 r translation-file original-file type prompt model
-                tlon-translate-revise-tools orig-paras trans-paras restrict glossary-file
+                orig-paras trans-paras restrict glossary-file
                 (lambda ()
                   (setq pending (1- pending))
                   (when (= pending 0)
@@ -1287,7 +1286,7 @@ This catches stubborn leftovers left behind by `clone-indirect-buffer'."
 
 (defun tlon-translate--revise-send-range
     (range translation-file original-file type prompt-template model
-           tools orig-paras trans-paras restrict glossary-file &optional after-fn)
+           orig-paras trans-paras restrict glossary-file &optional after-fn)
   "Send an AI revision request for a single paragraph RANGE.
 RANGE is a cons cell (START . END) specifying the paragraph range to revise. IDX
 is the chunk index and is only used for debugging/logging. TRANSLATION-FILE is
@@ -1372,10 +1371,10 @@ call after the revision is complete."
 
 (defun tlon-translate--gptel-callback-apply-paragraphs (translation-file start end originals type after-fn)
   "Return a gptel callback that applies revised paragraphs to TRANSLATION-FILE.
-START and END are zero-based paragraph indices delimiting the chunk being revised.
-ORIGINALS is the list of original translation paragraphs for this chunk.
-TYPE is the revision type symbol ('errors or 'flow). AFTER-FN is called once
-when processing the response is finished (success or failure)."
+START and END are zero-based paragraph indices delimiting the chunk being
+revised. ORIGINALS is the list of original translation paragraphs for this
+chunk. TYPE is the revision type symbol ('errors or 'flow). AFTER-FN is called
+once when processing the response is finished (success or failure)."
   (let ((expected-count (- end start)))
     (lambda (response info)
       (unwind-protect
@@ -1439,10 +1438,10 @@ paragraphs does not match, log a message and still return the parsed list."
 
 (defun tlon-translate--apply-paragraph-replacements (file originals replacements)
   "Replace in FILE each of ORIGINALS with the corresponding REPLACEMENTS.
-Returns the number of successfully applied replacements.
-Searches sequentially from the beginning of the file to reduce the chance of
-false matches when paragraphs are similar. Falls back to a whitespace-tolerant
-regex match if an exact search fails. Preserves leading and trailing whitespace
+Returns the number of successfully applied replacements. Searches sequentially
+from the beginning of the file to reduce the chance of false matches when
+paragraphs are similar. Falls back to a whitespace-tolerant regex match if an
+exact search fails. Preserves leading and trailing whitespace
 (including blank lines) from the original paragraph region."
   (let ((applied 0))
     (with-current-buffer (find-file-noselect file)
