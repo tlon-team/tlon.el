@@ -1370,10 +1370,10 @@ call after the revision is complete."
     proc))
 
 (defun tlon-translate--gptel-callback-apply-paragraphs (translation-file start end originals type after-fn)
-  "Return a gptel callback that applies revised paragraphs to TRANSLATION-FILE.
+  "Return a gptel callback to apply the revised paragraphs to TRANSLATION-FILE.
 START and END are zero-based paragraph indices delimiting the chunk being
 revised. ORIGINALS is the list of original translation paragraphs for this
-chunk. TYPE is the revision type symbol ('errors or 'flow). AFTER-FN is called
+chunk. TYPE is the revision type symbol (`errors' or `flow'). AFTER-FN is called
 once when processing the response is finished (success or failure)."
   (let ((expected-count (- end start)))
     (lambda (response info)
