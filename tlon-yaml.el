@@ -1383,7 +1383,7 @@ a temporary clean-up helper."
                                  (eq (aref trim 0) ?\")
                                  (eq (aref trim (1- (length trim))) ?\")))
                          (core (if q (substring trim 1 -1) trim))
-                         (pos (string-match "[ \t]" core))
+                         (pos (save-match-data (string-match "[ \t]" core)))
                          (first (if pos (substring core 0 pos) core))
                          (rest (if pos (substring core pos) ""))
                          (new-core (concat (downcase first) rest)))
