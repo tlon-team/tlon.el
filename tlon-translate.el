@@ -1102,7 +1102,8 @@ TYPE can be `errors' or `flow'."
                               ('errors tlon-translate-spot-errors-prompt)
                               ('flow tlon-translate-improve-flow-prompt)))
 	   (prompt-elts (delq nil (list prompt-template translation-file (capitalize language))))
-	   (src-code "en"))
+	   (src-code "en")
+           (range tlon-translate-restrict-revision-to-paragraphs))
       (cl-labels
 	  ((do-start (glossary-file)
 	     (let* ((glossary-prompt (when glossary-file
@@ -1114,7 +1115,7 @@ TYPE can be `errors' or `flow'."
 		    (chunk-size  tlon-translate-revise-chunk-size)
 		    (total       (length orig-paras))
 		    (ranges '())
-		    (restrict tlon-translate-restrict-revision-to-paragraphs)
+		    (restrict range)
 		    (start-idx (if (and restrict (car restrict))
 				   (max 0 (1- (car restrict)))
 				 0))
