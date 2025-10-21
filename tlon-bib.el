@@ -709,6 +709,46 @@ If FILE is nil, use the file visited by the current buffer."
 	      (concat "https://" url))
 	    missing-urls-simple)))
 
+(declare-function simple-extras-slugify "simple-extras")
+
+;;;###autoload
+(defun tlon-bib-populate-url-field ()
+  "Populate the `url' field of the BibTeX entry at point.
+Build the URL as BASE/PATH/SLUG where:
+- BASE is (tlon-repo-lookup :url :subproject \"uqbar\" :language LANG)
+- PATH is (tlon-lookup tlon-core-bare-dirs LANG \"en\" \"articles\")
+- SLUG is (simple-extras-slugify (TITLE))
+
+LANG is the two-letter language code derived from the entry's `langid' field."
+  (interactive)
+  (tlon-ensure-bib)
+  (cl-destructuring-bind (get-field set-field)
+      (pcase major-mode
+	('ebib-entry-mode '(ebib-extras-get-field ebib-extras-set-field))
+	('bibtex-mode '(bibtex-extras-get-field bibtex-set-field))
+	(_ (user-error "Not in a BibTeX-related mode")))
+    (let* ((lang-name (funcall get-field "langid"))
+	   (_ (unless lang-name (user-error "Entry has no langid field")))
+	   (lang (tlon-lookup tlon-languages-properties :code :name lang-name))
+	   (_ (unless lang (user-error "Could not determine language code for %s" lang-name)))
+	   (title (funcall get-field "title"))
+	   (_ (unless title (user-error "Entry has no title field")))
+	   (slug (simple-extras-slugify (tlon-bib-remove-braces title)))
+	   (base (tlon-repo-lookup :url :subproject "uqbar" :language lang))
+	   (_ (unless base (user-error "Could not determine base URL for language %s" lang)))
+	   (path (tlon-lookup tlon-core-bare-dirs lang "en" "articles"))
+	   (_ (unless path (user-error "Could not determine path for language %s" lang)))
+	   (url (mapconcat #'identity
+			   (list (string-remove-suffix "/" base)
+				 (string-trim path "/")
+				 slug)
+			   "/")))
+      (when (funcall get-field "url")
+	(unless (y-or-n-p "Entry already has a url. Overwrite? ")
+	  (user-error "Aborted")))
+      (funcall set-field "url" url)
+      (message "Set url of `%s' to %s." (tlon-get-key-at-point) url))))
+
 ;;;;; Translation
 
 (declare-function ebib-extras-set-field "ebib-extras")
@@ -1624,7 +1664,8 @@ If nil, use the default model."
     ("m -a" "Add missing citations"                  tlon-bib-infix-select-add-missing-citations-model)]
    ["Ebib"
     ("e a" "Fetch abstract"                          tlon-fetch-and-set-abstract)
-    ("e c" "Create translation entry"                tlon-create-bibtex-translation)]
+    ("e c" "Create translation entry"                tlon-create-bibtex-translation)
+    ("e u" "Populate URL"                            tlon-bib-populate-url-field)]
    ["BibTeX"
     "Report"
     ("b g" "Generate"                                tlon-bib-entries-report)
