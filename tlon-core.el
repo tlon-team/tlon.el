@@ -151,7 +151,7 @@
 	   :subtype translations
 	   :language "ar"
 	   :key "q a"
-	   :url ""
+	   :url "https://ihsanfaal.org"
 	   :help t)
     (:name "uqbar-en"
 	   :project "babel"
@@ -180,7 +180,7 @@
 	   :subtype translations
 	   :language "fr"
 	   :key "q f"
-	   :url ""
+	   :url "https://altruismeefficace.net"
 	   :help t)
     (:name "uqbar-it"
 	   :project "babel"
@@ -190,7 +190,7 @@
 	   :subtype translations
 	   :language "it"
 	   :key "q t"
-	   :url ""
+	   :url "https://altruismoefficace.net"
 	   :help t)
     (:name "uqbar-ko"
 	   :project "babel"
@@ -200,7 +200,7 @@
 	   :subtype translations
 	   :language "ko"
 	   :key "q k"
-	   :url ""
+	   :url "eakorea.org"
 	   :help t)
     (:name "uqbar-ja"
 	   :project "babel"
@@ -229,7 +229,7 @@
 	   :subtype translations
 	   :language "tr"
 	   :key "q u"
-	   :url ""
+	   :url "https://efektifaltruizm.org"
 	   :help t)
     (:name "web-server"
 	   :project "tlon"
