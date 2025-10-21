@@ -815,10 +815,11 @@ Fields set in the new entry:
 - langid: target language (standard name, not the code).
 - title / abstract: translated with DeepL.
 - author: copied from the original entry.
-- journaltitle / url: looked-up in `tlon-site-data'.
+- journaltitle: looked-up in `tlon-site-data'.
 - translation: key of the original entry.
 - date: current date (YYYY-MM-DD).
-- timestamp: not inserted (let tools add it later)."
+- timestamp: not inserted (let tools add it later).
+- url: populated with `tlon-bib-populate-url-field'."
   (interactive)
   (tlon-ensure-bib)
   (let* ((target-code (tlon-select-language 'code 'babel))
@@ -827,8 +828,6 @@ Fields set in the new entry:
 	 (orig-key    (tlon-get-key-at-point))
 	 ;; Site information remains language–specific
 	 (site-name   (tlon-lookup tlon-site-data :name :language target-code))
-	 ;; Get the original URL by looking it up in the bibliography
-	 (original-url (tlon-bibliography-lookup "=key=" orig-key "url"))
 	 (get-field   (if mode-ebib #'ebib-extras-get-field #'bibtex-extras-get-field))
 	 (entry-type
 	  (or (funcall get-field "=type=")
@@ -861,8 +860,7 @@ Fields set in the new entry:
 		  ("journaltitle" . ,site-name)
 		  ("translation" . ,orig-key)
 		  ("abstract"    . ,trans-abs)
-		  ("date"        . ,date-now)
-		  ("url"         . ,original-url)))
+		  ("date"        . ,date-now)))
 	  (ebib-extras-set-field "=type=" entry-type)
 	  (message "Created translation entry %s in Ebib." new-key))
       ;; -------- BIBTeX --------
@@ -881,13 +879,13 @@ Fields set in the new entry:
 		   ("journaltitle". ,site-name)
 		   ("translation" . ,orig-key)
 		   ("abstract"    . ,trans-abs)
-		   ("date"        . ,date-now)
-		   ("url"         . ,original-url)))
+		   ("date"        . ,date-now)))
 	  (insert (format "\t%s = {%s},\n" (car field) (cdr field))))
 	;; close entry
 	(insert "}\n")
-	(bibtex-clean-entry))
-      (message "Inserted translation entry %s." new-key))))
+	(bibtex-clean-entry)))
+    (tlon-bib-populate-url-field)
+    (message "Inserted translation entry %s." new-key)))
 
 (defun tlon-bib--translate-string (string source-lang target-lang)
   "Synchronously translate STRING from SOURCE-LANG to TARGET-LANG with DeepL.
