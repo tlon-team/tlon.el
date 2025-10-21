@@ -1715,7 +1715,7 @@ If nil, use the default model."
     ("e a" "Fetch abstract"                          tlon-fetch-and-set-abstract)
     ("e c" "Create translation entry"                tlon-create-bibtex-translation)
     ("e u" "Populate URL"                            tlon-bib-populate-url-field)
-    ("e U" "Populate URL in language"                tlon-bib-populate-url-fields-in-language)]
+    ("e U" "Populate URL in dir"                     tlon-bib-populate-url-fields-in-language)]
    ["BibTeX"
     "Report"
     ("b g" "Generate"                                tlon-bib-entries-report)
