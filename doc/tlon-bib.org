@@ -191,6 +191,13 @@ This section details the interactive commands provided by =tlon-bib.el=.
   4. Saves the URLs the user wants to add to the file specified by =zotra-extras-add-multiple-urls-from-file= using =files-extras-list-to-lines=.
   5. Messages the user about the saved file and the next step (using =zotra-extras-add-multiple-urls=).
 
+#+findex: tlon-bib-populate-url-field
++ ~tlon-bib-populate-url-field~ :: Populates the =url= field for the BibTeX entry at point by constructing it from:
+  1. Base URL: ~(tlon-repo-lookup :url :subproject "uqbar" :language LANG)~.
+  2. Path: ~(tlon-lookup tlon-core-bare-dirs LANG "en" "articles")~.
+  3. Slug: ~(simple-extras-slugify (ebib-extras-get-field "title"))~.
+  Here, =LANG= is obtained as ~(tlon-lookup tlon-languages-properties :code :name (ebib-extras-get-field "langid"))~. If the entry already has a =url=, the command prompts to confirm overwriting before setting the new value.
+
 *** Translation Entry Creation
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-bib-translation-entry-commands
