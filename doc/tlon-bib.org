@@ -198,6 +198,15 @@ This section details the interactive commands provided by =tlon-bib.el=.
   3. Slug: ~(simple-extras-slugify (ebib-extras-get-field "title"))~.
   Here, =LANG= is obtained as ~(tlon-lookup tlon-languages-properties :code :name (ebib-extras-get-field "langid"))~. If the entry already has a =url=, the command prompts to confirm overwriting before setting the new value.
 
+#+findex: tlon-bib-populate-url-fields-in-language
++ ~tlon-bib-populate-url-fields-in-language~ :: Populates the =url= field for all BibTeX entries in the language of the entry at point.
+  1. Determines =LANG= from the current entry’s =langid=.
+  2. Builds the articles directory as:
+     =(file-name-concat (tlon-repo-lookup :dir :subproject "uqbar" :language LANG)
+                        (tlon-lookup tlon-core-bare-dirs LANG "en" "articles"))=.
+  3. Collects all Markdown files in that directory with ~tlon-yaml-get-filenames-in-dir~ and reads their =key= via ~(tlon-yaml-get-key "key" FILE)~.
+  4. For each collected BibTeX key whose =url= field is empty or missing, jumps to the entry and calls ~tlon-bib-populate-url-field~.
+
 *** Translation Entry Creation
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-bib-translation-entry-commands

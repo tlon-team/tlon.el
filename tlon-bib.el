@@ -749,6 +749,55 @@ LANG is the two-letter language code derived from the entry's `langid' field."
       (funcall set-field "url" url)
       (message "Set url of `%s' to %s." (tlon-get-key-at-point) url))))
 
+(declare-function tlon-yaml-get-filenames-in-dir "tlon-yaml")
+(declare-function tlon-yaml-get-key "tlon-yaml")
+
+;;;###autoload
+(defun tlon-bib-populate-url-fields-in-language ()
+  "Populate the `url' field for all entries in the language at point.
+Determine LANG from the current entry's `langid', collect all article files in
+the corresponding site directory, read their `key' from YAML front matter, and
+for each matching BibTeX entry with a missing/empty `url', call
+`tlon-bib-populate-url-field'."
+  (interactive)
+  (tlon-ensure-bib)
+  (cl-destructuring-bind (get-field _set-field)
+      (pcase major-mode
+	('ebib-entry-mode '(ebib-extras-get-field nil))
+	('bibtex-mode '(bibtex-extras-get-field nil))
+	(_ (user-error "Not in a BibTeX-related mode")))
+    (let* ((lang-name (funcall get-field "langid"))
+	   (_ (unless lang-name (user-error "Entry has no langid field")))
+	   (lang (tlon-lookup tlon-languages-properties :code :name lang-name))
+	   (_ (unless lang (user-error "Could not determine language code for %s" lang-name)))
+	   (repo-dir (tlon-repo-lookup :dir :subproject "uqbar" :language lang))
+	   (_ (unless repo-dir (user-error "Could not determine repository directory for %s" lang)))
+	   (path (tlon-lookup tlon-core-bare-dirs lang "en" "articles"))
+	   (_ (unless path (user-error "Could not determine path for language %s" lang)))
+	   (articles-dir (file-name-concat repo-dir path))
+	   (files (tlon-yaml-get-filenames-in-dir articles-dir "md"))
+	   (keys (delete-dups (delq nil (mapcar (lambda (f) (tlon-yaml-get-key "key" f)) files))))
+	   (updated 0)
+	   (skipped 0)
+	   (missing 0))
+      (dolist (key keys)
+	(condition-case err
+	    (progn
+	      (citar-extras-goto-bibtex-entry key)
+	      (bibtex-narrow-to-entry)
+	      (let ((url (bibtex-extras-get-field "url")))
+		(if (and url (not (string-empty-p (string-trim url))))
+		    (cl-incf skipped)
+		  (tlon-bib-populate-url-field)
+		  (cl-incf updated)))
+	      (widen)
+	      (when (buffer-modified-p) (save-buffer)))
+	  (error
+	   (cl-incf missing)
+	   (message "Could not process key %s: %s" key (error-message-string err)))))
+      (message "Populate URLs (%s): %d updated, %d skipped (had url), %d not found"
+	       lang updated skipped missing))))
+
 ;;;;; Translation
 
 (declare-function ebib-extras-set-field "ebib-extras")
@@ -1665,7 +1714,8 @@ If nil, use the default model."
    ["Ebib"
     ("e a" "Fetch abstract"                          tlon-fetch-and-set-abstract)
     ("e c" "Create translation entry"                tlon-create-bibtex-translation)
-    ("e u" "Populate URL"                            tlon-bib-populate-url-field)]
+    ("e u" "Populate URL"                            tlon-bib-populate-url-field)
+    ("e U" "Populate URL in language"                tlon-bib-populate-url-fields-in-language)]
    ["BibTeX"
     "Report"
     ("b g" "Generate"                                tlon-bib-entries-report)
