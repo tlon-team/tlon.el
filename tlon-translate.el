@@ -505,7 +505,7 @@ user-selected language and store it in abstract-translations.json."
                        (supports (member dst-code tlon-deepl-supported-glossary-languages))
                        (glossary-id (and src-en supports
                                          (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" dst-code)))
-                       (src-name (and src-code (downcase (or (tlon-lookup tlon-languages-properties :name :code src-code) ""))))
+                       (src-name (and src-code (downcase (or (tlon-lookup tlon-languages-properties :standard :code src-code) ""))))
                        (dst-name (and trans-lang-name (downcase trans-lang-name)))
                        (both-in-project (and (member src-name tlon-project-languages)
                                              (member dst-name tlon-project-languages))))
@@ -713,8 +713,8 @@ If the original entry lacks an abstract, log a message and skip."
                           (supports (member dst tlon-deepl-supported-glossary-languages))
                           (glossary-id (and src-en supports
                                             (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" dst)))
-                          (src-name (downcase (or (tlon-lookup tlon-languages-properties :name :code src) "")))
-                          (dst-name (downcase (or (tlon-lookup tlon-languages-properties :name :code dst) "")))
+                          (src-name (downcase (or (tlon-lookup tlon-languages-properties :standard :code src) "")))
+                          (dst-name (downcase (or (tlon-lookup tlon-languages-properties :standard :code dst) "")))
                           (both-in-project (and (member src-name tlon-project-languages)
                                                 (member dst-name tlon-project-languages))))
                      (cond
@@ -894,7 +894,7 @@ nil, use `tlon-project-target-languages'."
                    (supports (member target-lang tlon-deepl-supported-glossary-languages))
                    (glossary-id (and src-en supports
                                      (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" target-lang)))
-                   (src-name (downcase (or (tlon-lookup tlon-languages-properties :name :code source-lang-code) "")))
+                   (src-name (downcase (or (tlon-lookup tlon-languages-properties :standard :code source-lang-code) "")))
                    (dst-name (downcase language))
                    (both-in-project (and (member src-name tlon-project-languages)
                                          (member dst-name tlon-project-languages))))
