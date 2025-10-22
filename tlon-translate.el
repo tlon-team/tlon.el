@@ -901,7 +901,7 @@ nil, use `tlon-project-target-languages'."
 		 key (string-join (reverse initiated-langs) ", "))))))
 
 (defun tlon-translate--json-abstract-write-callback (key target-lang)
-  "Return a thunk that writes the abstract translation for KEY and TARGET-LANG under suppressed revert."
+  "Return a thunk that writes the abstract translation for KEY and TARGET-LANG."
   (lambda ()
     (tlon-translate--suppress-file-change-prompt
      (lambda ()
@@ -910,6 +910,7 @@ nil, use `tlon-project-target-languages'."
 (defun tlon-translate--deepl-glossary-mode (source-lang-code target-lang-code)
   "Return the glossary decision for SOURCE-LANG-CODE → TARGET-LANG-CODE.
 The return value is one of the symbols: 'require, 'allow, or 'skip.
+
 - 'require: both languages are project languages and an English→TARGET glossary exists and is supported by DeepL.
 - 'allow: at least one language is outside project languages; translation can proceed without requiring a glossary.
 - 'skip: a glossary would be required but is not available."
@@ -1503,8 +1504,8 @@ exact search fails. Preserves leading and trailing whitespace
                              (insert to-insert)
                              (setq applied (1+ applied))
                              (setq cursor (point))))))))))
-             originals replacements))
-          (save-buffer))))
+               originals replacements))
+            (save-buffer)))))
     applied))
 
 (defun tlon-translate--create-fuzzy-regex (string)
