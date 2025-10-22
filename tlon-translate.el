@@ -911,11 +911,15 @@ nil, use `tlon-project-target-languages'."
 
 (defun tlon-translate--deepl-glossary-mode (source-lang-code target-lang-code)
   "Return the glossary decision for SOURCE-LANG-CODE → TARGET-LANG-CODE.
-The return value is one of the symbols: 'require, 'allow, or 'skip.
+The return value is one of the following symbols:
 
-- 'require: both languages are project languages and an English→TARGET glossary exists and is supported by DeepL.
-- 'allow: at least one language is outside project languages; translation can proceed without requiring a glossary.
-- 'skip: a glossary would be required but is not available."
+- `require': both languages are project languages and an English→TARGET glossary
+  exists and is supported by DeepL.
+
+- `allow': at least one language is outside project languages; translation can
+  proceed without requiring a glossary.
+
+- `skip': a glossary would be required but is not available."
   (let* ((src-en (string= source-lang-code "en"))
          (supports (member target-lang-code tlon-deepl-supported-glossary-languages))
          (glossary-id (and src-en supports
@@ -1382,11 +1386,13 @@ call after the revision is complete."
       (setq proc
             (tlon-make-gptel-request
              prompt nil
-             (tlon-translate--gptel-callback-apply-paragraphs translation-file start end trans-chunk type wrapped-after-fn)
+             (tlon-translate--gptel-callback-apply-paragraphs
+	      translation-file start end trans-chunk type wrapped-after-fn)
              model 'skip-context-check req-buf nil)))
     (push proc tlon-translate--active-revision-processes)
     proc))
 
+(declare-function magit-stage-files "magit-apply")
 (defun tlon-translate--gptel-callback-apply-paragraphs (translation-file start end originals type after-fn)
   "Return a gptel callback to apply the revised paragraphs to TRANSLATION-FILE.
 START and END are zero-based paragraph indices delimiting the chunk being
@@ -1516,8 +1522,6 @@ exact search fails. Preserves leading and trailing whitespace
     (replace-regexp-in-string "\\\\[ \t\n\r]+"
                               "[ \t\n\r]+"
                               escaped)))
-
-(declare-function magit-stage-files "magit-apply")
 
 ;;;;; Menu
 
