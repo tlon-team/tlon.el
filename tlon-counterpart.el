@@ -64,11 +64,11 @@ language, unless TARGET-LANGUAGE-CODE is provided."
 (declare-function tlon-bibliography-lookup "tlon-bib")
 (defun tlon-get-counterpart-in-translations (file)
   "Return the original counterpart of translation FILE.
-
-For articles, resolve by YAML key via the bibliography (translation key → original
-key) and locate the original by key in the English originals repos. For tags and
-authors, require YAML field `original_path' (basename of the English original)
-and resolve it under the English counterpart directory derived from FILE."
+For articles, resolve by YAML key via the bibliography (translation
+key → original key) and locate the original by key in the English
+originals repos.  For tags and authors, require YAML field
+`original_path' (basename of the English original) and resolve it
+under the English counterpart directory derived from FILE."
   (let ((yaml-type (tlon-yaml-get-type file)))
     (pcase yaml-type
       ("article"
@@ -102,11 +102,11 @@ and resolve it under the English counterpart directory derived from FILE."
 
 (defun tlon-get-counterpart-in-originals (file &optional target-language-code)
   "Return the translation counterpart of original FILE.
-TARGET-LANGUAGE-CODE is the target translation language code. If nil, prompt.
-
-For articles, resolve by YAML key across translation repos (original key → translation
-file). For tags and authors, search translation metadata for entries whose
-`original_path' equals the basename of FILE."
+TARGET-LANGUAGE-CODE is the target translation language code.  If
+nil, prompt.  For articles, resolve by YAML key across translation
+repos (original key → translation file).  For tags and authors,
+search translation metadata for entries whose `original_path' equals
+the basename of FILE."
   (let* ((target-language-code (or target-language-code (tlon-select-language 'code 'babel)))
          (yaml-type (tlon-yaml-get-type file)))
     (pcase yaml-type
