@@ -51,7 +51,8 @@
 (defcustom tlon-translate-engine 'deepl
   "The translation engine to use for file translation."
   :group 'tlon-translate
-  :type '(choice (const :tag "DeepL" deepl)))
+  :type '(choice (const :tag "DeepL" deepl)
+                 (const :tag "AI" ai)))
 
 (defcustom tlon-translate-spot-errors-model
   '("Gemini" . gemini-2.5-flash)
@@ -87,14 +88,14 @@ file is sent to the AI for revision."
                  (cons (integer :tag "Start paragraph")
                        (integer :tag "End paragraph"))))
 
-(defcustom tlon-translate-revise-chunk-size 1
+(defcustom tlon-translate-revise-chunk-size 10
   "Number of aligned paragraphs sent per AI revision request.
 The AI will process the translation in batches of this many
 paragraphs to avoid extremely large prompts."
   :group 'tlon-translate
   :type 'integer)
 
-(defcustom tlon-translate-revise-max-parallel 1
+(defcustom tlon-translate-revise-max-parallel 3
   "Maximum number of paragraph-chunk revision requests to run in parallel.
 If the number of chunks to process is less than or equal to this
 value, the requests are dispatched concurrently; otherwise they
@@ -132,9 +133,6 @@ message is appended to the buffer named by
 
 ;;;; Variables
 
-(defconst tlon-translate-revise-tools
-  '("edit_file" "apply_diff" "replace_file_contents")
-  "List of tools available to the AI for translation revision.")
 
 (defconst tlon-translate--engine-choices
   '(("DeepL" . deepl)
@@ -152,13 +150,13 @@ message is appended to the buffer named by
 (declare-function tlon-md-tag-list "tlon-md")
 (defconst tlon-translate-spot-errors-prompt
   (concat tlon-translate-prompt-revise-prefix
-	  (format "Your task is to read both carefully and try to spot errors in the translation: the code surrounding the translation may have been corrupted, there may be sentences and even paragraphs missing, the abbreviations may be used wrongly or inconsistently, etc. In addition, the custom tags we use, which should remain invariant, may have been inadvertently translated; if so, you should restore them to their original form. This is an exhaustive list of all our custom tags: %S. Do not modify any URLs or BibTeX keys. Similarly, the fields in the YAML metadata section at the beginning of the file (delimited by ‘%s’) may have been modified. The only admissible YAML fields are: (\"title\" \"html_title\" \"key\" \"original_path\" \"tags\" \"publication_status\" \"meta\" \"snippet\"). If you find a field with any other name, you should onvert it to the closest valid alternative. For example, if you find \"titre\", you should convert it to \"title\". " (tlon-md-tag-list) tlon-yaml-delimiter)
+	  (format "Your task is to read both carefully and try to spot errors in the translation: the code surrounding the translation may have been corrupted, there may be sentences and even paragraphs missing, the abbreviations may be used wrongly or inconsistently, etc. In addition, the custom tags we use, which should remain invariant, may have been inadvertently translated; if so, you should restore them to their original form. This is an exhaustive list of all our custom tags: %S. Do not modify any URLs or BibTeX keys. Similarly, the fields in the YAML metadata section at the beginning of the file (delimited by ‘%s’) may have been modified. The only admissible YAML fields are: (\"title\" \"html_title\" \"key\" \"original_path\" \"tags\" \"publication_status\" \"meta\" \"snippet\"). If you find a field with any other name, you should convert it to the closest valid alternative. For example, if you find \"titre\", you should convert it to \"title\". " (tlon-md-tag-list) tlon-yaml-delimiter)
 	  tlon-translate-prompt-revise-suffix)
   "Prompt for revising translation errors.")
 
 (defconst tlon-translate-improve-flow-prompt
   (concat tlon-translate-prompt-revise-prefix
-	  "Your task is to to read both carefully and try improve the translation for a better flow. Do not modify URLS, BibTeX keys, or tags enclosed in angular brackets (such as \"<Roman>\", \"<LiteralLink>\", etc.)"
+	  "Your task is to read both carefully and try to improve the translation for a better flow. Do not modify URLs, BibTeX keys, or tags enclosed in angular brackets (such as \"<Roman>\", \"<LiteralLink>\", etc.)"
 	  tlon-translate-prompt-revise-suffix)
   "Prompt for improving translation flow.")
 
@@ -286,11 +284,11 @@ Branching rules:
 				     (slug  (simple-extras-slugify title))
 				     (ext   (file-name-extension source-file t)))
 				(setq post-fn
-				      (lambda ()
+				      (lambda (out)
 					(tlon-yaml-insert-field "key" tkey 'overwrite)
 					(tlon-yaml-insert-translated-tags)
 					(save-buffer)
-					(tlon-translate--copy-associated-images source-file target-file)))
+					(tlon-translate--copy-associated-images source-file out)))
 				(concat slug ext))))
 			   ((or (string= bare-en "tags") (string= bare-en "authors"))
 			    (let* ((orig-title (tlon-yaml-get-key "title" source-file))
@@ -301,10 +299,10 @@ Branching rules:
 				   (slug (simple-extras-slugify final-title))
 				   (ext  (file-name-extension source-file t)))
 			      (setq post-fn
-				    (lambda ()
+				    (lambda (out)
 				      (tlon-yaml-insert-field "title" final-title 'overwrite)
 				      (save-buffer)
-				      (tlon-yaml-guess-english-counterpart target-file)))
+				      (tlon-yaml-guess-english-counterpart out)))
 			      (concat slug ext)))
 			   (t
 			    (tlon-translate--default-filename source-file target-lang-code))))
@@ -383,7 +381,7 @@ If AFTER-FN is non-nil and the file type can be determined, call it."
                      (error nil))))
     (if file-type
         (when (functionp after-fn)
-          (funcall after-fn))
+          (funcall after-fn target-file))
       (message "Skipping post-processing for %s: could not determine file type; tags will not be inserted"
                (file-name-nondirectory target-file)))))
 
@@ -856,25 +854,23 @@ prompt the user for confirmation before overwriting."
         (when (tlon-translate--has-translating-entry-p key target-lang-name (tlon-bib-get-keys-in-file tlon-file-db))
           (message "Skipping %s -> %s: DB translation entry exists" key target-lang-name)
           (cl-return-from tlon-translate-abstract-interactive nil))
-        ;; Enforce DeepL + glossary constraint (English source + supported target + glossary available).
-        (let* ((src-en (string= source-lang-code "en"))
-               (supports (member target-lang tlon-deepl-supported-glossary-languages))
-               (glossary-id (and src-en supports
-                                 (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" target-lang))))
-          (if (not glossary-id)
-              (message "Skipping %s -> %s: %s-%s glossary missing" key target-lang (upcase source-lang-code) (upcase target-lang))
-            (if (and existing-translation
-                     (not (y-or-n-p (format "Translation for %s into %s already exists. Retranslate?"
-                                            key target-lang-name))))
-                (message "Translation for %s into %s aborted by user." key target-lang-name)
-              (message "Initiating translation for %s -> %s (%s)" key target-lang-name source-lang-code)
-              (tlon-deepl-translate
-               (tlon-bib-remove-braces text) target-lang source-lang-code
-               (lambda ()
-                 (tlon-translate--suppress-file-change-prompt
-                  (lambda ()
-                    (tlon-translate-abstract-callback key target-lang 'overwrite))))
-               nil))))))))
+        ;; Enforce DeepL + glossary constraint following project rules.
+        (let ((mode (tlon-translate--deepl-glossary-mode source-lang-code target-lang)))
+          (pcase mode
+            ('skip
+             (message "Skipping %s -> %s: %s-%s glossary missing" key target-lang (upcase source-lang-code) (upcase target-lang)))
+            (_
+             (if (and existing-translation
+                      (not (y-or-n-p (format "Translation for %s into %s already exists. Retranslate?"
+                                             key target-lang-name))))
+                 (message "Translation for %s into %s aborted by user." key target-lang-name)
+               (message "Initiating translation for %s -> %s (%s)%s"
+                        key target-lang-name source-lang-code
+                        (if (eq mode 'allow) " (no glossary required)" ""))
+               (tlon-deepl-translate
+                (tlon-bib-remove-braces text) target-lang source-lang-code
+                (tlon-translate--json-abstract-write-callback key target-lang)
+                (eq mode 'allow)))))))))
 
 (defvar tlon-project-target-languages)
 (defun tlon-translate-abstract-non-interactive (key text source-lang-code langs)
@@ -890,38 +886,51 @@ nil, use `tlon-project-target-languages'."
         (let ((target-lang (tlon-lookup tlon-languages-properties :code :name language)))
           (unless (and (string= source-lang-code target-lang)
                        (tlon-translate--get-existing-abstract-translation key target-lang))
-            (let* ((src-en (string= source-lang-code "en"))
-                   (supports (member target-lang tlon-deepl-supported-glossary-languages))
-                   (glossary-id (and src-en supports
-                                     (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" target-lang)))
-                   (src-name (downcase (or (tlon-lookup tlon-languages-properties :standard :code source-lang-code) "")))
-                   (dst-name (downcase language))
-                   (both-in-project (and (member src-name tlon-project-languages)
-                                         (member dst-name tlon-project-languages))))
-              (cond
-               ((and both-in-project src-en supports glossary-id)
-                (push language initiated-langs)
-                (message "Initiating translation for %s -> %s" key target-lang)
-                (tlon-deepl-translate (tlon-bib-remove-braces text) target-lang source-lang-code
-                                      (lambda ()
-                                        (tlon-translate--suppress-file-change-prompt
-                                         (lambda ()
-                                           (tlon-translate-abstract-callback key target-lang 'overwrite))))
-                                      nil))
-               ((not both-in-project)
-                (push language initiated-langs)
-                (message "Initiating translation for %s -> %s (no glossary required)" key target-lang)
-                (tlon-deepl-translate (tlon-bib-remove-braces text) target-lang source-lang-code
-                                      (lambda ()
-                                        (tlon-translate--suppress-file-change-prompt
-                                         (lambda ()
-                                           (tlon-translate-abstract-callback key target-lang 'overwrite))))
-                                      t))
-               (t
-                (message "Skipping %s -> %s: no suitable glossary found" key target-lang)))))))
+            (let ((mode (tlon-translate--deepl-glossary-mode source-lang-code target-lang)))
+              (pcase mode
+                ('require
+                 (push language initiated-langs)
+                 (message "Initiating translation for %s -> %s" key target-lang)
+                 (tlon-deepl-translate (tlon-bib-remove-braces text) target-lang source-lang-code
+                                       (tlon-translate--json-abstract-write-callback key target-lang)
+                                       nil))
+                ('allow
+                 (push language initiated-langs)
+                 (message "Initiating translation for %s -> %s (no glossary required)" key target-lang)
+                 (tlon-deepl-translate (tlon-bib-remove-braces text) target-lang source-lang-code
+                                       (tlon-translate--json-abstract-write-callback key target-lang)
+                                       t))
+                (_
+                 (message "Skipping %s -> %s: no suitable glossary found" key target-lang)))))))
       (when initiated-langs
 	(message "Finished initiating translations for abstract of `%s' into: %s"
 		 key (string-join (reverse initiated-langs) ", "))))))
+
+(defun tlon-translate--json-abstract-write-callback (key target-lang)
+  "Return a thunk that writes the abstract translation for KEY and TARGET-LANG under suppressed revert."
+  (lambda ()
+    (tlon-translate--suppress-file-change-prompt
+     (lambda ()
+       (tlon-translate-abstract-callback key target-lang 'overwrite)))))
+
+(defun tlon-translate--deepl-glossary-mode (source-lang-code target-lang-code)
+  "Return the glossary decision for SOURCE-LANG-CODE → TARGET-LANG-CODE.
+The return value is one of the symbols: 'require, 'allow, or 'skip.
+- 'require: both languages are project languages and an English→TARGET glossary exists and is supported by DeepL.
+- 'allow: at least one language is outside project languages; translation can proceed without requiring a glossary.
+- 'skip: a glossary would be required but is not available."
+  (let* ((src-en (string= source-lang-code "en"))
+         (supports (member target-lang-code tlon-deepl-supported-glossary-languages))
+         (glossary-id (and src-en supports
+                           (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" target-lang-code)))
+         (src-name (downcase (or (tlon-lookup tlon-languages-properties :standard :code source-lang-code) "")))
+         (dst-name (downcase (or (tlon-lookup tlon-languages-properties :standard :code target-lang-code) "")))
+         (both-in-project (and (member src-name tlon-project-languages)
+                               (member dst-name tlon-project-languages))))
+    (cond
+     ((and both-in-project src-en supports glossary-id) 'require)
+     ((not both-in-project) 'allow)
+     (t 'skip)))
 
 (defun tlon-translate--suppress-file-change-prompt (thunk)
   "Call THUNK while suppressing file-changed prompting, and refresh JSON.
@@ -1076,7 +1085,6 @@ commands are killed.  If there are no such processes, do nothing."
   "Original value of `revert-without-query'.")
 
 (declare-function gptel-context-add-file "gptel-context")
-(declare-function gptel-context-remove-all "gptel-context")
 (defun tlon-translate--revise-common (type)
   "Common function for revising a translation of TYPE.
 TYPE can be `errors' or `flow'."
@@ -1262,31 +1270,6 @@ timeout), then call CALLBACK with the path (or nil on timeout/failure)."
 
 ;;;;;; chunk helpers
 
-(defun tlon-translate--gptel-callback-simple (translation-file type after-fn)
-  "Return a gptel callback suitable for sequential chunk processing.
-TRANSLATION-FILE is the file path where the translation will be stored. TYPE
-specifies the type of translation operation being performed. START is the
-starting position in the buffer for the translation chunk. END is the ending
-position in the buffer for the translation chunk. AFTER-FN is a function to call
-after the translation request is finished, or nil if no post-processing is
-needed."
-  (let ((fired nil))
-    (lambda (response info)
-      ;; Forward text fragments (or the sole final text) to the real handler.
-      (when (stringp response)
-        (tlon-translate--revise-callback
-         response info translation-file type))
-      ;; Surface errors so the user sees them, but still advance.
-      (when (and (not (stringp response))
-                 (or (plist-get info :error)
-                     (let ((st (plist-get info :status)))
-                       (and (numberp st) (>= st 400)))))
-        (tlon-ai-callback-fail info))
-      ;; Decide when the request is *finished* and fire AFTER-FN once.
-      (when (not fired)
-        (setq fired t)
-        (when (functionp after-fn)
-          (funcall after-fn))))))
 
 (defun tlon-translate--kill-indirect-buffers-of-file (file)
   "Kill every indirect buffer created from FILE.
@@ -1486,44 +1469,47 @@ exact search fails. Preserves leading and trailing whitespace
       (save-excursion
         (save-restriction
           (widen)
-          (goto-char (point-min))
-          (cl-mapc
-           (lambda (old new)
-             (when (and (stringp new) (stringp old))
-               (unless (string= (string-trim old) (string-trim new))
-                 (let ((pos (save-excursion (search-forward old nil t))))
-                   (cond
-                    (pos
-                     (let* ((end pos)
-                            (beg (- end (length old))))
-                       (let* ((matched (buffer-substring-no-properties beg end))
-                              (prefix  (progn (string-match "\\`[ \t\n\r]*" matched)
-                                              (or (match-string 0 matched) "")))
-                              (suffix  (progn (string-match "[ \t\n\r]*\\'" matched)
-                                              (or (match-string 0 matched) "")))
-                              (to-insert (concat prefix new suffix)))
-                         (goto-char beg)
-                         (delete-region beg end)
-                         (insert to-insert)
-                         (setq applied (1+ applied)))))
-                    (t
-                     ;; Fallback: whitespace-flexible regex
-                     (goto-char (point-min))
-                     (let* ((regex (tlon-translate--create-fuzzy-regex old)))
-                       (when (re-search-forward regex nil t)
-                         (let* ((mbeg (match-beginning 0))
-                                (mend (match-end 0))
-                                (matched (match-string-no-properties 0))
+          (let ((cursor (point-min)))
+            (cl-mapc
+             (lambda (old new)
+               (when (and (stringp new) (stringp old))
+                 (unless (string= (string-trim old) (string-trim new))
+                   (goto-char cursor)
+                   (let ((pos (search-forward old nil t)))
+                     (cond
+                      (pos
+                       (let* ((end pos)
+                              (beg (- end (length old))))
+                         (let* ((matched (buffer-substring-no-properties beg end))
                                 (prefix  (progn (string-match "\\`[ \t\n\r]*" matched)
                                                 (or (match-string 0 matched) "")))
                                 (suffix  (progn (string-match "[ \t\n\r]*\\'" matched)
                                                 (or (match-string 0 matched) "")))
                                 (to-insert (concat prefix new suffix)))
-                           (goto-char mbeg)
-                           (delete-region mbeg mend)
+                           (goto-char beg)
+                           (delete-region beg end)
                            (insert to-insert)
-                           (setq applied (1+ applied)))))))))))
-           originals replacements)
+                           (setq applied (1+ applied))
+                           (setq cursor (point)))))
+                      (t
+                       ;; Fallback: whitespace-flexible regex
+                       (goto-char cursor)
+                       (let* ((regex (tlon-translate--create-fuzzy-regex old)))
+                         (when (re-search-forward regex nil t)
+                           (let* ((mbeg (match-beginning 0))
+                                  (mend (match-end 0))
+                                  (matched (match-string-no-properties 0))
+                                  (prefix  (progn (string-match "\\`[ \t\n\r]*" matched)
+                                                  (or (match-string 0 matched) "")))
+                                  (suffix  (progn (string-match "[ \t\n\r]*\\'" matched)
+                                                  (or (match-string 0 matched) "")))
+                                  (to-insert (concat prefix new suffix)))
+                             (goto-char mbeg)
+                             (delete-region mbeg mend)
+                             (insert to-insert)
+                             (setq applied (1+ applied))
+                             (setq cursor (point))))))))))
+             originals replacements))
           (save-buffer))))
     applied))
 
@@ -1535,41 +1521,6 @@ exact search fails. Preserves leading and trailing whitespace
                               escaped)))
 
 (declare-function magit-stage-files "magit-apply")
-(defun tlon-translate--revise-callback (response info file type)
-  "Callback for AI revision.
-RESPONSE is the AI's response. INFO is the response info. FILE is the file to
-commit. TYPE is the revision type. START is the starting paragraph number.
-END is the ending paragraph number."
-  (cond
-   ((or (plist-get info :error)
-        (let ((st (plist-get info :status)))
-          (and (numberp st) (>= st 400))))
-    (tlon-ai-callback-fail info))
-   (response
-    (run-at-time
-     0 nil
-     (lambda (f)
-       (when-let ((buf (get-file-buffer f)))
-         (with-current-buffer buf
-           ;; Don’t clobber user edits – revert only if unchanged.
-           (unless (buffer-modified-p)
-             (revert-buffer :ignore-auto :noconfirm)))))
-     file)
-    (when tlon-translate-revise-commit-changes
-      (let ((default-directory (tlon-get-repo-from-file file)))
-        (magit-stage-files (list file))
-        (tlon-create-commit (format (pcase type
-				      ('errors "Check errors in %s (AI)")
-				      ('flow "Improve flow in %s (AI)"))
-				    (tlon-get-key-from-file file))
-			    file)))
-    (when (eq type 'errors)
-      (condition-case err
-          (with-current-buffer (or (get-file-buffer file)
-                                   (find-file-noselect file))
-            (tlon-translate-relative-links))
-        (error (tlon-translate--log "tlon-translate-relative-links failed: %s"
-                                    (error-message-string err))))))))
 
 ;;;;; Menu
 
