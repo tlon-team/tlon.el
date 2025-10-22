@@ -507,31 +507,32 @@ user-selected language and store it in abstract-translations.json."
                        (dst-name (and trans-lang-name (downcase trans-lang-name)))
                        (both-in-project (and (member src-name tlon-project-languages)
                                              (member dst-name tlon-project-languages))))
-                  (cond
-                   ((and both-in-project src-en supports glossary-id)
-                    (tlon-translate--log "Translating abstract of %s → setting into %s" translation-of key)
-                    (tlon-deepl-translate
-                     (tlon-bib-remove-braces orig-abstract) dst-code src-code
-                     (lambda ()
-                       (let ((translated (tlon-translate--get-deepl-translation-from-buffer)))
-                         (when (and translated (stringp translated)
-                                    (not (string-blank-p (string-trim translated))))
-                           (tlon-translate--db-set-abstract key translated)
-                           (tlon-translate--log "Set abstract for %s (from %s)" key translation-of))))
-                     nil))
-                   ((not both-in-project)
-                    (tlon-translate--log "Translating abstract of %s → setting into %s (no glossary required)" translation-of key)
-                    (tlon-deepl-translate
-                     (tlon-bib-remove-braces orig-abstract) dst-code src-code
-                     (lambda ()
-                       (let ((translated (tlon-translate--get-deepl-translation-from-buffer)))
-                         (when (and translated (stringp translated)
-                                    (not (string-blank-p (string-trim translated))))
-                           (tlon-translate--db-set-abstract key translated)
-                           (tlon-translate--log "Set abstract for %s (from %s)" key translation-of))))
-                     t))
-                   (t
-                    (tlon-translate--log "Skipping abstract for %s -> %s: no suitable glossary found" translation-of dst-code))))))
+                  (let ((mode (tlon-translate--deepl-glossary-mode src-code dst-code)))
+                    (pcase mode
+                      ('require
+                       (tlon-translate--log "Translating abstract of %s → setting into %s" translation-of key)
+                       (tlon-deepl-translate
+                        (tlon-bib-remove-braces orig-abstract) dst-code src-code
+                        (lambda ()
+                          (let ((translated (tlon-translate--get-deepl-translation-from-buffer)))
+                            (when (and translated (stringp translated)
+                                       (not (string-blank-p (string-trim translated))))
+                              (tlon-translate--db-set-abstract key translated)
+                              (tlon-translate--log "Set abstract for %s (from %s)" key translation-of))))
+                        nil))
+                      ('allow
+                       (tlon-translate--log "Translating abstract of %s → setting into %s (no glossary required)" translation-of key)
+                       (tlon-deepl-translate
+                        (tlon-bib-remove-braces orig-abstract) dst-code src-code
+                        (lambda ()
+                          (let ((translated (tlon-translate--get-deepl-translation-from-buffer)))
+                            (when (and translated (stringp translated)
+                                       (not (string-blank-p (string-trim translated))))
+                              (tlon-translate--db-set-abstract key translated)
+                              (tlon-translate--log "Set abstract for %s (from %s)" key translation-of))))
+                        t))
+                      (_
+                       (tlon-translate--log "Skipping abstract for %s -> %s: no suitable glossary found" translation-of dst-code))))))
           (tlon-translate-abstract-interactive key text source-lang-code))))))
 
 (defun tlon-translate--external-abstracts (&optional langs)
