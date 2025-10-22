@@ -101,7 +101,7 @@ so the formatter can build the proper endpoint without re-prompting
 the user.")
 
 (defconst tlon-deepl-supported-glossary-languages
-  '("da" "de" "en" "es" "fr" "it" "ja" "ko" "nb" "nl" "pl" "pt" "ro" "ru" "sv" "zh")
+  '("ar" "da" "de" "en" "es" "fr" "it" "ja" "ko" "nb" "nl" "pl" "pt" "ro" "ru" "sv" "zh")
   "A list of the languages for which glossaries are currently supported.
 See <https://developers.deepl.com/docs/api-reference/glossaries> for the
 official source.")
