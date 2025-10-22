@@ -468,8 +468,10 @@ the `abstract-translations.json' store for entries cited across
 If LANGS is non-nil, it is a list of language names (e.g., \\='(\"spanish\")) to
 consider for case (II). When nil, prompts the user."
   (interactive)
-  (tlon-translate--internal-abstracts)
-  (tlon-translate--external-abstracts langs))
+  (cl-letf (((symbol-function 'kill-new) (lambda (&rest _args) nil))
+            ((symbol-function 'kill-append) (lambda (&rest _args) nil)))
+    (tlon-translate--internal-abstracts)
+    (tlon-translate--external-abstracts langs)))
 
 ;;;###autoload
 (defun tlon-translate-abstract-here ()
