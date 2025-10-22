@@ -532,7 +532,7 @@ user-selected language and store it in abstract-translations.json."
                               (tlon-translate--log "Set abstract for %s (from %s)" key translation-of))))
                         t))
                       (_
-                       (tlon-translate--log "Skipping abstract for %s -> %s: no suitable glossary found" translation-of dst-code))))))
+                       (tlon-translate--log "Skipping abstract for %s -> %s: no suitable glossary found" translation-of dst-code)))))))
           (tlon-translate-abstract-interactive key text source-lang-code))))))
 
 (defun tlon-translate--external-abstracts (&optional langs)
@@ -871,7 +871,7 @@ prompt the user for confirmation before overwriting."
                (tlon-deepl-translate
                 (tlon-bib-remove-braces text) target-lang source-lang-code
                 (tlon-translate--json-abstract-write-callback key target-lang)
-                (eq mode 'allow)))))))))
+                (eq mode 'allow))))))))))
 
 (defvar tlon-project-target-languages)
 (defun tlon-translate-abstract-non-interactive (key text source-lang-code langs)
@@ -931,7 +931,7 @@ The return value is one of the symbols: 'require, 'allow, or 'skip.
     (cond
      ((and both-in-project src-en supports glossary-id) 'require)
      ((not both-in-project) 'allow)
-     (t 'skip)))
+     (t 'skip))))
 
 (defun tlon-translate--suppress-file-change-prompt (thunk)
   "Call THUNK while suppressing file-changed prompting, and refresh JSON.
