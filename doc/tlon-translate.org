@@ -55,7 +55,6 @@ Note on counterpart resolution:
 #+vindex: tlon-translate-revise-max-parallel
 + ~tlon-translate-revise-max-parallel~ :: Maximum number of paragraph-chunk revision requests to dispatch concurrently (default 3).
 + ~tlon-translate-restrict-revision-to-paragraphs~ :: When non-nil, restrict AI revision to the inclusive paragraph range =(START . END)=.  Nil (default) means revise the whole file.
-+ ~tlon-translate-revise-stream~ :: When non-nil, AI responses are streamed; when nil (default) each chunk triggers a single callback on completion.
 
 ** Commands
 :PROPERTIES:
