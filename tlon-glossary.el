@@ -426,7 +426,7 @@ from FILE and prompt for TARGET-LANGUAGE."
                 (message "AI failed. Wrote empty filtered glossary to %s"
                          (file-name-nondirectory out-path))))
           (let* ((lines (seq-uniq (split-string (string-trim response) "\n" t)))
-                 (valid (seq-filter (lambda (t) (member t candidate-terms)) lines)))
+                 (valid (seq-filter (lambda (term) (member term candidate-terms)) lines)))
             (if (null valid)
                 (if seed-terms
                     (progn
