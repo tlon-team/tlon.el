@@ -475,7 +475,8 @@ Case-insensitive. Matches whole words around the escaped term."
 
 (defun tlon--glossary-write-filtered (out-path pairs selected-terms)
   "Write a two-column CSV to OUT-PATH for SELECTED-TERMS using PAIRS.
-PAIRS is an alist of (SOURCE . TARGET). SELECTED-TERMS is a list of source terms."
+PAIRS is an alist of (SOURCE . TARGET). SELECTED-TERMS is a list of source
+terms."
   (let* ((table (make-hash-table :test 'equal)))
     (dolist (p pairs) (puthash (car p) (cdr p) table))
     (with-temp-file out-path
