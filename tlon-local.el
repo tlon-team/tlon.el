@@ -26,6 +26,8 @@
 ;;; Code:
 
 (require 'tlon-core)
+(require 'transient)
+(require 'url-parse)
 
 ;;;; Variables
 
@@ -35,10 +37,11 @@
 ;;;###autoload
 (defun tlon-local-run-uqbar (&optional lang)
   "Run the local web server and the Uqbar environment for LANG.
-If LANG is nil, prompt the user for a language (ISO 639-1 code)
-restricted to Babel project languages. This runs:
-- web-server: ./up-dev.sh
-- uqbar: ./launch.py start LANG"
+If LANG is nil, prompt the user for a language (ISO 639-1 code).
+Steps:
+- web-server: ./up-dev.sh (skipped if already running)
+- uqbar: ./launch.py start LANG (ask to relaunch if already running)
+At the end, open the local site in the default browser."
   (interactive)
   (let* ((lang (or lang (tlon-select-language 'code t "Language: " t)))
          (ws-dir (tlon-repo-lookup :dir :name "web-server"))
@@ -47,16 +50,86 @@ restricted to Babel project languages. This runs:
       (user-error "`web-server' repo directory not found"))
     (unless (and uq-dir (file-directory-p uq-dir))
       (user-error "`uqbar' repo directory not found"))
-    (let* ((buffer (format "*tlon: uqbar start %s*" lang))
-           (cmd (mapconcat
-                 #'identity
-                 (list
-                  (format "cd %s && ./up-dev.sh" (shell-quote-argument ws-dir))
-                  (format "cd %s && ./launch.py start %s"
-                          (shell-quote-argument uq-dir)
-                          (shell-quote-argument lang)))
-                 " && ")))
-      (async-shell-command cmd buffer))))
+    (let* ((buffer-name (format "*tlon: uqbar start %s*" lang))
+           (local-url (tlon-local--uqbar-local-url lang))
+           (ws-running (tlon-local--web-server-running-p))
+           (uq-running (and local-url (tlon-local--uqbar-running-p local-url)))
+           (run-web (not ws-running))
+           (run-uq (if uq-running
+                       (y-or-n-p (format "Uqbar environment for '%s' appears to be running%s. Relaunch it? "
+                                         lang
+                                         (if local-url (format " at %s" local-url) "")))
+                     t))
+           (commands '()))
+      (when run-web
+        (push (format "cd %s && ./up-dev.sh" (shell-quote-argument ws-dir)) commands))
+      (when run-uq
+        (push (format "cd %s && ./launch.py start %s"
+                      (shell-quote-argument uq-dir)
+                      (shell-quote-argument lang))
+              commands))
+      (setq commands (nreverse commands))
+      (cond
+       ;; Nothing to run: just open the site if we know the URL
+       ((null commands)
+        (if local-url
+            (browse-url local-url)
+          (message "Nothing to run and local URL unknown")))
+       (t
+        (let* ((cmd (mapconcat #'identity commands " && "))
+               (proc-buf (async-shell-command cmd buffer-name)))
+          (when-let ((proc (and proc-buf (get-buffer-process proc-buf))))
+            (set-process-sentinel
+             proc
+             (lambda (_p event)
+               (when (and (string-prefix-p "finished" event)
+                          local-url)
+                 (browse-url local-url)))))))))))
+
+;;;; Helpers
+
+(defun tlon-local--tcp-open-p (host port)
+  "Return non-nil if a TCP connection to HOST:PORT succeeds."
+  (let (proc ok)
+    (setq ok
+          (condition-case _err
+              (progn
+                (setq proc (open-network-stream "tlon-local-probe" nil host port))
+                (when proc (delete-process proc))
+                t)
+            (error nil)))
+    ok))
+
+(defun tlon-local--web-server-running-p ()
+  "Return non-nil if the Traefik dashboard is reachable on localhost:8080."
+  (tlon-local--tcp-open-p "localhost" 8080))
+
+(defun tlon-local--uqbar-running-p (url)
+  "Return non-nil if the local Uqbar site at URL is reachable (TCP)."
+  (when url
+    (let* ((parsed (url-generic-parse-url url))
+           (host (url-host parsed)))
+      (or (tlon-local--tcp-open-p host 443)
+          (tlon-local--tcp-open-p host 80)))))
+
+(defun tlon-local--uqbar-local-url (lang)
+  "Compute the local development URL for Uqbar in language LANG.
+Returns a string like \"https://local-dev.example.org\" or nil if unknown."
+  (let* ((prod (tlon-repo-lookup :url :language lang :subproject "uqbar")))
+    (when prod
+      (let* ((prod-url (if (string-match-p "\\`https?://" prod) prod (concat "https://" prod)))
+             (parsed (url-generic-parse-url prod-url))
+             (host (url-host parsed)))
+        (when host
+          (format "https://local-dev.%s" host))))))
+
+;;;; Menu
+
+;;;###autoload (autoload 'tlon-local-menu "tlon-local" nil t)
+(transient-define-prefix tlon-local-menu ()
+  "`tlon-local' menu."
+  [["Uqbar local"
+    ("u r" "Run Uqbar (prompt lang)" tlon-local-run-uqbar)]])
 
 (provide 'tlon-local)
 ;;; tlon-local.el ends here
