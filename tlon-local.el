@@ -44,9 +44,9 @@ restricted to Babel project languages. This runs:
          (ws-dir (tlon-repo-lookup :dir :name "web-server"))
          (uq-dir (tlon-repo-lookup :dir :name "uqbar")))
     (unless (and ws-dir (file-directory-p ws-dir))
-      (user-error "web-server repo directory not found"))
+      (user-error "`web-server' repo directory not found"))
     (unless (and uq-dir (file-directory-p uq-dir))
-      (user-error "uqbar repo directory not found"))
+      (user-error "`uqbar' repo directory not found"))
     (let* ((buffer (format "*tlon: uqbar start %s*" lang))
            (cmd (mapconcat
                  #'identity
