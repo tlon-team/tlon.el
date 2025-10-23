@@ -414,6 +414,8 @@ dedicated function."
 	(setq cnt (1+ cnt)))
       (message "Done. %d URLs were fixed." cnt))))
 
+;;;;;; unbalanced chars
+
 ;;;###autoload
 (defun tlon-check-unbalanced-character (&optional char)
   "Check for unbalanced instances of CHAR in the current buffer.
@@ -477,10 +479,9 @@ Prompts for CHAR when called interactively. Scans each regular file in
 	  (with-current-buffer report (let ((inhibit-read-only t)) (insert "All files balanced\n")))
 	  (message "All files balanced")
 	  t)
-      (progn
-	(display-buffer report)
-	(message "%d file(s) with unbalanced %s/%s" issues (car pair) (cdr pair))
-	nil))))
+      (display-buffer report)
+      (message "%d file(s) with unbalanced %s/%s" issues (car pair) (cdr pair))
+      nil)))
 
 (defun tlon-unbalanced-visit-at-point ()
   "Visit the file referenced on the current line and jump to its position."
@@ -506,7 +507,15 @@ Prompts for CHAR when called interactively. Scans each regular file in
 
 (defun tlon--check-unbalanced--pair (char)
   "Return cons (OPEN . CLOSE) for CHAR."
-  (let* ((pairs '(("(" . ")") ("[" . "]") ("{" . "}") ("«" . "»") ("“" . "”") ("<" . ">") ("\"" . "\"") ("'" . "'") ("*" . "*")))
+  (let* ((pairs '(("(" . ")")
+		  ("[" . "]")
+		  ("{" . "}")
+		  ("«" . "»")
+		  ("“" . "”")
+		  ("<" . ">")
+		  ("\"" . "\"")
+		  ("'" . "'")
+		  ("*" . "*")))
 	 (found (or (assoc char pairs)
 		    (let ((rev (rassoc char pairs)))
 		      (when rev (cons (cdr rev) (car rev)))))))
