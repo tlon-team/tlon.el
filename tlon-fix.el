@@ -414,6 +414,54 @@ dedicated function."
 	(setq cnt (1+ cnt)))
       (message "Done. %d URLs were fixed." cnt))))
 
+;;;###autoload
+(defun tlon-check-unbalanced-character (&optional char)
+  "Check for unbalanced instances of CHAR in the current buffer.
+Prompts for CHAR when called interactively, then scans the buffer to detect
+whether there is a missing opening or closing counterpart. If an imbalance is
+found, moves point to the first offending location and reports what is missing;
+otherwise, reports that the character is balanced."
+  (interactive)
+  (let* ((char (or char (read-char "Character to check: ")))
+	 (s (string char))
+	 (pair (tlon--check-unbalanced--pair s))
+	 (result (tlon--check-unbalanced--scan (car pair) (cdr pair))))
+    (pcase result
+      (`(missing-open . ,pos)
+       (goto-char pos)
+       (message "Unbalanced: missing opening %s before this %s" (car pair) (cdr pair)))
+      (`(missing-close . ,pos)
+       (goto-char pos)
+       (message "Unbalanced: missing closing %s after this %s" (cdr pair) (car pair)))
+      (_ (message "Balanced: %s/%s" (car pair) (cdr pair))))))
+
+(defun tlon--check-unbalanced--pair (char)
+  "Return cons (OPEN . CLOSE) for CHAR."
+  (let* ((pairs '(("(" . ")") ("[" . "]") ("{" . "}") ("«" . "»") ("“" . "”") ("<" . ">") ("\"" . "\"") ("'" . "'")))
+	 (found (or (assoc char pairs)
+		    (let ((rev (rassoc char pairs)))
+		      (when rev (cons (cdr rev) (car rev)))))))
+    (or found (cons char char))))
+
+(defun tlon--check-unbalanced--scan (open close)
+  "Scan current buffer for imbalance between OPEN and CLOSE.
+Return cons of the form (missing-open . POS) or (missing-close . POS), or nil."
+  (save-excursion
+    (goto-char (point-min))
+    (if (string= open close)
+	(let ((in nil) opener-pos)
+	  (while (search-forward open nil t)
+	    (if in (setq in nil) (progn (setq in t) (setq opener-pos (match-beginning 0)))))
+	  (when in (cons 'missing-close opener-pos)))
+      (let ((stack nil) (result nil) (regexp (concat (regexp-quote open) "\\|" (regexp-quote close))))
+	(while (and (not result) (re-search-forward regexp nil t))
+	  (if (string= (match-string 0) open)
+	      (push (match-beginning 0) stack)
+	    (if stack
+		(pop stack)
+	      (setq result (cons 'missing-open (match-beginning 0))))))
+	(or result (when stack (cons 'missing-close (car (last stack)))))))))
+
 ;;;;;; Language-specific
 
 (declare-function dired-get-marked-files "dired")
@@ -478,7 +526,9 @@ dedicated function."
     ("m s" "sólo" tlon-manual-fix-solo)
     ("m w" "narrow spaces" tlon-manual-fix-narrow-spaces)
     ;; ("m " "" tlon-manual-fix-foreign-words)
-    ]])
+    ]
+   ["Misc"
+    ("u" "fix unbalanced character" tlon-check-unbalanced-character)]])
 
 (provide 'tlon-fix)
 ;;; tlon-fix.el ends here
