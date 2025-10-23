@@ -435,9 +435,53 @@ otherwise, reports that the character is balanced."
        (message "Unbalanced: missing closing %s after this %s" (cdr pair) (car pair)))
       (_ (message "Balanced: %s/%s" (car pair) (cdr pair))))))
 
+;;;###autoload
+(defun tlon-check-unbalanced-character-in-dir (&optional char)
+  "Check all files in current directory for unbalanced instances of CHAR.
+Prompts for CHAR when called interactively. Scans each regular file in
+`default-directory' and writes a report to the buffer named
+*tlon-unbalanced*. Returns non-nil if all files are balanced."
+  (interactive)
+  (let* ((char (or char (read-char "Character to check: ")))
+	 (s (string char))
+	 (pair (tlon--check-unbalanced--pair s))
+	 (files (directory-files default-directory t directory-files-no-dot-files-regexp))
+	 (issues 0)
+	 (report (get-buffer-create "*tlon-unbalanced*")))
+    (with-current-buffer report
+      (erase-buffer)
+      (insert (format "Unbalanced %s/%s in directory: %s\n\n"
+		      (car pair) (cdr pair) default-directory)))
+    (dolist (file files)
+      (when (file-regular-p file)
+	(with-current-buffer (find-file-noselect file)
+	  (save-excursion
+	    (save-restriction
+	      (widen)
+	      (let ((res (tlon--check-unbalanced--scan (car pair) (cdr pair))))
+		(when res
+		  (setq issues (1+ issues))
+		  (with-current-buffer report
+		    (pcase res
+		      (`(missing-open . ,pos)
+		       (insert (format "%s: missing opening %s before position %d\n"
+				       file (car pair) pos)))
+		      (`(missing-close . ,pos)
+		       (insert (format "%s: missing closing %s after position %d\n"
+				       file (cdr pair) pos))))))))))))
+    (if (= issues 0)
+	(progn
+	  (with-current-buffer report (insert "All files balanced\n"))
+	  (message "All files balanced")
+	  t)
+      (progn
+	(display-buffer report)
+	(message "%d file(s) with unbalanced %s/%s" issues (car pair) (cdr pair))
+	nil))))
+
 (defun tlon--check-unbalanced--pair (char)
   "Return cons (OPEN . CLOSE) for CHAR."
-  (let* ((pairs '(("(" . ")") ("[" . "]") ("{" . "}") ("«" . "»") ("“" . "”") ("<" . ">") ("\"" . "\"") ("'" . "'")))
+  (let* ((pairs '(("(" . ")") ("[" . "]") ("{" . "}") ("«" . "»") ("“" . "”") ("<" . ">") ("\"" . "\"") ("'" . "'") ("*" . "*")))
 	 (found (or (assoc char pairs)
 		    (let ((rev (rassoc char pairs)))
 		      (when rev (cons (cdr rev) (car rev)))))))
@@ -528,7 +572,8 @@ Return cons of the form (missing-open . POS) or (missing-close . POS), or nil."
     ;; ("m " "" tlon-manual-fix-foreign-words)
     ]
    ["Misc"
-    ("u" "fix unbalanced character" tlon-check-unbalanced-character)]])
+    ("u" "fix unbalanced character" tlon-check-unbalanced-character)
+    ("U" "fix unbalanced character in dir" tlon-check-unbalanced-character-in-dir)]])
 
 (provide 'tlon-fix)
 ;;; tlon-fix.el ends here

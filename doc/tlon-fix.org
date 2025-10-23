@@ -135,7 +135,10 @@ These functions apply sets of predefined search-and-replace rules tailored for s
 + ~tlon-fix-internet-archive-urls~ :: Removes the `https://web.archive.org/web/TIMESTAMP/` prefix from Internet Archive URLs found in the current buffer, effectively restoring them to their original form. Reports the number of URLs fixed.
 
 #+findex: tlon-check-unbalanced-character
-+ ~tlon-check-unbalanced-character~ :: Prompts for a character and scans the current buffer for unbalanced instances of that character. If an imbalance is found, it moves point to the first offending location and reports whether an opening or closing counterpart is missing. Supports common pairs like (), [], {}, «», “”, <> and symmetric quotes.
++ ~tlon-check-unbalanced-character~ :: Prompts for a character and scans the current buffer for unbalanced instances of that character. If an imbalance is found, it moves point to the first offending location and reports whether an opening or closing counterpart is missing. Supports common pairs like (), [], {}, «», “”, <> and symmetric quotes and asterisks.
+
+#+findex: tlon-check-unbalanced-character-in-dir
++ ~tlon-check-unbalanced-character-in-dir~ :: Prompts for a character and checks all regular files in the current directory for unbalanced instances, reporting results in a buffer named "*tlon-unbalanced*". Returns non-nil if all files are balanced.
 
 ** Internal Helper Functions
 :PROPERTIES:
