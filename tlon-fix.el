@@ -449,9 +449,11 @@ Prompts for CHAR when called interactively. Scans each regular file in
 	 (issues 0)
 	 (report (get-buffer-create "*tlon-unbalanced*")))
     (with-current-buffer report
-      (erase-buffer)
-      (insert (format "Unbalanced %s/%s in directory: %s\n\n"
-		      (car pair) (cdr pair) default-directory)))
+      (let ((inhibit-read-only t))
+	(erase-buffer)
+	(tlon--unbalanced-setup-buffer)
+	(insert (format "Unbalanced %s/%s in directory: %s\n\n"
+			(car pair) (cdr pair) default-directory))))
     (dolist (file files)
       (when (file-regular-p file)
 	(with-current-buffer (find-file-noselect file)
@@ -462,22 +464,45 @@ Prompts for CHAR when called interactively. Scans each regular file in
 		(when res
 		  (setq issues (1+ issues))
 		  (with-current-buffer report
-		    (pcase res
-		      (`(missing-open . ,pos)
-		       (insert (format "%s: missing opening %s before position %d\n"
-				       file (car pair) pos)))
-		      (`(missing-close . ,pos)
-		       (insert (format "%s: missing closing %s after position %d\n"
-				       file (cdr pair) pos))))))))))))
+		    (let ((inhibit-read-only t))
+		      (pcase res
+			(`(missing-open . ,pos)
+			 (insert (format "%s: missing opening %s before position %d\n"
+					 file (car pair) pos)))
+			(`(missing-close . ,pos)
+			 (insert (format "%s: missing closing %s after position %d\n"
+					 file (cdr pair) pos)))))))))))))
     (if (= issues 0)
 	(progn
-	  (with-current-buffer report (insert "All files balanced\n"))
+	  (with-current-buffer report (let ((inhibit-read-only t)) (insert "All files balanced\n")))
 	  (message "All files balanced")
 	  t)
       (progn
 	(display-buffer report)
 	(message "%d file(s) with unbalanced %s/%s" issues (car pair) (cdr pair))
 	nil))))
+
+(defun tlon-unbalanced-visit-at-point ()
+  "Visit the file referenced on the current line and jump to its position."
+  (interactive)
+  (let* ((line (buffer-substring-no-properties (line-beginning-position)
+					       (line-end-position))))
+    (if (and line (string-match "^\\([^:\n]+\\): .* position \\([0-9]+\\)\\b" line))
+	(let ((file (match-string 1 line))
+	      (pos (string-to-number (match-string 2 line))))
+	  (find-file file)
+	  (goto-char (min pos (point-max)))
+	  (recenter))
+      (user-error "No navigable entry on this line"))))
+
+(defun tlon--unbalanced-setup-buffer ()
+  "Prepare the *tlon-unbalanced* buffer and bind RET to navigate to entries."
+  (special-mode)
+  (use-local-map
+   (let ((map (make-sparse-keymap)))
+     (set-keymap-parent map special-mode-map)
+     (define-key map (kbd "RET") #'tlon-unbalanced-visit-at-point)
+     map)))
 
 (defun tlon--check-unbalanced--pair (char)
   "Return cons (OPEN . CLOSE) for CHAR."
