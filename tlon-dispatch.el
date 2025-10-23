@@ -55,7 +55,7 @@
     ("j" "jobs"                           tlon-jobs-menu)
     ("k" "markdown"                       tlon-md-menu)
     ("l" "DeepL"                          tlon-deepl-menu)
-    ("H-l" "color"                        tlon-color-menu)]
+    ("H-l" "local"                        tlon-local-menu)]
    [""""
     ("H-m" "meet"                         tlon-meet-menu)
     ("n" "newsletter"                     tlon-newsletter-menu)
@@ -63,6 +63,7 @@
     ("p" "paragraphs"                     tlon-paragraphs-menu)
     ("H-p" "api"                          tlon-api-menu)
     ("r" "repos"                          tlon-repos-menu)
+    ("H-r" "color"                        tlon-color-menu)
     ("s" "search"                         tlon-search-menu)
     ("H-s" "split"                        tlon-split-menu)
     ("t" "translate"                      tlon-translate-menu)
