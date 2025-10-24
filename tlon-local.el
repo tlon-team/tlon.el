@@ -41,7 +41,7 @@ If LANG is nil, prompt the user for a language (ISO 639-1 code).
 Steps:
 - docker: ensure Docker Desktop is running (start and wait if needed)
 - web-server: ./up-dev.sh
-- uqbar: ./launch.py start LANG (ask to relaunch if already running)
+- uqbar: ./launch.py start LANG (or stop+start if already running and confirmed)
 At the end, open the local site in the default browser."
   (interactive)
   (let* ((lang (or lang (tlon-select-language 'code t "Language: " t)))
@@ -63,6 +63,11 @@ At the end, open the local site in the default browser."
            (commands '()))
       (push (format "cd %s && ./up-dev.sh" (shell-quote-argument ws-dir)) commands)
       (when run-uq
+        (when uq-running
+          (push (format "cd %s && ./launch.py stop %s"
+                        (shell-quote-argument uq-dir)
+                        (shell-quote-argument lang))
+                commands))
         (push (format "cd %s && ./launch.py start %s"
                       (shell-quote-argument uq-dir)
                       (shell-quote-argument lang))
