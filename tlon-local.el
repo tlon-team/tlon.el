@@ -29,12 +29,39 @@
 (require 'transient)
 (require 'url-parse)
 (require 'subr-x)
+(require 'json)
 
 ;;;; Variables
 
 (defgroup tlon-local nil
   "Manage local environments."
   :group 'tlon)
+
+;;;; Variables (customization)
+
+(defcustom tlon-local-grafana-base-url "http://localhost:3101"
+  "Base URL for Grafana in local development."
+  :type 'string
+  :group 'tlon-local)
+
+(defcustom tlon-local-grafana-loki-proxy "/api/datasources/proxy/1"
+  "Path prefix for the Grafana Loki data source proxy.
+This usually contains the data source numeric ID or UID."
+  :type 'string
+  :group 'tlon-local)
+
+(defcustom tlon-local-logs-minutes 60
+  "Default lookback window, in minutes, for querying logs."
+  :type 'integer
+  :group 'tlon-local)
+
+(defcustom tlon-local-logs-limit 1000
+  "Default maximum number of log entries to retrieve."
+  :type 'integer
+  :group 'tlon-local)
+
+(defvar-local tlon-local--logs-ctx nil
+  "Internal context data for `tlon-local-logs' buffers.")
 
 ;;;; Functions
 
@@ -146,6 +173,142 @@ At the end, open the local site in the default browser."
   (interactive)
   (tlon-local-run-uqbar "tr"))
 
+;;;; Logs
+
+;;;###autoload
+(defun tlon-local-logs (&optional lang)
+  "Show recent Uqbar logs for LANG from the latest content build.
+If LANG is nil, prompt for a language. Results are fetched through
+Grafana's Loki proxy and filtered to show ERROR and CRITICAL entries."
+  (interactive)
+  (let* ((lang (or lang (tlon-select-language 'code t "Language: " t)))
+         (uq-dir (tlon-repo-lookup :dir :name "uqbar"))
+         (label (tlon-local--read-last-update-label uq-dir))
+         (query (format "{content_build=\"%s\"} | json | level =~ \"(ERROR|CRITICAL)\""
+                        label))
+         (end (tlon-local--rfc3339 (current-time)))
+         (start (tlon-local--rfc3339
+                 (time-subtract (current-time)
+                                (seconds-to-time
+                                 (* 60 tlon-local-logs-minutes)))))
+         (base (string-remove-suffix "/" tlon-local-grafana-base-url))
+         (proxy (string-remove-suffix "/" tlon-local-grafana-loki-proxy))
+         (url (format "%s%s/loki/api/v1/query_range" base proxy))
+         (params `(("query" . ,query)
+                   ("limit" . ,(number-to-string tlon-local-logs-limit))
+                   ("start" . ,start)
+                   ("end" . ,end)
+                   ("direction" . "backward"))))
+    (tlon-local--http-json
+     url params
+     (lambda (json)
+       (tlon-local--render-logs-buffer json lang label)))))
+
+(defun tlon-local--render-logs-buffer (json lang label)
+  "Render Loki JSON into a buffer for LANG and build LABEL."
+  (let* ((data (alist-get 'data json))
+         (result (and data (alist-get 'result data)))
+         (buf (get-buffer-create (format "*tlon: logs %s*" lang))))
+    (unless (and data result)
+      (user-error "Unexpected Loki response"))
+    (with-current-buffer buf
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (tlon-local-logs-mode)
+        (setq-local tlon-local--logs-ctx (list :lang lang :label label))
+        (insert (format
+                 "Uqbar logs for %s – content_build=%s (last %dm, limit %d)\n\n"
+                 lang label tlon-local-logs-minutes tlon-local-logs-limit))
+        (dolist (stream result)
+          (let* ((labels (alist-get 'stream stream))
+                 (values (alist-get 'values stream))
+                 (prefix (tlon-local--labels-prefix labels)))
+            (dolist (v values)
+              (let ((ts (tlon-local--ns-to-timestr (nth 0 v)))
+                    (line (nth 1 v)))
+                (insert (format "%s %s %s\n" ts prefix line)))))))
+      (goto-char (point-min))
+      (display-buffer buf))))
+
+(define-derived-mode tlon-local-logs-mode special-mode "TLon-Logs"
+  "Major mode to view Uqbar logs retrieved via Grafana's Loki proxy."
+  (setq buffer-read-only t)
+  (use-local-map (copy-keymap special-mode-map))
+  (local-set-key (kbd "g") #'tlon-local-logs-refresh)
+  (local-set-key (kbd "o") #'tlon-local-logs-open-in-grafana))
+
+(defun tlon-local-logs-refresh ()
+  "Refresh the logs in the current `tlon-local-logs-mode' buffer."
+  (interactive)
+  (let* ((ctx tlon-local--logs-ctx)
+         (lang (plist-get ctx :lang)))
+    (tlon-local-logs lang)))
+
+(defun tlon-local-logs-open-in-grafana ()
+  "Open the Grafana dashboard for the build in the current buffer."
+  (interactive)
+  (let* ((ctx tlon-local--logs-ctx)
+         (label (plist-get ctx :label))
+         (base (string-remove-suffix "/" tlon-local-grafana-base-url))
+         (url (format "%s/d/%s/%s?orgId=1&from=now-30d&to=now"
+                      base label label)))
+    (browse-url url)))
+
+(defun tlon-local--http-json (url params callback)
+  "GET URL with URL-encoded PARAMS and call CALLBACK with parsed JSON."
+  (let* ((qs (mapconcat
+              (lambda (p)
+                (concat (url-hexify-string (car p))
+                        "="
+                        (url-hexify-string (cdr p))))
+              params "&"))
+         (full (concat url "?" qs)))
+    (url-retrieve
+     full
+     (lambda (status)
+       (let ((err (plist-get status :error)))
+         (when err
+           (kill-buffer)
+           (user-error "HTTP error: %s" err)))
+       (goto-char (point-min))
+       (re-search-forward "^$" nil 'move)
+       (let ((json (json-parse-buffer :object-type 'alist :array-type 'list)))
+         (kill-buffer)
+         (funcall callback json))))))
+
+(defun tlon-local--read-last-update-label (uq-dir)
+  "Read last-update-label from UQ-DIR and return its trimmed contents."
+  (let ((file (expand-file-name "build-files/last-update-label" uq-dir)))
+    (unless (file-readable-p file)
+      (user-error "Missing %s" file))
+    (string-trim
+     (with-temp-buffer
+       (insert-file-contents file)
+       (buffer-string)))))
+
+(defun tlon-local--rfc3339 (time)
+  "Return TIME formatted as RFC3339 in UTC."
+  (let ((system-time-locale "C"))
+    (format-time-string "%Y-%m-%dT%H:%M:%SZ" time t)))
+
+(defun tlon-local--ns-to-timestr (ns-str)
+  "Convert nanoseconds string NS-STR to an ISO-like UTC time string."
+  (let* ((ns (string-to-number ns-str))
+         (sec (floor (/ ns 1e9)))
+         (ms (floor (mod (/ ns 1e6) 1000)))
+         (t0 (seconds-to-time sec)))
+    (format "%s.%03dZ"
+            (format-time-string "%Y-%m-%dT%H:%M:%S" t0 t) ms)))
+
+(defun tlon-local--labels-prefix (labels)
+  "Return a short label prefix from the stream LABELS."
+  (let ((svc (alist-get 'compose_service labels))
+        (app (alist-get 'application labels)))
+    (cond
+     (svc (format "[%s]" svc))
+     (app (format "[%s]" app))
+     (t ""))))
+
 ;;;; Helpers
 
 ;;;;; Docker
@@ -229,7 +392,9 @@ Returns a string like \"https://local-dev.example.org\" or nil if unknown."
     ("q t" "italian" tlon-local-run-uqbar-it)
     ("q j" "japanese" tlon-local-run-uqbar-ja)
     ("q k" "korean" tlon-local-run-uqbar-ko)
-    ("q u" "turkish" tlon-local-run-uqbar-tr)]])
+    ("q u" "turkish" tlon-local-run-uqbar-tr)]
+   ["Logs"
+    ("l r" "range (errors)" tlon-local-logs)]])
 
 (provide 'tlon-local)
 ;;; tlon-local.el ends here
