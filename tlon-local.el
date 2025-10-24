@@ -88,41 +88,49 @@ At the end, open the local site in the default browser."
 
 ;;;; Language-specific commands
 
+;;;###autoload
 (defun tlon-local-run-uqbar-ar ()
   "Run the local web server and the Uqbar environment for Arabic."
   (interactive)
   (tlon-local-run-uqbar "ar"))
 
+;;;###autoload
 (defun tlon-local-run-uqbar-en ()
   "Run the local web server and the Uqbar environment for English."
   (interactive)
   (tlon-local-run-uqbar "en"))
 
+;;;###autoload
 (defun tlon-local-run-uqbar-es ()
   "Run the local web server and the Uqbar environment for Spanish."
   (interactive)
   (tlon-local-run-uqbar "es"))
 
+;;;###autoload
 (defun tlon-local-run-uqbar-fr ()
   "Run the local web server and the Uqbar environment for French."
   (interactive)
   (tlon-local-run-uqbar "fr"))
 
+;;;###autoload
 (defun tlon-local-run-uqbar-it ()
   "Run the local web server and the Uqbar environment for Italian."
   (interactive)
   (tlon-local-run-uqbar "it"))
 
+;;;###autoload
 (defun tlon-local-run-uqbar-ja ()
   "Run the local web server and the Uqbar environment for Japanese."
   (interactive)
   (tlon-local-run-uqbar "ja"))
 
+;;;###autoload
 (defun tlon-local-run-uqbar-ko ()
   "Run the local web server and the Uqbar environment for Korean."
   (interactive)
   (tlon-local-run-uqbar "ko"))
 
+;;;###autoload
 (defun tlon-local-run-uqbar-tr ()
   "Run the local web server and the Uqbar environment for Turkish."
   (interactive)
