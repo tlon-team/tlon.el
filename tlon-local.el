@@ -39,6 +39,7 @@
   "Run the local web server and the Uqbar environment for LANG.
 If LANG is nil, prompt the user for a language (ISO 639-1 code).
 Steps:
+- docker: ensure Docker Desktop is running (start and wait if needed)
 - web-server: ./up-dev.sh (skipped if already running)
 - uqbar: ./launch.py start LANG (ask to relaunch if already running)
 At the end, open the local site in the default browser."
@@ -50,6 +51,7 @@ At the end, open the local site in the default browser."
       (user-error "`web-server' repo directory not found"))
     (unless (and uq-dir (file-directory-p uq-dir))
       (user-error "`uqbar' repo directory not found"))
+    (tlon-local--ensure-docker-running)
     (let* ((buffer-name (format "*tlon: uqbar start %s*" lang))
            (local-url (tlon-local--uqbar-local-url lang))
            (ws-running (tlon-local--web-server-running-p))
@@ -77,8 +79,9 @@ At the end, open the local site in the default browser."
           (message "Nothing to run and local URL unknown")))
        (t
         (let* ((cmd (mapconcat #'identity commands " && "))
-               (proc-buf (async-shell-command cmd buffer-name)))
-          (when-let ((proc (and proc-buf (get-buffer-process proc-buf))))
+               (_win (async-shell-command cmd buffer-name))
+               (buf (get-buffer buffer-name)))
+          (when-let ((proc (and buf (get-buffer-process buf))))
             (set-process-sentinel
              proc
              (lambda (_p event)
@@ -87,6 +90,31 @@ At the end, open the local site in the default browser."
                  (browse-url local-url)))))))))))
 
 ;;;; Helpers
+
+(defun tlon-local--docker-running-p ()
+  "Return non-nil if the Docker daemon responds to `docker info'."
+  (and (executable-find "docker")
+       (eq 0 (call-process "docker" nil nil nil "info"))))
+
+(defun tlon-local--ensure-docker-running ()
+  "Ensure the Docker daemon is running; start it on macOS if needed.
+On macOS, try to start Docker Desktop with `open -ga Docker' and wait until
+`docker info' succeeds, up to a timeout. On other systems, signal an error."
+  (unless (executable-find "docker")
+    (user-error "Docker CLI not found"))
+  (unless (tlon-local--docker-running-p)
+    (cond
+     ((eq system-type 'darwin)
+      (message "Starting Docker Desktop…")
+      (call-process "open" nil nil nil "-ga" "Docker")
+      (let ((timeout 90) (elapsed 0))
+        (while (and (< elapsed timeout) (not (tlon-local--docker-running-p)))
+          (sit-for 1)
+          (setq elapsed (1+ elapsed)))
+        (unless (tlon-local--docker-running-p)
+          (user-error "Docker did not start within %s seconds" timeout))))
+     (t
+      (user-error "Docker daemon is not running")))))
 
 (defun tlon-local--tcp-open-p (host port)
   "Return non-nil if a TCP connection to HOST:PORT succeeds."
