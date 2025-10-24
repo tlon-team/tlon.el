@@ -28,6 +28,7 @@
 (require 'tlon-core)
 (require 'transient)
 (require 'url-parse)
+(require 'subr-x)
 
 ;;;; Variables
 
@@ -176,13 +177,9 @@ On macOS, try to start Docker Desktop with `open -ga Docker' and wait until
 
 (defun tlon-local--web-server-running-p ()
   "Return non-nil if the web server Traefik container is running."
-  (let* ((name "web-server-traefik-1")
-         (lines (ignore-errors
-                  (apply #'process-lines
-                         "docker" "ps"
-                         "--filter" (format "name=%s" name)
-                         "--format" "{{.Names}}"))))
-    (and (consp lines) (member name lines))))
+  (let* ((cmd "docker ps --filter \"name=web-server-traefik-1\" --format '{{.Names}}' | grep -q \"^web-server-traefik-1$\" && echo true || echo false")
+         (out (string-trim (shell-command-to-string cmd))))
+    (string= out "true")))
 
 ;;;;; uqbar
 
