@@ -202,10 +202,37 @@ Grafana's Loki proxy and filtered to show ERROR and CRITICAL entries."
     (tlon-local--http-json
      url params
      (lambda (json)
-       (tlon-local--render-logs-buffer json lang label)))))
+       (tlon-local--render-logs-buffer json lang label 'errors)))))
 
-(defun tlon-local--render-logs-buffer (json lang label)
-  "Render Loki JSON into a buffer for LANG and build LABEL."
+;;;###autoload
+(defun tlon-local-logs-warnings (&optional lang)
+  "Show recent Uqbar WARNING logs for LANG from the latest content build.
+If LANG is nil, prompt for a language."
+  (interactive)
+  (let* ((lang (or lang (tlon-select-language 'code t "Language: " t)))
+         (uq-dir (tlon-repo-lookup :dir :name "uqbar"))
+         (label (tlon-local--read-last-update-label uq-dir))
+         (query (format "{content_build=\"%s\"} | json | level = \"WARNING\"" label))
+         (end (tlon-local--rfc3339 (current-time)))
+         (start (tlon-local--rfc3339
+                 (time-subtract (current-time)
+                                (seconds-to-time
+                                 (* 60 tlon-local-logs-minutes)))))
+         (base (string-remove-suffix "/" tlon-local-grafana-base-url))
+         (proxy (string-remove-suffix "/" tlon-local-grafana-loki-proxy))
+         (url (format "%s%s/loki/api/v1/query_range" base proxy))
+         (params `(("query" . ,query)
+                   ("limit" . ,(number-to-string tlon-local-logs-limit))
+                   ("start" . ,start)
+                   ("end" . ,end)
+                   ("direction" . "backward"))))
+    (tlon-local--http-json
+     url params
+     (lambda (json)
+       (tlon-local--render-logs-buffer json lang label 'warnings)))))
+
+(defun tlon-local--render-logs-buffer (json lang label kind)
+  "Render Loki JSON into a buffer for LANG and build LABEL for KIND."
   (let* ((data (alist-get 'data json))
          (result (and data (alist-get 'result data)))
          (buf (get-buffer-create (format "*tlon: logs %s*" lang))))
@@ -215,9 +242,10 @@ Grafana's Loki proxy and filtered to show ERROR and CRITICAL entries."
       (let ((inhibit-read-only t))
         (erase-buffer)
         (tlon-local-logs-mode)
-        (setq-local tlon-local--logs-ctx (list :lang lang :label label))
+        (setq-local tlon-local--logs-ctx (list :lang lang :label label :kind kind))
         (insert (format
-                 "Uqbar logs for %s – content_build=%s (last %dm, limit %d)\n\n"
+                 "Uqbar %s logs for %s – content_build=%s (last %dm, limit %d)\n\n"
+                 (if (eq kind 'warnings) "WARNING" "ERROR/CRITICAL")
                  lang label tlon-local-logs-minutes tlon-local-logs-limit))
         (dolist (stream result)
           (let* ((labels (alist-get 'stream stream))
@@ -241,8 +269,11 @@ Grafana's Loki proxy and filtered to show ERROR and CRITICAL entries."
   "Refresh the logs in the current `tlon-local-logs-mode' buffer."
   (interactive)
   (let* ((ctx tlon-local--logs-ctx)
-         (lang (plist-get ctx :lang)))
-    (tlon-local-logs lang)))
+         (lang (plist-get ctx :lang))
+         (kind (plist-get ctx :kind)))
+    (if (eq kind 'warnings)
+        (tlon-local-logs-warnings lang)
+      (tlon-local-logs lang))))
 
 (defun tlon-local-logs-open-in-grafana ()
   "Open the Grafana dashboard for the build in the current buffer."
@@ -394,7 +425,8 @@ Returns a string like \"https://local-dev.example.org\" or nil if unknown."
     ("q k" "korean" tlon-local-run-uqbar-ko)
     ("q u" "turkish" tlon-local-run-uqbar-tr)]
    ["Logs"
-    ("l r" "range (errors)" tlon-local-logs)]])
+    ("l r" "range (errors)" tlon-local-logs)
+    ("l w" "range (warnings)" tlon-local-logs-warnings)]])
 
 (provide 'tlon-local)
 ;;; tlon-local.el ends here
