@@ -181,7 +181,7 @@ On macOS, try to start Docker Desktop with `open -ga Docker' and wait until
                   (apply #'process-lines
                          "docker" "ps"
                          "--filter" (format "name=%s" name)
-                         "--format" "{{.Names}}")))))
+                         "--format" "{{.Names}}"))))
     (and (consp lines) (member name lines))))
 
 ;;;;; uqbar
