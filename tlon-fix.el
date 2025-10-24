@@ -453,7 +453,7 @@ Prompts for CHAR when called interactively. Scans each regular file in
     (with-current-buffer report
       (let ((inhibit-read-only t))
 	(erase-buffer)
-	(tlon--unbalanced-setup-buffer)
+	(tlon--setup-visit-file-at-point-buffer)
 	(insert (format "Unbalanced %s/%s in directory: %s\n\n"
 			(car pair) (cdr pair) default-directory))))
     (dolist (file files)
@@ -482,28 +482,6 @@ Prompts for CHAR when called interactively. Scans each regular file in
       (display-buffer report)
       (message "%d file(s) with unbalanced %s/%s" issues (car pair) (cdr pair))
       nil)))
-
-(defun tlon-unbalanced-visit-at-point ()
-  "Visit the file referenced on the current line and jump to its position."
-  (interactive)
-  (let* ((line (buffer-substring-no-properties (line-beginning-position)
-					       (line-end-position))))
-    (if (and line (string-match "^\\([^:\n]+\\): .* position \\([0-9]+\\)\\b" line))
-	(let ((file (match-string 1 line))
-	      (pos (string-to-number (match-string 2 line))))
-	  (find-file file)
-	  (goto-char (min pos (point-max)))
-	  (recenter))
-      (user-error "No navigable entry on this line"))))
-
-(defun tlon--unbalanced-setup-buffer ()
-  "Prepare the *tlon-unbalanced* buffer and bind RET to navigate to entries."
-  (special-mode)
-  (use-local-map
-   (let ((map (make-sparse-keymap)))
-     (set-keymap-parent map special-mode-map)
-     (define-key map (kbd "RET") #'tlon-unbalanced-visit-at-point)
-     map)))
 
 (defun tlon--check-unbalanced--pair (char)
   "Return cons (OPEN . CLOSE) for CHAR."

@@ -1473,5 +1473,29 @@ but will not throw an error if it is located in `uqbar-en/articles/FILE' or
       (goto-char pos)
       (user-error "There are images without alt text. Use `tlon-md-insert-alt-text' to fix them"))))
 
+;;;;; visit file at point
+
+(defun tlon-visit-file-at-point ()
+  "Visit the file referenced on the current line and jump to its position."
+  (interactive)
+  (let* ((line (buffer-substring-no-properties (line-beginning-position)
+					       (line-end-position))))
+    (if (and line (string-match "^\\([^:\n]+\\): .* position \\([0-9]+\\)\\b" line))
+	(let ((file (match-string 1 line))
+	      (pos (string-to-number (match-string 2 line))))
+	  (find-file file)
+	  (goto-char (min pos (point-max)))
+	  (recenter))
+      (user-error "No navigable entry on this line"))))
+
+(defun tlon--setup-visit-file-at-point-buffer ()
+  "Prepare the *tlon-unbalanced* buffer and bind RET to navigate to entries."
+  (special-mode)
+  (use-local-map
+   (let ((map (make-sparse-keymap)))
+     (set-keymap-parent map special-mode-map)
+     (define-key map (kbd "RET") #'tlon-visit-file-at-point)
+     map)))
+
 (provide 'tlon-core)
 ;;; tlon-core.el ends here
