@@ -61,18 +61,19 @@ At the end, open the local site in the default browser."
                                          (if local-url (format " at %s" local-url) "")))
                      t))
            (commands '()))
-      (push (format "cd %s && ./up-dev.sh" (shell-quote-argument ws-dir)) commands)
+      (setq commands (list (format "cd %s && ./up-dev.sh" (shell-quote-argument ws-dir))))
       (when run-uq
         (when uq-running
-          (push (format "cd %s && ./launch.py stop %s"
-                        (shell-quote-argument uq-dir)
-                        (shell-quote-argument lang))
-                commands))
-        (push (format "cd %s && ./launch.py start %s"
-                      (shell-quote-argument uq-dir)
-                      (shell-quote-argument lang))
-              commands))
-      (setq commands (nreverse commands))
+          (setq commands
+                (append commands
+                        (list (format "cd %s && ./launch.py stop %s"
+                                      (shell-quote-argument uq-dir)
+                                      (shell-quote-argument lang))))))
+        (setq commands
+              (append commands
+                      (list (format "cd %s && ./launch.py start %s"
+                                    (shell-quote-argument uq-dir)
+                                    (shell-quote-argument lang))))))
       (cond
        ;; Nothing to run: just open the site if we know the URL
        ((null commands)
