@@ -1490,8 +1490,8 @@ but will not throw an error if it is located in `uqbar-en/articles/FILE' or
 
 (defun tlon--setup-visit-file-at-point-buffer ()
   "Prepare the current buffer to visit files at point with RET.
-If the current major mode derives from `special-mode', keep it and augment its keymap;
-otherwise switch to `special-mode'."
+If the current major mode derives from `special-mode', keep it and augment its
+keymap; otherwise switch to `special-mode'."
   (unless (derived-mode-p 'special-mode)
     (special-mode))
   (use-local-map
