@@ -252,6 +252,7 @@ If LANG is nil, prompt for a language."
       (let ((inhibit-read-only t))
         (erase-buffer)
         (tlon-local-logs-mode)
+        (tlon--setup-visit-file-at-point-buffer)
         (setq-local tlon-local--logs-ctx (list :lang lang :label label :kind kind))
         (insert (format
                  "Uqbar %s logs for %s – content_build=%s (last %dm, limit %d)\n\n"
@@ -269,21 +270,48 @@ If LANG is nil, prompt for a language."
             (dolist (v values)
               (let ((ts (tlon-local--ns-to-timestr (nth 0 v)))
                     (line (nth 1 v)))
-                (tlon-local--insert-log-row ts svc line))))))
+                (tlon-local--insert-log-row ts svc line lang))))))
       (goto-char (point-min))
       (display-buffer buf))))
 
-(defun tlon-local--insert-log-row (ts svc line)
-  "Insert a single log row with columns TS, SVC and LINE.
+(defun tlon-local--insert-log-row (ts svc line lang)
+  "Insert a single log row with columns TS, SVC and LINE for LANG.
 Continuation lines in LINE are indented under the message column."
   (let* ((timew tlon-local-logs-time-width)
          (svcw tlon-local-logs-service-width)
          (fmt (format "%%-%ds  %%-%ds  %%s\n" timew svcw))
          (indent (make-string (+ timew 2 svcw 2) ?\s))
-         (parts (and line (split-string line "\n"))))
+         (msg (tlon-local--expand-article-ids line lang))
+         (parts (and msg (split-string msg "\n"))))
     (insert (format fmt ts (or svc "") (or (car parts) "")))
     (dolist (cont (cdr parts))
       (insert indent cont "\n"))))
+
+(defun tlon-local--expand-article-ids (line lang)
+  "Expand article_id slugs in LINE into absolute paths for LANG.
+The replacement text includes a `: position 1' suffix to work with
+`tlon-visit-file-at-point'."
+  (let ((repo (tlon-repo-lookup :dir :name (format "uqbar-%s" lang))))
+    (if (not repo)
+        line
+      (let ((start 0)
+            (pattern "\\(article_id=\\)['\"]?\\([^'\" \n]+\\)['\"]?"))
+        (save-match-data
+          (while (string-match pattern line start)
+            (let* ((prefix (match-string 1 line))
+                   (slug (match-string 2 line))
+                   (path (tlon-local--article-id-to-path slug lang))
+                   (replacement (format "%s'%s: position 1'" prefix path)))
+              (setq line (replace-match replacement t t line))
+              (setq start (+ (match-beginning 0) (length replacement)))))
+          line)))))
+
+(defun tlon-local--article-id-to-path (slug lang)
+  "Return the absolute markdown file path for article SLUG in LANG."
+  (let* ((repo (tlon-repo-lookup :dir :name (format "uqbar-%s" lang)))
+         (articles-dir (tlon-get-bare-dir-translation lang "en" "articles"))
+         (file (file-name-with-extension slug "md")))
+    (file-name-concat repo articles-dir file)))
 
 (define-derived-mode tlon-local-logs-mode special-mode "TLon-Logs"
   "Major mode to view Uqbar logs retrieved via Grafana's Loki proxy."
@@ -291,7 +319,8 @@ Continuation lines in LINE are indented under the message column."
   (setq-local truncate-lines t)
   (use-local-map (copy-keymap special-mode-map))
   (local-set-key (kbd "g") #'tlon-local-logs-refresh)
-  (local-set-key (kbd "o") #'tlon-local-logs-open-in-grafana))
+  (local-set-key (kbd "o") #'tlon-local-logs-open-in-grafana)
+  (local-set-key (kbd "RET") #'tlon-visit-file-at-point))
 
 (defun tlon-local-logs-refresh ()
   "Refresh the logs in the current `tlon-local-logs-mode' buffer."

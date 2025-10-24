@@ -1489,10 +1489,13 @@ but will not throw an error if it is located in `uqbar-en/articles/FILE' or
       (user-error "No navigable entry on this line"))))
 
 (defun tlon--setup-visit-file-at-point-buffer ()
-  "Prepare the *tlon-unbalanced* buffer and bind RET to navigate to entries."
-  (special-mode)
+  "Prepare the current buffer to visit files at point with RET.
+If the current major mode derives from `special-mode', keep it and augment its keymap;
+otherwise switch to `special-mode'."
+  (unless (derived-mode-p 'special-mode)
+    (special-mode))
   (use-local-map
-   (let ((map (make-sparse-keymap)))
+   (let ((map (copy-keymap (or (current-local-map) special-mode-map))))
      (set-keymap-parent map special-mode-map)
      (define-key map (kbd "RET") #'tlon-visit-file-at-point)
      map)))
