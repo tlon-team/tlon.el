@@ -319,6 +319,8 @@ The replacement text includes a `: position 1' suffix to work with
   (setq buffer-read-only t)
   (setq-local truncate-lines t)
   (use-local-map (copy-keymap special-mode-map))
+  (local-set-key (kbd "k") #'previous-line)
+  (local-set-key (kbd "l") #'next-line)
   (local-set-key (kbd "g") #'tlon-local-logs-refresh)
   (local-set-key (kbd "o") #'tlon-local-logs-open-in-grafana)
   (local-set-key (kbd "RET") #'tlon-visit-file-at-point))
