@@ -40,7 +40,7 @@
 If LANG is nil, prompt the user for a language (ISO 639-1 code).
 Steps:
 - docker: ensure Docker Desktop is running (start and wait if needed)
-- web-server: ./up-dev.sh
+- web-server: ./up-dev.sh (skipped if already running)
 - uqbar: ./launch.py start LANG (or stop+start if already running and confirmed)
 At the end, open the local site in the default browser."
   (interactive)
@@ -60,13 +60,15 @@ At the end, open the local site in the default browser."
                                          lang
                                          (if local-url (format " at %s" local-url) "")))
                      t))
+           (ws-running (tlon-local--web-server-running-p))
            (commands '())
-	   (append-command (lambda (command)
-			     (append commands
-				     (list (format command
-						   (shell-quote-argument uq-dir)
-						   (shell-quote-argument lang)))))))
-      (setq commands (list (format "cd %s && ./up-dev.sh" (shell-quote-argument ws-dir))))
+           (append-command (lambda (command)
+                             (append commands
+                                     (list (format command
+                                                   (shell-quote-argument uq-dir)
+                                                   (shell-quote-argument lang)))))))
+      (when (not ws-running)
+        (setq commands (append commands (list (format "cd %s && ./up-dev.sh" (shell-quote-argument ws-dir))))))
       (when run-uq
         (when uq-running
           (setq commands (funcall append-command "cd %s && ./launch.py stop %s")))
@@ -169,6 +171,18 @@ On macOS, try to start Docker Desktop with `open -ga Docker' and wait until
           (user-error "Docker did not start within %s seconds" timeout))))
      (t
       (user-error "Docker daemon is not running")))))
+
+;;;;; Web server
+
+(defun tlon-local--web-server-running-p ()
+  "Return non-nil if the web server Traefik container is running."
+  (let* ((name "web-server-traefik-1")
+         (lines (ignore-errors
+                  (apply #'process-lines
+                         "docker" "ps"
+                         "--filter" (format "name=%s" name)
+                         "--format" "{{.Names}}")))))
+    (and (consp lines) (member name lines))))
 
 ;;;;; uqbar
 
