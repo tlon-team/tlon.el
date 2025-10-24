@@ -272,6 +272,7 @@ If LANG is nil, prompt for a language."
                     (line (nth 1 v)))
                 (tlon-local--insert-log-row ts svc line lang))))))
       (goto-char (point-min))
+      (hl-line-mode)
       (display-buffer buf))))
 
 (defun tlon-local--insert-log-row (ts svc line lang)
