@@ -40,7 +40,7 @@
 If LANG is nil, prompt the user for a language (ISO 639-1 code).
 Steps:
 - docker: ensure Docker Desktop is running (start and wait if needed)
-- web-server: ./up-dev.sh (skipped if already running)
+- web-server: ./up-dev.sh
 - uqbar: ./launch.py start LANG (ask to relaunch if already running)
 At the end, open the local site in the default browser."
   (interactive)
@@ -54,17 +54,14 @@ At the end, open the local site in the default browser."
     (tlon-local--ensure-docker-running)
     (let* ((buffer-name (format "*tlon: uqbar start %s*" lang))
            (local-url (tlon-local--uqbar-local-url lang))
-           (ws-running (tlon-local--web-server-running-p))
            (uq-running (and local-url (tlon-local--uqbar-running-p local-url)))
-           (run-web (not ws-running))
            (run-uq (if uq-running
                        (y-or-n-p (format "Uqbar environment for '%s' appears to be running%s. Relaunch it? "
                                          lang
                                          (if local-url (format " at %s" local-url) "")))
                      t))
            (commands '()))
-      (when run-web
-        (push (format "cd %s && ./up-dev.sh" (shell-quote-argument ws-dir)) commands))
+      (push (format "cd %s && ./up-dev.sh" (shell-quote-argument ws-dir)) commands)
       (when run-uq
         (push (format "cd %s && ./launch.py start %s"
                       (shell-quote-argument uq-dir)
@@ -159,31 +156,6 @@ On macOS, try to start Docker Desktop with `open -ga Docker' and wait until
           (user-error "Docker did not start within %s seconds" timeout))))
      (t
       (user-error "Docker daemon is not running")))))
-
-;;;;; web server
-
-(defun tlon-local--web-server-running-p ()
-  "Return non-nil if Traefik on localhost:8080 responds over HTTP."
-  (tlon-local--http-traefik-p "http://localhost:8080" 3))
-
-(defun tlon-local--http-traefik-p (url timeout)
-  "Return non-nil if URL responds in TIMEOUT secs and seems like Traefik."
-  (let* ((buf (ignore-errors (url-retrieve-synchronously url t nil timeout)))
-         (ok nil))
-    (when buf
-      (with-current-buffer buf
-        (goto-char (point-min))
-        (when (re-search-forward "^HTTP/[0-9.]+ \\([0-9]+\\)" nil t)
-          (let ((code (string-to-number (match-string 1))))
-            (when (and (>= code 200) (< code 400))
-              (let ((headers-end (and (search-forward "\n\n" nil t) (point))))
-                (goto-char (point-min))
-                (setq ok (or (re-search-forward "^Server:[ \t]*traefik\\b" headers-end t)
-                             (and headers-end
-                                  (progn (goto-char headers-end)
-                                         (search-forward "Traefik" nil t)))))))))
-        (kill-buffer buf)))
-    ok))
 
 ;;;;; uqbar
 
