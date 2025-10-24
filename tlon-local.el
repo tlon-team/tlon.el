@@ -89,6 +89,48 @@ At the end, open the local site in the default browser."
                           local-url)
                  (browse-url local-url)))))))))))
 
+;;;; Language-specific commands
+
+(defun tlon-local-run-uqbar-ar ()
+  "Run the local web server and the Uqbar environment for Arabic."
+  (interactive)
+  (tlon-local-run-uqbar "ar"))
+
+(defun tlon-local-run-uqbar-en ()
+  "Run the local web server and the Uqbar environment for English."
+  (interactive)
+  (tlon-local-run-uqbar "en"))
+
+(defun tlon-local-run-uqbar-es ()
+  "Run the local web server and the Uqbar environment for Spanish."
+  (interactive)
+  (tlon-local-run-uqbar "es"))
+
+(defun tlon-local-run-uqbar-fr ()
+  "Run the local web server and the Uqbar environment for French."
+  (interactive)
+  (tlon-local-run-uqbar "fr"))
+
+(defun tlon-local-run-uqbar-it ()
+  "Run the local web server and the Uqbar environment for Italian."
+  (interactive)
+  (tlon-local-run-uqbar "it"))
+
+(defun tlon-local-run-uqbar-ja ()
+  "Run the local web server and the Uqbar environment for Japanese."
+  (interactive)
+  (tlon-local-run-uqbar "ja"))
+
+(defun tlon-local-run-uqbar-ko ()
+  "Run the local web server and the Uqbar environment for Korean."
+  (interactive)
+  (tlon-local-run-uqbar "ko"))
+
+(defun tlon-local-run-uqbar-tr ()
+  "Run the local web server and the Uqbar environment for Turkish."
+  (interactive)
+  (tlon-local-run-uqbar "tr"))
+
 ;;;; Helpers
 
 (defun tlon-local--docker-running-p ()
@@ -157,16 +199,15 @@ Returns a string like \"https://local-dev.example.org\" or nil if unknown."
 (transient-define-prefix tlon-local-menu ()
   "`tlon-local' menu."
   [["Run environment"
-    ("q" "uqbar (prompt lang)" tlon-local-run-uqbar)]])
+    ("q a" "arabic" tlon-local-run-uqbar-ar)
+    ("q n" "english" tlon-local-run-uqbar-en)
+    ("q s" "spanish" tlon-local-run-uqbar-es)
+    ("q r" "french" tlon-local-run-uqbar-fr)
+    ("q t" "italian" tlon-local-run-uqbar-it)
+    ("q j" "japanese" tlon-local-run-uqbar-ja)
+    ("q k" "korean" tlon-local-run-uqbar-ko)
+    ("q u" "turkish" tlon-local-run-uqbar-tr)]])
 
-("q a" "arabic")
-("q n" "english")
-("q s" "spanish")
-("q r" "french")
-("q t" "italian")
-("q j" "japanese")
-("q k" "korean")
-("q u" "turkish")
 
 (provide 'tlon-local)
 ;;; tlon-local.el ends here
