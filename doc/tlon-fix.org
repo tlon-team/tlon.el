@@ -140,8 +140,8 @@ These functions apply sets of predefined search-and-replace rules tailored for s
 #+findex: tlon-check-unbalanced-character-in-dir
 + ~tlon-check-unbalanced-character-in-dir~ :: Prompts for a character and checks all regular files in the current directory for unbalanced instances, reporting results in a buffer named "*tlon-unbalanced*". In that buffer, press RET on a line to visit the file at the reported position. Returns non-nil if all files are balanced.
 
-#+findex: tlon-unbalanced-visit-at-point
-+ ~tlon-unbalanced-visit-at-point~ :: In a "*tlon-unbalanced*" report buffer, visit the file referenced on the current line and jump to the reported character position. Bound to RET in that buffer.
+#+findex: tlon-visit-file-at-point
++ ~tlon-visit-file-at-point~ :: In a "*tlon-unbalanced*" report buffer, visit the file referenced on the current line and jump to the reported character position. Bound to RET in that buffer.
 
 ** Internal Helper Functions
 :PROPERTIES:
