@@ -60,6 +60,16 @@ This usually contains the data source numeric ID or UID."
   :type 'integer
   :group 'tlon-local)
 
+(defcustom tlon-local-logs-time-width 24
+  "Column width for the timestamp in the logs buffer."
+  :type 'integer
+  :group 'tlon-local)
+
+(defcustom tlon-local-logs-service-width 14
+  "Column width for the service label in the logs buffer."
+  :type 'integer
+  :group 'tlon-local)
+
 (defvar-local tlon-local--logs-ctx nil
   "Internal context data for `tlon-local-logs' buffers.")
 
@@ -247,20 +257,38 @@ If LANG is nil, prompt for a language."
                  "Uqbar %s logs for %s – content_build=%s (last %dm, limit %d)\n\n"
                  (if (eq kind 'warnings) "WARNING" "ERROR/CRITICAL")
                  lang label tlon-local-logs-minutes tlon-local-logs-limit))
+        (let* ((timew tlon-local-logs-time-width)
+               (svcw tlon-local-logs-service-width)
+               (fmt (format "%%-%ds  %%-%ds  %%s" timew svcw))
+               (hdr (format fmt "timestamp" "service" "message")))
+          (insert hdr "\n" (make-string (length hdr) ?-) "\n"))
         (dolist (stream result)
           (let* ((labels (alist-get 'stream stream))
                  (values (alist-get 'values stream))
-                 (prefix (tlon-local--labels-prefix labels)))
+                 (svc (tlon-local--labels-prefix labels)))
             (dolist (v values)
               (let ((ts (tlon-local--ns-to-timestr (nth 0 v)))
                     (line (nth 1 v)))
-                (insert (format "%s %s %s\n" ts prefix line)))))))
+                (tlon-local--insert-log-row ts svc line))))))
       (goto-char (point-min))
       (display-buffer buf))))
+
+(defun tlon-local--insert-log-row (ts svc line)
+  "Insert a single log row with columns TS, SVC and LINE.
+Continuation lines in LINE are indented under the message column."
+  (let* ((timew tlon-local-logs-time-width)
+         (svcw tlon-local-logs-service-width)
+         (fmt (format "%%-%ds  %%-%ds  %%s\n" timew svcw))
+         (indent (make-string (+ timew 2 svcw 2) ?\s))
+         (parts (and line (split-string line "\n"))))
+    (insert (format fmt ts (or svc "") (or (car parts) "")))
+    (dolist (cont (cdr parts))
+      (insert indent cont "\n"))))
 
 (define-derived-mode tlon-local-logs-mode special-mode "TLon-Logs"
   "Major mode to view Uqbar logs retrieved via Grafana's Loki proxy."
   (setq buffer-read-only t)
+  (setq-local truncate-lines t)
   (use-local-map (copy-keymap special-mode-map))
   (local-set-key (kbd "g") #'tlon-local-logs-refresh)
   (local-set-key (kbd "o") #'tlon-local-logs-open-in-grafana))
@@ -336,9 +364,9 @@ If LANG is nil, prompt for a language."
   (let ((svc (alist-get 'compose_service labels))
         (app (alist-get 'application labels)))
     (cond
-     (svc (format "[%s]" svc))
-     (app (format "[%s]" app))
-     (t ""))))
+     (svc (format "%s" svc))
+     (app (format "%s" app))
+     (t "-"))))
 
 ;;;; Helpers
 
