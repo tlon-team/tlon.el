@@ -156,9 +156,17 @@ Returns a string like \"https://local-dev.example.org\" or nil if unknown."
 ;;;###autoload (autoload 'tlon-local-menu "tlon-local" nil t)
 (transient-define-prefix tlon-local-menu ()
   "`tlon-local' menu."
-  [["Uqbar local"
-    ("u r" "Run Uqbar (prompt lang)" tlon-local-run-uqbar)]])
+  [["Run environment"
+    ("q" "uqbar (prompt lang)" tlon-local-run-uqbar)]])
+
+("q a" "arabic")
+("q n" "english")
+("q s" "spanish")
+("q r" "french")
+("q t" "italian")
+("q j" "japanese")
+("q k" "korean")
+("q u" "turkish")
 
 (provide 'tlon-local)
 ;;; tlon-local.el ends here
-
