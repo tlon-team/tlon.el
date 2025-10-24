@@ -482,8 +482,8 @@ Returns a string like \"https://local-dev.example.org\" or nil if unknown."
     ("q k" "korean" tlon-local-run-uqbar-ko)
     ("q u" "turkish" tlon-local-run-uqbar-tr)]
    ["Logs"
-    ("l r" "range (errors)" tlon-local-logs)
-    ("l w" "range (warnings)" tlon-local-logs-warnings)]])
+    ("l e" "errors" tlon-local-logs)
+    ("l w" "warnings" tlon-local-logs-warnings)]])
 
 (provide 'tlon-local)
 ;;; tlon-local.el ends here
