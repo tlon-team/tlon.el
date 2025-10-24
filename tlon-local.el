@@ -88,10 +88,9 @@ At the end, open the local site in the default browser."
             (set-process-sentinel
              proc
              (lambda (_p event)
+	       "Browse the local site 30 seconds after the process finishes."
                (when (and (string-prefix-p "finished" event)
                           local-url)
-		 ;; we wait a bit before opening the browser to give the server
-		 ;; time to fully build the site
                  (run-at-time 30 nil #'browse-url local-url)))))))))))
 
 ;;;; Language-specific commands
