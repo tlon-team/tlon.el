@@ -133,6 +133,8 @@ At the end, open the local site in the default browser."
 
 ;;;; Helpers
 
+;;;;; Docker
+
 (defun tlon-local--docker-running-p ()
   "Return non-nil if the Docker daemon responds to `docker info'."
   (and (executable-find "docker")
@@ -158,6 +160,41 @@ On macOS, try to start Docker Desktop with `open -ga Docker' and wait until
      (t
       (user-error "Docker daemon is not running")))))
 
+;;;;; web server
+
+(defun tlon-local--web-server-running-p ()
+  "Return non-nil if Traefik on localhost:8080 responds over HTTP."
+  (tlon-local--http-traefik-p "http://localhost:8080" 3))
+
+(defun tlon-local--http-traefik-p (url timeout)
+  "Return non-nil if URL responds in TIMEOUT secs and seems like Traefik."
+  (let* ((buf (ignore-errors (url-retrieve-synchronously url t nil timeout)))
+         (ok nil))
+    (when buf
+      (with-current-buffer buf
+        (goto-char (point-min))
+        (when (re-search-forward "^HTTP/[0-9.]+ \\([0-9]+\\)" nil t)
+          (let ((code (string-to-number (match-string 1))))
+            (when (and (>= code 200) (< code 400))
+              (let ((headers-end (and (search-forward "\n\n" nil t) (point))))
+                (goto-char (point-min))
+                (setq ok (or (re-search-forward "^Server:[ \t]*traefik\\b" headers-end t)
+                             (and headers-end
+                                  (progn (goto-char headers-end)
+                                         (search-forward "Traefik" nil t)))))))))
+        (kill-buffer buf)))
+    ok))
+
+;;;;; uqbar
+
+(defun tlon-local--uqbar-running-p (url)
+  "Return non-nil if the local Uqbar site at URL is reachable (TCP)."
+  (when url
+    (let* ((parsed (url-generic-parse-url url))
+           (host (url-host parsed)))
+      (or (tlon-local--tcp-open-p host 443)
+          (tlon-local--tcp-open-p host 80)))))
+
 (defun tlon-local--tcp-open-p (host port)
   "Return non-nil if a TCP connection to HOST:PORT succeeds."
   (let (proc ok)
@@ -169,18 +206,6 @@ On macOS, try to start Docker Desktop with `open -ga Docker' and wait until
                 t)
             (error nil)))
     ok))
-
-(defun tlon-local--web-server-running-p ()
-  "Return non-nil if the Traefik dashboard is reachable on localhost:8080."
-  (tlon-local--tcp-open-p "localhost" 8080))
-
-(defun tlon-local--uqbar-running-p (url)
-  "Return non-nil if the local Uqbar site at URL is reachable (TCP)."
-  (when url
-    (let* ((parsed (url-generic-parse-url url))
-           (host (url-host parsed)))
-      (or (tlon-local--tcp-open-p host 443)
-          (tlon-local--tcp-open-p host 80)))))
 
 (defun tlon-local--uqbar-local-url (lang)
   "Compute the local development URL for Uqbar in language LANG.
@@ -198,7 +223,7 @@ Returns a string like \"https://local-dev.example.org\" or nil if unknown."
 ;;;###autoload (autoload 'tlon-local-menu "tlon-local" nil t)
 (transient-define-prefix tlon-local-menu ()
   "`tlon-local' menu."
-  [["Run environment"
+  [["Run local environment"
     ("q a" "arabic" tlon-local-run-uqbar-ar)
     ("q n" "english" tlon-local-run-uqbar-en)
     ("q s" "spanish" tlon-local-run-uqbar-es)
@@ -207,7 +232,6 @@ Returns a string like \"https://local-dev.example.org\" or nil if unknown."
     ("q j" "japanese" tlon-local-run-uqbar-ja)
     ("q k" "korean" tlon-local-run-uqbar-ko)
     ("q u" "turkish" tlon-local-run-uqbar-tr)]])
-
 
 (provide 'tlon-local)
 ;;; tlon-local.el ends here
