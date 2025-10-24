@@ -32,6 +32,9 @@
 
 ;;;; Variables
 
+(defgroup tlon-local nil
+  "Manage local environments."
+  :group 'tlon)
 
 ;;;; Functions
 
