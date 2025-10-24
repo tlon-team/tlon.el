@@ -308,7 +308,7 @@ The replacement text includes a `: position 1' suffix to work with
 
 (defun tlon-local--article-id-to-path (slug lang)
   "Return the absolute markdown file path for article SLUG in LANG."
-  (let* ((repo (tlon-repo-lookup :dir :name (format "uqbar-%s" lang)))
+  (let* ((repo (tlon-repo-lookup :dir :subproject "uqbar" :language lang))
          (articles-dir (tlon-get-bare-dir-translation lang "en" "articles"))
          (file (file-name-with-extension slug "md")))
     (file-name-concat repo articles-dir file)))
