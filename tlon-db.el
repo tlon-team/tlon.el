@@ -934,6 +934,48 @@ when known.  On success, show a concise message; on error or when
       (insert (format "Status: Error (HTTP %d)\n" status))
       (insert (or raw "No content."))))))
 
+;;;###autoload
+(defun tlon-db-set-publication-status-in-current-directory (&optional status)
+  "Set publication STATUS for all Markdown files in the current directory.
+When called interactively, prompt for STATUS and confirm before applying.
+Files considered have .md or .markdown extensions. For each file, read the
+entry key from the YAML front matter and call `tlon-db-set-publication-status'."
+  (interactive)
+  (tlon-db-ensure-auth)
+  (let* ((files (cl-remove-if-not #'file-regular-p
+                                  (append (file-expand-wildcards "*.md")
+                                          (file-expand-wildcards "*.markdown"))))
+         (count (length files)))
+    (if (= count 0)
+        (message "No Markdown files found in %s" default-directory)
+      (let* ((status (or status
+                         (completing-read "Publication status: "
+                                          tlon-db-publication-statuses nil t)))
+             (proceed (y-or-n-p (format "Set publication status to ‘%s’ for %d files? "
+                                        status count)))
+             (ok 0)
+             (fail 0)
+             (failed '()))
+        (when proceed
+          (dolist (f files)
+            (condition-case _err
+                (let ((id (with-current-buffer (find-file-noselect f)
+                            (tlon-yaml-get-key "key"))))
+                  (if (not id)
+                      (progn
+                        (setq fail (1+ fail))
+                        (push (file-name-nondirectory f) failed))
+                    (tlon-db-set-publication-status id status)
+                    (setq ok (1+ ok))))
+              (error
+               (setq fail (1+ fail))
+               (push (file-name-nondirectory f) failed))))
+          (message "Publication status update: %d succeeded, %d failed%s."
+                   ok fail
+                   (if (> fail 0)
+                       (format " (%s)" (string-join (nreverse failed) ", "))
+                     "")))))))
+
 ;;;;;; Get translation key
 
 ;;;###autoload
@@ -1516,6 +1558,7 @@ If there are no differences, return nil."
     ("i" "Check or insert name" tlon-db-check-or-insert-name)
     ("n" "Set name" tlon-db-set-name)
     ("s" "Set publication status" tlon-db-set-publication-status)
+    ("S" "Set publication status in dir" tlon-db-set-publication-status-in-current-directory)
     ("y" "Sync db now" tlon-db-sync-now)
     ""
     ("a" "Authenticate" tlon-db-authenticate)]
