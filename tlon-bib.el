@@ -886,8 +886,11 @@ Fields set in the new entry:
 	;; close entry
 	(insert "}\n")
 	(bibtex-clean-entry)))
+    (unless mode-ebib
+      (bibtex-search-entry new-key))
     (tlon-bib-populate-url-field)
-    (message "Inserted translation entry %s." new-key)))
+    (prog1 new-key
+      (message "Inserted translation entry %s." new-key))))
 
 (defun tlon-bib--translate-string (string source-lang target-lang &optional no-glossary)
   "Synchronously translate STRING from SOURCE-LANG to TARGET-LANG with DeepL.
