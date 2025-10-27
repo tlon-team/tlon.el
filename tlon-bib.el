@@ -803,7 +803,7 @@ for each matching BibTeX entry with a missing/empty `url', call
 
 (declare-function ebib-extras-set-field "ebib-extras")
 ;;;###autoload
-(defun tlon-create-bibtex-translation ()
+(defun tlon-create-bibtex-translation (&optional target-code no-glossary)
   "Create a BibTeX entry representing a translation of the entry at point.
 The command works in `bibtex-mode', `ebib-entry-mode' and
 `ebib-index-mode'.
@@ -822,7 +822,7 @@ Fields set in the new entry:
 - url: populated with `tlon-bib-populate-url-field'."
   (interactive)
   (tlon-ensure-bib)
-  (let* ((target-code (tlon-select-language 'code 'babel))
+  (let* ((target-code (or target-code (tlon-select-language 'code 'babel)))
 	 (target-lang (tlon-lookup tlon-languages-properties :standard :code target-code))
 	 (mode-ebib   (derived-mode-p 'ebib-entry-mode 'ebib-index-mode))
 	 (orig-key    (tlon-get-key-at-point))
@@ -840,8 +840,8 @@ Fields set in the new entry:
 	 (source-lang (tlon-get-iso-code
 		       (downcase (or (funcall get-field "langid") "english"))))
 	 ;; DeepL translations (synchronous wrapper defined below)
-	 (trans-title (tlon-bib--translate-string orig-title source-lang target-code))
-	 (trans-abs   (tlon-bib--translate-string orig-abs   source-lang target-code))
+	 (trans-title (tlon-bib--translate-string orig-title source-lang target-code no-glossary))
+	 (trans-abs   (tlon-bib--translate-string orig-abs   source-lang target-code no-glossary))
 	 (new-key     (tlon-generate-autokey author (format-time-string "%Y") trans-title))
 	 (date-now    (format-time-string "%Y-%m-%d")))
     (if mode-ebib
@@ -887,7 +887,7 @@ Fields set in the new entry:
     (tlon-bib-populate-url-field)
     (message "Inserted translation entry %s." new-key)))
 
-(defun tlon-bib--translate-string (string source-lang target-lang)
+(defun tlon-bib--translate-string (string source-lang target-lang &optional no-glossary)
   "Synchronously translate STRING from SOURCE-LANG to TARGET-LANG with DeepL.
 Return STRING unchanged if translation fails."
   (if (or (not string) (string-empty-p string))
@@ -895,7 +895,8 @@ Return STRING unchanged if translation fails."
     (let (result)
       (tlon-deepl-translate string target-lang source-lang
 			    (lambda ()
-			      (setq result (tlon-deepl-print-translation))))
+			      (setq result (tlon-deepl-print-translation)))
+                            no-glossary)
       (or result string))))
 
 ;;;###autoload
@@ -917,7 +918,7 @@ After each file, prompt the user to proceed to the next one. Stop if declined."
           (condition-case err
               (progn
                 (citar-extras-goto-bibtex-entry key)
-                (tlon-create-bibtex-translation)
+                (tlon-create-bibtex-translation "ko" t)
                 (setq processed (1+ processed)))
             (error
              (message "Error processing %s (key %s): %s"
