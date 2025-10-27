@@ -1465,7 +1465,7 @@ file. Print a summary and return a plist with counters."
                   "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/한_가지_이상의_목표를_가져도_된다.md"
                   "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/한계_영향력.md"
                   "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/효과에_집중하기에_관해_더_알아보기.md"))
-         (en-articles-dir "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-en/article")
+         (en-articles-dir "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-en/articles")
          (updated 0) (skipped 0) (missing 0) (notfound 0) (nokey 0) (errors 0))
     (dolist (ko-file files)
       (condition-case err
@@ -1484,7 +1484,7 @@ file. Print a summary and return a plist with counters."
                           (with-current-buffer (find-file-noselect ko-file)
                             (tlon-yaml-insert-field "original_key" en-key t)
                             (save-buffer))
-                          (setq updated (1+ updated)))))))))
+                          (setq updated (1+ updated))))))))))
         (error
          (setq errors (1+ errors))
          (message "Error processing %s: %s" ko-file (error-message-string err)))))
