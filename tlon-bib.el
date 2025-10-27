@@ -925,28 +925,14 @@ DIR defaults to `default-directory'. For each Markdown file in DIR:
               (progn
                 ;; Open original entry
                 (citar-extras-goto-bibtex-entry key)
-                ;; Create translation (Korean, no glossary)
-                (tlon-create-bibtex-translation "ko" t)
-                ;; After creation, find the newly created translation entry
-                (let* ((yaml-title (ignore-errors (tlon-yaml-get-key "title" file)))
-                       (today (format-time-string "%Y-%m-%d"))
-                       (new-entry-start nil))
-                  (save-excursion
-                    (save-restriction
-                      (widen)
-                      (bibtex-map-entries
-                       (lambda (_k start _end)
-                         (save-excursion
-                           (goto-char start)
-                           (bibtex-narrow-to-entry)
-                           (when (and (string= (or (bibtex-extras-get-field "translation") "") key)
-                                      (string= (or (bibtex-extras-get-field "date") "") today))
-                             (setq new-entry-start start))
-                           (widen))))))
-                  (when new-entry-start
+                ;; Create translation (Korean, no glossary), capture new key
+                (let* ((new-key (tlon-create-bibtex-translation "ko" t))
+                       (yaml-title (ignore-errors (tlon-yaml-get-key "title" file))))
+                  (when new-key
                     (save-excursion
-                      (goto-char new-entry-start)
                       (save-restriction
+                        (widen)
+                        (bibtex-search-entry new-key)
                         (bibtex-narrow-to-entry)
                         ;; If YAML title present, set it
                         (when (and yaml-title (not (string-empty-p (string-trim yaml-title))))
@@ -957,8 +943,8 @@ DIR defaults to `default-directory'. For each Markdown file in DIR:
                           (bibtex-kill-field nil t))
                         ;; Regenerate URL based on updated title
                         (tlon-bib-populate-url-field)
-                        (widen))
-                      (when (buffer-modified-p) (save-buffer)))))
+                        (widen)))
+                    (when (buffer-modified-p) (save-buffer))))
                 (setq processed (1+ processed)))
             (error
              (message "Error processing %s (key %s): %s"
