@@ -856,7 +856,8 @@ prompt the user for confirmation before overwriting."
         (let ((mode (tlon-translate--deepl-glossary-mode source-lang-code target-lang)))
           (pcase mode
             ('skip
-             (message "Skipping %s -> %s: %s-%s glossary missing" key target-lang (upcase source-lang-code) (upcase target-lang)))
+             (message "Skipping %s -> %s: %s-%s glossary missing"
+		      key target-lang (upcase source-lang-code) (upcase target-lang)))
             (_
              (if (and existing-translation
                       (not (y-or-n-p (format "Translation for %s into %s already exists. Retranslate?"
