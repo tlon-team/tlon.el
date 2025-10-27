@@ -226,9 +226,8 @@ This section details the interactive commands provided by =tlon-bib.el=.
 #+findex: tlon-bib-create-translations-from-dir
 + ~tlon-bib-create-translations-from-dir~ :: Iterates over all Markdown files
   in the directory at point. For each file, reads its YAML =original_key=,
-  jumps to the corresponding BibTeX entry, calls
-  ~tlon-create-bibtex-translation~, and then prompts to proceed to the next
-  file. Stops when the user declines to continue.
+  jumps to the corresponding BibTeX entry, and calls
+  ~tlon-create-bibtex-translation~.
 
 *** Citation Conversion and Replacement
 :PROPERTIES:

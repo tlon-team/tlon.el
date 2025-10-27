@@ -903,12 +903,11 @@ Return STRING unchanged if translation fails."
 
 ;;;###autoload
 (defun tlon-bib-create-translations-from-dir (&optional dir)
-  "Create translation entries for Markdown files in DIR, prompting between files.
+  "Create translation entries for Markdown files in DIR.
 DIR defaults to `default-directory'. For each Markdown file in DIR:
 1. Read its YAML field `original_key'.
 2. Jump to the BibTeX entry with that key.
-3. Call `tlon-create-bibtex-translation'.
-After each file, prompt the user to proceed to the next one. Stop if declined."
+3. Call `tlon-create-bibtex-translation'."
   (interactive)
   (let* ((dir (file-name-as-directory (or dir default-directory)))
          (files (directory-files dir t "\\.md\\'"))
@@ -924,11 +923,7 @@ After each file, prompt the user to proceed to the next one. Stop if declined."
                 (setq processed (1+ processed)))
             (error
              (message "Error processing %s (key %s): %s"
-                      (file-name-nondirectory file) key (error-message-string err))))))
-      (unless (y-or-n-p (format "Proceed to next file after %s? "
-                                (file-name-nondirectory file)))
-        (message "Stopped after %d file%s." processed (if (= processed 1) "" "s"))
-        (cl-return-from tlon-bib-create-translations-from-dir processed)))
+                      (file-name-nondirectory file) key (error-message-string err)))))))
     (message "Finished. Processed %d file%s."
              processed (if (= processed 1) "" "s"))
     processed))
