@@ -213,7 +213,7 @@ This section details the interactive commands provided by =tlon-bib.el=.
 :END:
 
 #+findex: tlon-create-bibtex-translation
-+ ~tlon-create-bibtex-translation~ :: (Autoloaded) Creates a new BibTeX entry representing a translation of the entry currently open in =ebib-entry-mode=.
++ ~tlon-create-bibtex-translation~ :: (Autoloaded) Creates a new BibTeX entry representing a translation of the entry currently open in =ebib-entry-mode=. It returns the new entry's key.
   1. Prompts for the target language using ~tlon-select-language~.
   2. Gathers fields from the original entry (=translation= (original key), =type=, =author=, =database=).
   3. Prompts for the new =title= and =translator=.
