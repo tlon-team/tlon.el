@@ -263,3 +263,10 @@ This module provides functions for reading, writing, and manipulating YAML front
   files in DIR, non-recursively. Prompts for FIELD and DIR, with DIR defaulting
   to the current directory. Displays a summary and returns the list of files
   modified.
+
+#+findex: tlon-yaml-ko-backfill-original-keys
++ ~tlon-yaml-ko-backfill-original-keys~ :: For a curated list of Korean
+  articles, set ~original_key~ by reading ~original_path~, opening the English
+  counterpart under =/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-en/article/=,
+  retrieving its YAML ~key~, and writing it back. Skips files that already have
+  ~original_key~ and prints a summary.
