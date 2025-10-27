@@ -898,6 +898,38 @@ Return STRING unchanged if translation fails."
 			      (setq result (tlon-deepl-print-translation))))
       (or result string))))
 
+;;;###autoload
+(defun tlon-bib-create-translations-from-dir (&optional dir)
+  "Create translation entries for Markdown files in DIR, prompting between files.
+DIR defaults to `default-directory'. For each Markdown file in DIR:
+1. Read its YAML field `original_key'.
+2. Jump to the BibTeX entry with that key.
+3. Call `tlon-create-bibtex-translation'.
+After each file, prompt the user to proceed to the next one. Stop if declined."
+  (interactive)
+  (let* ((dir (file-name-as-directory (or dir default-directory)))
+         (files (directory-files dir t "\\.md\\'"))
+         (processed 0))
+    (dolist (file files)
+      (let ((key (ignore-errors (tlon-yaml-get-key "original_key" file))))
+        (if (not key)
+            (message "Skipping %s: no original_key" (file-name-nondirectory file))
+          (condition-case err
+              (progn
+                (citar-extras-goto-bibtex-entry key)
+                (tlon-create-bibtex-translation)
+                (setq processed (1+ processed)))
+            (error
+             (message "Error processing %s (key %s): %s"
+                      (file-name-nondirectory file) key (error-message-string err))))))
+      (unless (y-or-n-p (format "Proceed to next file after %s? "
+                                (file-name-nondirectory file)))
+        (message "Stopped after %d file%s." processed (if (= processed 1) "" "s"))
+        (cl-return-from tlon-bib-create-translations-from-dir processed)))
+    (message "Finished. Processed %d file%s."
+             processed (if (= processed 1) "" "s"))
+    processed))
+
 ;;;;; Convert to `Cite'
 
 (defvar markdown-regex-link-inline)
