@@ -223,6 +223,13 @@ This section details the interactive commands provided by =tlon-bib.el=.
   7. Sets the gathered/prompted fields in the new entry.
   8. Generates a citation key for the new entry (=ebib-generate-autokey=).
 
+#+findex: tlon-bib-create-translations-from-dir
++ ~tlon-bib-create-translations-from-dir~ :: Iterates over all Markdown files
+  in the directory at point. For each file, reads its YAML =original_key=,
+  jumps to the corresponding BibTeX entry, calls
+  ~tlon-create-bibtex-translation~, and then prompts to proceed to the next
+  file. Stops when the user declines to continue.
+
 *** Citation Conversion and Replacement
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-bib-citation-commands
