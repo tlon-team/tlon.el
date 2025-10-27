@@ -109,6 +109,14 @@ request fails.
   Requires authentication. Shows the result buffer on error or when ~tlon-debug~
   is non-nil; otherwise shows a concise success message.
 
+#+findex: tlon-db-set-publication-status-in-current-directory
++ ~tlon-db-set-publication-status-in-current-directory~ :: Prompts once for a
+  publication status and applies it to every Markdown file in the current
+  directory (files ending in =.md= or =.markdown=). For each file, the BibTeX
+  key is read from the YAML front matter via ~tlon-yaml-get-key~ and then
+  ~tlon-db-set-publication-status~ is called. The command confirms before
+  proceeding and reports a success/failure summary at the end.
+
 #+findex: tlon-db-sync-now
 + ~tlon-db-sync-now~ :: Runs the same synchronization process used by automatic
   sync, even when ~tlon-db-enable-auto-sync~ is nil. It saves ~db.bib~ if the
