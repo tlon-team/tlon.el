@@ -905,9 +905,11 @@ Return STRING unchanged if translation fails."
 (defun tlon-bib-create-translations-from-dir (&optional dir)
   "Create translation entries for Markdown files in DIR.
 DIR defaults to `default-directory'. For each Markdown file in DIR:
-1. Read its YAML field `original_key'.
+1. Read its YAML fields `original_key' and `title'.
 2. Jump to the BibTeX entry with that key.
-3. Call `tlon-create-bibtex-translation'."
+3. Call `tlon-create-bibtex-translation'.
+4. Set the new entry's `title' to the YAML `title' value (if present).
+5. Regenerate the `url' based on the updated title via `tlon-bib-populate-url-field'."
   (interactive)
   (let* ((dir (file-name-as-directory (or dir default-directory)))
          (files (directory-files dir t "\\.md\\'"))
@@ -918,8 +920,42 @@ DIR defaults to `default-directory'. For each Markdown file in DIR:
             (message "Skipping %s: no original_key" (file-name-nondirectory file))
           (condition-case err
               (progn
+                ;; Open original entry
                 (citar-extras-goto-bibtex-entry key)
+                ;; Create translation (Korean, no glossary)
                 (tlon-create-bibtex-translation "ko" t)
+                ;; After creation, find the newly created translation entry
+                (let* ((yaml-title (ignore-errors (tlon-yaml-get-key "title" file)))
+                       (today (format-time-string "%Y-%m-%d"))
+                       (new-entry-start nil))
+                  (save-excursion
+                    (save-restriction
+                      (widen)
+                      (bibtex-map-entries
+                       (lambda (_k start _end)
+                         (save-excursion
+                           (goto-char start)
+                           (bibtex-narrow-to-entry)
+                           (when (and (string= (or (bibtex-extras-get-field "translation") "") key)
+                                      (string= (or (bibtex-extras-get-field "date") "") today))
+                             (setq new-entry-start start))
+                           (widen))))))
+                  (when new-entry-start
+                    (save-excursion
+                      (goto-char new-entry-start)
+                      (save-restriction
+                        (bibtex-narrow-to-entry)
+                        ;; If YAML title present, set it
+                        (when (and yaml-title (not (string-empty-p (string-trim yaml-title))))
+                          (bibtex-set-field "title" yaml-title))
+                        ;; Remove existing url field (to avoid overwrite prompt)
+                        (when-let ((url-bounds (bibtex-search-forward-field "url" t)))
+                          (goto-char (bibtex-start-of-name-in-field url-bounds))
+                          (bibtex-kill-field nil t))
+                        ;; Regenerate URL based on updated title
+                        (tlon-bib-populate-url-field)
+                        (widen))
+                      (when (buffer-modified-p) (save-buffer)))))
                 (setq processed (1+ processed)))
             (error
              (message "Error processing %s (key %s): %s"
