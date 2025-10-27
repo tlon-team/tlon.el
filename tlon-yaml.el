@@ -1431,5 +1431,66 @@ temporary clean-up helper."
     (message "Lowercased first word of tags in %d file%s under %s"
              updated (if (= updated 1) "" "s") dir)))
 
+;;;###autoload
+(defun tlon-yaml-ko-backfill-original-keys ()
+  "Backfill original_key for a curated list of Korean articles.
+For each file, skip when `original_key' exists; otherwise read
+`original_path', open the corresponding English article under
+uqbar-en/article, read its YAML `key', and set it back in the Korean
+file. Print a summary and return a plist with counters."
+  (interactive)
+  (let* ((files '("/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/8만_시간의_중심_생각_요약.md"
+                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/LEEP_소개_납_노출_근절_사업_Lead_Exposure_Elimination_Project.md"
+                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/남아시아_지역_대기_오염의_원인_조사.md"
+                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/내가_아마도_장기주의자일_수_없는_이유.md"
+                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/독자적_반응.md"
+                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/모든_동물은_동등하다.md"
+                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/미래에는_어떠한_일들이_일어나게_될_것이며_우리는_왜_관심을_가져야_하는가_에_대한_연습.md"
+                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/생명_보안을_위해_기술자와_재료공학자들이_필요하다.md"
+                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/세상에서_가장_신나는_명분_효과적인_이타주의.md"
+                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/스타트업_투자자처럼_기부하기_히트_기반_기부란_무엇인가.md"
+                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/실행에_옮기기_위한.md"
+                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/실행에_옮기기_위한_연습.md"
+                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/어류_포획에_비하면_해양_플라스틱_오염으로_죽어가는_바다새와_해양_포유류의_수는_상대적으로_적다.md"
+                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/여러분은_어떻게_생각하는가.md"
+                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/여러분은_어떻게_생각하는가_에_대한 과제.md"
+                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/우리가_미래에_빚지고_있는_것_제_1장.md"
+                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/이대로는_안_된다.md"
+                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/인공지능의_위험.md"
+                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/인공지능이_인류에_위협이_되는_이유.md"
+                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/인류_최후의_세기.md"
+                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/장기주의자의_진로_선택에_대한_나의_현재_입장.md"
+                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/전문가들이_인간이_초래한_감염병의_세계적_대유행을_두려워하는_이유_그리고_우리가_그것을_막기_위해_할_수_있는_일.md"
+                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/전지구적_문제를_기대_영향력_측면에서_비교하기_위한_체계.md"
+                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/한_가지_이상의_목표를_가져도_된다.md"
+                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/한계_영향력.md"
+                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/효과에_집중하기에_관해_더_알아보기.md"))
+         (en-articles-dir "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-en/article")
+         (updated 0) (skipped 0) (missing 0) (notfound 0) (nokey 0) (errors 0))
+    (dolist (ko-file files)
+      (condition-case err
+          (let ((existing (tlon-yaml-get-key "original_key" ko-file)))
+            (if existing
+                (setq skipped (1+ skipped))
+              (let* ((orig (tlon-yaml-get-key "original_path" ko-file)))
+                (if (not orig)
+                    (setq missing (1+ missing))
+                  (let* ((en-file (expand-file-name orig en-articles-dir)))
+                    (if (not (file-exists-p en-file))
+                        (setq notfound (1+ notfound))
+                      (let ((en-key (tlon-yaml-get-key "key" en-file)))
+                        (if (not en-key)
+                            (setq nokey (1+ nokey))
+                          (with-current-buffer (find-file-noselect ko-file)
+                            (tlon-yaml-insert-field "original_key" en-key t)
+                            (save-buffer))
+                          (setq updated (1+ updated)))))))))
+        (error
+         (setq errors (1+ errors))
+         (message "Error processing %s: %s" ko-file (error-message-string err)))))
+    (message "Backfill complete: updated=%d, skipped=%d, missing-original_path=%d, en-file-not-found=%d, missing-en-key=%d, errors=%d"
+             updated skipped missing notfound nokey errors)
+    (list :updated updated :skipped skipped :missing_original_path missing :en_file_not_found notfound :missing_en_key nokey :errors errors)))
+
 (provide 'tlon-yaml)
 ;;; tlon-yaml.el ends here
