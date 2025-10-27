@@ -200,7 +200,7 @@
 	   :subtype translations
 	   :language "ko"
 	   :key "q k"
-	   :url "eakorea.org"
+	   :url "https://eakorea.org"
 	   :help t)
     (:name "uqbar-ja"
 	   :project "babel"
@@ -210,7 +210,7 @@
 	   :subtype translations
 	   :language "ja"
 	   :key "q j"
-	   :url ""
+	   :url "https://eanotes.jp"
 	   :help t)
     (:name "uqbar-ru"
 	   :project "babel"
