@@ -842,7 +842,9 @@ Fields set in the new entry:
 	 ;; DeepL translations (synchronous wrapper defined below)
 	 (trans-title (tlon-bib--translate-string orig-title source-lang target-code no-glossary))
 	 (trans-abs   (tlon-bib--translate-string orig-abs   source-lang target-code no-glossary))
-	 (new-key     (tlon-generate-autokey author (format-time-string "%Y") trans-title))
+	 (new-key     (if (string= target-code "ko")
+			  (concat orig-key "Ko")
+			(tlon-generate-autokey author (format-time-string "%Y") trans-title)))
 	 (date-now    (format-time-string "%Y-%m-%d")))
     (if mode-ebib
 	;; -------- EBIB --------
