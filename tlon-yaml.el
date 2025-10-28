@@ -1492,5 +1492,44 @@ file. Print a summary and return a plist with counters."
              updated skipped missing notfound nokey errors)
     (list :updated updated :skipped skipped :missing_original_path missing :en_file_not_found notfound :missing_en_key nokey :errors errors)))
 
+;;;###autoload
+(defun tlon-yaml-collect-english-tags-in-dir (&optional dir)
+  "Return English tags from counterparts of Markdown files in DIR.
+When DIR is nil, use `default-directory'. Search only the top level
+(non-recursive). The result is a de-duplicated list of tag titles.
+When called interactively, also print a short summary."
+  (interactive)
+  (let* ((dir (file-name-as-directory (or dir default-directory)))
+         (files (directory-files dir t "\\.md\\'"))
+         (acc '()))
+    (dolist (file files)
+      (condition-case nil
+          (let* ((lang (tlon-get-language-in-file file))
+                 (en-file (if (string= lang "en")
+                              file
+                            (tlon-get-counterpart file "en"))))
+            (when (and en-file (file-exists-p en-file))
+              (let ((tags (tlon-yaml-get-key "tags" en-file)))
+                (cond
+                 ((vectorp tags)
+                  (setq acc (nconc acc (append tags nil))))
+                 ((listp tags)
+                  (setq acc (nconc acc tags)))
+                 ((stringp tags)
+                  (let ((val (tlon-yaml-format-value tags)))
+                    (if (listp val)
+                        (setq acc (nconc acc val))
+                      (let* ((s (string-trim (or val ""))))
+                        (unless (string-empty-p s)
+                          (push s acc))))))))))
+        (error nil)))
+    (setq acc (nreverse (delete-dups
+                         (mapcar #'string-trim
+                                 (cl-remove-if #'string-empty-p acc)))))
+    (when (called-interactively-p 'interactive)
+      (message "Collected %d unique English tag%s in %s"
+               (length acc) (if (= (length acc) 1) "" "s") dir))
+    acc))
+
 (provide 'tlon-yaml)
 ;;; tlon-yaml.el ends here

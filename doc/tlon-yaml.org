@@ -270,3 +270,8 @@ This module provides functions for reading, writing, and manipulating YAML front
   counterpart under =/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-en/article/=,
   retrieving its YAML ~key~, and writing it back. Skips files that already have
   ~original_key~ and prints a summary.
+
+#+findex: tlon-yaml-collect-english-tags-in-dir
++ ~tlon-yaml-collect-english-tags-in-dir~ :: Returns the list of unique English
+  tag titles found in the English counterparts of all Markdown files in the
+  current directory (non-recursive). Intended as a temporary helper.
