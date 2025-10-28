@@ -70,6 +70,21 @@ This usually contains the data source numeric ID or UID."
   :type 'integer
   :group 'tlon-local)
 
+(defcustom tlon-local-rebuild-content-database nil
+  "When non-nil, append --rebuild-content-database to Uqbar start."
+  :type 'boolean
+  :group 'tlon-local)
+
+(defcustom tlon-local-content-branch-production nil
+  "When non-nil, append --content-branch=production to Uqbar start."
+  :type 'boolean
+  :group 'tlon-local)
+
+(defcustom tlon-local-no-include-testing-tlon-dispatch nil
+  "When non-nil, append --no-include-testing tlon-dispatch to Uqbar start."
+  :type 'boolean
+  :group 'tlon-local)
+
 (defvar-local tlon-local--logs-ctx nil
   "Internal context data for `tlon-local-logs' buffers.")
 
@@ -113,7 +128,19 @@ At the end, open the local site in the default browser."
       (when run-uq
         (when uq-running
           (setq commands (funcall append-command "cd %s && ./launch.py stop %s")))
-        (setq commands (funcall append-command "cd %s && ./launch.py start %s")))
+        (let* ((opts (string-join
+                      (delq nil
+                            (list
+                             (and tlon-local-rebuild-content-database "--rebuild-content-database")
+                             (and tlon-local-content-branch-production "--content-branch=production")
+                             (and tlon-local-no-include-testing-tlon-dispatch "--no-include-testing tlon-dispatch")))
+                      " ")))
+          (if (string-empty-p opts)
+              (setq commands (funcall append-command "cd %s && ./launch.py start %s"))
+            (let* ((uq (shell-quote-argument uq-dir))
+                   (la (shell-quote-argument lang))
+                   (cmd (format "cd %s && ./launch.py start %s %s" uq la opts)))
+              (setq commands (append commands (list cmd)))))))
       (cond
        ;; Nothing to run: just open the site if we know the URL
        ((null commands)
@@ -472,21 +499,46 @@ Returns a string like \"https://local-dev.example.org\" or nil if unknown."
 
 ;;;; Menu
 
+;;;;; Infix toggles
+
+(transient-define-infix tlon-local-infix-rebuild-content-database ()
+  "Toggle the rebuild content database flag."
+  :class 'transient-lisp-variable
+  :variable 'tlon-local-rebuild-content-database
+  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-local-rebuild-content-database)))
+
+(transient-define-infix tlon-local-infix-content-branch-production ()
+  "Toggle the content-branch=production flag."
+  :class 'transient-lisp-variable
+  :variable 'tlon-local-content-branch-production
+  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-local-content-branch-production)))
+
+(transient-define-infix tlon-local-infix-no-include-testing-tlon-dispatch ()
+  "Toggle the no-include-testing tlon-dispatch flag."
+  :class 'transient-lisp-variable
+  :variable 'tlon-local-no-include-testing-tlon-dispatch
+  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-local-no-include-testing-tlon-dispatch)))
+
 ;;;###autoload (autoload 'tlon-local-menu "tlon-local" nil t)
 (transient-define-prefix tlon-local-menu ()
   "`tlon-local' menu."
   [["Run local environment"
-    ("q a" "arabic" tlon-local-run-uqbar-ar)
-    ("q n" "english" tlon-local-run-uqbar-en)
-    ("q s" "spanish" tlon-local-run-uqbar-es)
-    ("q r" "french" tlon-local-run-uqbar-fr)
-    ("q t" "italian" tlon-local-run-uqbar-it)
-    ("q j" "japanese" tlon-local-run-uqbar-ja)
-    ("q k" "korean" tlon-local-run-uqbar-ko)
-    ("q u" "turkish" tlon-local-run-uqbar-tr)]
+    ("q a" "arabic"                        tlon-local-run-uqbar-ar)
+    ("q n" "english"                       tlon-local-run-uqbar-en)
+    ("q s" "spanish"                       tlon-local-run-uqbar-es)
+    ("q r" "french"                        tlon-local-run-uqbar-fr)
+    ("q t" "italian"                       tlon-local-run-uqbar-it)
+    ("q j" "japanese"                      tlon-local-run-uqbar-ja)
+    ("q k" "korean"                        tlon-local-run-uqbar-ko)
+    ("q u" "turkish"                       tlon-local-run-uqbar-tr)
+    ""
+    "Options"
+    ("-r" "rebuild content db"             tlon-local-infix-rebuild-content-database)
+    ("-b" "content branch=production"      tlon-local-infix-content-branch-production)
+    ("-t" "no testing tlon-dispatch"       tlon-local-infix-no-include-testing-tlon-dispatch)]
    ["Logs"
-    ("l e" "errors" tlon-local-logs)
-    ("l w" "warnings" tlon-local-logs-warnings)]])
+    ("l e" "errors"                        tlon-local-logs)
+    ("l w" "warnings"                      tlon-local-logs-warnings)]])
 
 (provide 'tlon-local)
 ;;; tlon-local.el ends here
