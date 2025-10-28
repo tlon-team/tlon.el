@@ -908,11 +908,17 @@ Return STRING unchanged if translation fails."
 (defun tlon-bib-create-translations-from-dir (&optional dir)
   "Create translation entries for Markdown files in DIR.
 DIR defaults to `default-directory'. For each Markdown file in DIR:
+
 1. Read its YAML fields `original_key' and `title'.
+
 2. Jump to the BibTeX entry with that key.
+
 3. Call `tlon-create-bibtex-translation'.
+
 4. Set the new entry's `title' to the YAML `title' value (if present).
-5. Regenerate the `url' based on the updated title via `tlon-bib-populate-url-field'."
+
+5. Regenerate the `url' based on the updated title via
+`tlon-bib-populate-url-field'."
   (interactive)
   (let* ((dir (file-name-as-directory (or dir default-directory)))
          (files (directory-files dir t "\\.md\\'"))
