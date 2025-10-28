@@ -127,13 +127,20 @@ the basename of FILE."
            (_ (completing-read "Disambiguate translation: " (nreverse hits) nil t)))))
       ((or "tag" "author")
        (let* ((orig-base (file-name-nondirectory file))
+              (orig-repo (tlon-get-repo-from-file file))
+              (orig-lang (tlon-repo-lookup :language :dir orig-repo))
+              (orig-bare (tlon-get-bare-dir file))
               (repos (tlon-counterpart--translation-repos target-language-code))
               (hits '()))
          (dolist (repo repos)
-           (let* ((meta (tlon-metadata-in-repo repo))
-                  (all (ignore-errors
-                         (tlon-metadata-lookup-all meta "file" "original_path" orig-base))))
-             (dolist (h all) (push h hits))))
+           (let* ((trans-bare (tlon-get-bare-dir-translation target-language-code orig-lang orig-bare))
+                  (dir (and trans-bare (file-name-concat repo trans-bare))))
+             (when (and dir (file-directory-p dir))
+               (condition-case _err
+                   (let* ((meta (tlon-metadata-in-dir dir))
+                          (all (tlon-metadata-lookup-all meta "file" "original_path" orig-base)))
+                     (dolist (h all) (push h hits)))
+                 (error nil)))))
          (setq hits (delete-dups hits))
          (pcase (length hits)
            (1 (car hits))
@@ -636,17 +643,15 @@ language within the current subproject."
 (defun tlon-counterpart--files-of-type-in-repo (repo-dir yaml-type)
   "Return a list of markdown files in REPO-DIR whose YAML type is YAML-TYPE.
 
-Scan only the repository root and its immediate subdirectories (non-recursive)."
-  (let* ((top-level (directory-files repo-dir t "\\.md\\'"))
-         (subdirs (seq-filter
+Scan only the repository's immediate subdirectories (non-recursive); ignore files in the repository root."
+  (let* ((subdirs (seq-filter
                    (lambda (p)
                      (and (file-directory-p p)
                           (not (string-prefix-p "." (file-name-nondirectory p)))))
                    (directory-files repo-dir t "\\`[^.]")))
-         (in-subdirs (apply #'append
+         (candidates (apply #'append
                             (mapcar (lambda (d) (directory-files d t "\\.md\\'"))
-                                    subdirs)))
-         (candidates (append top-level in-subdirs)))
+                                    subdirs))))
     (seq-filter (lambda (file)
                   (and (string-suffix-p ".md" file t)
                        (string= yaml-type (tlon-yaml-get-type file))))
