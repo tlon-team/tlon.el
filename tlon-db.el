@@ -863,7 +863,7 @@ when known.  On success, show a concise message; on error or when
                    (if status-code (number-to-string status-code) "N/A"))
            #'tlon-db--format-set-publication-status-result
            result)
-        (message "Publication status for “%s” set to “%s”." id pub-status))
+        (message "Publication status for ‘%s’ set to ‘%s’." id pub-status))
       result)))
 
 (defun tlon-db--get-publication-status (entry-id)
