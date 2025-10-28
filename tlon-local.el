@@ -71,17 +71,17 @@ This usually contains the data source numeric ID or UID."
   :group 'tlon-local)
 
 (defcustom tlon-local-rebuild-content-database nil
-  "When non-nil, append --rebuild-content-database to Uqbar start."
+  "When non-nil, append `--rebuild-content-database' to Uqbar start."
   :type 'boolean
   :group 'tlon-local)
 
 (defcustom tlon-local-content-branch-production nil
-  "When non-nil, append --content-branch=production to Uqbar start."
+  "When non-nil, append `--content-branch=production' to Uqbar start."
   :type 'boolean
   :group 'tlon-local)
 
-(defcustom tlon-local-no-include-testing-tlon-dispatch nil
-  "When non-nil, append --no-include-testing tlon-dispatch to Uqbar start."
+(defcustom tlon-local-no-include-testing nil
+  "When non-nil, append `--no-include-testing' Uqbar start."
   :type 'boolean
   :group 'tlon-local)
 
@@ -133,7 +133,7 @@ At the end, open the local site in the default browser."
                             (list
                              (and tlon-local-rebuild-content-database "--rebuild-content-database")
                              (and tlon-local-content-branch-production "--content-branch=production")
-                             (and tlon-local-no-include-testing-tlon-dispatch "--no-include-testing tlon-dispatch")))
+                             (and tlon-local-no-include-testing "--no-include-testing")))
                       " ")))
           (if (string-empty-p opts)
               (setq commands (funcall append-command "cd %s && ./launch.py start %s"))
@@ -502,22 +502,22 @@ Returns a string like \"https://local-dev.example.org\" or nil if unknown."
 ;;;;; Infix toggles
 
 (transient-define-infix tlon-local-infix-rebuild-content-database ()
-  "Toggle the rebuild content database flag."
+  "Toggle the `rebuild-content-database' flag."
   :class 'transient-lisp-variable
   :variable 'tlon-local-rebuild-content-database
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-local-rebuild-content-database)))
 
 (transient-define-infix tlon-local-infix-content-branch-production ()
-  "Toggle the content-branch=production flag."
+  "Toggle the `content-branch=production' flag."
   :class 'transient-lisp-variable
   :variable 'tlon-local-content-branch-production
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-local-content-branch-production)))
 
-(transient-define-infix tlon-local-infix-no-include-testing-tlon-dispatch ()
-  "Toggle the no-include-testing tlon-dispatch flag."
+(transient-define-infix tlon-local-infix-no-include-testing ()
+  "Toggle the `no-include-testing' flag."
   :class 'transient-lisp-variable
-  :variable 'tlon-local-no-include-testing-tlon-dispatch
-  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-local-no-include-testing-tlon-dispatch)))
+  :variable 'tlon-local-no-include-testing
+  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-local-no-include-testing)))
 
 ;;;###autoload (autoload 'tlon-local-menu "tlon-local" nil t)
 (transient-define-prefix tlon-local-menu ()
@@ -535,7 +535,7 @@ Returns a string like \"https://local-dev.example.org\" or nil if unknown."
     "Options"
     ("-r" "rebuild content db"             tlon-local-infix-rebuild-content-database)
     ("-b" "content branch=production"      tlon-local-infix-content-branch-production)
-    ("-t" "no testing tlon-dispatch"       tlon-local-infix-no-include-testing-tlon-dispatch)]
+    ("-t" "no testing"                     tlon-local-infix-no-include-testing)]
    ["Logs"
     ("l e" "errors"                        tlon-local-logs)
     ("l w" "warnings"                      tlon-local-logs-warnings)]])
