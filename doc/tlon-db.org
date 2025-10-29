@@ -109,6 +109,15 @@ request fails.
   Requires authentication. Shows the result buffer on error or when ~tlon-debug~
   is non-nil; otherwise shows a concise success message.
 
+#+findex: tlon-db-set-cite-full-title
++ ~tlon-db-set-cite-full-title~ :: Sets cite_full_title to true for the entry
+  at point by posting to the =/api/cite_full_title/{entry_id}= endpoint with a
+  JSON body ={"cite_full_title": true}=. When in a BibTeX/Ebib buffer, uses
+  the key at point; when in a Markdown buffer, reads the key from the YAML
+  front matter via ~tlon-yaml-get-key~ with the ="key"= field. Requires
+  authentication. Shows the result buffer on error or when ~tlon-debug~ is
+  non-nil; otherwise shows a concise success message.
+
 #+findex: tlon-db-set-publication-status-in-current-directory
 + ~tlon-db-set-publication-status-in-current-directory~ :: Prompts once for a
   publication status and applies it to every Markdown file in the current
