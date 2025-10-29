@@ -976,6 +976,77 @@ entry key from the YAML front matter and call `tlon-db-set-publication-status'."
                        (format " (%s)" (string-join (nreverse failed) ", "))
                      "")))))))
 
+;;;;;; Set cite full title
+
+;;;###autoload
+(defun tlon-db-set-cite-full-title (&optional entry-id)
+  "Set cite_full_title to true for ENTRY-ID via the EA International API.
+When called interactively, determine ENTRY-ID from context: in BibTeX/Ebib
+buffers use the BibTeX key at point; in Markdown buffers read the YAML \"key\"
+field via `tlon-yaml-get-key'. On success, show a concise message; on error or
+when `tlon-debug' is non-nil, display details in *Db API Result*."
+  (interactive)
+  (tlon-db-ensure-auth)
+  (let* ((id (or entry-id
+                 (tlon-db--entry-id-from-context)
+                 (read-string "Entry key: ")))
+         (data (json-encode '(("cite_full_title" . t))))
+         (headers '(("Content-Type" . "application/json")
+                    ("accept" . "application/json")))
+         (endpoint (format "/api/cite_full_title/%s" (url-hexify-string id)))
+         status-code response-data raw-response-text response-buffer)
+    (setq response-buffer (tlon-db--make-request "POST" endpoint data headers t))
+    (when response-buffer
+      (setq raw-response-text (with-current-buffer response-buffer (buffer-string)))
+      (setq status-code (tlon-db--get-response-status-code response-buffer))
+      (setq response-data (tlon-db--parse-json-response response-buffer))
+      (kill-buffer response-buffer))
+    (let ((result (list :status status-code
+                        :data response-data
+                        :raw-text raw-response-text)))
+      (if (or tlon-debug (not (and status-code (= status-code 200))))
+          (tlon-db--display-result-buffer
+           (format "Set cite_full_title (Status: %s)"
+                   (if status-code (number-to-string status-code) "N/A"))
+           #'tlon-db--format-set-cite-full-title-result
+           result)
+        (message "cite_full_title for ‘%s’ set to true." id))
+      result)))
+
+(defun tlon-db--format-set-cite-full-title-result (result)
+  "Format RESULT from `tlon-db-set-cite-full-title' for display."
+  (let ((status (plist-get result :status))
+        (data   (plist-get result :data))
+        (raw    (plist-get result :raw-text)))
+    (cond
+     ((null status)
+      (insert "Status: Request Failed\n")
+      (insert (or raw "No specific error message.")))
+     ((= status 200)
+      (insert "Status: Success (200)\n")
+      (cond
+       ((hash-table-p data)
+        (maphash (lambda (k v) (insert (format "%s: %s\n" k v))) data))
+       (data (insert (format "%s\n" data)))
+       (t (insert (or raw "No content returned.")))))
+     ((= status 422)
+      (insert "Status: Validation Error (422)\n")
+      (when data
+        (let ((detail (and (hash-table-p data) (gethash "detail" data))))
+          (cond
+           ((listp detail)
+            (dolist (item detail)
+              (if (hash-table-p item)
+                  (insert (format "  - Field: %s, Error: %s\n"
+                                  (mapconcat #'identity (gethash "loc" item) ".")
+                                  (gethash "msg" item "")))
+                (insert (format "  - %s\n" item)))))
+           (t (insert (format "%s\n" data))))))
+      (when raw (insert "\nRaw server response:\n" raw)))
+     (t
+      (insert (format "Status: Error (HTTP %d)\n" status))
+      (insert (or raw "No content."))))))
+
 ;;;;;; Get translation key
 
 ;;;###autoload
@@ -1559,6 +1630,7 @@ If there are no differences, return nil."
     ("n" "Set name" tlon-db-set-name)
     ("s" "Set publication status" tlon-db-set-publication-status)
     ("S" "Set publication status in dir" tlon-db-set-publication-status-in-current-directory)
+    ("t" "Set cite full title" tlon-db-set-cite-full-title)
     ("y" "Sync db now" tlon-db-sync-now)
     ""
     ("a" "Authenticate" tlon-db-authenticate)]
