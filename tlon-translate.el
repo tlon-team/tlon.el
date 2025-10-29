@@ -241,9 +241,12 @@ Branching rules:
 
 - Otherwise: fall back to the existing behavior."
   (interactive
-   (list (read-file-name "Translate file: " nil nil t
-			 (file-relative-name (buffer-file-name) default-directory))
-         (tlon-select-language 'code 'babel "Target language: " 'require-match)))
+   (list
+    (read-file-name
+     "Translate file: " nil nil t
+     (when buffer-file-name
+       (file-relative-name buffer-file-name default-directory)))
+    (tlon-select-language 'code 'babel "Target language: " 'require-match)))
   (let* ((source-file file)
          (target-lang-code lang)
 	 (bare-en (tlon-get-bare-dir source-file t))
