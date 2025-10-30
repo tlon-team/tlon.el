@@ -242,7 +242,13 @@ Grafana's Loki proxy and filtered to show ERROR and CRITICAL entries."
   (interactive)
   (let* ((lang (or lang (tlon-select-language 'code t "Language: " t)))
          (uq-dir (tlon-repo-lookup :dir :subproject "uqbar" :language lang))
-         (label (tlon-local--read-last-update-label uq-dir))
+         (label
+          (condition-case _err
+              (tlon-local--read-last-update-label uq-dir)
+            (error
+             (user-error
+              "Missing %s. Start the local Uqbar env for '%s' at least once to generate it (M-x tlon-local-run-uqbar and choose %s)"
+              (expand-file-name "build-files/last-update-label" uq-dir) lang lang))))
          (query (format "{content_build=\"%s\"} | json | level =~ \"(ERROR|CRITICAL)\""
                         label))
          (end (tlon-local--rfc3339 (current-time)))
@@ -270,7 +276,13 @@ If LANG is nil, prompt for a language."
   (interactive)
   (let* ((lang (or lang (tlon-select-language 'code t "Language: " t)))
          (uq-dir (tlon-repo-lookup :dir :subproject "uqbar" :language lang))
-         (label (tlon-local--read-last-update-label uq-dir))
+         (label
+          (condition-case _err
+              (tlon-local--read-last-update-label uq-dir)
+            (error
+             (user-error
+              "Missing %s. Start the local Uqbar env for '%s' at least once to generate it (M-x tlon-local-run-uqbar and choose %s)"
+              (expand-file-name "build-files/last-update-label" uq-dir) lang lang))))
          (query (format "{content_build=\"%s\"} | json | level = \"WARNING\"" label))
          (end (tlon-local--rfc3339 (current-time)))
          (start (tlon-local--rfc3339
@@ -341,7 +353,7 @@ Continuation lines in LINE are indented under the message column."
   "Expand article_id slugs in LINE into absolute paths for LANG.
 The replacement text includes a `: position 1' suffix to work with
 `tlon-visit-file-at-point'."
-  (let ((repo (tlon-repo-lookup :dir :name (format "uqbar-%s" lang))))
+  (let ((repo (tlon-repo-lookup :dir :subproject "uqbar" :language lang)))
     (if (not repo)
         line
       (let ((start 0)
