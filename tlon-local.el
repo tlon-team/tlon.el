@@ -162,10 +162,10 @@ At the end, open the local site in the default browser."
 	    (set-process-sentinel
 	     proc
 	     (lambda (_p event)
-	       "Browse the local site 30 seconds after the process finishes."
+	       "Browse the local site one minute after the process finishes."
 	       (when (and (string-prefix-p "finished" event)
                           local-url)
-                 (run-at-time 30 nil #'browse-url local-url)))))))))))
+                 (run-at-time 60 nil #'browse-url local-url)))))))))))
 
 (defun tlon-local--append-stop-other-envs (commands append-command lang)
   "Append stop commands for other running envs to COMMANDS using APPEND-COMMAND.
