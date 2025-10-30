@@ -81,36 +81,40 @@ Spanish newsletter in Markdown with sections for articles, events, and other
 news. The original input file is then overwritten with this new draft."
   (interactive)
   (if-let* ((input-data (tlon-newsletter--get-latest-input-content))
-            (content (car input-data))
-            (input-file-path (cdr input-data)))
-      (if (string-blank-p content)
-          (message "The latest newsletter input file is empty. Nothing to process.")
-        (tlon-newsletter-ensure-prompt-file-exists)
+	    (content (car input-data))
+	    (input-file-path (cdr input-data)))
+      (progn
+	(tlon-newsletter-confirm-when-file-empty content)
+	(tlon-newsletter-ensure-prompt-file-exists)
 	(tlon-newsletter-ensure-sample-issue-file-exists)
-        (let* ((raw-prompt (with-temp-buffer
-                             (insert-file-contents tlon-newsletter-prompt-file)
-                             (buffer-string)))
-               (sample-issue-content (with-temp-buffer
-				       (insert-file-contents tlon-newsletter-sample-issue-file)
-				       (buffer-string)))
-	       (issue-month (tlon-newsletter-get-issue-month (file-name-base input-file-path)))
-	       (content-year (tlon-newsletter-get-content-year (file-name-base input-file-path)))
-	       (content-month (tlon-newsletter-get-previous-month issue-month))
-	       (content-month-year (format "%s de %s" content-month content-year))
-               (final-prompt (tlon-ai-maybe-edit-prompt
-			      (format raw-prompt content-month-year issue-month sample-issue-content content))))
-          (tlon-make-gptel-request final-prompt
-                                   nil
-                                   #'tlon-newsletter--create-issue-callback
-                                   tlon-newsletter-model
-				   'skip-content-check
-                                   nil
-                                   (list "search" "fetch_content" "slack_list_channels" "slack_get_channel_history")
-                                   input-file-path
-				   (list "ddg-search" "slack-ae-racionalidad"))
-          (message "Requesting AI to draft newsletter issue (input: %s, prompt: %s)..."
-		   input-file-path tlon-newsletter-prompt-file)))
+	(tlon-newsletter--process-and-request content input-file-path))
     (user-error "Could not create newsletter issue due to previous errors")))
+
+(defun tlon-newsletter--process-and-request (content input-file-path)
+  "Process CONTENT and make AI request for INPUT-FILE-PATH."
+  (let* ((raw-prompt (with-temp-buffer
+		       (insert-file-contents tlon-newsletter-prompt-file)
+		       (buffer-string)))
+	 (sample-issue-content (with-temp-buffer
+				 (insert-file-contents tlon-newsletter-sample-issue-file)
+				 (buffer-string)))
+	 (issue-month (tlon-newsletter-get-issue-month (file-name-base input-file-path)))
+	 (content-year (tlon-newsletter-get-content-year (file-name-base input-file-path)))
+	 (content-month (tlon-newsletter-get-previous-month issue-month))
+	 (content-month-year (format "%s de %s" content-month content-year))
+	 (final-prompt (tlon-ai-maybe-edit-prompt
+			(format raw-prompt content-month-year issue-month sample-issue-content content))))
+    (tlon-make-gptel-request final-prompt
+			     nil
+			     #'tlon-newsletter--create-issue-callback
+			     tlon-newsletter-model
+			     'skip-content-check
+			     nil
+			     (list "search" "fetch_content" "slack_list_channels" "slack_get_channel_history")
+			     input-file-path
+			     (list "ddg-search" "slack-ae-racionalidad"))
+    (message "Requesting AI to draft newsletter issue (input: %s, prompt: %s)..."
+	     input-file-path tlon-newsletter-prompt-file)))
 
 (defun tlon-newsletter--get-latest-input-content ()
   "Return content and path of next month's issue file, creating it if missing."
@@ -118,14 +122,14 @@ news. The original input file is then overwritten with this new draft."
     (let* ((filename (format "%04d-%02d.md" next-year next-month))
            (target (file-name-concat tlon-newsletter-numeros-subdir filename)))
       (tlon-newsletter-ensure-repo-dir-exists)
-    (tlon-newsletter-ensure-numeros-subdir-exists)
-    (unless (file-exists-p target)
-      (with-temp-buffer
-        (write-file target nil)))
-    (cons (with-temp-buffer
-            (insert-file-contents target)
-            (buffer-string))
-          target))))
+      (tlon-newsletter-ensure-numeros-subdir-exists)
+      (unless (file-exists-p target)
+	(with-temp-buffer
+          (write-file target nil)))
+      (cons (with-temp-buffer
+              (insert-file-contents target)
+              (buffer-string))
+            target))))
 
 (defun tlon-newsletter--create-issue-callback (response info)
   "Callback for `tlon-newsletter-create-issue'.
@@ -146,7 +150,7 @@ response INFO."
               (find-file original-file-path)) ; Open the updated file
           (user-error "Original input file path not found in callback info or is invalid"))))))
 
-;;;;;; Ensure dirs/files exist
+;;;;;; Ensure & confirm helpers
 
 (defun tlon-newsletter-ensure-repo-dir-exists ()
   "Ensure the newsletter repository directory exists."
@@ -167,6 +171,12 @@ response INFO."
   "Ensure the sample issue file exists."
   (unless (file-exists-p tlon-newsletter-sample-issue-file)
     (user-error "Sample issue file not found: %s" tlon-newsletter-sample-issue-file)))
+
+(defun tlon-newsletter-confirm-when-file-empty (content)
+  "Prompt user for confirmation if CONTENT is empty."
+  (when (string-blank-p content)
+    (unless (y-or-n-p "The latest newsletter input file is empty. Proceed?")
+      (user-error "Aborted"))))
 
 ;;;;;; Handle dates
 
