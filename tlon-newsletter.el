@@ -28,6 +28,7 @@
 (require 'tlon-ai)
 (require 'tlon-core)
 (require 'tlon-glossary)
+(require 'cl-macs)
 (require 'transient)
 
 ;;;; Variables
@@ -112,32 +113,19 @@ news. The original input file is then overwritten with this new draft."
     (user-error "Could not create newsletter issue due to previous errors")))
 
 (defun tlon-newsletter--get-latest-input-content ()
-  "Prompt for an issue file defaulting to the most recent one."
-  (let* (files-and-attrs sorted-files selected-file latest-file-path)
-    (tlon-newsletter-ensure-repo-dir-exists)
+  "Return content and path of next month's issue file, creating it if missing."
+  (cl-destructuring-bind (next-year . next-month) (tlon-newsletter--next-year-month)
+    (let* ((filename (format "%04d-%02d.md" next-year next-month))
+           (target (file-name-concat tlon-newsletter-numeros-subdir filename)))
+      (tlon-newsletter-ensure-repo-dir-exists)
     (tlon-newsletter-ensure-numeros-subdir-exists)
-    (setq files-and-attrs (directory-files-and-attributes tlon-newsletter-numeros-subdir t nil nil))
-    (unless files-and-attrs
-      (user-error "No files found in %s" tlon-newsletter-numeros-subdir)
-      (cl-return-from tlon-newsletter--get-latest-input-content nil))
-    ;; Filter out directories, keeping only regular files
-    (setq files-and-attrs (cl-remove-if-not (lambda (entry) (file-regular-p (car entry))) files-and-attrs))
-    (if (not files-and-attrs)
-        (setq selected-file (read-file-name "Select a file: " tlon-newsletter-numeros-subdir nil t))
-      (setq sorted-files (sort files-and-attrs
-                               ;; Sort files by their YYYY-MM basename so the most
-                               ;; recent issue (lexicographically last) is first.
-                               (lambda (a b)
-                                 (string> (file-name-base (car a))
-                                          (file-name-base (car b)))))
-	    latest-file-path (caar sorted-files)
-	    selected-file (read-file-name "File of current issue: "
-					  tlon-newsletter-numeros-subdir nil t
-					  (file-name-nondirectory latest-file-path))))
+    (unless (file-exists-p target)
+      (with-temp-buffer
+        (write-file target nil)))
     (cons (with-temp-buffer
-            (insert-file-contents selected-file)
+            (insert-file-contents target)
             (buffer-string))
-          selected-file)))
+          target))))
 
 (defun tlon-newsletter--create-issue-callback (response info)
   "Callback for `tlon-newsletter-create-issue'.
@@ -181,6 +169,16 @@ response INFO."
     (user-error "Sample issue file not found: %s" tlon-newsletter-sample-issue-file)))
 
 ;;;;;; Handle dates
+
+(defun tlon-newsletter--next-year-month (&optional time)
+  "Return the YEAR and MONTH of the next calendar month as a cons cell.
+If TIME is non-nil, compute relative to TIME; otherwise use current time."
+  (let* ((dt (decode-time (or time (current-time))))
+         (year (nth 5 dt))
+         (month (nth 4 dt)))
+    (if (= month 12)
+        (cons (1+ year) 1)
+      (cons year (1+ month)))))
 
 (defun tlon-newsletter-get-issue-month (date)
   "Return the lowercase month name for date string DATE.
