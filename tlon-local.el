@@ -241,7 +241,7 @@ If LANG is nil, prompt for a language. Results are fetched through
 Grafana's Loki proxy and filtered to show ERROR and CRITICAL entries."
   (interactive)
   (let* ((lang (or lang (tlon-select-language 'code t "Language: " t)))
-         (uq-dir (tlon-repo-lookup :dir :name "uqbar"))
+         (uq-dir (tlon-repo-lookup :dir :subproject "uqbar" :language lang))
          (label (tlon-local--read-last-update-label uq-dir))
          (query (format "{content_build=\"%s\"} | json | level =~ \"(ERROR|CRITICAL)\""
                         label))
@@ -269,7 +269,7 @@ Grafana's Loki proxy and filtered to show ERROR and CRITICAL entries."
 If LANG is nil, prompt for a language."
   (interactive)
   (let* ((lang (or lang (tlon-select-language 'code t "Language: " t)))
-         (uq-dir (tlon-repo-lookup :dir :name "uqbar"))
+         (uq-dir (tlon-repo-lookup :dir :subproject "uqbar" :language lang))
          (label (tlon-local--read-last-update-label uq-dir))
          (query (format "{content_build=\"%s\"} | json | level = \"WARNING\"" label))
          (end (tlon-local--rfc3339 (current-time)))
