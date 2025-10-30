@@ -57,6 +57,17 @@ It works as follows:
 
 This command requires the AI to have web access capabilities, which are enabled by passing the ~gptel-tool-search~ and ~gptel-tool-fetch-content~ tools to the AI request.
 
+*** Publishing Newsletter Issues
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-newsletter-publish-issue
+:END:
+#+findex: tlon-newsletter-publish-issue
+The command ~tlon-newsletter-publish-issue~ assists in publishing the current issue. It:
+1. Copies the issue title (e.g., =Boletín de noviembre de 2025=) to the kill ring.
+2. Opens the Substack publish page at https://altruismoeficaz.substack.com/publish/post/177571814.
+3. Opens the Markdown file for the current issue and runs ~markdown-preview~.
+4. In the EWW preview buffer, it calls ~eww-browse-with-external-browser~.
+
 ** Helper functions
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-newsletter-helpers

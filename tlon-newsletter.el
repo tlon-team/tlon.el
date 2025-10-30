@@ -28,6 +28,7 @@
 (require 'tlon-ai)
 (require 'tlon-core)
 (require 'tlon-glossary)
+(require 'tlon-md)
 (require 'cl-macs)
 (require 'transient)
 
@@ -232,6 +233,44 @@ Returns a cons cell (YEAR . MONTH) with numeric values, or signals an error."
          (pos (cl-position month-name months :test 'string-equal-ignore-case)))
     (nth (mod (1- pos) 12) months)))
 
+;;;;; Publish issue
+
+;;;###autoload
+(defun tlon-newsletter-publish-issue ()
+  "Assist in publishing the current newsletter issue.
+Copy the issue title to the kill ring, open the Substack publish URL, visit
+the current issue Markdown file and preview it, then in the EWW preview buffer
+open the page in the external browser."
+  (interactive)
+  (cl-destructuring-bind (content . path)
+      (tlon-newsletter--get-latest-input-content)
+    (ignore content)
+    (let* ((base (file-name-base path))
+           (ym (tlon-newsletter--validate-date-format base))
+           (year (car ym))
+           (month-name (tlon-newsletter-get-issue-month base))
+           (title (format "Boletín de %s de %d" month-name year)))
+      (kill-new title)
+      (browse-url "https://altruismoeficaz.substack.com/publish/post/")
+      (find-file path)
+      (when (fboundp 'tlon-ensure-markdown-mode)
+        (tlon-ensure-markdown-mode))
+      (markdown-preview)
+      (run-at-time 0.5 nil #'tlon-newsletter--open-eww-preview-externally))))
+
+(defun tlon-newsletter--open-eww-preview-externally ()
+  "Open the most recent EWW preview buffer in the external browser."
+  (let ((eww-buf
+         (catch 'found
+           (dolist (buf (buffer-list))
+             (when (with-current-buffer buf (derived-mode-p 'eww-mode))
+               (throw 'found buf)))
+           nil)))
+    (when eww-buf
+      (with-current-buffer eww-buf
+        (when (fboundp 'eww-browse-with-external-browser)
+          (eww-browse-with-external-browser))))))
+
 ;;;;; Menu
 
 (transient-define-infix tlon-newsletter-infix-select-model ()
@@ -245,7 +284,8 @@ If nil, use the default model."
   "Menu for `tlon-newsletter'."
   :info-manual "(tlon) newsletter"
   [["Commands"
-    ("n" "Create newsletter issue" tlon-newsletter-create-issue)]
+    ("n" "Create issue"            tlon-newsletter-create-issue)
+    ("p" "Publish issue"           tlon-newsletter-publish-issue)]
    ["Options"
     ("-m" "Model" tlon-newsletter-infix-select-model)]])
 
