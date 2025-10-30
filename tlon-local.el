@@ -123,7 +123,7 @@ At the end, open the local site in the default browser."
                      t))
            (ws-running (tlon-local--web-server-running-p))
            (commands '())
-           (append-command (lambda (command &optional language)
+           (append-command (lambda (commands command &optional language)
                              (append commands
                                      (list (format command
                                                    (shell-quote-argument uq-dir)
@@ -132,7 +132,7 @@ At the end, open the local site in the default browser."
         (setq commands (append commands (list (format "cd %s && ./up-dev.sh" (shell-quote-argument ws-dir))))))
       (when run-uq
         (when uq-running
-          (setq commands (funcall append-command "cd %s && ./launch.py stop %s")))
+          (setq commands (funcall append-command commands "cd %s && ./launch.py stop %s")))
         (when tlon-local-enforce-single-env
           (setq commands (tlon-local--append-stop-other-envs commands append-command lang)))
         (let* ((opts (string-join
@@ -143,7 +143,7 @@ At the end, open the local site in the default browser."
 			     (and tlon-local-no-include-testing "--no-include-testing")))
 		      " ")))
           (if (string-empty-p opts)
-	      (setq commands (funcall append-command "cd %s && ./launch.py start %s"))
+	      (setq commands (funcall append-command commands "cd %s && ./launch.py start %s"))
 	    (let* ((uq (shell-quote-argument uq-dir))
 		   (la (shell-quote-argument lang))
 		   (cmd (format "cd %s && ./launch.py start %s %s" uq la opts)))
@@ -179,7 +179,7 @@ Skip env in LANG. Return the updated commands."
       (unless (string= l lang)
         (let ((url (tlon-local--uqbar-local-url l)))
           (when (and url (tlon-local--uqbar-running-p url))
-            (setq commands (funcall append-command "cd %s && ./launch.py stop %s" l))))))))
+            (setq commands (funcall append-command commands "cd %s && ./launch.py stop %s" l))))))))
 
 
 ;;;; Language-specific commands
