@@ -85,6 +85,11 @@ This usually contains the data source numeric ID or UID."
   :type 'boolean
   :group 'tlon-local)
 
+(defcustom tlon-local-enforce-single-env t
+  "When non-nil, starting a local environment stops all other running ones."
+  :type 'boolean
+  :group 'tlon-local)
+
 (defvar-local tlon-local--logs-ctx nil
   "Internal context data for `tlon-local-logs' buffers.")
 
@@ -118,47 +123,64 @@ At the end, open the local site in the default browser."
                      t))
            (ws-running (tlon-local--web-server-running-p))
            (commands '())
-           (append-command (lambda (command)
+           (append-command (lambda (command &optional language)
                              (append commands
                                      (list (format command
                                                    (shell-quote-argument uq-dir)
-                                                   (shell-quote-argument lang)))))))
+                                                   (shell-quote-argument (or language lang))))))))
       (when (not ws-running)
         (setq commands (append commands (list (format "cd %s && ./up-dev.sh" (shell-quote-argument ws-dir))))))
       (when run-uq
         (when uq-running
           (setq commands (funcall append-command "cd %s && ./launch.py stop %s")))
+        (when tlon-local-enforce-single-env
+          (setq commands (tlon-local--append-stop-other-envs commands append-command lang)))
         (let* ((opts (string-join
-                      (delq nil
-                            (list
-                             (and tlon-local-rebuild-content-database "--rebuild-content-database")
-                             (and tlon-local-content-branch-production "--content-branch=production")
-                             (and tlon-local-no-include-testing "--no-include-testing")))
-                      " ")))
+		      (delq nil
+			    (list
+			     (and tlon-local-rebuild-content-database "--rebuild-content-database")
+			     (and tlon-local-content-branch-production "--content-branch=production")
+			     (and tlon-local-no-include-testing "--no-include-testing")))
+		      " ")))
           (if (string-empty-p opts)
-              (setq commands (funcall append-command "cd %s && ./launch.py start %s"))
-            (let* ((uq (shell-quote-argument uq-dir))
-                   (la (shell-quote-argument lang))
-                   (cmd (format "cd %s && ./launch.py start %s %s" uq la opts)))
-              (setq commands (append commands (list cmd)))))))
+	      (setq commands (funcall append-command "cd %s && ./launch.py start %s"))
+	    (let* ((uq (shell-quote-argument uq-dir))
+		   (la (shell-quote-argument lang))
+		   (cmd (format "cd %s && ./launch.py start %s %s" uq la opts)))
+	      (setq commands (append commands (list cmd)))))))
       (cond
        ;; Nothing to run: just open the site if we know the URL
        ((null commands)
         (if local-url
-            (browse-url local-url)
+	    (browse-url local-url)
           (message "Nothing to run and local URL unknown")))
        (t
         (let* ((cmd (mapconcat #'identity commands " && "))
-               (_win (async-shell-command cmd buffer-name))
-               (buf (get-buffer buffer-name)))
+	       (_win (async-shell-command cmd buffer-name))
+	       (buf (get-buffer buffer-name)))
           (when-let ((proc (and buf (get-buffer-process buf))))
-            (set-process-sentinel
-             proc
-             (lambda (_p event)
+	    (set-process-sentinel
+	     proc
+	     (lambda (_p event)
 	       "Browse the local site 30 seconds after the process finishes."
-               (when (and (string-prefix-p "finished" event)
+	       (when (and (string-prefix-p "finished" event)
                           local-url)
                  (run-at-time 30 nil #'browse-url local-url)))))))))))
+
+(defun tlon-local--append-stop-other-envs (commands append-command lang)
+  "Append stop commands for other running envs to COMMANDS using APPEND-COMMAND.
+Skip env in LANG. Return the updated commands."
+  (let* ((codes
+          (delq nil
+                (mapcar (lambda (name)
+                          (tlon-lookup tlon-languages-properties :code :name name))
+                        tlon-project-languages))))
+    (dolist (l codes commands)
+      (unless (string= l lang)
+        (let ((url (tlon-local--uqbar-local-url l)))
+          (when (and url (tlon-local--uqbar-running-p url))
+            (setq commands (funcall append-command "cd %s && ./launch.py stop %s" l))))))))
+
 
 ;;;; Language-specific commands
 
@@ -519,6 +541,12 @@ Returns a string like \"https://local-dev.example.org\" or nil if unknown."
   :variable 'tlon-local-no-include-testing
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-local-no-include-testing)))
 
+(transient-define-infix tlon-local-infix-enforce-single-env ()
+  "Toggle enforcing a single running environment."
+  :class 'transient-lisp-variable
+  :variable 'tlon-local-enforce-single-env
+  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-local-enforce-single-env)))
+
 ;;;###autoload (autoload 'tlon-local-menu "tlon-local" nil t)
 (transient-define-prefix tlon-local-menu ()
   "`tlon-local' menu."
@@ -535,7 +563,8 @@ Returns a string like \"https://local-dev.example.org\" or nil if unknown."
     "Options"
     ("-r" "rebuild content db"             tlon-local-infix-rebuild-content-database)
     ("-b" "content branch=production"      tlon-local-infix-content-branch-production)
-    ("-t" "no testing"                     tlon-local-infix-no-include-testing)]
+    ("-t" "no testing"                     tlon-local-infix-no-include-testing)
+    ("-s" "single env"                     tlon-local-infix-enforce-single-env)]
    ["Logs"
     ("l e" "errors"                        tlon-local-logs)
     ("l w" "warnings"                      tlon-local-logs-warnings)]])
