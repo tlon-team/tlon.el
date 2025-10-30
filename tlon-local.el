@@ -50,7 +50,7 @@ This usually contains the data source numeric ID or UID."
   :type 'string
   :group 'tlon-local)
 
-(defcustom tlon-local-logs-minutes 60
+(defcustom tlon-local-logs-minutes (* 30 24 60)
   "Default lookback window, in minutes, for querying logs."
   :type 'integer
   :group 'tlon-local)
