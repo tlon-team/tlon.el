@@ -727,27 +727,31 @@ LANG is the two-letter language code derived from the entry's `langid' field."
 	('ebib-entry-mode '(ebib-extras-get-field ebib-extras-set-field))
 	('bibtex-mode '(bibtex-extras-get-field bibtex-set-field))
 	(_ (user-error "Not in a BibTeX-related mode")))
-    (let* ((lang-name (funcall get-field "langid"))
-	   (_ (unless lang-name (user-error "Entry has no langid field")))
-	   (lang (tlon-lookup tlon-languages-properties :code :name lang-name))
-	   (_ (unless lang (user-error "Could not determine language code for %s" lang-name)))
-	   (title (funcall get-field "title"))
-	   (_ (unless title (user-error "Entry has no title field")))
-	   (slug (simple-extras-slugify (tlon-bib-remove-braces title)))
-	   (base (tlon-repo-lookup :url :subproject "uqbar" :language lang))
-	   (_ (unless base (user-error "Could not determine base URL for language %s" lang)))
-	   (path (tlon-lookup tlon-core-bare-dirs lang "en" "articles"))
-	   (_ (unless path (user-error "Could not determine path for language %s" lang)))
-	   (url (mapconcat #'identity
-			   (list (string-remove-suffix "/" base)
-				 (string-trim path "/")
-				 slug)
-			   "/")))
-      (when (funcall get-field "url")
-	(unless (y-or-n-p "Entry already has a url. Overwrite? ")
-	  (user-error "Aborted")))
-      (funcall set-field "url" url)
-      (message "Set url of `%s' to %s." (tlon-get-key-at-point) url))))
+    (save-restriction
+      (when (derived-mode-p 'bibtex-mode)
+        (bibtex-narrow-to-entry)
+        (bibtex-beginning-of-entry))
+      (let* ((lang-name (funcall get-field "langid"))
+	     (_ (unless lang-name (user-error "Entry has no langid field")))
+	     (lang (tlon-lookup tlon-languages-properties :code :name lang-name))
+	     (_ (unless lang (user-error "Could not determine language code for %s" lang-name)))
+	     (title (funcall get-field "title"))
+	     (_ (unless title (user-error "Entry has no title field")))
+	     (slug (simple-extras-slugify (tlon-bib-remove-braces title)))
+	     (base (tlon-repo-lookup :url :subproject "uqbar" :language lang))
+	     (_ (unless base (user-error "Could not determine base URL for language %s" lang)))
+	     (path (tlon-lookup tlon-core-bare-dirs lang "en" "articles"))
+	     (_ (unless path (user-error "Could not determine path for language %s" lang)))
+	     (url (mapconcat #'identity
+			     (list (string-remove-suffix "/" base)
+				   (string-trim path "/")
+				   slug)
+			     "/")))
+	(when (funcall get-field "url")
+	  (unless (y-or-n-p "Entry already has a url. Overwrite? ")
+	    (user-error "Aborted")))
+	(funcall set-field "url" url)
+	(message "Set url of `%s' to %s." (tlon-get-key-at-point) url)))))
 
 (declare-function tlon-yaml-get-filenames-in-dir "tlon-yaml")
 (declare-function tlon-yaml-get-key "tlon-yaml")
@@ -808,10 +812,14 @@ for each matching BibTeX entry with a missing/empty `url', call
 The command works in `bibtex-mode', `ebib-entry-mode' and
 `ebib-index-mode'.
 
+TARGET-CODE is the two-letter language code for the target language. If nil,
+prompt the user to select a language. NO-GLOSSARY, when non-nil, disables
+glossary usage during translation.
+
 Fields set in the new entry:
 
 - entry type: taken from the original entry (defaults to \"online\").
-- key: generated with `tlon-generate-autokey'.
+- key: original key followed by capitalized two-letter language code (e.g., Tr).
 - langid: target language (standard name, not the code).
 - title / abstract: translated with DeepL.
 - author: copied from the original entry.
@@ -842,9 +850,7 @@ Fields set in the new entry:
 	 ;; DeepL translations (synchronous wrapper defined below)
 	 (trans-title (tlon-bib--translate-string orig-title source-lang target-code no-glossary))
 	 (trans-abs   (tlon-bib--translate-string orig-abs   source-lang target-code no-glossary))
-	 (new-key     (if (string= target-code "ko")
-			  (concat orig-key "Ko")
-			(tlon-generate-autokey author (format-time-string "%Y") trans-title)))
+	 (new-key     (concat orig-key (capitalize target-code)))
 	 (date-now    (format-time-string "%Y-%m-%d")))
     (if mode-ebib
 	;; -------- EBIB --------
@@ -894,7 +900,8 @@ Fields set in the new entry:
 
 (defun tlon-bib--translate-string (string source-lang target-lang &optional no-glossary)
   "Synchronously translate STRING from SOURCE-LANG to TARGET-LANG with DeepL.
-Return STRING unchanged if translation fails."
+If NO-GLOSSARY is non-nil, do not use glossary for translation. Return STRING
+unchanged if translation fails."
   (if (or (not string) (string-empty-p string))
       string
     (let (result)
@@ -1791,6 +1798,172 @@ If nil, use the default model."
     ""
     "Modify"
     ("b :" "Swap colon character in title"           tlon-bib-swap-colon-in-title)]])
+
+;;;###autoload
+(defun tlon-bib-create-entry-from-markdown ()
+  "Create a BibTeX entry for the Markdown file at point from YAML metadata.
+The entry is written to `tlon-file-db'. The following fields are populated when
+available: title, author (from authors), translator (from translators),
+langid (from repo language), date, translation (from original_key). Then the URL
+is populated using `tlon-bib-populate-url-field'."
+  (interactive)
+  (unless (derived-mode-p 'markdown-mode)
+    (user-error "Not in a Markdown buffer"))
+  (let* ((file (or (buffer-file-name) (user-error "Buffer is not visiting a file")))
+         (title (tlon-yaml-get-key "title" file))
+         (type (or (tlon-yaml-get-key "type" file) "online"))
+         (authors (let ((lst (tlon-bib--yaml-list "authors" file)))
+                    (tlon-bib--join-names (mapcar #'tlon-bib--reverse-name lst))))
+         (translators (let ((lst (tlon-bib--yaml-list "translators" file)))
+                        (tlon-bib--join-names (mapcar #'tlon-bib--reverse-name lst))))
+         (date (tlon-yaml-get-key "date" file))
+         (date-iso (tlon-bib--date-iso date))
+         (original-key (tlon-yaml-get-key "original_key" file))
+         (repo (tlon-get-repo-from-file file t))
+         (lang-code (tlon-repo-lookup :language :dir repo))
+         (langid (and lang-code
+                      (tlon-lookup tlon-languages-properties :standard :code lang-code))))
+    (unless title (user-error "YAML field `title' is required"))
+    (unless original-key
+      (user-error "YAML field `original_key' is required"))
+    (let* ((suffix (capitalize lang-code))
+           (key (concat original-key suffix))
+           (entry-type (downcase (or type "online")))
+           (target-file tlon-file-db))
+      (with-current-buffer (find-file-noselect target-file)
+        (bibtex-mode)
+        (widen)
+        (goto-char (point-min))
+        (when (bibtex-search-entry key)
+          (user-error "BibTeX key `%s' already exists in %s"
+                      key (file-name-nondirectory target-file)))
+        (goto-char (point-max))
+        (delete-blank-lines)
+        (unless (bolp) (insert "\n"))
+        (insert "\n")
+        (insert (format "@%s{%s,\n}\n" entry-type key))
+        (bibtex-search-entry key)
+        (bibtex-narrow-to-entry)
+        (when title (bibtex-extras-add-or-update-field "title" (tlon-bib-remove-braces title)))
+        (when authors (bibtex-extras-add-or-update-field "author" authors))
+        (when translators (bibtex-extras-add-or-update-field "translator" translators))
+        (when langid (bibtex-extras-add-or-update-field "langid" langid))
+        (when date-iso (bibtex-extras-add-or-update-field "date" date-iso))
+        (when original-key (bibtex-extras-add-or-update-field "translation" original-key))
+        (tlon-add-or-update-tlon-field)
+        (bibtex-clean-entry)
+        (widen)
+        (save-buffer)
+        ;; Populate URL based on repo/language/slug rules
+        (bibtex-search-entry key)
+        (tlon-bib-populate-url-field)
+        (save-buffer))
+      (message "Created BibTeX entry `%s' in %s"
+               key (file-name-nondirectory tlon-file-db))
+      key)))
+
+;;;###autoload
+(defun tlon-bib-create-entries-in-dir (&optional dir)
+  "Create BibTeX entries for all Markdown files in DIR from YAML metadata.
+When DIR is nil, use `default-directory'. Process files in DIR non‑recursively
+whose names end with .md or .markdown. For each file, open it and call
+`tlon-bib-create-entry-from-markdown'. Continue on errors and report a summary."
+  (interactive)
+  (let* ((dir (file-name-as-directory (or dir default-directory)))
+         (files (cl-remove-if-not
+                 #'file-regular-p
+                 (append (directory-files dir t "\\.md\\'")
+                         (directory-files dir t "\\.markdown\\'"))))
+         (created 0)
+         (skipped 0)
+         (failed 0)
+         (failed-items '()))
+    (dolist (file files)
+      (message "Processing %s..." (file-name-nondirectory file))
+      (condition-case err
+          (with-current-buffer (find-file-noselect file)
+            (if (derived-mode-p 'markdown-mode)
+                (progn
+                  (tlon-bib-create-entry-from-markdown)
+                  (setq created (1+ created)))
+              (setq skipped (1+ skipped))))
+        (error
+         (setq failed (1+ failed))
+         (push (file-name-nondirectory file) failed-items)
+         (message "Error processing %s: %s"
+                  (file-name-nondirectory file)
+                  (error-message-string err)))))
+    (let ((summary (format "Processed %d files: %d created, %d skipped (non-markdown), %d errors"
+                           (length files) created skipped failed)))
+      (if (> failed 0)
+          (message "%s. Errors in: %s" summary (mapconcat #'identity (nreverse failed-items) ", "))
+        (message "%s" summary)))))
+
+;; Helpers (intentionally placed after the caller, per conventions)
+
+(declare-function tlon-yaml-get-key "tlon-yaml")
+(declare-function tlon-yaml-get-key-values "tlon-yaml")
+(declare-function tlon-get-repo-from-file "tlon-core")
+(declare-function tlon-get-value-in-entry "tlon-core")
+(declare-function bib-reverse-first-last-name "bibtex-extras")
+
+(defun tlon-bib--yaml-list (key file)
+  "Return YAML list for KEY in FILE as a list of strings."
+  (or (ignore-errors (tlon-yaml-get-key-values key))
+      (let ((v (tlon-yaml-get-key key file)))
+        (cond
+         ((null v) nil)
+         ((listp v) v)
+         ((and (stringp v) (string-match-p "\\`\\[.*\\]\\'" v))
+          (condition-case nil
+              (let ((json-array-type 'list)
+                    (json-object-type 'alist))
+                (json-read-from-string v))
+            (error nil)))
+         ((stringp v) (list v))
+         (t nil)))))
+
+(defun tlon-bib--join-names (names)
+  "Join NAMES with \" and \" for BibLaTeX author-like fields."
+  (when (and names
+             (seq-some (lambda (s)
+                         (and (stringp s)
+                              (not (string-empty-p (string-trim s)))))
+                       names))
+    (mapconcat (lambda (s) (string-trim (or s ""))) names " and ")))
+
+(defun tlon-bib--reverse-name (name)
+  "Return NAME in \"Last, First …\" form when appropriate.
+If NAME already contains a comma or has a single token, return it
+unchanged. Otherwise, move the last whitespace-delimited token to
+the front and insert a comma."
+  (let* ((name (string-trim (or name ""))))
+    (cond
+     ((or (string-empty-p name)
+          (string-match-p "," name))
+      name)
+     (t
+      (let* ((parts (split-string name "[ \t]+" t))
+             (last  (car (last parts)))
+             (first (string-join (butlast parts) " ")))
+        (if (and first (not (string-empty-p first)))
+            (format "%s, %s" last first)
+          last))))))
+
+(defun tlon-bib--date-year (date)
+  "Extract 4-digit YEAR from DATE string."
+  (when (and (stringp date) (string-match "\\`\\([0-9]\\{4\\}\\)" date))
+    (match-string 1 date)))
+
+(defun tlon-bib--date-iso (date)
+  "Normalize DATE to YYYY-MM-DD when possible.
+If DATE has a time component (e.g., YYYY-MM-DDTHH:MM:SS), strip it."
+  (cond
+   ((and (stringp date)
+         (string-match "\\`\\([0-9]\\{4\\}\\)-\\([0-9]\\{2\\}\\)-\\([0-9]\\{2\\}\\)" date))
+    (format "%s-%s-%s" (match-string 1 date) (match-string 2 date) (match-string 3 date)))
+   ((tlon-bib--date-year date) (format "%s-01-01" (tlon-bib--date-year date)))
+   (t nil)))
 
 (provide 'tlon-bib)
 ;;; tlon-bib.el ends here
