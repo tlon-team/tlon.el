@@ -25,6 +25,7 @@
 
 ;;; Code:
 
+(require 'simple-extras)
 (require 'tlon-core)
 (require 'transient)
 (require 'url-parse)
@@ -460,6 +461,7 @@ The replacement text includes a `: position 1' suffix to work with
   (local-set-key (kbd "k") #'previous-line)
   (local-set-key (kbd "l") #'next-line)
   (local-set-key (kbd "g") #'tlon-local-logs-refresh)
+  (local-set-key (kbd "i") #'simple-extras-visual-line-mode-enhanced)
   (local-set-key (kbd "o") #'tlon-local-logs-open-in-grafana)
   (local-set-key (kbd "RET") #'tlon-visit-file-at-point))
 
