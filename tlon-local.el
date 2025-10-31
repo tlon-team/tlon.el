@@ -502,7 +502,6 @@ The replacement text includes a `: position 1' suffix to work with
          (kill-buffer)
          (funcall callback json))))))
 
-
 (defun tlon-local--rfc3339 (time)
   "Return TIME formatted as RFC3339 in UTC."
   (let ((system-time-locale "C"))
