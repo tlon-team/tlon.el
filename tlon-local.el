@@ -453,7 +453,7 @@ The replacement text includes a `: position 1' suffix to work with
          (file (file-name-with-extension slug "md")))
     (file-name-concat repo articles-dir file)))
 
-(define-derived-mode tlon-local-logs-mode special-mode "TLon-Logs"
+(define-derived-mode tlon-local-logs-mode special-mode "Uqbar Logs"
   "Major mode to view Uqbar logs retrieved via Grafana's Loki proxy."
   (setq buffer-read-only t)
   (setq-local truncate-lines t)
