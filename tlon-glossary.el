@@ -515,7 +515,13 @@ missing source terms are reported. Writes the updated glossary."
             (progn
               (tlon-ai--update-glossary-entry entry tgt-key translation)
               (cl-incf updated))
-          (push src-term missing))))
+          (if (y-or-n-p (format "No entry for \"%s\" in %s. Create it? " src-term (upcase src)))
+              (let* ((type (tlon-select-term-type))
+                     (new-entry (tlon-create-entry src-term type src)))
+                (tlon-ai--update-glossary-entry new-entry tgt-key translation)
+                (setq glossary (tlon-update-glossary glossary new-entry src-term src))
+                (cl-incf updated))
+            (push src-term missing)))))
     (tlon-write-data tlon-file-glossary-source glossary)
     (message "Imported %d translation(s) for %s→%s. Missing: %d"
              updated (upcase src) (upcase tgt) (length missing))
