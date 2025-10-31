@@ -1153,8 +1153,10 @@ target language. Also report which tags were translated via the glossary."
   "Return translated tag title from ORIG-TAG-FILE into TARGET-LANG.
 Return nil when no corresponding target-language tag file exists."
   (when (file-exists-p orig-tag-file)
-    (when-let ((tr-tag-file (tlon-get-counterpart-in-originals orig-tag-file target-lang)))
-      (tlon-yaml-get-key "title" tr-tag-file))))
+    (condition-case nil
+        (when-let ((tr-tag-file (tlon-get-counterpart-in-originals orig-tag-file target-lang)))
+          (tlon-yaml-get-key "title" tr-tag-file))
+      (error nil))))
 
 (defun tlon-yaml--translate-tag-from-glossary (en-title glossary target-lang)
   "Return glossary translation of EN-TITLE into TARGET-LANG from GLOSSARY.
