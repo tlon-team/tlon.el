@@ -236,8 +236,8 @@ Skip env in LANG. Return the updated commands."
 
 ;;;###autoload
 (defun tlon-local-logs (&optional lang)
-  "Show recent Uqbar logs for LANG (errors followed by warnings) from the
-latest content build. If LANG is nil, prompt for a language."
+  "Show recent Uqbar logs for LANG from the latest content build.
+If LANG is nil, prompt for a language."
   (interactive)
   (let ((lang (or lang (tlon-select-language 'code t "Language: " t))))
     (tlon-local--logs-all lang)))
@@ -263,7 +263,12 @@ latest content build. If LANG is nil, prompt for a language."
     (format "%s%s/loki/api/v1/query_range" base proxy)))
 
 (defun tlon-local--loki-query-range (query limit direction start end callback)
-  "Execute a Loki query_range with QUERY and invoke CALLBACK with parsed JSON."
+  "Execute a Loki query_range with QUERY and invoke CALLBACK with parsed JSON.
+QUERY is the LogQL query string to execute. LIMIT is the maximum number of
+entries to return. DIRECTION is the sort order, either \"forward\" or
+\"backward\". START is the start time for the query range. END is the end time
+for the query range. CALLBACK is a function to invoke with the parsed JSON
+response."
   (let* ((url (tlon-local--loki-base-url))
          (params `(("query" . ,query)
                    ("limit" . ,(number-to-string limit))
@@ -312,10 +317,13 @@ latest content build. If LANG is nil, prompt for a language."
              warnings-query tlon-local-logs-limit "backward" start end
              (lambda (warnings-json)
                (tlon-local--render-logs-buffer-all
-                errors-json warnings-json lang label)))))))))
+                errors-json warnings-json lang label))))))))))
 
 (defun tlon-local--render-logs-buffer-all (errors-json warnings-json lang label)
-  "Render Loki JSON for errors and warnings into a single buffer for LANG."
+  "Render Loki JSON for errors and warnings into a single buffer for LANG.
+ERRORS-JSON is the JSON response containing error log entries. WARNINGS-JSON is
+the JSON response containing warning log entries. LANG is the language
+identifier for the logs. LABEL is the content_build label identifier."
   (let* ((buf (get-buffer-create (format "*tlon: logs %s*" lang)))
          (errors (alist-get 'result (alist-get 'data errors-json)))
          (warnings (alist-get 'result (alist-get 'data warnings-json))))
@@ -328,11 +336,9 @@ latest content build. If LANG is nil, prompt for a language."
         (insert (format
                  "Uqbar logs for %s – content_build=%s (last %dm, limit %d)\n\n"
                  lang label tlon-local-logs-minutes tlon-local-logs-limit))
-        ;; Errors section
         (insert "ERROR/CRITICAL\n")
         (tlon-local--insert-logs-section errors lang)
         (insert "\n")
-        ;; Warnings section
         (insert "WARNING\n")
         (tlon-local--insert-logs-section warnings lang))
       (goto-char (point-min))
@@ -356,7 +362,7 @@ latest content build. If LANG is nil, prompt for a language."
             (tlon-local--insert-log-row ts svc line lang)))))))
 
 (defun tlon-local--logs (lang kind)
-  "Fetch and render logs for LANG. KIND is 'errors or 'warnings."
+  "Fetch and render logs for LANG. KIND is `errors' or `warnings'."
   (let ((lang (or lang (tlon-select-language 'code t "Language: " t))))
     (tlon-local--get-latest-build-label
      lang
