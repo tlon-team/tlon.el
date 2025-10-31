@@ -338,7 +338,6 @@ identifier for the logs. LABEL is the content_build label identifier."
                  lang label tlon-local-logs-minutes tlon-local-logs-limit))
         (insert "ERROR/CRITICAL\n")
         (tlon-local--insert-logs-section errors lang)
-        (insert "\n")
         (insert "WARNING\n")
         (tlon-local--insert-logs-section warnings lang))
       (goto-char (point-min))
@@ -359,7 +358,8 @@ identifier for the logs. LABEL is the content_build label identifier."
         (dolist (v values)
           (let ((ts (tlon-local--ns-to-timestr (nth 0 v)))
                 (line (nth 1 v)))
-            (tlon-local--insert-log-row ts svc line lang)))))))
+            (tlon-local--insert-log-row ts svc line lang)))))
+    (insert "\n")))
 
 (defun tlon-local--logs (lang kind)
   "Fetch and render logs for LANG. KIND is `errors' or `warnings'."
