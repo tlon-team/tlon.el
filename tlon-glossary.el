@@ -490,6 +490,66 @@ terms."
    (format "%s-%s-FILTERED-%s.csv"
            (upcase src-lang) (upcase tgt-lang) (file-name-base file))))
 
+;;;;; Importing
+
+;;;###autoload
+(defun tlon-glossary-import-tsv (file)
+  "Import translations from TSV FILE into the glossary.
+The first line must be \"SRC<TAB>TGT\" language codes. Each subsequent line must
+be \"SOURCE<TAB>TRANSLATION\". Only existing entries keyed by SRC are updated;
+missing source terms are reported. Writes the updated glossary."
+  (interactive "fTSV file: ")
+  (let* ((parsed (tlon--glossary-parse-tsv file))
+         (src (nth 0 parsed))
+         (tgt (nth 1 parsed))
+         (pairs (nth 2 parsed))
+         (glossary (tlon-parse-glossary))
+         (tgt-key (intern tgt))
+         (updated 0)
+         (missing '()))
+    (dolist (p pairs)
+      (let* ((src-term (car p))
+             (translation (cdr p))
+             (entry (tlon-find-entry-by-term-in-lang glossary src-term src)))
+        (if entry
+            (progn
+              (tlon-ai--update-glossary-entry entry tgt-key translation)
+              (cl-incf updated))
+          (push src-term missing))))
+    (tlon-write-data tlon-file-glossary-source glossary)
+    (message "Imported %d translation(s) for %s→%s. Missing: %d"
+             updated (upcase src) (upcase tgt) (length missing))
+    (when missing
+      (message "No matching entries for: %s"
+               (mapconcat #'identity (nreverse missing) ", ")))
+    glossary))
+
+(defun tlon--glossary-parse-tsv (file)
+  "Parse TSV FILE and return a list (SRC TGT PAIRS).
+SRC and TGT are language code strings. PAIRS is a list of (SOURCE . TARGET)
+strings. Errors if the header is malformed."
+  (with-temp-buffer
+    (insert-file-contents file)
+    (let* ((s (buffer-string))
+           (s (replace-regexp-in-string "\r\n?" "\n" s))
+           (s (if (and (> (length s) 0) (eq (aref s 0) ?\ufeff)) (substring s 1) s))
+           (lines (split-string s "\n" t))
+           (header (car lines))
+           (rest (cdr lines))
+           (hfields (split-string header "\t")))
+      (unless (= (length hfields) 2)
+        (error "First line must have two tab-separated language codes"))
+      (let ((src (downcase (string-trim (nth 0 hfields))))
+            (tgt (downcase (string-trim (nth 1 hfields))))
+            (pairs '()))
+        (dolist (ln rest)
+          (let* ((fields (split-string ln "\t"))
+                 (a (and (nth 0 fields) (string-trim (nth 0 fields))))
+                 (b (and (nth 1 fields) (string-trim (nth 1 fields)))))
+            (when (and a b (> (length a) 0))
+              (push (cons a b) pairs))))
+        (list src tgt (nreverse pairs))))))
+
 ;;;;; Extraction
 
 ;;;###autoload
@@ -701,6 +761,7 @@ If nil, use the default model."
   [["Glossary Actions"
     ("e" "Edit entry"              tlon-edit-glossary)
     ("x" "Extract glossary"        tlon-extract-glossary)
+    ("i" "Import TSV"              tlon-glossary-import-tsv)
     ("X" "Extract multilingual (CSV)" tlon-extract-multilingual-glossary)
     ("s" "Share glossary"          tlon-share-glossary)]
    ["AI Actions"
