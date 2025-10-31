@@ -1495,9 +1495,9 @@ file. Print a summary and return a plist with counters."
 ;;;###autoload
 (defun tlon-yaml-collect-english-tags-in-dir (&optional dir)
   "Return English tags from counterparts of Markdown files in DIR.
-When DIR is nil, use `default-directory'. Search only the top level
-(non-recursive). The result is a de-duplicated list of tag titles.
-When called interactively, also print a short summary."
+When DIR is nil, use `default-directory'. Process files in DIR non-recursively.
+The result is a de-duplicated list of tag titles. When called interactively,
+also print a short summary."
   (interactive)
   (let* ((dir (file-name-as-directory (or dir default-directory)))
          (files (directory-files dir t "\\.md\\'"))
