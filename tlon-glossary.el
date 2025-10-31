@@ -380,11 +380,10 @@ Document:%sCandidate terms:%s"
 ;;;###autoload
 (defun tlon-ai-extract-relevant-glossary (full-glossary file &optional source-language target-language)
   "Create a filtered glossary CSV for FILE using FULL-GLOSSARY.
-
 FULL-GLOSSARY is a CSV with at least two columns: Source, Target. FILE is a
 source-language file (normally English). The command asks an AI model to select
 only the source terms relevant to FILE and writes a filtered two-column CSV
-(Source, Target) to the downloads directory.
+\\=(Source, Target) to the downloads directory.
 
 When SOURCE-LANGUAGE or TARGET-LANGUAGE are nil, try to infer SOURCE-LANGUAGE
 from FILE and prompt for TARGET-LANGUAGE."
