@@ -236,20 +236,17 @@ Skip env in LANG. Return the updated commands."
 
 ;;;###autoload
 (defun tlon-local-logs (&optional lang)
-  "Show recent Uqbar logs for LANG from the latest content build.
-If LANG is nil, prompt for a language. Results are fetched through
-Grafana's Loki proxy and filtered to show ERROR and CRITICAL entries."
+  "Show recent Uqbar logs for LANG (errors followed by warnings) from the
+latest content build. If LANG is nil, prompt for a language."
   (interactive)
   (let ((lang (or lang (tlon-select-language 'code t "Language: " t))))
-    (tlon-local--logs lang 'errors)))
+    (tlon-local--logs-all lang)))
 
 ;;;###autoload
 (defun tlon-local-logs-warnings (&optional lang)
-  "Show recent Uqbar WARNING logs for LANG from the latest content build.
-If LANG is nil, prompt for a language."
+  "Deprecated. Use `tlon-local-logs' to show errors and warnings for LANG."
   (interactive)
-  (let ((lang (or lang (tlon-select-language 'code t "Language: " t))))
-    (tlon-local--logs lang 'warnings)))
+  (tlon-local-logs lang))
 
 (defun tlon-local--logs-time-range ()
   "Return cons cell (START . END) for the current logs time window in RFC3339."
@@ -294,6 +291,69 @@ If LANG is nil, prompt for a language."
            (unless label
              (user-error "Loki response missing content_build label"))
            (funcall callback label)))))))
+
+(defun tlon-local--logs-all (lang)
+  "Fetch and render ERROR/CRITICAL and WARNING logs for LANG in one buffer."
+  (let ((lang (or lang (tlon-select-language 'code t "Language: " t))))
+    (tlon-local--get-latest-build-label
+     lang
+     (lambda (label)
+       (let* ((range (tlon-local--logs-time-range))
+              (start (car range))
+              (end (cdr range))
+              (errors-filter "| json | level =~ \"(ERROR|CRITICAL)\"")
+              (warnings-filter "| json | level = \"WARNING\"")
+              (errors-query (format "{content_build=\"%s\"} %s" label errors-filter))
+              (warnings-query (format "{content_build=\"%s\"} %s" label warnings-filter)))
+         (tlon-local--loki-query-range
+          errors-query tlon-local-logs-limit "backward" start end
+          (lambda (errors-json)
+            (tlon-local--loki-query-range
+             warnings-query tlon-local-logs-limit "backward" start end
+             (lambda (warnings-json)
+               (tlon-local--render-logs-buffer-all
+                errors-json warnings-json lang label)))))))))
+
+(defun tlon-local--render-logs-buffer-all (errors-json warnings-json lang label)
+  "Render Loki JSON for errors and warnings into a single buffer for LANG."
+  (let* ((buf (get-buffer-create (format "*tlon: logs %s*" lang)))
+         (errors (alist-get 'result (alist-get 'data errors-json)))
+         (warnings (alist-get 'result (alist-get 'data warnings-json))))
+    (with-current-buffer buf
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (tlon-local-logs-mode)
+        (tlon--setup-visit-file-at-point-buffer)
+        (setq-local tlon-local--logs-ctx (list :lang lang :label label :kind 'all))
+        (insert (format
+                 "Uqbar logs for %s – content_build=%s (last %dm, limit %d)\n\n"
+                 lang label tlon-local-logs-minutes tlon-local-logs-limit))
+        ;; Errors section
+        (insert "ERROR/CRITICAL\n")
+        (tlon-local--insert-logs-section errors lang)
+        (insert "\n")
+        ;; Warnings section
+        (insert "WARNING\n")
+        (tlon-local--insert-logs-section warnings lang))
+      (goto-char (point-min))
+      (hl-line-mode)
+      (display-buffer buf))))
+
+(defun tlon-local--insert-logs-section (streams lang)
+  "Insert a section table for STREAMS (Loki result list) for LANG."
+  (let* ((timew tlon-local-logs-time-width)
+         (svcw tlon-local-logs-service-width)
+         (fmt (format "%%-%ds  %%-%ds  %%s" timew svcw))
+         (hdr (format fmt "timestamp" "service" "message")))
+    (insert hdr "\n" (make-string (length hdr) ?-) "\n")
+    (dolist (stream streams)
+      (let* ((labels (alist-get 'stream stream))
+             (values (alist-get 'values stream))
+             (svc (tlon-local--labels-prefix labels)))
+        (dolist (v values)
+          (let ((ts (tlon-local--ns-to-timestr (nth 0 v)))
+                (line (nth 1 v)))
+            (tlon-local--insert-log-row ts svc line lang)))))))
 
 (defun tlon-local--logs (lang kind)
   "Fetch and render logs for LANG. KIND is 'errors or 'warnings."
@@ -401,11 +461,8 @@ The replacement text includes a `: position 1' suffix to work with
   "Refresh the logs in the current `tlon-local-logs-mode' buffer."
   (interactive)
   (let* ((ctx tlon-local--logs-ctx)
-         (lang (plist-get ctx :lang))
-         (kind (plist-get ctx :kind)))
-    (if (eq kind 'warnings)
-        (tlon-local-logs-warnings lang)
-      (tlon-local-logs lang))))
+         (lang (plist-get ctx :lang)))
+    (tlon-local-logs lang)))
 
 (defun tlon-local-logs-open-in-grafana ()
   "Open the Grafana dashboard for the build in the current buffer."
@@ -564,7 +621,7 @@ Returns a string like \"https://local-dev.example.org\" or nil if unknown."
 ;;;###autoload (autoload 'tlon-local-menu "tlon-local" nil t)
 (transient-define-prefix tlon-local-menu ()
   "`tlon-local' menu."
-  [["Run local environment"
+  [["Run environment"
     ("q a" "arabic"                        tlon-local-run-uqbar-ar)
     ("q n" "english"                       tlon-local-run-uqbar-en)
     ("q s" "spanish"                       tlon-local-run-uqbar-es)
@@ -579,9 +636,8 @@ Returns a string like \"https://local-dev.example.org\" or nil if unknown."
     ("-b" "content branch=production"      tlon-local-infix-content-branch-production)
     ("-t" "no testing"                     tlon-local-infix-no-include-testing)
     ("-s" "single env"                     tlon-local-infix-enforce-single-env)]
-   ["Logs"
-    ("l e" "errors"                        tlon-local-logs)
-    ("l w" "warnings"                      tlon-local-logs-warnings)]])
+   ["Show logs"
+    ("l" "errors and warnings"           tlon-local-logs)]])
 
 (provide 'tlon-local)
 ;;; tlon-local.el ends here
