@@ -693,6 +693,28 @@ If FILE is nil, use the file visited by the current buffer."
 	      (metadata (tlon-metadata-in-file file-or-buffer)))
     (alist-get key metadata nil nil #'string=)))
 
+(defun tlon-yaml-get-list (key &optional file-or-buffer)
+  "Return KEY’s YAML value from FILE-OR-BUFFER as a list of strings.
+If the YAML value is a bracketed list string (e.g., \"[a, b]\"), parse it.
+If it is a non-empty string, return it as a singleton list. If it is already
+a list or vector, return a proper list. Return nil when absent or empty."
+  (let* ((v (tlon-yaml-get-key key file-or-buffer)))
+    (cond
+     ((null v) nil)
+     ((and (stringp v)
+           (let ((s (string-trim v))) (string-empty-p s))) nil)
+     ((listp v) v)
+     ((vectorp v) (append v nil))
+     ((and (stringp v)
+           (string-match-p "\\`\\[.*\\]\\'" v))
+      (let ((parsed (tlon-yaml-format-value v)))
+        (if (listp parsed) parsed
+          (and (stringp parsed)
+               (not (string-empty-p (string-trim parsed)))
+               (list parsed)))))
+     ((stringp v) (list v))
+     (t nil)))
+
 (defun tlon-yaml-insert-list (candidates)
   "Insert a list in YAML field at point.
 Prompt the user to select one or more elements in CANDIDATES. If point is on a

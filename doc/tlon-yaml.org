@@ -93,6 +93,11 @@ This module provides functions for reading, writing, and manipulating YAML front
 #+findex: tlon-yaml-get-key
 + ~tlon-yaml-get-key~ :: Retrieves the value associated with a specific KEY from the YAML metadata of a FILE-OR-BUFFER.
 
+#+findex: tlon-yaml-get-list
++ ~tlon-yaml-get-list~ :: Returns the YAML list value of KEY from a FILE-OR-BUFFER
++  as a list of strings. If the underlying YAML is a single string, returns a
++  singleton list. Returns nil when the key is absent or empty.
+
 #+findex: tlon-yaml-get-key-values
 + ~tlon-yaml-get-key-values~ :: Retrieves all possible values associated with a specific KEY across all metadata files (likely within the current repository or context). Used for completion.
 
