@@ -370,10 +370,19 @@ Return the modified entry string."
         (bibtex-mode)
         (goto-char (point-min))
         (if (bibtex-search-entry key)
-            (progn (bibtex-kill-entry) (insert entry))
-          (tlon-db--insert-entry-with-newlines entry))
+            (progn (bibtex-kill-entry)
+                   (insert (tlon-db--normalize-entry-text entry)))
+          (tlon-db--insert-entry-with-newlines (tlon-db--normalize-entry-text entry)))
         (save-buffer)
         (revert-buffer nil 'no-confirm)))))
+
+(defun tlon-db--normalize-entry-text (entry)
+  "Return ENTRY ensuring it ends with exactly one blank line."
+  (let* ((trimmed (string-trim-right entry))
+         (with-nl (concat trimmed "\n")))
+    (if (string-suffix-p "\n\n" with-nl)
+        with-nl
+      (concat with-nl "\n"))))
 
 (defun tlon-db--insert-entry-with-newlines (entry)
   "Insert bibtex ENTRY at end of buffer with proper newlines."
@@ -1451,24 +1460,23 @@ highlighted with `diff-refine-added` / `diff-refine-removed`."
 
       ;; ---- Produce coloured / word‑refined hunk in a temp buffer ----
       (let ((refined
-             (with-temp-buffer
-               (insert diff-hunk)
-               (diff-mode)
-               (font-lock-ensure)          ; commit line‑wise `diff-*` faces
-               ;; Optional: refine word‑wise if available
-               (when (fboundp 'diff-refine-hunk)
-                 (goto-char (point-min))
-                 (while (re-search-forward "^@@" nil t)
-                   (diff-refine-hunk)))
-               ;; Convert any overlay face produced by `diff-refine-hunk`
-               ;; into ordinary text properties, then return the string.
-               (mapc (lambda (ov)
-                       (when-let ((face (overlay-get ov 'face)))
-                         (add-face-text-property (overlay-start ov) (overlay-end ov)
-                                                 face 'append))
-                       (delete-overlay ov))
-                     (overlays-in (point-min) (point-max)))
-               (buffer-string))))
+             (if (and diff-hunk (not (string-empty-p diff-hunk)))
+                 (with-temp-buffer
+                   (insert diff-hunk)
+                   (diff-mode)
+                   (font-lock-ensure)
+                   (when (fboundp 'diff-refine-hunk)
+                     (goto-char (point-min))
+                     (while (re-search-forward "^@@" nil t)
+                       (diff-refine-hunk)))
+                   (mapc (lambda (ov)
+                           (when-let ((face (overlay-get ov 'face)))
+                             (add-face-text-property (overlay-start ov) (overlay-end ov)
+                                                     face 'append))
+                           (delete-overlay ov))
+                         (overlays-in (point-min) (point-max)))
+                   (buffer-string))
+               "(no textual changes)\n")))
         ;; ---- Insert the coloured hunk into the *Db Sync Log* buffer ----
         (dolist (line (split-string refined "\n" t))
           (insert "      ")                ; 6‑space indent, like before
