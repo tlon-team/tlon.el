@@ -240,67 +240,78 @@ Skip env in LANG. Return the updated commands."
 If LANG is nil, prompt for a language. Results are fetched through
 Grafana's Loki proxy and filtered to show ERROR and CRITICAL entries."
   (interactive)
-  (let* ((lang (or lang (tlon-select-language 'code t "Language: " t)))
-         (uq-dir (tlon-repo-lookup :dir :subproject "uqbar" :language lang))
-         (label
-          (condition-case _err
-              (tlon-local--read-last-update-label uq-dir)
-            (error
-             (user-error
-              "Missing %s. Start the local Uqbar env for '%s' at least once to generate it (M-x tlon-local-run-uqbar and choose %s)"
-              (expand-file-name "build-files/last-update-label" uq-dir) lang lang))))
-         (query (format "{content_build=\"%s\"} | json | level =~ \"(ERROR|CRITICAL)\""
-                        label))
-         (end (tlon-local--rfc3339 (current-time)))
-         (start (tlon-local--rfc3339
-                 (time-subtract (current-time)
-                                (seconds-to-time
-                                 (* 60 tlon-local-logs-minutes)))))
-         (base (string-remove-suffix "/" tlon-local-grafana-base-url))
-         (proxy (string-remove-suffix "/" tlon-local-grafana-loki-proxy))
-         (url (format "%s%s/loki/api/v1/query_range" base proxy))
-         (params `(("query" . ,query)
-                   ("limit" . ,(number-to-string tlon-local-logs-limit))
-                   ("start" . ,start)
-                   ("end" . ,end)
-                   ("direction" . "backward"))))
-    (tlon-local--http-json
-     url params
-     (lambda (json)
-       (tlon-local--render-logs-buffer json lang label 'errors)))))
+  (let ((lang (or lang (tlon-select-language 'code t "Language: " t))))
+    (tlon-local--logs lang 'errors)))
 
 ;;;###autoload
 (defun tlon-local-logs-warnings (&optional lang)
   "Show recent Uqbar WARNING logs for LANG from the latest content build.
 If LANG is nil, prompt for a language."
   (interactive)
-  (let* ((lang (or lang (tlon-select-language 'code t "Language: " t)))
-         (uq-dir (tlon-repo-lookup :dir :subproject "uqbar" :language lang))
-         (label
-          (condition-case _err
-              (tlon-local--read-last-update-label uq-dir)
-            (error
-             (user-error
-              "Missing %s. Start the local Uqbar env for '%s' at least once to generate it (M-x tlon-local-run-uqbar and choose %s)"
-              (expand-file-name "build-files/last-update-label" uq-dir) lang lang))))
-         (query (format "{content_build=\"%s\"} | json | level = \"WARNING\"" label))
-         (end (tlon-local--rfc3339 (current-time)))
+  (let ((lang (or lang (tlon-select-language 'code t "Language: " t))))
+    (tlon-local--logs lang 'warnings)))
+
+(defun tlon-local--logs-time-range ()
+  "Return cons cell (START . END) for the current logs time window in RFC3339."
+  (let* ((end (tlon-local--rfc3339 (current-time)))
          (start (tlon-local--rfc3339
                  (time-subtract (current-time)
-                                (seconds-to-time
-                                 (* 60 tlon-local-logs-minutes)))))
-         (base (string-remove-suffix "/" tlon-local-grafana-base-url))
-         (proxy (string-remove-suffix "/" tlon-local-grafana-loki-proxy))
-         (url (format "%s%s/loki/api/v1/query_range" base proxy))
+                                (seconds-to-time (* 60 tlon-local-logs-minutes))))))
+    (cons start end)))
+
+(defun tlon-local--loki-base-url ()
+  "Return the full Loki query_range endpoint URL."
+  (let* ((base (string-remove-suffix "/" tlon-local-grafana-base-url))
+         (proxy (string-remove-suffix "/" tlon-local-grafana-loki-proxy)))
+    (format "%s%s/loki/api/v1/query_range" base proxy)))
+
+(defun tlon-local--loki-query-range (query limit direction start end callback)
+  "Execute a Loki query_range with QUERY and invoke CALLBACK with parsed JSON."
+  (let* ((url (tlon-local--loki-base-url))
          (params `(("query" . ,query)
-                   ("limit" . ,(number-to-string tlon-local-logs-limit))
+                   ("limit" . ,(number-to-string limit))
                    ("start" . ,start)
                    ("end" . ,end)
-                   ("direction" . "backward"))))
-    (tlon-local--http-json
-     url params
+                   ("direction" . ,direction))))
+    (tlon-local--http-json url params callback)))
+
+(defun tlon-local--get-latest-build-label (lang callback)
+  "Resolve the newest content_build label for LANG and pass it to CALLBACK."
+  (let* ((range (tlon-local--logs-time-range))
+         (start (car range))
+         (end (cdr range))
+         (selector (format "{content_build=~\"uqbar-%s-.*\"}" lang)))
+    (tlon-local--loki-query-range
+     selector 1 "backward" start end
      (lambda (json)
-       (tlon-local--render-logs-buffer json lang label 'warnings)))))
+       (let* ((data (alist-get 'data json))
+              (result (and data (alist-get 'result data))))
+         (unless (and result (consp result))
+           (user-error "No content_build label found for '%s' in the last %dm" lang tlon-local-logs-minutes))
+         (let* ((stream (car result))
+                (labels (alist-get 'stream stream))
+                (label (alist-get 'content_build labels)))
+           (unless label
+             (user-error "Loki response missing content_build label"))
+           (funcall callback label)))))))
+
+(defun tlon-local--logs (lang kind)
+  "Fetch and render logs for LANG. KIND is 'errors or 'warnings."
+  (let ((lang (or lang (tlon-select-language 'code t "Language: " t))))
+    (tlon-local--get-latest-build-label
+     lang
+     (lambda (label)
+       (let* ((range (tlon-local--logs-time-range))
+              (start (car range))
+              (end (cdr range))
+              (filter (if (eq kind 'warnings)
+                          "| json | level = \"WARNING\""
+                        "| json | level =~ \"(ERROR|CRITICAL)\""))
+              (query (format "{content_build=\"%s\"} %s" label filter)))
+         (tlon-local--loki-query-range
+          query tlon-local-logs-limit "backward" start end
+          (lambda (json)
+            (tlon-local--render-logs-buffer json lang label kind))))))))
 
 (defun tlon-local--render-logs-buffer (json lang label kind)
   "Render Loki JSON into a buffer for LANG and build LABEL for KIND."
@@ -428,15 +439,6 @@ The replacement text includes a `: position 1' suffix to work with
          (kill-buffer)
          (funcall callback json))))))
 
-(defun tlon-local--read-last-update-label (uq-dir)
-  "Read last-update-label from UQ-DIR and return its trimmed contents."
-  (let ((file (expand-file-name "build-files/last-update-label" uq-dir)))
-    (unless (file-readable-p file)
-      (user-error "Missing %s" file))
-    (string-trim
-     (with-temp-buffer
-       (insert-file-contents file)
-       (buffer-string)))))
 
 (defun tlon-local--rfc3339 (time)
   "Return TIME formatted as RFC3339 in UTC."
