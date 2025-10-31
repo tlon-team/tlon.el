@@ -1812,9 +1812,9 @@ is populated using `tlon-bib-populate-url-field'."
   (let* ((file (or (buffer-file-name) (user-error "Buffer is not visiting a file")))
          (title (tlon-yaml-get-key "title" file))
          (type (or (tlon-yaml-get-key "type" file) "online"))
-         (authors (let ((lst (tlon-bib--yaml-list "authors" file)))
+         (authors (let ((lst (tlon-yaml-get-list "authors" file)))
                     (tlon-bib--join-names (mapcar #'tlon-bib--reverse-name lst))))
-         (translators (let ((lst (tlon-bib--yaml-list "translators" file)))
+         (translators (let ((lst (tlon-yaml-get-list "translators" file)))
                         (tlon-bib--join-names (mapcar #'tlon-bib--reverse-name lst))))
          (date (tlon-yaml-get-key "date" file))
          (date-iso (tlon-bib--date-iso date))
@@ -1903,25 +1903,11 @@ whose names end with .md or .markdown. For each file, open it and call
 
 (declare-function tlon-yaml-get-key "tlon-yaml")
 (declare-function tlon-yaml-get-key-values "tlon-yaml")
+(declare-function tlon-yaml-get-list "tlon-yaml")
 (declare-function tlon-get-repo-from-file "tlon-core")
 (declare-function tlon-get-value-in-entry "tlon-core")
 (declare-function bib-reverse-first-last-name "bibtex-extras")
 
-(defun tlon-bib--yaml-list (key file)
-  "Return YAML list for KEY in FILE as a list of strings."
-  (or (ignore-errors (tlon-yaml-get-key-values key))
-      (let ((v (tlon-yaml-get-key key file)))
-        (cond
-         ((null v) nil)
-         ((listp v) v)
-         ((and (stringp v) (string-match-p "\\`\\[.*\\]\\'" v))
-          (condition-case nil
-              (let ((json-array-type 'list)
-                    (json-object-type 'alist))
-                (json-read-from-string v))
-            (error nil)))
-         ((stringp v) (list v))
-         (t nil)))))
 
 (defun tlon-bib--join-names (names)
   "Join NAMES with \" and \" for BibLaTeX author-like fields."
