@@ -497,7 +497,11 @@ terms."
   "Import translations from TSV FILE into the glossary.
 The first line must be \"SRC<TAB>TGT\" language codes. Each subsequent line must
 be \"SOURCE<TAB>TRANSLATION\". Only existing entries keyed by SRC are updated;
-missing source terms are reported. Writes the updated glossary."
+missing source terms are reported. Writes the updated glossary.
+
+This command is useful for importing entries from the multilingual glossary in
+Google Sheets. Just select the relevant rows in the source and target languages,
+and paste the contents into a file."
   (interactive "fTSV file: ")
   (let* ((parsed (tlon--glossary-parse-tsv file))
          (src (nth 0 parsed))
