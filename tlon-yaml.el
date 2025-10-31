@@ -32,6 +32,7 @@
 (require 'simple-extras)
 (require 'seq)
 (require 'json)
+(require 'tlon-glossary)
 
 ;;;; Variables
 
@@ -1088,7 +1089,11 @@ The function looks at the English counterpart of FILE, reads its `tags`
 field, maps every tag slug to its tag file in English, locates the tag
 translation into the language of FILE, retrieves the translated tag’s
 `title`, and finally writes the list of titles back to FILE as the value
-of the `tags` field."
+of the `tags` field.
+
+When the target-language tag file cannot be found, fall back to the
+glossary: look up the English tag title and use its translation into the
+target language. Also report which tags were translated via the glossary."
   (interactive)
   (let* ((file (or file
                    (when (and (buffer-file-name)
@@ -1102,35 +1107,62 @@ of the `tags` field."
                     (tlon-get-counterpart file)))
          (tags (tlon-yaml-get-key "tags" en-file))
          (titles '())
-         (missing '()))
+         (missing '())
+         (via-glossary '()))
     (when (stringp tags)
       (setq tags (tlon-yaml-format-value tags)))
     (unless tags
       (user-error "English counterpart has no `tags' field"))
-    (dolist (slug tags)
-      (let* ((en-repo (tlon-get-repo-from-file en-file))
-             (tags-dir (file-name-concat en-repo "tags"))
-             (orig-tag-file (file-name-concat tags-dir
-                                              (format "%s.md" (simple-extras-slugify slug))))
-             (got-title nil))
-        (when (file-exists-p orig-tag-file)
-          (when-let ((tr-tag-file (tlon-get-counterpart-in-originals
-                                   orig-tag-file target-lang)))
-            (when-let ((title (tlon-yaml-get-key "title" tr-tag-file)))
-              (push title titles)
-              (setq got-title t))))
-        (unless got-title
-          (push slug missing))))
-    (setq titles (nreverse (delete-dups titles)))
-    (unless titles
-      (user-error "No translated tag titles found"))
-    (with-current-buffer (find-file-noselect file)
-      (tlon-yaml-insert-field "tags" titles))
-    (when missing
-      (message "No translation found for %d tag%s: %s"
-               (length missing)
-               (if (= (length missing) 1) "" "s")
-               (mapconcat #'identity (nreverse (delete-dups missing)) ", ")))))
+    (let* ((en-repo (tlon-get-repo-from-file en-file))
+           (tags-dir (file-name-concat en-repo "tags"))
+           (glossary (tlon-parse-glossary)))
+      (dolist (slug tags)
+        (let* ((orig-tag-file (file-name-concat tags-dir
+                                                (format "%s.md" (simple-extras-slugify slug))))
+               (title-from-files (tlon-yaml--translate-tag-from-files orig-tag-file target-lang))
+               (en-title (or (and (file-exists-p orig-tag-file)
+                                  (tlon-yaml-get-key "title" orig-tag-file))
+                             slug)))
+          (cond
+           (title-from-files
+            (push title-from-files titles))
+           (t
+            (let ((title-from-gloss (tlon-yaml--translate-tag-from-glossary en-title glossary target-lang)))
+              (if title-from-gloss
+                  (progn
+                    (push title-from-gloss titles)
+                    (push en-title via-glossary))
+                (push slug missing)))))))
+      (setq titles (nreverse (delete-dups titles)))
+      (unless titles
+        (user-error "No translated tag titles found"))
+      (with-current-buffer (find-file-noselect file)
+        (tlon-yaml-insert-field "tags" titles))
+      (when via-glossary
+        (message "Translated %d tag%s via glossary (target tag file not found): %s"
+                 (length via-glossary)
+                 (if (= (length via-glossary) 1) "" "s")
+                 (mapconcat #'identity (nreverse (delete-dups via-glossary)) ", ")))
+      (when missing
+        (message "No translation found for %d tag%s: %s"
+                 (length missing)
+                 (if (= (length missing) 1) "" "s")
+                 (mapconcat #'identity (nreverse (delete-dups missing)) ", "))))))
+
+(defun tlon-yaml--translate-tag-from-files (orig-tag-file target-lang)
+  "Return translated tag title from ORIG-TAG-FILE into TARGET-LANG.
+Return nil when no corresponding target-language tag file exists."
+  (when (file-exists-p orig-tag-file)
+    (when-let ((tr-tag-file (tlon-get-counterpart-in-originals orig-tag-file target-lang)))
+      (tlon-yaml-get-key "title" tr-tag-file))))
+
+(defun tlon-yaml--translate-tag-from-glossary (en-title glossary target-lang)
+  "Return glossary translation of EN-TITLE into TARGET-LANG from GLOSSARY.
+Return nil when no matching entry or translation exists."
+  (let* ((tgt-key (intern target-lang))
+         (entry (seq-find (lambda (e) (string= (alist-get 'en e) en-title)) glossary))
+         (val (and entry (alist-get tgt-key entry))))
+    (and (stringp val) (not (string-empty-p (string-trim val))) val)))
 
 ;;;###autoload
 (defun tlon-yaml-insert-translated-tags-in-dir (&optional n dir)

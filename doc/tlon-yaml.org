@@ -165,7 +165,7 @@ This module provides functions for reading, writing, and manipulating YAML front
 + ~tlon-yaml-delete-field~ :: Deletes the field associated with KEY from the YAML metadata of a FILE or the current buffer.
 
 #+findex: tlon-yaml-insert-translated-tags
-+ ~tlon-yaml-insert-translated-tags~ :: Inserts translated tag titles into the `tags` field of a Markdown file, based on the tags of its English counterpart.
++ ~tlon-yaml-insert-translated-tags~ :: Inserts translated tag titles into the `tags` field of a Markdown file, based on the tags of its English counterpart. If a target-language tag file does not exist, it falls back to the glossary by looking up the English tag title and inserting the target-language translation; it reports which tags were translated via the glossary.
 
 #+findex: tlon-yaml-insert-translated-tags-in-dir
 + ~tlon-yaml-insert-translated-tags-in-dir~ :: Walks the current directory
