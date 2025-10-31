@@ -336,9 +336,9 @@ identifier for the logs. LABEL is the content_build label identifier."
         (insert (format
                  "Uqbar logs for %s – content_build=%s (last %dm, limit %d)\n\n"
                  lang label tlon-local-logs-minutes tlon-local-logs-limit))
-        (insert "ERROR/CRITICAL\n")
+        (insert "ERRORS\n")
         (tlon-local--insert-logs-section errors lang)
-        (insert "WARNING\n")
+        (insert "WARNINGS\n")
         (tlon-local--insert-logs-section warnings lang))
       (goto-char (point-min))
       (hl-line-mode)
