@@ -114,6 +114,45 @@ The command ~tlon-extract-glossary~ extracts a glossary for an arbitrary languag
 7. If the recipient is =human=, it asks the user if they want to share the extracted glossary via email using ~tlon-share-glossary~.
 8. For other recipients (=deepl-editor=, =deepl-api=, =sieve=), it messages the path to the extracted file.
 
+*** Import TSV glossary
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-tsv-glossary
+:END:
+#+findex: tlon-glossary-import-tsv
+The command ~tlon-glossary-import-tsv~ imports a batch of translations from a
+tab-separated file into the master glossary. The TSV must have the following
+format:
+
+- The first line contains two language codes, =SRC= and =TGT=, separated by a
+  single tab.
+- Each subsequent line contains a source term in =SRC=, a tab character, and
+  its translation in =TGT=.
+
+For example:
+
+: en<TAB>ko
+: AI safety<TAB>인공지능 안전
+: altruistic motivation<TAB>이타적 동기
+: animal sentience<TAB>동물의 쾌고감수
+: animal welfare<TAB>동물 복지
+: artificial intelligence<TAB>인공지능
+
+Behavior:
+
+1. It parses the header to determine the =SRC= and =TGT= language codes.
+2. For each pair, it finds the corresponding existing glossary entry where the
+   =SRC= term matches exactly.
+3. It sets or updates the =TGT= translation in that entry.
+4. It writes the updated glossary back to ~tlon-file-glossary-source~.
+5. It reports the number of updated translations and lists any source terms
+   that were not found in the glossary.
+
+Notes:
+
+- The command does not create new entries; missing source terms are reported.
+- Input is normalized for line endings and BOM. Empty or malformed lines are
+  ignored.
+
 *** Extract Multilingual Glossary
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-extract-multilingual-glossary
