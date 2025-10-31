@@ -149,7 +149,9 @@ Behavior:
 
 Notes:
 
-- The command does not create new entries; missing source terms are reported.
+- For missing source terms, the command asks whether to create a new entry. If
+  you accept, it prompts for the term type and creates the entry before setting
+  the target translation; if you decline, the term is reported as missing.
 - Input is normalized for line endings and BOM. Empty or malformed lines are
   ignored.
 
