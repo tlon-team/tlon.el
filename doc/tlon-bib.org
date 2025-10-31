@@ -178,6 +178,9 @@ This section details the interactive commands provided by =tlon-bib.el=.
 #+findex: tlon-bib-swap-colon-in-title
 + ~tlon-bib-swap-colon-in-title~ :: Prompts for a BibTeX key, jumps to the entry in its source BibTeX file using =citar-extras-goto-bibtex-entry=, swaps all occurrences of \":\" and \"꞉\" in the =title= field, saves the file, and reports whether a colon was replaced with the modified letter colon or vice versa.
 
+#+findex: tlon-bib-create-entry-from-markdown
++ ~tlon-bib-create-entry-from-markdown~ :: Creates a BibTeX entry in the local database file (=db.bib=) for the Markdown file at point by reading its YAML front matter. It sets =title=, =author= (from =authors=), =translator= (from =translators=), =langid= (from the repo language in ~tlon-repos~), =date=, and =translation= (from =original_key= when present). The BibTeX key is =original_key= followed by the capitalized two-letter language code (e.g., =Tr=). After insertion, it populates the =url= field using ~tlon-bib-populate-url-field~.
+
 *** URL Management
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-bib-url-commands
