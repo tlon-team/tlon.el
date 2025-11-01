@@ -247,3 +247,12 @@ These functions provide convenient wrappers for looking up data within specific 
 
 #+findex: tlon-check-image-alt-text
 + ~tlon-check-image-alt-text~ :: Checks image tags in the current buffer for missing or potentially incorrect alt text.
+
+#+findex: tlon-visit-file-at-point
++ ~tlon-visit-file-at-point~ :: Visits the file referenced on the current line and
+  jumps to the position indicated by a "position N" suffix. Respects the user
+  option ~tlon-visit-file-other-window~.
+
+#+vindex: tlon-visit-file-other-window
++ ~tlon-visit-file-other-window~ :: When non-nil, open files in the other window
+  instead of the current one when using ~tlon-visit-file-at-point~.
