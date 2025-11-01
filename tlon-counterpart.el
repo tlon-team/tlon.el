@@ -642,8 +642,8 @@ language within the current subproject."
 
 (defun tlon-counterpart--files-of-type-in-repo (repo-dir yaml-type)
   "Return a list of markdown files in REPO-DIR whose YAML type is YAML-TYPE.
-
-Scan only the repository's immediate subdirectories (non-recursive); ignore files in the repository root."
+Scan only the repository's immediate subdirectories (non-recursive); ignore
+files in the repository root."
   (let* ((subdirs (seq-filter
                    (lambda (p)
                      (and (file-directory-p p)

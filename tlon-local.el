@@ -501,22 +501,24 @@ The replacement text includes a `: position 1' suffix to work with
     (tlon-local--maybe-follow)))
 
 (defun tlon-local-next-line (&optional arg)
-  "Move to next line. When follow mode is enabled, visit file at point in
-the other window. ARG is the number of lines to move."
+  "Move to next line and maybe follow if follow mode is enabled.
+When follow mode is enabled, visit file at point in the other window.
+ARG is the number of lines to move."
   (interactive "p")
-  (next-line (or arg 1))
+  (forward-line (or arg 1))
   (tlon-local--maybe-follow))
 
 (defun tlon-local-previous-line (&optional arg)
-  "Move to previous line. When follow mode is enabled, visit file at point
-in the other window. ARG is the number of lines to move."
+  "Move to previous line and maybe follow if follow mode is enabled.
+When follow mode is enabled, visit file at point in the other window.
+ARG is the number of lines to move."
   (interactive "p")
-  (previous-line (or arg 1))
+  (forward-line (* -1 (or arg 1)))
   (tlon-local--maybe-follow))
 
 (defun tlon-local--maybe-follow ()
-  "If follow mode is enabled in a logs buffer, visit the file at point in
-the other window."
+  "Visit the file at point in the other window if follow mode is enabled.
+This only applies when in a logs buffer with follow mode enabled."
   (when (and tlon-local-logs-follow-mode (derived-mode-p 'tlon-local-logs-mode))
     (let ((line (buffer-substring-no-properties (line-beginning-position)
                                                 (line-end-position))))
