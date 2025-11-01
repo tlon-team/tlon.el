@@ -35,11 +35,14 @@
 
 ;;;; Variables
 
+(defvar-local tlon-local--logs-ctx nil
+  "Internal context data for `tlon-local-logs' buffers.")
+
+;;;; User options
+
 (defgroup tlon-local nil
   "Manage local environments."
   :group 'tlon)
-
-;;;; Variables (customization)
 
 (defcustom tlon-local-grafana-base-url "http://localhost:3101"
   "Base URL for Grafana in local development."
@@ -86,9 +89,6 @@ This usually contains the data source numeric ID or UID."
   "When non-nil, starting a local environment stops all other running ones."
   :type 'boolean
   :group 'tlon-local)
-
-(defvar-local tlon-local--logs-ctx nil
-  "Internal context data for `tlon-local-logs' buffers.")
 
 ;;;; Functions
 
