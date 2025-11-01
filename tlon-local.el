@@ -347,18 +347,8 @@ identifier for the logs. LABEL is the content_build label identifier."
 
 (defun tlon-local--insert-logs-section (streams lang)
   "Insert a section table for STREAMS (Loki result list) for LANG."
-  (let* ((srcw tlon-local-logs-source-width)
-         (fmt (format "%%-%ds  %%s" srcw))
-         (hdr (format fmt "source_filename" "message")))
-    (insert hdr "\n" (make-string (length hdr) ?-) "\n")
-    (dolist (stream streams)
-      (let* ((labels (alist-get 'stream stream))
-             (src-label (alist-get 'source_filename labels))
-             (values (alist-get 'values stream)))
-        (dolist (v values)
-          (let ((line (nth 1 v)))
-            (tlon-local--insert-log-row line src-label lang)))))
-    (insert "\n")))
+  (tlon-local--insert-logs-rows streams lang)
+  (insert "\n"))
 
 (defun tlon-local--logs (lang kind)
   "Fetch and render logs for LANG. KIND is `errors' or `warnings'."
@@ -395,17 +385,7 @@ identifier for the logs. LABEL is the content_build label identifier."
                  "Uqbar %s logs for %s – content_build=%s (last %dm, limit %d)\n\n"
                  (if (eq kind 'warnings) "WARNING" "ERROR/CRITICAL")
                  lang label tlon-local-logs-minutes tlon-local-logs-limit))
-        (let* ((srcw tlon-local-logs-source-width)
-               (fmt (format "%%-%ds  %%s" srcw))
-               (hdr (format fmt "source_filename" "message")))
-          (insert hdr "\n" (make-string (length hdr) ?-) "\n"))
-        (dolist (stream result)
-          (let* ((labels (alist-get 'stream stream))
-                 (src-label (alist-get 'source_filename labels))
-                 (values (alist-get 'values stream)))
-            (dolist (v values)
-              (let ((line (nth 1 v)))
-                (tlon-local--insert-log-row line src-label lang))))))
+        (tlon-local--insert-logs-rows result lang))
       (goto-char (point-min))
       (hl-line-mode)
       (display-buffer buf))))
@@ -424,6 +404,20 @@ Continuation lines in LINE are indented under the message column."
     (insert (format fmt (or src "") (or (car parts) "")))
     (dolist (cont (cdr parts))
       (insert indent cont "\n"))))
+
+(defun tlon-local--insert-logs-rows (streams lang)
+  "Insert table header and log rows for STREAMS in LANG."
+  (let* ((srcw tlon-local-logs-source-width)
+         (fmt (format "%%-%ds  %%s" srcw))
+         (hdr (format fmt "source_filename" "message")))
+    (insert hdr "\n" (make-string (length hdr) ?-) "\n")
+    (dolist (stream streams)
+      (let* ((labels (alist-get 'stream stream))
+             (src-label (alist-get 'source_filename labels))
+             (values (alist-get 'values stream)))
+        (dolist (v values)
+          (let ((line (nth 1 v)))
+            (tlon-local--insert-log-row line src-label lang)))))))
 
 (defun tlon-local--parse-log-line (line)
   "Return cons (MESSAGE . SOURCE_FILENAME) parsed from LINE.
