@@ -38,22 +38,18 @@
 (defvar-local tlon-local--logs-ctx nil
   "Internal context data for `tlon-local-logs' buffers.")
 
+(defconst tlon-local-grafana-base-url "http://localhost:3101"
+  "Base URL for Grafana in local development.")
+
+(defconst tlon-local-grafana-loki-proxy "/api/datasources/proxy/1"
+  "Path prefix for the Grafana Loki data source proxy.
+This usually contains the data source numeric ID or UID.")
+
 ;;;; User options
 
 (defgroup tlon-local nil
   "Manage local environments."
   :group 'tlon)
-
-(defcustom tlon-local-grafana-base-url "http://localhost:3101"
-  "Base URL for Grafana in local development."
-  :type 'string
-  :group 'tlon-local)
-
-(defcustom tlon-local-grafana-loki-proxy "/api/datasources/proxy/1"
-  "Path prefix for the Grafana Loki data source proxy.
-This usually contains the data source numeric ID or UID."
-  :type 'string
-  :group 'tlon-local)
 
 (defcustom tlon-local-logs-minutes (* 30 24 60)
   "Default lookback window, in minutes, for querying logs."
