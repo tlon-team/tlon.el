@@ -705,15 +705,24 @@ Returns a string like \"https://local-dev.example.org\" or nil if unknown."
     ("q k" "korean"                        tlon-local-run-uqbar-ko)
     ("q u" "turkish"                       tlon-local-run-uqbar-tr)
     ""
-    "Show logs"
-    ("l" "errors and warnings"             tlon-local-logs)]
-   ["Options"
+    "Options"
     ("-r" "rebuild content db"             tlon-local-infix-rebuild-content-database)
     ("-b" "content branch=production"      tlon-local-infix-content-branch-production)
     ("-t" "no testing"                     tlon-local-infix-no-include-testing)
     ("-s" "single env"                     tlon-local-infix-enforce-single-env)
+    ]
+   ["Show logs"
+    ("l" "errors and warnings"             tlon-local-logs)
     ""
-    ("-f" "logs follow mode"               tlon-local-infix-logs-follow-mode)
+    ""
+    ""
+    ""
+    ""
+    ""
+    ""
+    ""
+    "Options"
+    ("-f" "follow mode"               tlon-local-infix-logs-follow-mode)
     ("-o" "open in other window"           tlon-infix-visit-file-other-window)]])
 
 (provide 'tlon-local)
