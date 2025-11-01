@@ -25,14 +25,14 @@ provides a transient menu for quick access to common tasks.
 :CUSTOM_ID: h:tlon-local-options
 :END:
 
-These options control defaults and behavior of the local environment and logs.
+These variables control defaults and behavior of the local environment and logs. Some of them are constants (not customizable).
 
 #+vindex: tlon-local-grafana-base-url
-+ ~tlon-local-grafana-base-url~ :: Base URL for Grafana in local development.
++ ~tlon-local-grafana-base-url~ :: Base URL for Grafana in local development. This is a constant; not customizable.
 
 #+vindex: tlon-local-grafana-loki-proxy
 + ~tlon-local-grafana-loki-proxy~ :: Path prefix to the Grafana Loki data
-  source proxy (usually embeds the data source ID or UID).
+  source proxy (usually embeds the data source ID or UID). This is a constant; not customizable.
 
 #+vindex: tlon-local-logs-minutes
 + ~tlon-local-logs-minutes~ :: Default lookback window, in minutes, used when
@@ -53,15 +53,15 @@ These options control defaults and behavior of the local environment and logs.
 
 #+vindex: tlon-local-rebuild-content-database
 + ~tlon-local-rebuild-content-database~ :: When non-nil, pass
-  ~--rebuild-content-database~ to ~launch.py start~.
+  ~--rebuild-content-database~ to ~launch.py start~. This is a constant; not customizable.
 
 #+vindex: tlon-local-content-branch-production
 + ~tlon-local-content-branch-production~ :: When non-nil, pass
-  ~--content-branch=production~ to ~launch.py start~.
+  ~--content-branch=production~ to ~launch.py start~. This is a constant; not customizable.
 
 #+vindex: tlon-local-no-include-testing
 + ~tlon-local-no-include-testing~ :: When non-nil, pass ~--no-include-testing~
-  to ~launch.py start~.
+  to ~launch.py start~. This is a constant; not customizable.
 
 #+vindex: tlon-local-enforce-single-env
 + ~tlon-local-enforce-single-env~ :: When non-nil, starting a local environment
@@ -154,7 +154,7 @@ These commands call ~tlon-local-run-uqbar~ with a fixed language.
 + ~tlon-local-menu~ :: Transient menu for running environments and inspecting
   logs. It exposes language-specific launchers and options.
 
-The menu also defines infix toggles wired to user options:
+The menu also defines infix toggles wired to variables:
 
 #+findex: tlon-local-infix-rebuild-content-database
 + ~tlon-local-infix-rebuild-content-database~ :: Toggle
