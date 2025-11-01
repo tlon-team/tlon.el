@@ -411,7 +411,7 @@ identifier for the logs. LABEL is the content_build label identifier."
       (display-buffer buf))))
 
 (defun tlon-local--insert-log-row (line src-label lang)
-  "Insert one row with SOURCE-LABEL and LINE for LANG.
+  "Insert one row with SRC-LABEL and LINE for LANG.
 Continuation lines in LINE are indented under the message column."
   (let* ((srcw tlon-local-logs-source-width)
          (fmt (format "%%-%ds  %%s\n" srcw))
