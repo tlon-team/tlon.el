@@ -327,7 +327,9 @@ response."
 ERRORS-JSON is the JSON response containing error log entries. WARNINGS-JSON is
 the JSON response containing warning log entries. LANG is the language
 identifier for the logs. LABEL is the content_build label identifier."
-  (let* ((buf (get-buffer-create (format "*tlon: logs %s*" lang)))
+  (let* ((buf-name (format "*tlon: logs %s*" lang))
+         (new (not (get-buffer buf-name)))
+         (buf (get-buffer-create buf-name))
          (errors (alist-get 'result (alist-get 'data errors-json)))
          (warnings (alist-get 'result (alist-get 'data warnings-json))))
     (with-current-buffer buf
@@ -346,7 +348,8 @@ identifier for the logs. LABEL is the content_build label identifier."
         (insert "\n"))
       (goto-char (point-min))
       (hl-line-mode)
-      (display-buffer buf))))
+      (let ((win (display-buffer buf)))
+        (when new (select-window win))))))
 
 (defun tlon-local--logs (lang kind)
   "Fetch and render logs for LANG. KIND is `errors' or `warnings'."
@@ -370,22 +373,25 @@ identifier for the logs. LABEL is the content_build label identifier."
   "Render Loki JSON into a buffer for LANG and build LABEL for KIND."
   (let* ((data (alist-get 'data json))
          (result (and data (alist-get 'result data)))
-         (buf (get-buffer-create (format "*tlon: logs %s*" lang))))
+         (buf-name (format "*tlon: logs %s*" lang))
+         (new (not (get-buffer buf-name)))
+         (buf (get-buffer-create buf-name)))
     (unless (and data result)
       (user-error "Unexpected Loki response"))
     (with-current-buffer buf
       (let ((inhibit-read-only t))
-        (erase-buffer)
-        (tlon-local-logs-mode)
-        (setq-local tlon-local--logs-ctx (list :lang lang :label label :kind kind))
-        (insert (format
-                 "Uqbar %s logs for %s – content_build=%s (last %dm, limit %d)\n\n"
-                 (if (eq kind 'warnings) "WARNING" "ERROR/CRITICAL")
-                 lang label tlon-local-logs-minutes tlon-local-logs-limit))
-        (tlon-local--insert-logs-rows result lang))
+	(erase-buffer)
+	(tlon-local-logs-mode)
+	(setq-local tlon-local--logs-ctx (list :lang lang :label label :kind kind))
+	(insert (format
+		 "Uqbar %s logs for %s – content_build=%s (last %dm, limit %d)\n\n"
+		 (if (eq kind 'warnings) "WARNING" "ERROR/CRITICAL")
+		 lang label tlon-local-logs-minutes tlon-local-logs-limit))
+	(tlon-local--insert-logs-rows result lang))
       (goto-char (point-min))
       (hl-line-mode)
-      (display-buffer buf))))
+      (let ((win (display-buffer buf)))
+	(when new (select-window win))))))
 
 (defun tlon-local--insert-log-row (line src-label lang)
   "Insert one log LINE: main MESSAGE followed by the FILENAME.
@@ -515,8 +521,9 @@ the other window."
     (let ((line (buffer-substring-no-properties (line-beginning-position)
                                                 (line-end-position))))
       (when (string-match-p ":[[:space:]]+position[[:space:]]+[0-9]+" line)
-        (let ((tlon-visit-file-other-window t))
-          (tlon-visit-file-at-point))))))
+        (save-selected-window
+          (let ((tlon-visit-file-other-window t))
+            (tlon-visit-file-at-point)))))))
 
 (defun tlon-local-logs-refresh ()
   "Refresh the logs in the current `tlon-local-logs-mode' buffer."
