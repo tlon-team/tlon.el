@@ -45,6 +45,15 @@
   "Path prefix for the Grafana Loki data source proxy.
 This usually contains the data source numeric ID or UID.")
 
+(defconst tlon-local-rebuild-content-database nil
+  "When non-nil, append `--rebuild-content-database' to Uqbar start.")
+
+(defconst tlon-local-content-branch-production nil
+  "When non-nil, append `--content-branch=production' to Uqbar start.")
+
+(defconst tlon-local-no-include-testing nil
+  "When non-nil, append `--no-include-testing' Uqbar start.")
+
 ;;;; User options
 
 (defgroup tlon-local nil
@@ -70,21 +79,6 @@ This usually contains the data source numeric ID or UID.")
   "Whether moving point in a logs buffer visits file at point in the other window.
 When non-nil, moving point in a logs buffer visits the file at point in
 the other window, keeping it scrolled in sync."
-  :type 'boolean
-  :group 'tlon-local)
-
-(defcustom tlon-local-rebuild-content-database nil
-  "When non-nil, append `--rebuild-content-database' to Uqbar start."
-  :type 'boolean
-  :group 'tlon-local)
-
-(defcustom tlon-local-content-branch-production nil
-  "When non-nil, append `--content-branch=production' to Uqbar start."
-  :type 'boolean
-  :group 'tlon-local)
-
-(defcustom tlon-local-no-include-testing nil
-  "When non-nil, append `--no-include-testing' Uqbar start."
   :type 'boolean
   :group 'tlon-local)
 
