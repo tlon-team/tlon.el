@@ -634,9 +634,10 @@ Returns a string like \"https://local-dev.example.org\" or nil if unknown."
     ("-r" "rebuild content db"             tlon-local-infix-rebuild-content-database)
     ("-b" "content branch=production"      tlon-local-infix-content-branch-production)
     ("-t" "no testing"                     tlon-local-infix-no-include-testing)
-    ("-s" "single env"                     tlon-local-infix-enforce-single-env)]
+    ("-s" "single env"                     tlon-local-infix-enforce-single-env)
+    ("-o" "open in other window"           tlon-infix-visit-file-other-window)]
    ["Show logs"
-    ("l" "errors and warnings"           tlon-local-logs)]])
+    ("l" "errors and warnings"             tlon-local-logs)]])
 
 (provide 'tlon-local)
 ;;; tlon-local.el ends here

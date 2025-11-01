@@ -28,6 +28,7 @@
 (require 'elpaca)
 (require 'json)
 (require 'paths)
+(require 'transient)
 
 ;;;; User options
 
@@ -37,6 +38,11 @@
 
 (defcustom tlon-debug nil
   "Whether to display debug messages."
+  :type 'boolean
+  :group 'tlon-core)
+
+(defcustom tlon-visit-file-other-window nil
+  "When non-nil, open files with `tlon-visit-file-at-point' in the other window."
   :type 'boolean
   :group 'tlon-core)
 
@@ -1317,6 +1323,12 @@ INNER-VALUE-PROMPT is the prompt string for the inner value."
 		    nil
 		  t)))
 
+(transient-define-infix tlon-infix-visit-file-other-window ()
+  "Toggle the `'tlon-visit-file-other-window' user option."
+  :class 'transient-lisp-variable
+  :variable 'tlon-visit-file-other-window
+  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-visit-file-other-window)))
+
 ;;;;; numbers
 
 (defun tlon-get-separator (type &optional language)
@@ -1484,7 +1496,9 @@ but will not throw an error if it is located in `uqbar-en/articles/FILE' or
 	(let* ((file (match-string 1 line))
 	       (abs-file (expand-file-name file))
 	       (pos (string-to-number (match-string 2 line))))
-	  (find-file abs-file)
+	  (if tlon-visit-file-other-window
+	      (find-file-other-window abs-file)
+	    (find-file abs-file))
 	  (goto-char (min pos (point-max)))
 	  (recenter))
       (user-error "No navigable entry on this line"))))
