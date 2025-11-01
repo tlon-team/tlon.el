@@ -66,8 +66,8 @@ This usually contains the data source numeric ID or UID."
   :type 'integer
   :group 'tlon-local)
 
-(defcustom tlon-local-logs-service-width 14
-  "Column width for the service label in the logs buffer."
+(defcustom tlon-local-logs-source-width 40
+  "Column width for the source_filename in the logs buffer."
   :type 'integer
   :group 'tlon-local)
 
@@ -348,18 +348,16 @@ identifier for the logs. LABEL is the content_build label identifier."
 (defun tlon-local--insert-logs-section (streams lang)
   "Insert a section table for STREAMS (Loki result list) for LANG."
   (let* ((timew tlon-local-logs-time-width)
-         (svcw tlon-local-logs-service-width)
-         (fmt (format "%%-%ds  %%-%ds  %%s" timew svcw))
-         (hdr (format fmt "timestamp" "service" "message")))
+         (srcw tlon-local-logs-source-width)
+         (fmt (format "%%-%ds  %%-%ds  %%s" timew srcw))
+         (hdr (format fmt "timestamp" "source_filename" "message")))
     (insert hdr "\n" (make-string (length hdr) ?-) "\n")
     (dolist (stream streams)
-      (let* ((labels (alist-get 'stream stream))
-             (values (alist-get 'values stream))
-             (svc (tlon-local--labels-prefix labels)))
+      (let* ((values (alist-get 'values stream)))
         (dolist (v values)
           (let ((ts (tlon-local--ns-to-timestr (nth 0 v)))
                 (line (nth 1 v)))
-            (tlon-local--insert-log-row ts svc line lang)))))
+            (tlon-local--insert-log-row ts line lang)))))
     (insert "\n")))
 
 (defun tlon-local--logs (lang kind)
@@ -398,34 +396,65 @@ identifier for the logs. LABEL is the content_build label identifier."
                  (if (eq kind 'warnings) "WARNING" "ERROR/CRITICAL")
                  lang label tlon-local-logs-minutes tlon-local-logs-limit))
         (let* ((timew tlon-local-logs-time-width)
-               (svcw tlon-local-logs-service-width)
-               (fmt (format "%%-%ds  %%-%ds  %%s" timew svcw))
-               (hdr (format fmt "timestamp" "service" "message")))
+               (srcw tlon-local-logs-source-width)
+               (fmt (format "%%-%ds  %%-%ds  %%s" timew srcw))
+               (hdr (format fmt "timestamp" "source_filename" "message")))
           (insert hdr "\n" (make-string (length hdr) ?-) "\n"))
         (dolist (stream result)
-          (let* ((labels (alist-get 'stream stream))
-                 (values (alist-get 'values stream))
-                 (svc (tlon-local--labels-prefix labels)))
+          (let* ((values (alist-get 'values stream)))
             (dolist (v values)
               (let ((ts (tlon-local--ns-to-timestr (nth 0 v)))
                     (line (nth 1 v)))
-                (tlon-local--insert-log-row ts svc line lang))))))
+                (tlon-local--insert-log-row ts line lang))))))
       (goto-char (point-min))
       (hl-line-mode)
       (display-buffer buf))))
 
-(defun tlon-local--insert-log-row (ts svc line lang)
-  "Insert a single log row with columns TS, SVC and LINE for LANG.
+(defun tlon-local--insert-log-row (ts line lang)
+  "Insert a single log row with columns TS, source_filename and LINE for LANG.
 Continuation lines in LINE are indented under the message column."
   (let* ((timew tlon-local-logs-time-width)
-         (svcw tlon-local-logs-service-width)
-         (fmt (format "%%-%ds  %%-%ds  %%s\n" timew svcw))
-         (indent (make-string (+ timew 2 svcw 2) ?\s))
-         (msg (tlon-local--expand-article-ids line lang))
+         (srcw tlon-local-logs-source-width)
+         (fmt (format "%%-%ds  %%-%ds  %%s\n" timew srcw))
+         (indent (make-string (+ timew 2 srcw 2) ?\s))
+         (parsed (tlon-local--parse-log-line line))
+         (src (tlon-local--expand-source-filename (cdr parsed) lang))
+         (msg (tlon-local--expand-article-ids (car parsed) lang))
          (parts (and msg (split-string msg "\n"))))
-    (insert (format fmt ts (or svc "") (or (car parts) "")))
+    (insert (format fmt ts (or src "") (or (car parts) "")))
     (dolist (cont (cdr parts))
       (insert indent cont "\n"))))
+
+(defun tlon-local--parse-log-line (line)
+  "Return cons (MESSAGE . SOURCE_FILENAME) parsed from LINE.
+If LINE is not JSON, return (LINE . nil)."
+  (let ((str (string-trim-right line)))
+    (condition-case _err
+        (let* ((obj (json-parse-string str :object-type 'alist :array-type 'list))
+               (raw-msg (or (alist-get 'message obj) (alist-get 'msg obj) str))
+               (msg (if (stringp raw-msg) raw-msg (prin1-to-string raw-msg)))
+               (raw-src (alist-get 'source_filename obj))
+               (src (and raw-src (if (stringp raw-src) raw-src (prin1-to-string raw-src)))))
+          (cons msg src))
+      (error (cons str nil)))))
+
+(defun tlon-local--expand-source-filename (src lang)
+  "Return abbreviated absolute SRC path for LANG with ': position 1' suffix.
+If SRC cannot be resolved, return SRC as-is."
+  (when (and src (stringp src) (not (string-empty-p src)))
+    (let* ((abs
+            (cond
+             ((file-name-absolute-p src) src)
+             (t
+              (let* ((repo (tlon-repo-lookup :dir :subproject "uqbar" :language lang))
+                     (rel (if (string-match "\\`[^/]+/\\(.*\\)\\'" src)
+                              (match-string 1 src)
+                            src)))
+                (when repo (file-name-concat repo rel))))))
+           (path (and abs (abbreviate-file-name abs))))
+      (if path
+          (format "%s: position 1" path)
+        src))))
 
 (defun tlon-local--expand-article-ids (line lang)
   "Expand article_id slugs in LINE into absolute paths for LANG.
@@ -518,14 +547,6 @@ The replacement text includes a `: position 1' suffix to work with
     (format "%s.%03dZ"
             (format-time-string "%Y-%m-%dT%H:%M:%S" t0 t) ms)))
 
-(defun tlon-local--labels-prefix (labels)
-  "Return a short label prefix from the stream LABELS."
-  (let ((svc (alist-get 'compose_service labels))
-        (app (alist-get 'application labels)))
-    (cond
-     (svc (format "%s" svc))
-     (app (format "%s" app))
-     (t "-"))))
 
 ;;;; Helpers
 
