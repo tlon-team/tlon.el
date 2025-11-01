@@ -381,7 +381,9 @@ identifier for the logs. LABEL is the content_build label identifier."
       (display-buffer buf))))
 
 (defun tlon-local--insert-log-row (line src-label lang)
-  "Insert one log line: main MESSAGE followed by the FILENAME."
+  "Insert one log LINE: main MESSAGE followed by the FILENAME.
+SRC-LABEL overrides the source label from the parsed line.
+LANG specifies the language for expansion."
   (let* ((parsed (tlon-local--parse-log-line line))
          (raw-src (or src-label (cdr parsed)))
          (src (tlon-local--expand-source-filename raw-src lang))
