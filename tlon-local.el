@@ -1,4 +1,4 @@
-;;; tlon-api.el --- Manage local environments -*- lexical-binding: t -*-
+;;; tlon-local.el --- Manage local environments -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2025
 
@@ -29,6 +29,7 @@
 (require 'tlon-core)
 (require 'transient)
 (require 'url-parse)
+(require 'url)
 (require 'subr-x)
 (require 'json)
 
@@ -59,6 +60,11 @@ This usually contains the data source numeric ID or UID."
 (defcustom tlon-local-logs-limit 1000
   "Default maximum number of log entries to retrieve."
   :type 'integer
+  :group 'tlon-local)
+
+(defcustom tlon-local-logs-show-filename t
+  "When non-nil, append the source filename to each log line."
+  :type 'boolean
   :group 'tlon-local)
 
 (defcustom tlon-local-rebuild-content-database nil
@@ -120,7 +126,7 @@ At the end, open the local site in the default browser."
                                                    (shell-quote-argument uq-dir)
                                                    (shell-quote-argument (or language lang))))))))
       (when (not ws-running)
-        (setq commands (append commands (list (format "cd %s && ./up-dev.sh" (shell-quote-argument ws-dir))))))
+        (push (format "cd %s && ./up-dev.sh" (shell-quote-argument ws-dir)) commands))
       (when run-uq
         (when uq-running
           (setq commands (funcall append-command commands "cd %s && ./launch.py stop %s")))
@@ -138,7 +144,7 @@ At the end, open the local site in the default browser."
 	    (let* ((uq (shell-quote-argument uq-dir))
 		   (la (shell-quote-argument lang))
 		   (cmd (format "cd %s && ./launch.py start %s %s" uq la opts)))
-	      (setq commands (append commands (list cmd)))))))
+	      (push cmd commands)))))
       (cond
        ;; Nothing to run: just open the site if we know the URL
        ((null commands)
@@ -146,7 +152,7 @@ At the end, open the local site in the default browser."
 	    (browse-url local-url)
           (message "Nothing to run and local URL unknown")))
        (t
-        (let* ((cmd (mapconcat #'identity commands " && "))
+        (let* ((cmd (mapconcat #'identity (nreverse commands) " && "))
 	       (_win (async-shell-command cmd buffer-name))
 	       (buf (get-buffer buffer-name)))
           (when-let ((proc (and buf (get-buffer-process buf))))
@@ -161,17 +167,19 @@ At the end, open the local site in the default browser."
 (defun tlon-local--append-stop-other-envs (commands append-command lang)
   "Append stop commands for other running envs to COMMANDS using APPEND-COMMAND.
 Skip env in LANG. Return the updated commands."
-  (let* ((codes
-          (delq nil
-                (mapcar (lambda (name)
-                          (tlon-lookup tlon-languages-properties :code :name name))
-                        tlon-project-languages))))
+  (let* ((codes (delq nil
+                      (mapcar (lambda (name)
+                                (tlon-lookup tlon-languages-properties :code :name name))
+                              tlon-project-languages))))
     (dolist (l codes commands)
       (unless (string= l lang)
         (let ((url (tlon-local--uqbar-local-url l)))
           (when (and url (tlon-local--uqbar-running-p url))
-            (setq commands (funcall append-command commands "cd %s && ./launch.py stop %s" l))))))))
-
+            (setq commands
+                  (funcall append-command
+                           commands
+                           "cd %s && ./launch.py stop %s"
+                           l))))))))
 
 ;;;; Language-specific commands
 
@@ -234,10 +242,7 @@ If LANG is nil, prompt for a language."
     (tlon-local--logs-all lang)))
 
 ;;;###autoload
-(defun tlon-local-logs-warnings (&optional lang)
-  "Deprecated. Use `tlon-local-logs' to show errors and warnings for LANG."
-  (interactive)
-  (tlon-local-logs lang))
+(define-obsolete-function-alias 'tlon-local-logs-warnings 'tlon-local-logs "2025-11-01")
 
 (defun tlon-local--logs-time-range ()
   "Return cons cell (START . END) for the current logs time window in RFC3339."
@@ -322,23 +327,19 @@ identifier for the logs. LABEL is the content_build label identifier."
       (let ((inhibit-read-only t))
         (erase-buffer)
         (tlon-local-logs-mode)
-        (tlon--setup-visit-file-at-point-buffer)
         (setq-local tlon-local--logs-ctx (list :lang lang :label label :kind 'all))
         (insert (format
                  "Uqbar logs for %s – content_build=%s (last %dm, limit %d)\n\n"
                  lang label tlon-local-logs-minutes tlon-local-logs-limit))
         (insert "ERRORS\n")
-        (tlon-local--insert-logs-section errors lang)
+        (tlon-local--insert-logs-rows errors lang)
+        (insert "\n")
         (insert "WARNINGS\n")
-        (tlon-local--insert-logs-section warnings lang))
+        (tlon-local--insert-logs-rows warnings lang)
+        (insert "\n"))
       (goto-char (point-min))
       (hl-line-mode)
       (display-buffer buf))))
-
-(defun tlon-local--insert-logs-section (streams lang)
-  "Insert a section with log rows for STREAMS (Loki result list) for LANG."
-  (tlon-local--insert-logs-rows streams lang)
-  (insert "\n"))
 
 (defun tlon-local--logs (lang kind)
   "Fetch and render logs for LANG. KIND is `errors' or `warnings'."
@@ -369,7 +370,6 @@ identifier for the logs. LABEL is the content_build label identifier."
       (let ((inhibit-read-only t))
         (erase-buffer)
         (tlon-local-logs-mode)
-        (tlon--setup-visit-file-at-point-buffer)
         (setq-local tlon-local--logs-ctx (list :lang lang :label label :kind kind))
         (insert (format
                  "Uqbar %s logs for %s – content_build=%s (last %dm, limit %d)\n\n"
@@ -390,7 +390,7 @@ LANG specifies the language for expansion."
          (msg (tlon-local--expand-article-ids (car parsed) lang))
          (parts (and msg (split-string msg "\n"))))
     (insert (or (car parts) ""))
-    (when (and src (not (string-empty-p src)))
+    (when (and tlon-local-logs-show-filename src (not (string-empty-p src)))
       (insert " — " src))
     (insert "\n")
     (dolist (cont (cdr parts))
@@ -460,7 +460,7 @@ The replacement text includes a `: position 1' suffix to work with
   "Return the absolute markdown file path for article SLUG in LANG."
   (let* ((repo (tlon-repo-lookup :dir :subproject "uqbar" :language lang))
          (articles-dir (tlon-get-bare-dir-translation lang "en" "articles"))
-         (file (file-name-with-extension slug "md")))
+         (file (concat slug ".md")))
     (file-name-concat repo articles-dir file)))
 
 (define-derived-mode tlon-local-logs-mode special-mode "Uqbar Logs"
@@ -479,8 +479,12 @@ The replacement text includes a `: position 1' suffix to work with
   "Refresh the logs in the current `tlon-local-logs-mode' buffer."
   (interactive)
   (let* ((ctx tlon-local--logs-ctx)
-         (lang (plist-get ctx :lang)))
-    (tlon-local-logs lang)))
+         (lang (plist-get ctx :lang))
+         (kind (plist-get ctx :kind)))
+    (pcase kind
+      ('all (tlon-local-logs lang))
+      ((or 'errors 'warnings) (tlon-local--logs lang kind))
+      (_ (tlon-local-logs lang)))))
 
 (defun tlon-local-logs-open-in-grafana ()
   "Open the Grafana dashboard for the build in the current buffer."
@@ -488,18 +492,31 @@ The replacement text includes a `: position 1' suffix to work with
   (let* ((ctx tlon-local--logs-ctx)
          (label (plist-get ctx :label))
          (base (string-remove-suffix "/" tlon-local-grafana-base-url))
-         (url (format "%s/d/%s/%s?orgId=1&from=now-30d&to=now"
-                      base label label)))
+         (from (format "now-%dm" tlon-local-logs-minutes))
+         (url (format "%s/d/%s/%s?orgId=1&from=%s&to=now"
+                      base label label from)))
     (browse-url url)))
 
 (defun tlon-local--http-json (url params callback)
   "GET URL with URL-encoded PARAMS and call CALLBACK with parsed JSON."
-  (let* ((qs (mapconcat
-              (lambda (p)
-                (concat (url-hexify-string (car p))
-                        "="
-                        (url-hexify-string (cdr p))))
-              params "&"))
+  (let* ((qs (condition-case _
+                 (if (fboundp 'url-build-query-string)
+                     ;; Some Emacs versions of `url-build-query-string' expect different
+                     ;; PARAMS shapes; if it errors, fall back to a manual builder.
+                     (url-build-query-string params)
+                   (mapconcat
+                    (lambda (p)
+                      (concat (url-hexify-string (car p))
+                              "="
+                              (url-hexify-string (cdr p))))
+                    params "&"))
+               (error
+                (mapconcat
+                 (lambda (p)
+                   (concat (url-hexify-string (car p))
+                           "="
+                           (url-hexify-string (cdr p))))
+                 params "&"))))
          (full (concat url "?" qs)))
     (url-retrieve
      full
@@ -518,8 +535,6 @@ The replacement text includes a `: position 1' suffix to work with
   "Return TIME formatted as RFC3339 in UTC."
   (let ((system-time-locale "C"))
     (format-time-string "%Y-%m-%dT%H:%M:%SZ" time t)))
-
-
 
 ;;;; Helpers
 

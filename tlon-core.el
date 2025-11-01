@@ -1492,7 +1492,7 @@ but will not throw an error if it is located in `uqbar-en/articles/FILE' or
   (interactive)
   (let* ((line (buffer-substring-no-properties (line-beginning-position)
 					       (line-end-position))))
-    (if (and line (string-match "^.*?\\(~?/.+\\.md\\):.*?position \\([[:digit:]]\\)" line))
+    (if (and line (string-match "^.*?\\(~?/.+\\.md\\):.*?position \\([[:digit:]]+\\)" line))
 	(let* ((file (match-string 1 line))
 	       (abs-file (expand-file-name file))
 	       (pos (string-to-number (match-string 2 line))))
