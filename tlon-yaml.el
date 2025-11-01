@@ -713,7 +713,7 @@ a list or vector, return a proper list. Return nil when absent or empty."
                (not (string-empty-p (string-trim parsed)))
                (list parsed)))))
      ((stringp v) (list v))
-     (t nil)))
+     (t nil))))
 
 (defun tlon-yaml-insert-list (candidates)
   "Insert a list in YAML field at point.
