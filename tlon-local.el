@@ -70,6 +70,13 @@ This usually contains the data source numeric ID or UID."
   :type 'boolean
   :group 'tlon-local)
 
+(defcustom tlon-local-logs-follow-mode t
+  "Whether moving point in a logs buffer visits file at point in the other window.
+When non-nil, moving point in a logs buffer visits the file at point in
+the other window, keeping it scrolled in sync."
+  :type 'boolean
+  :group 'tlon-local)
+
 (defcustom tlon-local-rebuild-content-database nil
   "When non-nil, append `--rebuild-content-database' to Uqbar start."
   :type 'boolean
@@ -468,12 +475,48 @@ The replacement text includes a `: position 1' suffix to work with
   (setq buffer-read-only t)
   (setq-local truncate-lines t)
   (use-local-map (copy-keymap special-mode-map))
-  (local-set-key (kbd "k") #'previous-line)
-  (local-set-key (kbd "l") #'next-line)
+  (define-key (current-local-map) [remap previous-line] #'tlon-local-previous-line)
+  (define-key (current-local-map) [remap next-line] #'tlon-local-next-line)
+  (local-set-key (kbd "k") #'tlon-local-previous-line)
+  (local-set-key (kbd "l") #'tlon-local-next-line)
   (local-set-key (kbd "g") #'tlon-local-logs-refresh)
   (local-set-key (kbd "i") #'simple-extras-visual-line-mode-enhanced)
   (local-set-key (kbd "o") #'tlon-local-logs-open-in-grafana)
+  (local-set-key (kbd "f") #'tlon-local-logs-toggle-follow-mode)
   (local-set-key (kbd "RET") #'tlon-visit-file-at-point))
+
+(defun tlon-local-logs-toggle-follow-mode ()
+  "Toggle follow mode for logs in the current buffer."
+  (interactive)
+  (setq tlon-local-logs-follow-mode (not tlon-local-logs-follow-mode))
+  (message "Logs follow mode %s"
+           (if tlon-local-logs-follow-mode "enabled" "disabled"))
+  (when tlon-local-logs-follow-mode
+    (tlon-local--maybe-follow)))
+
+(defun tlon-local-next-line (&optional arg)
+  "Move to next line. When follow mode is enabled, visit file at point in
+the other window. ARG is the number of lines to move."
+  (interactive "p")
+  (next-line (or arg 1))
+  (tlon-local--maybe-follow))
+
+(defun tlon-local-previous-line (&optional arg)
+  "Move to previous line. When follow mode is enabled, visit file at point
+in the other window. ARG is the number of lines to move."
+  (interactive "p")
+  (previous-line (or arg 1))
+  (tlon-local--maybe-follow))
+
+(defun tlon-local--maybe-follow ()
+  "If follow mode is enabled in a logs buffer, visit the file at point in
+the other window."
+  (when (and tlon-local-logs-follow-mode (derived-mode-p 'tlon-local-logs-mode))
+    (let ((line (buffer-substring-no-properties (line-beginning-position)
+                                                (line-end-position))))
+      (when (string-match-p ":[[:space:]]+position[[:space:]]+[0-9]+" line)
+        (let ((tlon-visit-file-other-window t))
+          (tlon-visit-file-at-point))))))
 
 (defun tlon-local-logs-refresh ()
   "Refresh the logs in the current `tlon-local-logs-mode' buffer."
@@ -634,6 +677,12 @@ Returns a string like \"https://local-dev.example.org\" or nil if unknown."
   :variable 'tlon-local-enforce-single-env
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-local-enforce-single-env)))
 
+(transient-define-infix tlon-local-infix-logs-follow-mode ()
+  "Toggle following selection in logs to the other window."
+  :class 'transient-lisp-variable
+  :variable 'tlon-local-logs-follow-mode
+  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-local-logs-follow-mode)))
+
 ;;;###autoload (autoload 'tlon-local-menu "tlon-local" nil t)
 (transient-define-prefix tlon-local-menu ()
   "`tlon-local' menu."
@@ -655,6 +704,7 @@ Returns a string like \"https://local-dev.example.org\" or nil if unknown."
     ("-t" "no testing"                     tlon-local-infix-no-include-testing)
     ("-s" "single env"                     tlon-local-infix-enforce-single-env)
     ""
+    ("-f" "logs follow mode"               tlon-local-infix-logs-follow-mode)
     ("-o" "open in other window"           tlon-infix-visit-file-other-window)]])
 
 (provide 'tlon-local)
