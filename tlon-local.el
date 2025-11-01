@@ -632,14 +632,15 @@ Returns a string like \"https://local-dev.example.org\" or nil if unknown."
     ("q k" "korean"                        tlon-local-run-uqbar-ko)
     ("q u" "turkish"                       tlon-local-run-uqbar-tr)
     ""
-    "Options"
+    "Show logs"
+    ("l" "errors and warnings"             tlon-local-logs)]
+   ["Options"
     ("-r" "rebuild content db"             tlon-local-infix-rebuild-content-database)
     ("-b" "content branch=production"      tlon-local-infix-content-branch-production)
     ("-t" "no testing"                     tlon-local-infix-no-include-testing)
     ("-s" "single env"                     tlon-local-infix-enforce-single-env)
-    ("-o" "open in other window"           tlon-infix-visit-file-other-window)]
-   ["Show logs"
-    ("l" "errors and warnings"             tlon-local-logs)]])
+    ""
+    ("-o" "open in other window"           tlon-infix-visit-file-other-window)]])
 
 (provide 'tlon-local)
 ;;; tlon-local.el ends here
