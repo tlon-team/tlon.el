@@ -61,16 +61,6 @@ This usually contains the data source numeric ID or UID."
   :type 'integer
   :group 'tlon-local)
 
-(defcustom tlon-local-logs-time-width 24
-  "Column width for the timestamp in the logs buffer."
-  :type 'integer
-  :group 'tlon-local)
-
-(defcustom tlon-local-logs-source-width 40
-  "Column width for the source_filename in the logs buffer."
-  :type 'integer
-  :group 'tlon-local)
-
 (defcustom tlon-local-rebuild-content-database nil
   "When non-nil, append `--rebuild-content-database' to Uqbar start."
   :type 'boolean
@@ -346,7 +336,7 @@ identifier for the logs. LABEL is the content_build label identifier."
       (display-buffer buf))))
 
 (defun tlon-local--insert-logs-section (streams lang)
-  "Insert a section table for STREAMS (Loki result list) for LANG."
+  "Insert a section with log rows for STREAMS (Loki result list) for LANG."
   (tlon-local--insert-logs-rows streams lang)
   (insert "\n"))
 
@@ -391,33 +381,28 @@ identifier for the logs. LABEL is the content_build label identifier."
       (display-buffer buf))))
 
 (defun tlon-local--insert-log-row (line src-label lang)
-  "Insert one row with SRC-LABEL and LINE for LANG.
-Continuation lines in LINE are indented under the message column."
-  (let* ((srcw tlon-local-logs-source-width)
-         (fmt (format "%%-%ds  %%s\n" srcw))
-         (indent (make-string (+ srcw 2) ?\s))
-         (parsed (tlon-local--parse-log-line line))
+  "Insert one log line: main MESSAGE followed by the FILENAME."
+  (let* ((parsed (tlon-local--parse-log-line line))
          (raw-src (or src-label (cdr parsed)))
          (src (tlon-local--expand-source-filename raw-src lang))
          (msg (tlon-local--expand-article-ids (car parsed) lang))
          (parts (and msg (split-string msg "\n"))))
-    (insert (format fmt (or src "") (or (car parts) "")))
+    (insert (or (car parts) ""))
+    (when (and src (not (string-empty-p src)))
+      (insert " — " src))
+    (insert "\n")
     (dolist (cont (cdr parts))
-      (insert indent cont "\n"))))
+      (insert "  " cont "\n"))))
 
 (defun tlon-local--insert-logs-rows (streams lang)
-  "Insert table header and log rows for STREAMS in LANG."
-  (let* ((srcw tlon-local-logs-source-width)
-         (fmt (format "%%-%ds  %%s" srcw))
-         (hdr (format fmt "source_filename" "message")))
-    (insert hdr "\n" (make-string (length hdr) ?-) "\n")
-    (dolist (stream streams)
-      (let* ((labels (alist-get 'stream stream))
-             (src-label (alist-get 'source_filename labels))
-             (values (alist-get 'values stream)))
-        (dolist (v values)
-          (let ((line (nth 1 v)))
-            (tlon-local--insert-log-row line src-label lang)))))))
+  "Insert log rows for STREAMS in LANG."
+  (dolist (stream streams)
+    (let* ((labels (alist-get 'stream stream))
+           (src-label (alist-get 'source_filename labels))
+           (values (alist-get 'values stream)))
+      (dolist (v values)
+        (let ((line (nth 1 v)))
+          (tlon-local--insert-log-row line src-label lang))))))
 
 (defun tlon-local--parse-log-line (line)
   "Return cons (MESSAGE . SOURCE_FILENAME) parsed from LINE.
@@ -532,14 +517,6 @@ The replacement text includes a `: position 1' suffix to work with
   (let ((system-time-locale "C"))
     (format-time-string "%Y-%m-%dT%H:%M:%SZ" time t)))
 
-(defun tlon-local--ns-to-timestr (ns-str)
-  "Convert nanoseconds string NS-STR to an ISO-like UTC time string."
-  (let* ((ns (string-to-number ns-str))
-         (sec (floor (/ ns 1e9)))
-         (ms (floor (mod (/ ns 1e6) 1000)))
-         (t0 (seconds-to-time sec)))
-    (format "%s.%03dZ"
-            (format-time-string "%Y-%m-%dT%H:%M:%S" t0 t) ms)))
 
 
 ;;;; Helpers
