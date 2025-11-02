@@ -563,13 +563,12 @@ REPO-DIR is the root directory of the repository. Each item is a plist with
 							     action-counts-ref processed-links-count-ref
 							     stderr-content &optional skip-browser-open)
   "Process the next dead link in DEAD-LINKS-QUEUE sequentially.
-
 DEAD-LINKS-QUEUE is a list of plists containing dead link information.
-TOTAL-DEAD-LINKS is the total number of dead links found.
-ACTION-COUNTS-REF is a reference to the plist of action counts.
-PROCESSED-LINKS-COUNT-REF is a reference to the count of processed links.
-STDERR-CONTENT is the error output from the lychee command.
-SKIP-BROWSER-OPEN when non-nil, skips opening the URL in browser.
+TOTAL-DEAD-LINKS is the total number of dead links found. ACTION-COUNTS-REF is a
+reference to the plist of action counts. PROCESSED-LINKS-COUNT-REF is a
+reference to the count of processed links. STDERR-CONTENT is the error output
+from the lychee command. SKIP-BROWSER-OPEN when non-nil, skips opening the URL
+in browser.
 
 Wait for user input before proceeding to the next link."
   (if (null dead-links-queue)
