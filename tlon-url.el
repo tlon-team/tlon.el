@@ -410,8 +410,8 @@ respective file. This process is asynchronous and relies on helper functions."
          (stderr-file (make-temp-file "lychee-stderr"))
          (stdout-buffer (generate-new-buffer "*lychee-output*"))
          (cmd-string (format "%s %s --no-progress --format json . 2>%s"
-			     tlon-lychee-accept-option
                              (shell-quote-argument (executable-find "lychee"))
+			     tlon-lychee-accept-option
                              (shell-quote-argument stderr-file))))
     (tlon-lychee-ensure)
     (message "Starting Lychee process with command: %s" cmd-string)
