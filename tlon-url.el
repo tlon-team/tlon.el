@@ -573,11 +573,11 @@ SKIP-BROWSER-OPEN when non-nil, skips opening the URL in browser.
 
 Wait for user input before proceeding to the next link."
   (if (null dead-links-queue)
-      (let ((archived (plist-get action-counts-ref :archived))
-            (replaced (plist-get action-counts-ref :replaced))
-            (removed (plist-get action-counts-ref :removed))
-            (whitelisted (plist-get action-counts-ref :whitelisted))
-            (skipped (plist-get action-counts-ref :skipped)))
+      (let ((archived (cl-getf action-counts-ref :archived))
+            (replaced (cl-getf action-counts-ref :replaced))
+            (removed (cl-getf action-counts-ref :removed))
+            (whitelisted (cl-getf action-counts-ref :whitelisted))
+            (skipped (cl-getf action-counts-ref :skipped)))
         (message "Lychee dead link processing complete. Processed %d out of %d dead links found (including whitelisted).\nActions taken: %d archived, %d replaced, %d removed, %d whitelisted, %d skipped."
                  (car processed-links-count-ref) total-dead-links
                  archived replaced removed whitelisted skipped))
@@ -641,7 +641,7 @@ Wait for user input before proceeding to the next link."
               ;; Valid replacement URL
               (if (tlon-lychee-replace-in-file full-file-path url input)
                   (progn
-                    (cl-incf (plist-get action-counts-ref :replaced))
+                    (cl-incf (cl-getf action-counts-ref :replaced))
                     (message "Replaced: %s -> %s in %s" url input filename))
                 (message "Replacement URL specified but no replacement made in %s (URL not found?)" filename))
               ;; Continue to next link
@@ -650,7 +650,7 @@ Wait for user input before proceeding to the next link."
                                                    stderr-content)))))
          ((eq action ?w)
           (tlon-lychee--add-to-whitelist url)
-          (cl-incf (plist-get action-counts-ref :whitelisted))
+          (cl-incf (cl-getf action-counts-ref :whitelisted))
           ;; Continue to next link
           (tlon-lychee--process-next-dead-link remaining-links total-dead-links
                                                action-counts-ref processed-links-count-ref
@@ -658,7 +658,7 @@ Wait for user input before proceeding to the next link."
          ((eq action ?d)
           (if (tlon-lychee-remove-url-from-file full-file-path url)
               (progn
-                (cl-incf (plist-get action-counts-ref :removed))
+                (cl-incf (cl-getf action-counts-ref :removed))
                 (message "Removed: %s from %s" url filename))
             (message "URL not found for removal in %s" filename))
           ;; Continue to next link
@@ -667,17 +667,17 @@ Wait for user input before proceeding to the next link."
                                                stderr-content))
          ((eq action ?s)
           (message "Skipped: %s" url)
-          (cl-incf (plist-get action-counts-ref :skipped))
+          (cl-incf (cl-getf action-counts-ref :skipped))
           ;; Continue to next link
           (tlon-lychee--process-next-dead-link remaining-links total-dead-links
                                                action-counts-ref processed-links-count-ref
                                                stderr-content))
          ((eq action ?q)
-          (let ((archived (plist-get action-counts-ref :archived))
-                (replaced (plist-get action-counts-ref :replaced))
-                (removed (plist-get action-counts-ref :removed))
-                (whitelisted (plist-get action-counts-ref :whitelisted))
-                (skipped (plist-get action-counts-ref :skipped)))
+          (let ((archived (cl-getf action-counts-ref :archived))
+                (replaced (cl-getf action-counts-ref :replaced))
+                (removed (cl-getf action-counts-ref :removed))
+                (whitelisted (cl-getf action-counts-ref :whitelisted))
+                (skipped (cl-getf action-counts-ref :skipped)))
             (message "Aborted. Processed %d out of %d dead links.\nActions taken: %d archived, %d replaced, %d removed, %d whitelisted, %d skipped."
                      (car processed-links-count-ref) total-dead-links
                      archived replaced removed whitelisted skipped))))))))
@@ -703,7 +703,7 @@ STDERR-CONTENT is the stderr output from the lychee command."
       (progn
         (if (tlon-lychee-replace-in-file full-file-path original-dead-url archive-url)
             (progn
-              (cl-incf (plist-get action-counts-ref :archived))
+              (cl-incf (cl-getf action-counts-ref :archived))
               (message "Replaced: %s -> %s in %s" original-dead-url archive-url filename))
           (message "Archive for %s found (%s), but no replacement made in %s (URL not found?)"
                    original-dead-url archive-url filename))
