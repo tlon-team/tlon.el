@@ -31,6 +31,8 @@
 (require 'url-util)  ; For url-hexify-string
 (require 'markdown-mode)
 (require 'bibtex)
+(require 'thingatpt)
+(require 'browse-url)
 (eval-and-compile
   (require 'transient))
 
@@ -748,6 +750,59 @@ If URL-DEAD or URL-LIVE not provided, use URL at point or prompt for them."
              replacements
              (mapconcat #'identity (delete-dups affected-dirs) ", "))))
 
+;;;###autoload
+(defun tlon-propagate-changed-urls ()
+  "Find URL replacements in unstaged changes and replace them across projects."
+  (interactive)
+  (let* ((repo (tlon-get-repo))
+         (default-directory repo)
+         (diff (shell-command-to-string "git diff -U0 --no-color"))
+         (pairs (tlon--url-pairs-from-diff diff))
+         (done 0))
+    (if (null pairs)
+        (message "No changed URLs found in unstaged changes")
+      (dolist (pair (cl-remove-duplicates pairs :test #'equal))
+        (let ((old (car pair)) (new (cdr pair)))
+          (when (and old new (not (string= old new)))
+            (tlon-replace-url-across-projects old new)
+            (cl-incf done)))))
+    (message "Processed %d URL replacement pair(s)" done)))
+
+(defun tlon--url-pairs-from-diff (diff)
+  "Return list of (OLD . NEW) URL pairs parsed from DIFF text."
+  (let ((lines (split-string diff "\n" t))
+        (pairs nil) (minus nil) (plus nil))
+    (cl-labels ((flush ()
+                  (setq pairs (nconc pairs (tlon--zip-url-lists minus plus)))
+                  (setq minus nil plus nil)))
+      (dolist (l lines)
+        (cond
+         ((or (string-prefix-p "diff --git " l)
+              (string-prefix-p "@@" l))
+          (flush))
+         ((and (string-prefix-p "-" l) (not (string-prefix-p "--- " l)))
+          (setq minus (nconc minus (tlon--extract-urls-from-string (substring l 1)))))
+         ((and (string-prefix-p "+" l) (not (string-prefix-p "+++ " l)))
+          (setq plus (nconc plus (tlon--extract-urls-from-string (substring l 1)))))))
+      (flush))
+    pairs))
+
+(defun tlon--zip-url-lists (olds news)
+  "Zip two URL lists OLDS and NEWS into cons pairs, shortest length wins."
+  (let ((res nil))
+    (while (and olds news)
+      (push (cons (pop olds) (pop news)) res))
+    (nreverse res)))
+
+(defun tlon--extract-urls-from-string (s)
+  "Extract HTTP(S) URLs from string S and return a list without duplicates."
+  (let ((pos 0) (acc nil))
+    (while (and s (string-match browse-url-button-regexp s pos))
+      (let ((u (match-string 0 s)))
+        (when (string-match-p "\\`https?://" u) (push u acc)))
+      (setq pos (match-end 0)))
+    (nreverse (cl-remove-duplicates acc :test #'string=))))
+
 ;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-url-menu "tlon-url" nil t)
@@ -763,7 +818,8 @@ If URL-DEAD or URL-LIVE not provided, use URL at point or prompt for them."
     ""
     ("a" "Get archived"                  tlon-get-archived)
     ("e" "Get earliest archived"         tlon-get-earliest-archived)
-    ("p" "Replace URL across projects"   tlon-replace-url-across-projects)]])
+    ("p" "Propagate changed URLs"        tlon-propagate-changed-urls)
+    ("r" "Replace URL across projects"   tlon-replace-url-across-projects)]])
 
 (provide 'tlon-url)
 ;;; tlon-url.el ends here

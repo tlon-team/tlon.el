@@ -100,6 +100,23 @@ The command ~tlon-replace-url-across-projects~ performs a search-and-replace ope
      - Writes the modified content back to the original file.
 6. After processing all files, displays a message indicating the total number of replacements made and the unique directories affected.
 
+*** Replace Changed URLs in Unstaged
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-propagate-changed-urls-cmd
+:END:
+#+findex: tlon-propagate-changed-urls
+The command ~tlon-propagate-changed-urls~ (Autoloaded) scans the
+unstaged changes in the current Git repository, detects URL replacements, and
+applies each replacement across all Tlön content repositories by calling
+~tlon-replace-url-across-projects~ with each =OLD -> NEW= pair.
+1. Runs ~git diff -U0 --no-color~ at the repository root.
+2. For each diff hunk, collects URLs present on removed lines (= - =) and added
+   lines (= + =), in order.
+3. Zips removed and added URL lists per hunk to form candidate replacement
+   pairs, and deduplicates them.
+4. For each unique pair where =OLD ≠ NEW=, calls
+   ~tlon-replace-url-across-projects OLD NEW~.
+
 *** Transient Menu
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-url-menu-cmd
