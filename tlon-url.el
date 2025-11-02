@@ -49,34 +49,43 @@
 
 (defun tlon--get-wayback-machine-url (url callback)
   "Fetch the latest working archived version of URL from Wayback Machine.
-Call CALLBACK with (ARCHIVE-URL ORIGINAL-URL).
-ARCHIVE-URL is nil if no archive is found or an error occurs."
-  (let ((api-url (format "https://web.archive.org/cdx/search/cdx?url=%s&statuscode=200&limit=1&sort=reverse"
+Call CALLBACK with (ARCHIVE-URL ORIGINAL-URL). ARCHIVE-URL is nil if no archive
+is found or an error occurs."
+  (let ((api-url (format "https://archive.org/wayback/available?url=%s"
                          (url-hexify-string url))))
     (message "Fetching latest working archive for %s..." url)
     (url-retrieve
      api-url
      (lambda (status &rest _)
-       (let ((buffer (current-buffer))
-             (archive-url nil))
-         (with-current-buffer buffer
-           (if (plist-get status :error)
-               (message "Wayback Machine request for %s failed: %S" url (plist-get status :error))
-             ;; Find the end of HTTP headers (empty line)
-             (goto-char (point-min))
-             (if (re-search-forward "^\\s-*$" nil t)
-                 (let* ((response (buffer-substring-no-properties (point) (point-max)))
-                        (lines (split-string response "\n" t)))
-                   (if (and lines (> (length lines) 0))
-                       (let* ((fields (split-string (car lines) " "))
-                              (timestamp (nth 1 fields))
-                              (original-url-from-api (nth 2 fields)))
-                         (when (and timestamp original-url-from-api)
-                           (setq archive-url (format "https://web.archive.org/web/%s/%s" timestamp original-url-from-api))))
-                     (message "No working archives found for %s" url)))
-               (message "Could not parse Wayback Machine API response for %s" url))))
-         (kill-buffer buffer)
+       (let ((buffer (current-buffer)) (archive-url nil))
+         (unwind-protect
+             (with-current-buffer buffer
+               (if (plist-get status :error)
+                   (message "Wayback Machine request for %s failed: %S" url (plist-get status :error))
+                 (goto-char (point-min))
+                 (when (re-search-forward "^\\s-*$" nil t)
+                   (let* ((json-object-type 'alist)
+                          (json-array-type 'list)
+                          (json-key-type 'symbol)
+                          (data (condition-case _ (json-read) (error nil)))
+                          (snapshots (and data (alist-get 'archived_snapshots data)))
+                          (closest (and snapshots (alist-get 'closest snapshots)))
+                          (available (and closest (alist-get 'available closest)))
+                          (closest-url (and closest (alist-get 'url closest))))
+                     (when (and available closest-url)
+                       (setq archive-url (tlon--normalize-wayback-url closest-url)))))))
+           (when (buffer-live-p buffer) (kill-buffer buffer)))
          (funcall callback archive-url url))))))
+
+(defun tlon--normalize-wayback-url (archive-url)
+  "Normalize Wayback Machine ARCHIVE-URL, removing nested prefixes and excess slashes."
+  (when archive-url
+    (let ((u archive-url))
+      (setq u (replace-regexp-in-string
+               "\\`\\(https?://web\\.archive\\.org/web/[^/]+/\\)https?://web\\.archive\\.org/web/[^/]+/"
+               "\\1" u))
+      (setq u (replace-regexp-in-string "/\\{2,\\}\\'" "/" u))
+      u)))
 
 (defun tlon-lychee-replace-in-file (file-path old-url new-url)
   "Replace OLD-URL with NEW-URL in FILE-PATH.
@@ -363,7 +372,8 @@ ARCHIVE-URL is nil if no archive is found or an error occurs."
                               (original-url-from-api (nth 2 fields)))
                          (when (and timestamp original-url-from-api)
                            (setq archive-url
-				 (format "https://web.archive.org/web/%s/%s" timestamp original-url-from-api))))
+				 (tlon--normalize-wayback-url
+				  (format "https://web.archive.org/web/%s/%s" timestamp original-url-from-api)))))
                      (message "No working archives found for %s" url)))
                (message "Could not parse Wayback Machine API response for %s" url))))
          (kill-buffer buffer)
