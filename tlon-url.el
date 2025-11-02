@@ -36,7 +36,7 @@
 
 ;;;; Variables
 
-(defconst tlon-lychee-accept-flag
+(defconst tlon-lychee-accept-option
   "--accept 200,201,202,204,206,300,301,302,303,307,308,400,401,429"
   "Lychee flag to accept these HTTP status codes.")
 
@@ -302,7 +302,7 @@ If JSON is non-nil, use JSON format."
   (with-current-buffer (get-buffer "*eshell*")
     (goto-char (point-max))
     (insert (format "lychee %s %s %s"
-		    tlon-lychee-accept-flag
+		    tlon-lychee-accept-option
                     (if json "--format json" "")
                     (shell-quote-argument target)))
     (eshell-send-input)))
@@ -390,7 +390,7 @@ same as `tlon-fix-dead-urls-in-repo', but restricted to the chosen file."
           (format
            "%s %s --no-progress --format json %s 2>%s"
            (shell-quote-argument (executable-find "lychee"))
-	   tlon-lychee-accept-flag
+	   tlon-lychee-accept-option
            (shell-quote-argument file)
            (shell-quote-argument stderr-file))))
     (message "Starting Lychee process with command: %s" cmd-string)
@@ -410,7 +410,7 @@ respective file. This process is asynchronous and relies on helper functions."
          (stderr-file (make-temp-file "lychee-stderr"))
          (stdout-buffer (generate-new-buffer "*lychee-output*"))
          (cmd-string (format "%s %s --no-progress --format json . 2>%s"
-			     tlon-lychee-accept-flag
+			     tlon-lychee-accept-option
                              (shell-quote-argument (executable-find "lychee"))
                              (shell-quote-argument stderr-file))))
     (tlon-lychee-ensure)
