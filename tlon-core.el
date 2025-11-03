@@ -692,6 +692,7 @@ the actual user.")
 
 (defconst tlon-project-languages
   '("arabic"
+    "chinese"
     "english"
     "french"
     "italian"
