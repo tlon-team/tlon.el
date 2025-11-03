@@ -52,12 +52,12 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-glossary)
 
-(defcustom tlon-ai-glossary-max-terms 10
+(defcustom tlon-ai-glossary-max-terms 100
   "Maximum number of missing terms to send to the AI in one run.
 If nil, process all missing terms. When a positive integer, only the first N
 terms are processed."
   :type '(choice (const :tag "No limit" nil)
-                 (integer :tag "Max terms" :value 10))
+                 (integer :tag "Max terms" :value 100))
   :group 'tlon-glossary)
 
 (defconst tlon-ai-create-glossary-language-prompt
