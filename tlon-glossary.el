@@ -769,18 +769,18 @@ If nil, use the default model."
 (transient-define-prefix tlon-glossary-menu ()
   "Menu for glossary functions."
   [["Glossary Actions"
-    ("e" "Edit entry"              tlon-edit-glossary)
-    ("x" "Extract glossary"        tlon-extract-glossary)
-    ("i" "Import TSV"              tlon-glossary-import-tsv)
-    ("X" "Extract multilingual (CSV)" tlon-extract-multilingual-glossary)
-    ("s" "Share glossary"          tlon-share-glossary)]
+    ("e" "Edit entry"                             tlon-edit-glossary)
+    ("x" "Extract glossary"                       tlon-extract-glossary)
+    ("i" "Import TSV"                             tlon-glossary-import-tsv)
+    ("X" "Extract multilingual (CSV)"             tlon-extract-multilingual-glossary)
+    ("s" "Share glossary"                         tlon-share-glossary)]
    ["AI Actions"
-    ("a" "AI Create Language"    tlon-ai-create-glossary-language)
-    ("g" "AI Filter Glossary"    tlon-ai-extract-relevant-glossary)
+    ("a" "AI Create Language"                     tlon-ai-create-glossary-language)
+    ("g" "AI Filter Glossary"                     tlon-ai-extract-relevant-glossary)
     ""
     "Models"
-    ("m -g" "Glossary generation" tlon-ai-infix-select-glossary-model)
-    ("m -v" "Glossary verification" tlon-ai-infix-select-glossary-verify-model)]])
+    ("m -g" "Glossary generation"                 tlon-ai-infix-select-glossary-model)
+    ("m -v" "Glossary verification"               tlon-ai-infix-select-glossary-verify-model)]])
 
 (provide 'tlon-glossary)
 ;;; tlon-glossary.el ends here
