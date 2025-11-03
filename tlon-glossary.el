@@ -37,7 +37,7 @@
   :group 'tlon)
 
 (defcustom tlon-ai-glossary-model
-  '("Gemini" . gemini-2.0-flash-thinking-exp-01-21)
+  '("Gemini" . gemini-2.0-flash-thinking-exp)
   "Model to use for AI glossary generation (`tlon-ai-create-glossary-language').
 The value is a cons cell whose car is the backend and whose cdr is the model
 itself. See `gptel-extras-ai-models' for the available options. If nil, use the
@@ -46,7 +46,7 @@ default `gptel-model'."
   :group 'tlon-glossary)
 
 (defcustom tlon-ai-glossary-verify-model
-  '("Gemini" . gemini-2.0-flash-thinking-exp-01-21)
+  '("Gemini" . gemini-2.0-flash-thinking-exp)
   "Model to use for verifying/cleaning AI glossary translations.
 See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
