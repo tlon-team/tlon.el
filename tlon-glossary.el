@@ -52,6 +52,14 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-glossary)
 
+(defcustom tlon-ai-glossary-max-terms 10
+  "Maximum number of missing terms to send to the AI in one run.
+If nil, process all missing terms. When a positive integer, only the first N
+terms are processed."
+  :type '(choice (const :tag "No limit" nil)
+                 (integer :tag "Max terms" :value 10))
+  :group 'tlon-glossary)
+
 (defconst tlon-ai-create-glossary-language-prompt
   "You are an expert multilingual glossary creator.\n\nYour task is to generate translations from the source language (%s) into the target language (%s).\n\nI will provide you with a list of terms in %s (one term per line) that currently lack a translation in %s.\n\nHere is the list of source-language terms needing translation:\n```text\n%s\n```\n\nPlease return *only* the translations for these terms into %s, one translation per line.\n\nExample output format:\n```text\nTranslation 1\nTranslation 2\nTranslation 3\n...\n```\n\n- Provide *exactly one* translation line for *every* input term.\n- Maintain the exact order of the translations corresponding to the input terms.\n- If you are unsure about a translation, provide your best guess or use the placeholder string \"[TRANSLATION_UNAVAILABLE]\". *Do not omit any terms.*\n- The total number of lines in your response *must* equal the number of lines in the input list.\n- Do *not* include the original source terms in your response.\n- Do *not* include any explanations, introductory text, numbering, bullet points, or any JSON/Markdown formatting. Return only the plain text translations, one per line."
   ;; %s = source language name
@@ -206,12 +214,18 @@ model, and merges the AI-generated translations back into the glossary file."
          (missing-entries (cl-remove-if (lambda (entry) (assoc tgt-key entry))
                                         (cl-remove-if-not (lambda (entry) (alist-get src-key entry))
                                                           glossary-data)))
-         ;; Extract source terms from missing entries
-         (source-terms (mapcar (lambda (entry) (alist-get src-key entry))
-                               missing-entries)))
+         (all-source-terms (mapcar (lambda (entry) (alist-get src-key entry))
+                                   missing-entries))
+         (source-terms (let ((limit tlon-ai-glossary-max-terms))
+                         (if (and (integerp limit) (> limit 0))
+                             (cl-subseq all-source-terms 0 (min (length all-source-terms) limit))
+                           all-source-terms))))
     (unless source-terms
       (message "No missing %s translations for terms present in %s." tgt-lang-name src-lang-name)
       (cl-return-from tlon-ai-create-glossary-language))
+    (when (< (length source-terms) (length all-source-terms))
+      (message "Limiting AI request to first %d of %d missing terms (customize tlon-ai-glossary-max-terms to change)"
+               (length source-terms) (length all-source-terms)))
     (let* ((missing-terms-text (mapconcat #'identity source-terms "\n"))
            (prompt (format tlon-ai-create-glossary-language-prompt
                            src-lang-name tgt-lang-name src-lang-name tgt-lang-name
