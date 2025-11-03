@@ -70,6 +70,20 @@ Each option takes a cons cell =(BACKEND . MODEL)=, where =BACKEND= is a string (
   (setq tlon-ai-glossary-verify-model '("Gemini" . gemini-2.0-flash-thinking-exp))
   #+end_src
 
+*** Generation limit
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ai-glossary-max-terms
+:END:
+#+vindex: tlon-ai-glossary-max-terms
+The user option ~tlon-ai-glossary-max-terms~ limits how many missing terms
+~tlon-ai-create-glossary-language~ will send to the AI in a single run. When nil,
+all missing terms are sent; when a positive integer, only the first N terms are
+processed. Defaults to =10=.
+
+#+begin_src emacs-lisp
+(setq tlon-ai-glossary-max-terms 10)
+#+end_src
+
 ** Commands
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-glossary-commands
