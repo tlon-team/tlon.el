@@ -210,7 +210,7 @@ The command ~tlon-glossary-menu~ activates a =transient= menu interface providin
 + =x= :: Extract glossary (~tlon-extract-glossary~)
 + =s= :: Share glossary (~tlon-share-glossary~)
 + =a= :: AI Create Language (~tlon-ai-create-glossary-language~)
-+ =m -g= :: Select model for glossary generation (~tlon-ai-infix-select-glossary-model~)
++ =m -g= :: Select model for glossary generation (~tlon-ai-infix-select-glossary-generate-model~)
 + =m -v= :: Select model for glossary verification (~tlon-ai-infix-select-glossary-verify-model~)
 
 *** AI Glossary Generation

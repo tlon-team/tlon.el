@@ -767,7 +767,7 @@ apostrophes (') with typographic apostrophes (’) on both sides."
 
 ;;;;; Menu
 
-(transient-define-infix tlon-ai-infix-select-glossary-model ()
+(transient-define-infix tlon-ai-infix-select-glossary-generate-model ()
   "AI model to use for glossary generation.
 If nil, use the default model."
   :class 'tlon-model-selection-infix
@@ -795,15 +795,13 @@ Set to a positive integer to limit, or nil for no limit."
     ("X" "Extract multilingual (CSV)"             tlon-extract-multilingual-glossary)
     ("s" "Share glossary"                         tlon-share-glossary)]
    ["AI Actions"
-    ("a" "AI Create Language"                     tlon-ai-create-glossary-language)
-    ("g" "AI Filter Glossary"                     tlon-ai-extract-relevant-glossary)
+    ("c" "AI create language"                     tlon-ai-create-glossary-language)
+    ("f" "AI filter glossary"                     tlon-ai-extract-relevant-glossary)
     ""
-    "Models"
-    ("m -g" "Glossary generation"                 tlon-ai-infix-select-glossary-model)
-    ("m -v" "Glossary verification"               tlon-ai-infix-select-glossary-verify-model)
-    ""
-    "Limits"
-    ("l -n" "Max terms per run"                   tlon-ai-infix-set-max-terms)]])
+    "Options"
+    ("-c g" "Create language model (generation)"    tlon-ai-infix-select-glossary-generate-model)
+    ("-c v" "Create language model (verification)"  tlon-ai-infix-select-glossary-verify-model)
+    ("-c n" "Create language: max terms"            tlon-ai-infix-set-max-terms)]])
 
 (provide 'tlon-glossary)
 ;;; tlon-glossary.el ends here
