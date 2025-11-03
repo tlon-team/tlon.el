@@ -779,6 +779,12 @@ If nil, use the default model."
   :class 'tlon-model-selection-infix
   :variable 'tlon-ai-glossary-verify-model)
 
+(transient-define-infix tlon-ai-infix-set-max-terms ()
+  "Maximum number of AI-generated glossary terms per run.
+Set to a positive integer to limit, or nil for no limit."
+  :class 'transient-lisp-variable
+  :variable 'tlon-ai-glossary-max-terms)
+
 ;;;###autoload (autoload 'tlon-glossary-menu "tlon-glossary" nil t)
 (transient-define-prefix tlon-glossary-menu ()
   "Menu for glossary functions."
@@ -794,7 +800,10 @@ If nil, use the default model."
     ""
     "Models"
     ("m -g" "Glossary generation"                 tlon-ai-infix-select-glossary-model)
-    ("m -v" "Glossary verification"               tlon-ai-infix-select-glossary-verify-model)]])
+    ("m -v" "Glossary verification"               tlon-ai-infix-select-glossary-verify-model)
+    ""
+    "Limits"
+    ("l -n" "Max terms per run"                   tlon-ai-infix-set-max-terms)]])
 
 (provide 'tlon-glossary)
 ;;; tlon-glossary.el ends here

@@ -84,6 +84,9 @@ processed. Defaults to =10=.
 (setq tlon-ai-glossary-max-terms 10)
 #+end_src
 
+You can also set this value from the Glossary menu (M-x tlon-glossary-menu) under
+“AI Actions → Limits → Max terms per run”.
+
 ** Commands
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-glossary-commands
