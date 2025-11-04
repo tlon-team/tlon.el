@@ -35,6 +35,7 @@
 
 (autoload 'org-read-date "org")
 (autoload 'org-extras-clock-report-insert "org-extras")
+(autoload 'org-agenda-files "org")
 ;;;###autoload
 (defun tlon-clock-entry-create (date &optional submit)
   "Create a clock entry for DATE in the user’s clock repo.
@@ -44,16 +45,29 @@ submit the entry. Otherwise, submit the entry without prompting the user for
 confirmation."
   (interactive (list (org-read-date)))
   (let* ((default-directory (tlon-clock-get-repo))
-	 (file (tlon-clock-get-file-for-date date)))
+         (file (tlon-clock-get-file-for-date date))
+         (agenda-files (tlon-clock--valid-agenda-files)))
     (find-file file)
     (erase-buffer)
     (insert (format "#+TITLE: %s\n\n" date))
-    (org-extras-clock-report-insert date date 'agenda)
+    (let ((org-agenda-files agenda-files))
+      (org-extras-clock-report-insert date date 'agenda))
     (save-buffer)
     (pcase submit
       ('never nil)
       ('nil (tlon-clock-entry-submit-prompt file))
       (_ (tlon-clock-entry-submit file)))))
+
+(defun tlon-clock--valid-agenda-files ()
+  "Return a sanitized list of agenda files or signal an error.
+Remove nils and non-existent files from `org-agenda-files'.  Signal an error if the resulting list is empty."
+  (let (result)
+    (dolist (f (org-agenda-files))
+      (when (and f (stringp f) (file-exists-p f))
+        (push f result)))
+    (setq result (nreverse result))
+    (unless result (user-error "org-agenda-files is empty or invalid"))
+    result))
 
 (declare-function calendar-extras-get-dates-in-range "calendar-extras")
 ;;;###autoload
