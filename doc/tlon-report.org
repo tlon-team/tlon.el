@@ -31,6 +31,7 @@ These commands facilitate the creation of daily clock entry files.
   - Erases existing content.
   - Inserts a `#+TITLE:` line with the DATE.
   - Inserts an Org clock report for the given DATE using `org-extras-clock-report-insert` (which reads clock data from Org agenda files).
+  - Validates Org agenda files by filtering out nil and non-existent entries; signals an error if none remain to prevent clocktable errors.
   - Saves the buffer.
   - Optionally prompts the user to submit the entry via Git (~tlon-clock-entry-submit-prompt~) unless the SUBMIT argument is `never` (don't submit) or non-nil (submit automatically without prompt).
 
