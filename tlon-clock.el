@@ -25,6 +25,7 @@
 
 ;;; Code:
 
+(require 'cl-lib)
 (require 'org-clock)
 (require 'tlon-core)
 (require 'transient)
