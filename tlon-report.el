@@ -61,13 +61,14 @@ confirmation."
 
 (defun tlon-clock--valid-agenda-files ()
   "Return a sanitized list of agenda files or signal an error.
-Remove nils and non-existent files from `org-agenda-files'.  Signal an error if the resulting list is empty."
+Remove nils and non-existent files from `org-agenda-files'. Signal an error if
+the resulting list is empty."
   (let (result)
     (dolist (f (org-agenda-files))
       (when (and f (stringp f) (file-exists-p f))
         (push f result)))
     (setq result (nreverse result))
-    (unless result (user-error "org-agenda-files is empty or invalid"))
+    (unless result (user-error "The variable `org-agenda-files' is empty or invalid"))
     result))
 
 (declare-function calendar-extras-get-dates-in-range "calendar-extras")
