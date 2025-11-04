@@ -26,6 +26,7 @@
 
 ;;; Code:
 
+(require 'org-agenda)
 (require 'tlon-core)
 (require 'transient)
 
