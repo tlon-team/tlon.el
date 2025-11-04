@@ -254,7 +254,7 @@ DeepL glossaries and a matching source/target glossary exists in
               no-glossary                      ; Caller allows no glossary
               (not pair-supported)             ; Pair doesn't support glossaries
               ;; Prompt needed: Glossary applicable but not found
-              (y-or-n-p (format "No \"%s-%s\" glossary found in local cache. Translate anyway?"
+              (y-or-n-p (format "No \"%s-%s\" glossary found in Deepl local cache. Translate anyway?"
                                 src tgt))))
     (unless proceed
       (user-error "Aborted: Glossary required or confirmation denied"))
