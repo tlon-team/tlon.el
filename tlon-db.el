@@ -74,8 +74,11 @@ synchronization."
   :type 'boolean
   :group 'tlon-db)
 
-(defcustom tlon-db-sync-confirm-threshold 10
-  "Minimum number of created/modified entries that triggers confirmation and shows the sync log."
+(defcustom tlon-db-sync-confirm-threshold 5
+  "Minimum number of created/modified entries that triggers confirmation.
+When the number of created or modified entries is equal or greater than this
+number, the sync log buffer is displayed after a sync, to nudge the user to
+verify the changes."
   :type 'integer
   :group 'tlon-db)
 
