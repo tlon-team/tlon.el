@@ -40,6 +40,10 @@ This module provides functionality for interacting with an external bibliographi
   API.  Set to nil to disable automatic synchronization while still keeping
   the watch active.  Default is nil.
 
++ ~tlon-db-sync-confirm-threshold~ :: Minimum number of created/modified entries
+  that triggers a confirmation prompt and brings the ~*Db Sync Log*~ buffer to
+  the foreground after syncing.  Default is 10.
+
 + =tlon-core=
 + =transient=
 

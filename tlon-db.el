@@ -74,6 +74,11 @@ synchronization."
   :type 'boolean
   :group 'tlon-db)
 
+(defcustom tlon-db-sync-confirm-threshold 10
+  "Minimum number of created/modified entries that triggers confirmation and shows the sync log."
+  :type 'integer
+  :group 'tlon-db)
+
 ;;;;; Periodic refresh
 
 (defvar tlon-db--get-entries-timer nil
@@ -1534,10 +1539,10 @@ the changes. If there are no differences, report and do nothing."
                  (added (plist-get changes :added))
                  (deleted (plist-get changes :deleted))
                  (modified (plist-get changes :modified))
+                 (num (+ (length added) (length modified)))
                  (proceed
-                  (let ((num (+ (length added) (length modified))))
-                    (or (< num 10)
-                        (y-or-n-p (format "Db sync will create/modify %d entries. Proceed? " num))))))
+                  (or (< num tlon-db-sync-confirm-threshold)
+                      (y-or-n-p (format "Db sync will create/modify %d entries. Proceed? " num)))))
             (when (and proceed (or added deleted modified))
               (with-current-buffer (get-buffer-create tlon-db--sync-log-buffer-name)
                 (let ((inhibit-read-only t))
@@ -1570,7 +1575,9 @@ the changes. If there are no differences, report and do nothing."
                   (run-with-timer 3 nil
                                   (lambda ()
                                     (message "Db sync: %s."
-                                             (mapconcat #'identity (nreverse parts) ", ")))))))))
+                                             (mapconcat #'identity (nreverse parts) ", "))))
+                  (when (>= num tlon-db-sync-confirm-threshold)
+                    (pop-to-buffer (get-buffer-create tlon-db--sync-log-buffer-name))))))))
       (setq tlon-db--sync-in-progress nil))))
 
 (defun tlon-db--get-diff-output (upstream-file local-file)
