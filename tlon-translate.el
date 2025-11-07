@@ -707,7 +707,6 @@ If the original entry lacks an abstract, log a message and skip."
 		       (dst  (plist-get item :dst))
 		       (tkey (plist-get item :target))
 		       (skey (plist-get item :source)))
-                   (tlon-translate--log "Translating abstract of %s → setting into %s" skey tkey)
                    (let* ((src-en (string= src "en"))
                           (supports (member dst tlon-deepl-supported-glossary-languages))
                           (glossary-id (and src-en supports
@@ -717,7 +716,10 @@ If the original entry lacks an abstract, log a message and skip."
                           (both-in-project (and (member src-name tlon-project-languages)
                                                 (member dst-name tlon-project-languages))))
                      (cond
+                      ;; Only translate for internal DB abstracts when both languages are project languages,
+                      ;; source is English, DeepL supports glossaries, and an EN→DST glossary exists.
                       ((and both-in-project src-en supports glossary-id)
+                       (tlon-translate--log "Translating abstract of %s → setting into %s" skey tkey)
                        (tlon-deepl-translate
                         text dst src
                         (lambda ()
@@ -726,19 +728,12 @@ If the original entry lacks an abstract, log a message and skip."
                               (tlon-translate--db-set-abstract tkey translated)
                               (setq changed-p t)
                               (tlon-translate--log "Set abstract for %s (from %s)" tkey skey)))
-                          (next)))
-                       )
+                          (next))))
+                      ;; Skip pairs outside project languages.
                       ((not both-in-project)
-                       (tlon-deepl-translate
-                        text dst src
-                        (lambda ()
-                          (let ((translated (tlon-translate--get-deepl-translation-from-buffer)))
-                            (when (and translated (stringp translated) (not (string-blank-p (string-trim translated))))
-                              (tlon-translate--db-set-abstract tkey translated)
-                              (setq changed-p t)
-                              (tlon-translate--log "Set abstract for %s (from %s)" tkey skey)))
-                          (next)))
-                       t)
+                       (tlon-translate--log "Skipping abstract for %s -> %s: non-project language pair" skey dst)
+                       (next))
+                      ;; Otherwise, we require a glossary and don't have one.
                       (t
                        (tlon-translate--log "Skipping abstract for %s -> %s: no suitable glossary found" skey dst)
                        (next)))))))))
