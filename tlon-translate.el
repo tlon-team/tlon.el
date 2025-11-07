@@ -914,23 +914,26 @@ nil, use `tlon-project-target-languages'."
   "Return the glossary decision for SOURCE-LANG-CODE → TARGET-LANG-CODE.
 The return value is one of the following symbols:
 
-- `require': both languages are project languages and an English→TARGET glossary
-  exists and is supported by DeepL.
+- `require': both languages are project languages and a SOURCE→TARGET
+  glossary exists and is supported by DeepL.
 
 - `allow': at least one language is outside project languages; translation can
   proceed without requiring a glossary.
 
 - `skip': a glossary would be required but is not available."
-  (let* ((src-en (string= source-lang-code "en"))
-         (supports (member target-lang-code tlon-deepl-supported-glossary-languages))
-         (glossary-id (and src-en supports
-                           (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" target-lang-code)))
+  (let* ((pair-supported (and (member source-lang-code tlon-deepl-supported-glossary-languages)
+                              (member target-lang-code tlon-deepl-supported-glossary-languages)))
+         (glossary-id (and pair-supported
+                           (tlon-lookup tlon-deepl-glossaries
+                                        "glossary_id"
+                                        "source_lang" source-lang-code
+                                        "target_lang" target-lang-code)))
          (src-name (downcase (or (tlon-lookup tlon-languages-properties :standard :code source-lang-code) "")))
          (dst-name (downcase (or (tlon-lookup tlon-languages-properties :standard :code target-lang-code) "")))
          (both-in-project (and (member src-name tlon-project-languages)
                                (member dst-name tlon-project-languages))))
     (cond
-     ((and both-in-project src-en supports glossary-id) 'require)
+     ((and both-in-project pair-supported glossary-id) 'require)
      ((not both-in-project) 'allow)
      (t 'skip))))
 
