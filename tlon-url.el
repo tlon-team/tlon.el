@@ -78,7 +78,7 @@ is found or an error occurs."
          (funcall callback archive-url url))))))
 
 (defun tlon--normalize-wayback-url (archive-url)
-  "Normalize Wayback Machine ARCHIVE-URL, removing nested prefixes and excess slashes."
+  "Normalize Wayback ARCHIVE-URL, removing nested prefixes and excess slashes."
   (when archive-url
     (let ((u archive-url))
       (setq u (replace-regexp-in-string
