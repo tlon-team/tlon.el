@@ -56,6 +56,12 @@
   "A companion package for Tlön."
   :group 'files)
 
+(defcustom tlon-github-dashboard-url
+  "https://github.com/orgs/tlon-team/projects/9/views/15"
+  "URL of the Tlön GitHub dashboard."
+  :type 'string
+  :group 'tlon)
+
 ;;;; Variables
 
 (defconst tlon-version "1.6.7"
@@ -479,8 +485,7 @@ Return the path of the temporary file created."
   "Browse the GitHub Tlön dashboard."
   (interactive)
   (let ((browse-url-browser-function 'browse-url-default-browser))
-    ;; TODO: make it work for each team member
-    (browse-url "https://github.com/orgs/tlon-team/projects/9/views/15")))
+    (browse-url tlon-github-dashboard-url)))
 
 (provide 'tlon)
 ;;; tlon.el ends here
