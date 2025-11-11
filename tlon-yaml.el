@@ -47,25 +47,25 @@ The type is derived from the directory structure and is not stored in YAML.")
 I.e., these keys are not included in the metadata of originals.")
 
 (defconst tlon-yaml-article-keys
-  '("title" "authors" "translators" "tags" "date" "original_path" "original_key" "translation_key" "publication_status" "description")
+  '("title" "authors" "translators" "tags" "date" "original_path" "original_key" "translation_key" "publication_status" "description" "html_title")
   "List of YAML keys of fields to include in articles.
 The order of the keys determines the sort order by
 `tlon-yaml-sort-fields', unless overridden.")
 
 (defconst tlon-yaml-tag-keys
-  '("title" "brief_title" "original_path" "publication_status")
+  '("title" "brief_title" "original_path" "publication_status" "html_title")
   "List of YAML keys of fields to include in tags.
 The order of the keys determines the sort order by
 `tlon-yaml-sort-fields', unless overridden.")
 
 (defconst tlon-yaml-author-keys
-  '("title" "original_path" "publication_status")
+  '("title" "original_path" "publication_status" "html_title")
   "List of YAML keys of fields to include in authors.
 The order of the keys determines the sort order by
 `tlon-yaml-sort-fields', unless overridden.")
 
 (defconst tlon-yaml-collection-keys
-  '("title" "original_path" "publication_status")
+  '("title" "original_path" "publication_status" "html_title")
   "List of YAML keys of fields to include in collections.
 The order of the keys determines the sort order by
 `tlon-yaml-sort-fields', unless overridden.")
