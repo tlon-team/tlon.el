@@ -140,7 +140,7 @@ This module provides functions for reading, writing, and manipulating YAML front
 + ~tlon-yaml-insert-fields~ :: Inserts a list of YAML FIELDS (key-value pairs) into the current buffer, typically within an existing YAML block.
 
 #+findex: tlon-yaml-insert-field
-+ ~tlon-yaml-insert-field~ :: Interactively prompts for a KEY and VALUE and inserts the corresponding field into the YAML metadata.
++ ~tlon-yaml-insert-field~ :: Interactively prompts for a KEY and VALUE and inserts the corresponding field into the YAML metadata. When KEY is "html_title" and the field is not already present: for articles, the prompt defaults to the BibTeX title of the entry referenced by the article's YAML =key=; for authors and tags, it defaults to the value of the YAML =title= field.
 
 #+findex: tlon-yaml-insert-key-value
 + ~tlon-yaml-insert-key-value~ :: Inserts a specific VALUE for a given KEY into the YAML metadata. Handles list values appropriately.

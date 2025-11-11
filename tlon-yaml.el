@@ -440,9 +440,12 @@ If OVERWRITE is non-nil, overwrite existing field without asking."
 	(if (or overwrite (y-or-n-p (format "Field '%s' already exists; replace?" key)))
 	    (tlon-yaml-delete-field key)
 	  (user-error "Aborted")))
-      (let* ((value (or value ;; This `value` is the raw string from AI or user input.
-			(completing-read (format "%s: " key)
-					 (tlon-yaml-get-key-values key))))
+      (let* ((default-suggest (tlon-yaml--default-value-for-key key))
+	     (value (or value ;; This `value` is the raw string from AI or user input.
+			(if default-suggest
+			    (read-string (format "%s: " key) default-suggest)
+			  (completing-read (format "%s: " key)
+					   (tlon-yaml-get-key-values key)))))
              (new-field
               (if (string= key "meta") ;; Check if the key is "meta"
                   ;; Format for "meta" using literal block scalar style.
@@ -499,6 +502,27 @@ If OVERWRITE is non-nil, overwrite existing field without asking."
       ;; (tlon-yaml-reorder-metadata) ; This would re-sort; not called here directly.
       (save-buffer))))
 
+(defun tlon-yaml--default-value-for-key (key)
+  "Return default suggestion for YAML KEY when inserting a field.
+For \"html_title\", when the field is missing: in articles, return the
+BibTeX title of the entry whose key is in YAML \"key\"; in authors and
+tags, return the YAML \"title\". Return nil when no suitable default is
+found."
+  (when (and (stringp key) (not (tlon-yaml-get-key key)))
+    (pcase key
+      ("html_title"
+       (let ((type (ignore-errors (tlon-yaml-get-type))))
+         (cond
+          ((string= type "article")
+           (let* ((bibkey (tlon-yaml-get-key "key"))
+                  (btitle (and bibkey (ignore-errors (citar-get-value "title" bibkey)))))
+             (when (and (stringp btitle) (not (string-empty-p (string-trim btitle))))
+               (replace-regexp-in-string "[{}]" "" btitle))))
+          ((or (string= type "author") (string= type "tag"))
+           (let ((t (tlon-yaml-get-key "title")))
+             (when (and (stringp t) (not (string-empty-p (string-trim t)))) t)))
+          (t nil))))
+      (_ nil))))
 ;;;###autoload
 (defun tlon-yaml-insert-original-path ()
   "Insert the value of `original_path' YAML field."
