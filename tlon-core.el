@@ -292,7 +292,14 @@
 	   :subproject "80k-podcast"
 	   :abbrev "80k-podcast"
 	   :type content
-	   :key "p"
+	   :key "8 p"
+	   :help t)
+    (:name "ai-in-context"
+	   :project "other"
+	   :subproject "ai-in-context"
+	   :abbrev "ai-in-context"
+	   :type content
+	   :key "8 a"
 	   :help t)
     (:name "AI-2027"
 	   :project "other"
