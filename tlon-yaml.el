@@ -519,10 +519,11 @@ found."
              (when (and (stringp btitle) (not (string-empty-p (string-trim btitle))))
                (replace-regexp-in-string "[{}]" "" btitle))))
           ((or (string= type "author") (string= type "tag"))
-           (let ((t (tlon-yaml-get-key "title")))
-             (when (and (stringp t) (not (string-empty-p (string-trim t)))) t)))
+           (let ((title (tlon-yaml-get-key "title")))
+             (when (and (stringp title) (not (string-empty-p (string-trim title)))) title)))
           (t nil))))
       (_ nil))))
+
 ;;;###autoload
 (defun tlon-yaml-insert-original-path ()
   "Insert the value of `original_path' YAML field."
