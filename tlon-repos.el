@@ -273,6 +273,80 @@ Prompts the user to select a repository from the list derived from entries under
       (pass-extras-git-crypt-unlock repo-dir entry)
     (user-error "Repo for the selected git-crypt entry not found")))
 
+;;;;; issues-to-repos
+
+;;;###autoload
+(defun tlon-repos-configure-issues-to-projects (&optional repo-name)
+  "Configure issues-to-projects for REPO-NAME.
+This command performs the equivalent of the manual steps described in
+the README of the issues-to-projects repository:
+
+1. Write REPO-NAME into config.sh at line 24.
+2. Run ./automate-github-secrets.sh to set the GitHub secret.
+3. Run ./batch-deploy-add-new-issues-workflow.sh to deploy the
+   workflow.
+
+When called interactively, prompt for a local Tlön repository name."
+  (interactive)
+  (let* ((name (or repo-name (tlon-get-local-repos)))
+         (dir (tlon-repo-lookup :dir :name "issues-to-projects"))
+         (config (file-name-concat dir "config.sh")))
+    (unless (file-directory-p dir)
+      (user-error "Repo `issues-to-projects' not found: %s" dir))
+    (unless (file-exists-p config)
+      (user-error "File `config.sh' not found in %s" dir))
+    (let ((backup (make-temp-file "issues-to-projects-config-")))
+      (copy-file config backup t t t)
+      (tlon--repos--write-line-to-file config 24 (format "\"%s\"" name))
+      (tlon--repos--run-issues-to-projects-scripts name config backup))))
+
+(defun tlon--repos--write-line-to-file (file line-number text)
+  "Replace content of LINE-NUMBER in FILE with TEXT and a newline."
+  (with-temp-buffer
+    (insert-file-contents file)
+    (goto-char (point-min))
+    (forward-line (1- line-number))
+    (delete-region (line-beginning-position) (line-end-position))
+    (insert text)
+    (insert "\n")
+    (write-region (point-min) (point-max) file nil 'silent)))
+
+(defun tlon--repos--run-issues-to-projects-scripts (repo-name config-file backup-file)
+  "Run the issues-to-projects setup scripts for REPO-NAME sequentially.
+Restore CONFIG-FILE from BACKUP-FILE when finished."
+  (let* ((dir     (tlon-repo-lookup :dir :name "issues-to-projects"))
+         (secrets (expand-file-name "automate-github-secrets.sh" dir))
+         (deploy  (expand-file-name "batch-deploy-add-new-issues-workflow.sh" dir))
+         (buf     (get-buffer-create "*issues-to-projects*")))
+    (with-current-buffer buf (erase-buffer))
+    (unless (file-exists-p secrets)
+      (user-error "File not found: %s" secrets))
+    (unless (file-exists-p deploy)
+      (user-error "File not found: %s" deploy))
+    (message "Configuring GitHub secrets for %s..." repo-name)
+    (let ((proc1 (start-process "itp-secrets" buf "bash" secrets)))
+      (set-process-sentinel
+       proc1
+       (lambda (p _e)
+         (if (and (eq (process-status p) 'exit)
+                  (= (process-exit-status p) 0))
+             (let ((proc2 (start-process "itp-deploy" buf "bash" deploy)))
+               (message "Secrets configured for %s. Deploying workflow..." repo-name)
+               (set-process-sentinel
+                proc2
+                (lambda (p2 _e2)
+                  (copy-file backup-file config-file t t t)
+                  (ignore-errors (delete-file backup-file))
+                  (if (and (eq (process-status p2) 'exit)
+                           (= (process-exit-status p2) 0))
+                      (message "issues-to-projects configured for %s" repo-name)
+                    (message "Failed to deploy workflow for %s (see %s)" repo-name (buffer-name buf))
+                    (display-buffer buf)))))
+           (copy-file backup-file config-file t t t)
+           (ignore-errors (delete-file backup-file))
+           (message "Failed to configure secrets for %s (see %s)" repo-name (buffer-name buf))
+           (display-buffer buf)))))))
+
 ;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-repos-menu "tlon-repos" nil t)
@@ -290,7 +364,9 @@ Prompts the user to select a repository from the list derived from entries under
     ""
     ("u" "Unlock uqbar git-crypt"        tlon-git-crypt-unlock)
     ""
-    ("?" "Check authentication"          vc-extras-check-gh-authenticated)]
+    ("?" "Check authentication"          vc-extras-check-gh-authenticated)
+    ""
+    ("I" "Configure issues-to-projects"  tlon-repos-configure-issues-to-projects)]
    ["Forge"
     ""
     ("a" "Track repo"                    tlon-forge-track-repo)
@@ -306,5 +382,4 @@ Prompts the user to select a repository from the list derived from entries under
     ("u" "Unlock uqbar git-crypt"        tlon-git-crypt-unlock)]])
 
 (provide 'tlon-repos)
-
 ;;; tlon-repos.el ends here
