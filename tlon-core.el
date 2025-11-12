@@ -431,6 +431,10 @@
 	   :language "es"
 	   :inactive t
 	   :key "l s")
+    (:name "issues-to-projects"
+	   :project "issues-to-projects"
+	   :abbrev "issues-to-projects"
+	   :type misc)
     (:name "tlon-generic"
 	   :project "tlon"
 	   :abbrev "tlon-generic"
