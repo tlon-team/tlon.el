@@ -51,6 +51,22 @@ These variables control defaults and behavior of the local environment and logs.
   buffer automatically visits the file at point in the other window and keeps it
   scrolled in sync.
 
+#+vindex: tlon-local-logs-informational-filter
++ ~tlon-local-logs-informational-filter~ :: LogQL pipeline appended after the
+  selector to select informational logs for the current build label.
+
+#+vindex: tlon-local-logs-errors-filter
++ ~tlon-local-logs-errors-filter~ :: LogQL pipeline appended after the selector
+  to select error logs for the current build label.
+
+#+vindex: tlon-local-logs-warnings-filter
++ ~tlon-local-logs-warnings-filter~ :: LogQL pipeline appended after the selector
+  to select warning logs for the current build label.
+
+#+vindex: tlon-local-logs-frontend-errors-filter
++ ~tlon-local-logs-frontend-errors-filter~ :: LogQL pipeline appended after the
+  selector to select Frontend (NextJS) error logs for the current build label.
+
 #+vindex: tlon-local-rebuild-content-database
 + ~tlon-local-rebuild-content-database~ :: When non-nil, pass
   ~--rebuild-content-database~ to ~launch.py start~. This is a constant; not customizable.
@@ -116,8 +132,9 @@ These commands call ~tlon-local-run-uqbar~ with a fixed language.
 :END:
 
 #+findex: tlon-local-logs
-+ ~tlon-local-logs~ :: Show recent Uqbar logs for a selected language, combining
-  ERROR/CRITICAL and WARNING entries from the latest content build label.
++ ~tlon-local-logs~ :: Show recent Uqbar logs for a selected language,
+  combining ERROR/CRITICAL, WARNING, INFORMATIONAL, and Frontend (NextJS)
+  error entries from the latest content build label.
 
 #+findex: tlon-local-logs-refresh
 + ~tlon-local-logs-refresh~ :: Refresh the logs in the current logs buffer using
@@ -212,8 +229,8 @@ listed here for convenience.
   Loki API via Grafana's proxy and pass parsed JSON to a callback.
 
 #+findex: tlon-local--render-logs-buffer-all
-+ ~tlon-local--render-logs-buffer-all~ :: Render errors and warnings in a single
-  buffer.
++ ~tlon-local--render-logs-buffer-all~ :: Render errors, warnings, informational
+  and Frontend (NextJS) logs in a single buffer.
 
 #+findex: tlon-local--render-logs-buffer
 + ~tlon-local--render-logs-buffer~ :: Render one kind of logs (errors or
