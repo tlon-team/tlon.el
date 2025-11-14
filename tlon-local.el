@@ -82,6 +82,36 @@ the other window, keeping it scrolled in sync."
   :type 'boolean
   :group 'tlon-local)
 
+(defcustom tlon-local-logs-informational-filter "| json | level = \"INFO\""
+  "LogQL pipeline appended after the selector to select informational logs.
+This string is concatenated to the selector that already scopes to the current
+content build label."
+  :type 'string
+  :group 'tlon-local)
+
+(defcustom tlon-local-logs-errors-filter
+  "| json | level =~ \"(ERROR|CRITICAL)\""
+  "LogQL pipeline appended after the selector to select error logs.
+This string is concatenated to the selector that already scopes to the current
+content build label."
+  :type 'string
+  :group 'tlon-local)
+
+(defcustom tlon-local-logs-warnings-filter
+  "| json | level = \"WARNING\""
+  "LogQL pipeline appended after the selector to select warning logs.
+This string is concatenated to the selector that already scopes to the current
+content build label."
+  :type 'string
+  :group 'tlon-local)
+
+(defcustom tlon-local-logs-frontend-errors-filter
+  "| json | level =~ \"(ERROR|CRITICAL)\" |= \"Next.js\""
+  "LogQL pipeline appended after the selector to select frontend (NextJS) errors.
+Adjust this if your log schema differs."
+  :type 'string
+  :group 'tlon-local)
+
 (defcustom tlon-local-enforce-single-env t
   "When non-nil, starting a local environment stops all other running ones."
   :type 'boolean
@@ -291,7 +321,7 @@ response."
            (funcall callback label)))))))
 
 (defun tlon-local--logs-all (lang)
-  "Fetch and render ERROR/CRITICAL and WARNING logs for LANG in one buffer."
+  "Fetch and render errors, warnings, informational and frontend logs for LANG."
   (let ((lang (or lang (tlon-select-language 'code t "Language: " t))))
     (tlon-local--get-latest-build-label
      lang
@@ -299,29 +329,43 @@ response."
        (let* ((range (tlon-local--logs-time-range))
               (start (car range))
               (end (cdr range))
-              (errors-filter "| json | level =~ \"(ERROR|CRITICAL)\"")
-              (warnings-filter "| json | level = \"WARNING\"")
+              (errors-filter tlon-local-logs-errors-filter)
+              (warnings-filter tlon-local-logs-warnings-filter)
+              (info-filter tlon-local-logs-informational-filter)
+              (frontend-filter tlon-local-logs-frontend-errors-filter)
               (errors-query (format "{content_build=\"%s\"} %s" label errors-filter))
-              (warnings-query (format "{content_build=\"%s\"} %s" label warnings-filter)))
+              (warnings-query (format "{content_build=\"%s\"} %s" label warnings-filter))
+              (info-query (format "{content_build=\"%s\"} %s" label info-filter))
+              (frontend-query (format "{content_build=\"%s\"} %s" label frontend-filter)))
          (tlon-local--loki-query-range
           errors-query tlon-local-logs-limit "backward" start end
           (lambda (errors-json)
             (tlon-local--loki-query-range
              warnings-query tlon-local-logs-limit "backward" start end
              (lambda (warnings-json)
-               (tlon-local--render-logs-buffer-all
-                errors-json warnings-json lang label))))))))))
+               (tlon-local--loki-query-range
+                info-query tlon-local-logs-limit "backward" start end
+                (lambda (info-json)
+                  (tlon-local--loki-query-range
+                   frontend-query tlon-local-logs-limit "backward" start end
+                   (lambda (frontend-json)
+                     (tlon-local--render-logs-buffer-all
+                      errors-json warnings-json info-json frontend-json lang label))))))))))))))
 
-(defun tlon-local--render-logs-buffer-all (errors-json warnings-json lang label)
-  "Render Loki JSON for errors and warnings into a single buffer for LANG.
+(defun tlon-local--render-logs-buffer-all (errors-json warnings-json info-json frontend-json lang label)
+  "Render Loki JSON for errors, warnings, informational and frontend for LANG.
 ERRORS-JSON is the JSON response containing error log entries. WARNINGS-JSON is
-the JSON response containing warning log entries. LANG is the language
-identifier for the logs. LABEL is the content_build label identifier."
+the JSON response containing warning log entries. INFO-JSON is the JSON response
+containing informational entries. FRONTEND-JSON contains frontend (NextJS) error
+entries. LANG is the language identifier for the logs. LABEL is the
+content_build label identifier."
   (let* ((buf-name (format "*tlon: logs %s*" lang))
          (new (not (get-buffer buf-name)))
          (buf (get-buffer-create buf-name))
          (errors (alist-get 'result (alist-get 'data errors-json)))
-         (warnings (alist-get 'result (alist-get 'data warnings-json))))
+         (warnings (alist-get 'result (alist-get 'data warnings-json)))
+         (info (alist-get 'result (alist-get 'data info-json)))
+         (frontend (alist-get 'result (alist-get 'data frontend-json))))
     (with-current-buffer buf
       (let ((inhibit-read-only t))
         (erase-buffer)
@@ -335,6 +379,12 @@ identifier for the logs. LABEL is the content_build label identifier."
         (insert "\n")
         (insert "WARNINGS\n")
         (tlon-local--insert-logs-rows warnings lang)
+        (insert "\n")
+        (insert "INFORMATIONAL\n")
+        (tlon-local--insert-logs-rows info lang)
+        (insert "\n")
+        (insert "FRONTEND (NEXTJS) ERRORS\n")
+        (tlon-local--insert-logs-rows frontend lang)
         (insert "\n"))
       (goto-char (point-min))
       (hl-line-mode)
@@ -351,8 +401,8 @@ identifier for the logs. LABEL is the content_build label identifier."
               (start (car range))
               (end (cdr range))
               (filter (if (eq kind 'warnings)
-                          "| json | level = \"WARNING\""
-                        "| json | level =~ \"(ERROR|CRITICAL)\""))
+                          tlon-local-logs-warnings-filter
+                        tlon-local-logs-errors-filter))
               (query (format "{content_build=\"%s\"} %s" label filter)))
          (tlon-local--loki-query-range
           query tlon-local-logs-limit "backward" start end
@@ -702,7 +752,7 @@ Returns a string like \"https://local-dev.example.org\" or nil if unknown."
     ("-s" "single env"                     tlon-local-infix-enforce-single-env)
     ]
    ["Show logs"
-    ("l" "errors and warnings"             tlon-local-logs)
+    ("l" "errors, warnings, info, frontend"             tlon-local-logs)
     ""
     ""
     ""
