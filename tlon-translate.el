@@ -481,8 +481,10 @@ consider for case (II). When nil, prompts the user."
   "Translate the abstract at point, choosing DB or JSON as destination.
 If point is on a DB translation entry that lacks an abstract, translate
 the original's abstract into the entry's language and write it into
-db.bib. Otherwise, translate the current entry's abstract into a
-user-selected language and store it in abstract-translations.json."
+db.bib. Otherwise, prompt for a target language; if a DB translation
+entry exists for that language, write the translated abstract into that
+entry's abstract field in db.bib (prompting before overwriting); if no
+such entry exists, store it in abstract-translations.json."
   (interactive)
   (when-let ((context (tlon-translate--get-abstract-context nil nil t)))
     (cl-destructuring-bind (key text source-lang-code) context
@@ -839,35 +841,55 @@ the \"langid\" field (e.g., \"french\"). KEYS is the list of keys to scan."
 (defvar tlon-file-abstract-translations)
 (defun tlon-translate-abstract-interactive (key text source-lang-code)
   "Handle interactive abstract translation for KEY, TEXT, SOURCE-LANG-CODE.
-If a translation for the KEY into the selected target language already exists,
-prompt the user for confirmation before overwriting."
+If a DB translation entry exists for the selected target language, write the
+translated abstract to that entry in db.bib (prompting before overwriting).
+Otherwise, store it in abstract-translations.json."
   (let* ((excluded-lang (list (tlon-lookup tlon-languages-properties :standard :code source-lang-code)))
          (target-lang (tlon-select-language 'code 'babel "Target language: " 'require-match nil nil excluded-lang)))
     (when target-lang
-      (let* ((existing-translation (tlon-translate--get-existing-abstract-translation key target-lang))
-             (target-lang-name (tlon-lookup tlon-languages-properties :standard :code target-lang)))
-        ;; Skip creating a JSON translation if a DB translation already exists for this target language.
-        (when (tlon-translate--has-translating-entry-p key target-lang-name (tlon-bib-get-keys-in-file tlon-file-db))
-          (message "Skipping %s -> %s: DB translation entry exists" key target-lang-name)
-          (cl-return-from tlon-translate-abstract-interactive nil))
-        ;; Enforce DeepL + glossary constraint following project rules.
-        (let ((mode (tlon-translate--deepl-glossary-mode source-lang-code target-lang)))
-          (pcase mode
-            ('skip
-             (message "Skipping %s -> %s: %s-%s glossary missing"
-		      key target-lang (upcase source-lang-code) (upcase target-lang)))
-            (_
-             (if (and existing-translation
-                      (not (y-or-n-p (format "Translation for %s into %s already exists. Retranslate?"
-                                             key target-lang-name))))
-                 (message "Translation for %s into %s aborted by user." key target-lang-name)
-               (message "Initiating translation for %s -> %s (%s)%s"
-                        key target-lang-name source-lang-code
-                        (if (eq mode 'allow) " (no glossary required)" ""))
-               (tlon-deepl-translate
-                (tlon-bib-remove-braces text) target-lang source-lang-code
-                (tlon-translate--json-abstract-write-callback key target-lang)
-                (eq mode 'allow))))))))))
+      (let* ((target-lang-name (tlon-lookup tlon-languages-properties :standard :code target-lang))
+             (db-trans-key (ignore-errors (tlon-db-get-translation-key key target-lang))))
+        (if (and (stringp db-trans-key) (not (string-empty-p db-trans-key)))
+            ;; Write into the DB translation entry's abstract field
+            (let* ((mode (tlon-translate--deepl-glossary-mode source-lang-code target-lang))
+                   (current-db-abs (tlon-bibliography-lookup "=key=" db-trans-key "abstract")))
+              (pcase mode
+                ('skip
+                 (message "Skipping %s -> %s: %s-%s glossary missing"
+                          key target-lang (upcase source-lang-code) (upcase target-lang)))
+                (_
+                 (when (or (null current-db-abs)
+                           (string-blank-p (string-trim current-db-abs))
+                           (y-or-n-p (format "Translation entry %s already has an abstract. Overwrite? " db-trans-key)))
+                   (message "Initiating translation for %s -> %s into db.bib entry %s%s"
+                            key target-lang-name db-trans-key (if (eq mode 'allow) " (no glossary required)" ""))
+                   (tlon-deepl-translate
+                    (tlon-bib-remove-braces text) target-lang source-lang-code
+                    (lambda ()
+                      (let ((translated (tlon-translate--get-deepl-translation-from-buffer)))
+                        (when (and translated (stringp translated)
+                                   (not (string-blank-p (string-trim translated))))
+                          (tlon-translate--db-set-abstract db-trans-key translated)
+                          (message "Set abstract for %s (from %s)" db-trans-key key))))
+                    (eq mode 'allow))))))
+          ;; No DB translation entry → store in JSON as before
+          (let* ((existing-translation (tlon-translate--get-existing-abstract-translation key target-lang))
+                 (mode (tlon-translate--deepl-glossary-mode source-lang-code target-lang)))
+            (pcase mode
+              ('skip
+               (message "Skipping %s -> %s: %s-%s glossary missing"
+                        key target-lang (upcase source-lang-code) (upcase target-lang)))
+              (_
+               (if (and existing-translation
+                        (not (y-or-n-p (format "Translation for %s into %s already exists. Retranslate? "
+                                               key target-lang-name))))
+                   (message "Translation for %s into %s aborted by user." key target-lang-name)
+                 (message "Initiating translation for %s -> %s (JSON)%s"
+                          key target-lang-name (if (eq mode 'allow) " (no glossary required)" ""))
+                 (tlon-deepl-translate
+                  (tlon-bib-remove-braces text) target-lang source-lang-code
+                  (tlon-translate--json-abstract-write-callback key target-lang)
+                  (eq mode 'allow)))))))))))
 
 (defvar tlon-project-target-languages)
 (defun tlon-translate-abstract-non-interactive (key text source-lang-code langs)
