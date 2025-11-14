@@ -326,7 +326,7 @@ ATTEMPT is used to track retries in case of missing author names."
 	      (message "Entry “%s” posted and mirrored locally." entry-key)))
 	  ;; TODO: fix this; currently it always throws an error
 	  ;; (tlon-db-ensure-key-is-unique entry-key)
-	  ))
+	  (= status-code 200)))
     (user-error "No BibTeX key found at point")))
 
 ;; Helper to split a possibly multi-author string into individual names.
@@ -381,7 +381,10 @@ Return the modified entry string."
             (progn (bibtex-kill-entry)
                    (insert (tlon-db--normalize-entry-text entry)))
           (tlon-db--insert-entry-with-newlines (tlon-db--normalize-entry-text entry)))
-        (save-buffer)
+        (let ((before-save-hook nil)
+              (after-save-hook nil)
+              (write-contents-functions nil))
+          (save-buffer))
         (revert-buffer nil 'no-confirm)))))
 
 (defun tlon-db--normalize-entry-text (entry)
@@ -426,18 +429,21 @@ If KEY is nil, use the key of the entry at point."
                  (file-equal-p (expand-file-name current-file)
                                (expand-file-name tlon-file-db-upstream))))
         (message "Entry \"%s\" is already in db; no action taken." key)
-      (tlon-db-post-entry)
-      (bibtex-kill-entry)
-      (save-buffer)
-      (kill-buffer)
-      (let* ((db-index (ebib-extras-get-db-number tlon-file-db))
-             (db (tlon-db--get-ebib-database db-index)))
-        (if db
-            (ebib-extras-reload-database-no-confirm db)
-          (message "Ebib database for %s not found; skipped reload" tlon-file-db)))
-      (run-with-timer 3 nil
-                      (lambda ()
-                        (message "Entry \"%s\" added to db and removed from \"%s\"." key filename))))))
+      (if (tlon-db-post-entry key)
+          (progn
+            (bibtex-kill-entry)
+            (save-buffer)
+            (kill-buffer)
+            (let* ((db-index (ebib-extras-get-db-number tlon-file-db))
+                   (db (tlon-db--get-ebib-database db-index)))
+              (if db
+                  (ebib-extras-reload-database-no-confirm db)
+                (message "Ebib database for %s not found; skipped reload" tlon-file-db)))
+            (run-with-timer 3 nil
+                            (lambda ()
+                              (message "Entry \"%s\" added to db and removed from \"%s\"." key filename)))
+            t)
+        (user-error "Posting \"%s\" failed; entry not removed" key)))))
 
 (defun tlon-db--get-ebib-database (db-index)
   "Return the Ebib database object at DB-INDEX or nil if not found.
@@ -462,14 +468,14 @@ Handles both vector and list representations of `ebib--databases'."
 (declare-function citar-extras-refresh-bibliography "citar-extras")
 ;;;###autoload
 (defun tlon-db-move-entry-pair ()
-  "Move the entry at point and its counterpart to the database."
+  "Move the entry at point and all its counterparts to the database."
   (interactive)
   (let* ((key (or (tlon-get-key-at-point)
                   (tlon-get-bibtex-key)
                   (when (derived-mode-p 'markdown-mode)
                     (tlon-yaml-get-key "key"))))
          (file (and key (ebib-extras-get-file-of-key key)))
-         orig-key trans-key)
+         (orig-key nil))
     (unless key
       (user-error "Could not determine BibTeX key"))
     (unless file
@@ -477,19 +483,30 @@ Handles both vector and list representations of `ebib--databases'."
     (with-current-buffer (find-file-noselect file)
       (widen)
       (bibtex-search-entry key)
-      (if (bibtex-extras-get-field "translation")
-          (setq trans-key key)
-        (setq orig-key key)))
-    (citar-extras-refresh-bibliography file 'force)
-    (if trans-key
-        (setq orig-key (tlon-get-counterpart-key key "en"))
-      (let ((lang (tlon-select-language 'code 'babel "Translation language: ")))
-        (setq trans-key (tlon-get-counterpart-key key lang))))
-    (when orig-key
-      (tlon-db-move-entry orig-key))
-    (if trans-key
-        (tlon-db-move-entry trans-key)
-      (message "No translation entry found. Call `M-x tlon-db-move-entry' manually from the translated BibTeX entry."))))
+      (setq orig-key (if (bibtex-extras-get-field "translation")
+                         (tlon-get-counterpart-key key "en")
+                       key)))
+    (let* ((keys (tlon-db--collect-related-keys orig-key file))
+           (count 0))
+      (dolist (k (delete-dups keys))
+        (when (tlon-db-move-entry k)
+          (setq count (1+ count))))
+      (message "Moved %d entries to db" count))))
+
+(defun tlon-db--collect-related-keys (orig-key file)
+  "Return ORIG-KEY plus all translation keys found in FILE."
+  (let ((keys (list orig-key)))
+    (with-current-buffer (find-file-noselect file)
+      (widen)
+      (goto-char (point-min))
+      (while (re-search-forward "^@[[:alpha:]]+{\\s-*\\([^, \t\n]+\\)," nil t)
+        (let ((k (match-string 1)))
+          (save-excursion
+            (when (bibtex-search-entry k)
+              (let ((tr (bibtex-extras-get-field "translation")))
+                (when (and tr (string= (string-trim tr) orig-key))
+                  (push k keys))))))))
+    (delete-dups keys)))
 
 ;;;;;; Delete entry
 
