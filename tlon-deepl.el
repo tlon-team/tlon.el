@@ -352,7 +352,6 @@ even if the caller passes data."
   (message "Read glossaries from DeepL API."))
 
 (tlon-deepl-get-glossaries)
-(tlon-deepl-refresh-supported-glossary-languages)
 
 ;;;;;; Supported language pairs
 
@@ -386,6 +385,8 @@ even if the caller passes data."
       (message "Updated supported glossary pairs: %d pair(s), %d language code(s)."
                (length tlon-deepl-supported-glossary-pairs)
                (length tlon-deepl-supported-glossary-languages)))))
+
+(tlon-deepl-refresh-supported-glossary-languages)
 
 ;;;;;; Create glossary
 
