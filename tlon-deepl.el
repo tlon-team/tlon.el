@@ -84,6 +84,9 @@ See <https://developers.deepl.com/docs/api-reference/translate#request-body-desc
     (glossary-get . ("GET"
 		     "glossaries"
 		     tlon-deepl-glossary-get-callback))
+    (glossary-language-pairs . ("GET"
+				"glossary-language-pairs"
+				tlon-deepl-language-pairs-callback))
     (glossary-delete . ("DELETE"
 			tlon-deepl-glossary-delete-formatter
 			tlon-deepl-glossary-delete-callback)))
@@ -100,11 +103,15 @@ This is a dynamically-bound helper set by `tlon-deepl-glossary-delete'
 so the formatter can build the proper endpoint without re-prompting
 the user.")
 
-(defconst tlon-deepl-supported-glossary-languages
+(defvar tlon-deepl-supported-glossary-languages
   '("ar" "da" "de" "en" "es" "fr" "it" "ja" "ko" "nb" "nl" "pl" "pt" "ro" "ru" "sv" "zh")
-  "A list of the languages for which glossaries are currently supported.
-See <https://developers.deepl.com/docs/api-reference/glossaries> for the
-official source.")
+  "List of languages for which glossaries are supported.
+Populated at runtime from DeepL's glossary-language-pairs endpoint; the initial
+value is a fallback used until refreshed.")
+
+(defvar tlon-deepl-supported-glossary-pairs nil
+  "List of supported glossary language pairs as cons cells (SRC . TGT) retrieved
+from the DeepL API.")
 
 ;;;; Functions
 
@@ -238,13 +245,11 @@ DeepL glossaries and a matching source/target glossary exists in
 `tlon-deepl-glossaries'."
   (let* ((src tlon-translate-source-language)
          (tgt tlon-translate-target-language)
-         (pair-supported (and (member src tlon-deepl-supported-glossary-languages)
-                              (member tgt tlon-deepl-supported-glossary-languages)))
-         (glossary-id (when pair-supported
-                        (tlon-lookup tlon-deepl-glossaries
-                                     "glossary_id"
-                                     "source_lang" src
-                                     "target_lang" tgt)))
+         (glossary-id (tlon-lookup tlon-deepl-glossaries
+                                   "glossary_id"
+                                   "source_lang" src
+                                   "target_lang" tgt))
+         (pair-supported (tlon-deepl--pair-supported-p src tgt))
          (processed-text (tlon-deepl--preprocess-text tlon-translate-text))
          (text (vector processed-text))
          (proceed nil))
@@ -280,6 +285,16 @@ if no matching glossary is found."
                  "glossary_id"
                  "source_lang" src
                  "target_lang" language)))
+
+(defun tlon-deepl--pair-supported-p (src tgt)
+  "Return non-nil if SRC→TGT pair is supported for glossaries.
+Checks the cached pairs from the API, falls back to the language
+whitelist, and finally treats a known glossary ID as support."
+  (or (and (consp tlon-deepl-supported-glossary-pairs)
+           (member (cons src tgt) tlon-deepl-supported-glossary-pairs))
+      (and (member src tlon-deepl-supported-glossary-languages)
+           (member tgt tlon-deepl-supported-glossary-languages))
+      (tlon-deepl-get-language-glossary tgt src)))
 
 ;;;;;; “quality_optimized” model newlines workaround
 
@@ -337,6 +352,40 @@ even if the caller passes data."
   (message "Read glossaries from DeepL API."))
 
 (tlon-deepl-get-glossaries)
+(tlon-deepl-refresh-supported-glossary-languages)
+
+;;;;;; Supported language pairs
+
+;;;###autoload
+(defun tlon-deepl-refresh-supported-glossary-languages ()
+  "Refresh supported glossary language pairs from DeepL and update caches."
+  (interactive)
+  (tlon-deepl-request-wrapper 'glossary-language-pairs))
+
+(defun tlon-deepl-language-pairs-callback (&rest _)
+  "Callback for `tlon-deepl-refresh-supported-glossary-languages'."
+  (goto-char (point-min))
+  (let ((json-array-type 'list)
+        (json-key-type 'string)
+        (json-object-type 'alist))
+    (let* ((data (json-read))
+           (pairs (alist-get "supported_languages" data nil nil #'string=))
+           (acc-pairs '())
+           (codes (make-hash-table :test 'equal)))
+      (dolist (item pairs)
+        (let ((src (alist-get "source_lang" item nil nil #'string=))
+              (tgt (alist-get "target_lang" item nil nil #'string=)))
+          (when (and src tgt)
+            (push (cons src tgt) acc-pairs)
+            (puthash src t codes)
+            (puthash tgt t codes))))
+      (setq tlon-deepl-supported-glossary-pairs (nreverse acc-pairs))
+      (let (code-list)
+        (maphash (lambda (k _v) (push k code-list)) codes)
+        (setq tlon-deepl-supported-glossary-languages (nreverse (seq-uniq code-list))))
+      (message "Updated supported glossary pairs: %d pair(s), %d language code(s)."
+               (length tlon-deepl-supported-glossary-pairs)
+               (length tlon-deepl-supported-glossary-languages)))))
 
 ;;;;;; Create glossary
 
