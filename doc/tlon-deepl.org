@@ -65,7 +65,7 @@ This module provides functions for interacting with the DeepL API, enabling text
 :ID:       5BA8EC1A-5B70-40FE-81FE-B953728E9365
 :END:
 #+vindex: tlon-deepl-supported-glossary-languages
-+ ~tlon-deepl-supported-glossary-languages~ :: A list of language codes for which DeepL currently supports glossaries.
++ ~tlon-deepl-supported-glossary-languages~ :: A list of language codes for which DeepL supports glossaries. Populated dynamically from the “glossary-language-pairs” endpoint via ~tlon-deepl-refresh-supported-glossary-languages~; the initial value is a fallback until refreshed.
 
 *** Internal State Variables
 :PROPERTIES:
@@ -83,6 +83,8 @@ These variables store temporary state during API requests.
 + ~tlon-translate-text~ :: Stores the text to be translated in the current request.
 #+vindex: tlon-deepl--override-glossary-id
 + ~tlon-deepl--override-glossary-id~ :: Internal variable used to force `tlon-deepl-glossary-delete-formatter` to use a specific glossary ID, bypassing user prompts. Set dynamically by ~tlon-deepl-glossary-delete~.
+#+vindex: tlon-deepl-supported-glossary-pairs
++ ~tlon-deepl-supported-glossary-pairs~ :: Cached list of supported glossary language pairs from the DeepL API, as cons cells =(SRC . TGT)=. Updated by ~tlon-deepl-refresh-supported-glossary-languages~.
 
 ** Commands
 :PROPERTIES:
@@ -186,6 +188,7 @@ It provides the following groups and commands:
 + *Options*:
   + =m= :: Select Model Type (~tlon-deepl-model-type-infix~) - Select the DeepL model type ("latency_optimized", "quality_optimized", or "prefer_quality_optimized"). Uses standard transient variable selection with a custom reader.
   + =e= :: Ediff translations (~tlon-deepl-diff~)
+  + =R= :: Refresh supported glossary pairs (~tlon-deepl-refresh-supported-glossary-languages~)
 
 ** Internal Functions and Variables
 :PROPERTIES:
@@ -228,6 +231,8 @@ This section lists non-interactive functions and variables used internally or po
 
 #+findex: tlon-deepl-glossary-delete-callback
 + ~tlon-deepl-glossary-delete-callback~ :: Callback for glossary deletion. Refreshes the local glossary list using ~tlon-deepl-get-glossaries~ and messages confirmation.
+#+findex: tlon-deepl-language-pairs-callback
++ ~tlon-deepl-language-pairs-callback~ :: Callback for the “glossary-language-pairs” endpoint. Parses and caches the supported (SRC . TGT) pairs and updates ~tlon-deepl-supported-glossary-languages~ accordingly.
 
 *** Payload Encoders & Formatters
 :PROPERTIES:
