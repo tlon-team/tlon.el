@@ -26,8 +26,6 @@
 
 ;;; Code:
 
-;; NOTE: I think the below is unnecessary (2025-07-04). Consider deleting.
-;; (require 'tlon-ai) ; For tlon-simple-model-selection-infix
 (require 'tlon-core)
 (require 'tlon-glossary)
 (require 'url)
