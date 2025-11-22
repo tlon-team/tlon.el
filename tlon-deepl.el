@@ -110,8 +110,8 @@ Populated at runtime from DeepL's glossary-language-pairs endpoint; the initial
 value is a fallback used until refreshed.")
 
 (defvar tlon-deepl-supported-glossary-pairs nil
-  "List of supported glossary language pairs as cons cells (SRC . TGT) retrieved
-from the DeepL API.")
+  "List of supported glossary language pairs.
+Stored as cons cells (SRC . TGT) and retrieved from the DeepL API.")
 
 ;;;; Functions
 
