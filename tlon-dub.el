@@ -31,7 +31,6 @@
 (require 'json)
 (require 'threads) ; For cond-> at runtime
 (eval-when-compile (require 'threads))
-(require 'tlon-ai)
 (require 'transient)
 (require 'cl-lib)
 (require 'tlon-whisperx)
@@ -45,21 +44,7 @@
 
 ;;;; User Options
 
-(defcustom tlon-dub-propagation-model
-  '("Claude" . 'claude-3-7-sonnet-20250219)
-  "Model to use for propagating timestamps.
-The value is a cons cell whose car is the backend and whose cdr is the model
-itself. If nil, use the default `gptel-model'."
-  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
-  :group 'tlon-dub)
 
-(defcustom tlon-dub-alignment-model
-  '("ChatGPT" . 'o4-mini)
-  "Model to use for aligning sentences.
-The value is a cons cell whose car is the backend and whose cdr is the model
-itself. If nil, use the default `gptel-model'."
-  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
-  :group 'tlon-dub)
 
 
 ;;;; Constants
@@ -154,158 +139,9 @@ Example: \"00:00:00,240 --> 00:00:01,750\"")
 
 ;;;;; Propagation
 
-(defconst tlon-dub-propagate-machine-timestamps-prompt
-  "You will be given two inputs:
 
-1. A machine-generated srt transcript with timestamps.
 
-2. A human-edited Markdown transcript of the same audio.
 
-The human-edited transcript is more accurate in terms of wording, but has no timestamps.
-
-Here is the Machine-generated JSON file:
-
-```
-%s
-```
-
-And here is the human-edited transcript file (plain text or Markdown):
-
-```
-%s
-```
-
-Your task is to create a new SRT file that keeps the timestamps in the srt file but repalces the machine-generated transcript with the human-edited transcript. For each sentence in the machine-generated transcript, locate the corresponding part in the human-edited file and use that.
-
-Note that, occasionally, the sentence in the srt file won't have a sentence counterpart in the Markdown file. In these cases, you should change the punctuation in the Markdown file to make the two sentences match. For example, say you have this in the srt file:
-
-```
-00:00:00,031 --> 00:00:04,360
-An element of Douglas Allens argument that, er, I didn’t expand on was the british navy.
-
-00:00:04,770 --> 00:00:08,990
-He has, eh, a separate paper called The British Navy Rules that goes in more detail on why he thinks institutional incentives made them successful from 1670 and 1827.
-```
-
-and this in the Markdown file:
-
-```
-An element of Douglas Allen’s argument that I didn’t expand on was the British Navy; he has a separate paper called “The British Navy Rules” that goes into more detail on why he thinks institutional incentives made them successful from 1670 and 1827.
-```
-
-In this example, you should return
-
-```
-00:00:00,031 --> 00:00:04,360
-An element of Douglas Allen’s argument that I didn’t expand on was the British Navy
-
-00:00:04,770 --> 00:00:08,990
-He has a separate paper called “The British Navy Rules” that goes into more detail on why he thinks institutional incentives made them successful from 1670 and 1827.
-```
-
-As you can see, we use the text from the Markdown file, with the exception that we replace the semicolon with a period to make the sentences in this file match the sentences in the SRT file. This is very important because we always want the timestamps to be accurate.
-
-Return only the contents of the new timestamped translated SRT file, without any additional commentary (such as \"Here is the text you requested.\"). Do not enclose these contents in a code block such as \"```srt\"."
-  "Prompt for timestamp propagation.")
-
-(defconst tlon-dub-propagate-english-timestamps-prompt
-  "You will be given two inputs:
-
-1. An English SRT file with timestamps.
-
-2. A plain text or Markdown file with the translation of that transcript into another language. This translation does not have timestamps.
-
-Your task is to create a new SRT file that zcombines the timestamps from the English SRT file with the content of the translated file. Each segment in the output SRT file should use the timestamps from the corresponding English segment and the text from the translated file.
-
-English SRT file with timestamps:
-
-```
-%s
-```
-
-Translated plain text/Markdown file without timestamps:
-
-```
-%s
-```
-
-Return only the contents of the new timestamped translated SRT file, without any additional commentary (such as \"Here is the text you requested.\"). Do not enclose these contents in a code block such as \"```srt\". Here is an example of how a segment of the output SRT file should look:
-
-```
-00:00:00,031 --> 00:00:12,360
-Un elemento del argumento de Douglas Allen sobre el que no me explayé fue la Armada británica. Tiene otro artículo titulado \"The British Navy Rules\" en el que explica con más detalle por qué cree que los incentivos institucionales hicieron que tuvieran éxito entre 1670 y 1827 (es decir, durante la mayor parte de la era de la vela de combate).
-
-00:00:12,440 --> 00:00:23,910
-En la Guerra de los Siete Años (1756-1763) los británicos tenían una diferencia de 7 a 1 en bajas en acciones con un solo barco. Durante las guerras revolucionarias francesa y napoleónica (1793-1815), los británicos tenían una diferencia de 5 a 1 en barcos capturados/destruidos, y de 30 a 1 en barcos de línea, los más grandes y poderosos. En la década de 1800, los relatos contemporáneos esperaban que los barcos británicos derrotaran a oponentes que tenían un 50 por ciento más de potencia de cañón y tripulación.
-```"
-  "Prompt for propagating timestamps from English to a translated file.")
-
-(defconst tlon-dub-align-punctuation-prompt
-  "You will be given two files:
-
-1. A TXT file with a machine-generated transcript of an audio file.
-
-2. A Markdown file with a human-edited transcript of that same audio file. I have preprocessed this file so that each sentence is on its own line.
-
-Your task is to create a new Markdown file that is just like the original human-edited Markdown file except that its punctuation is revised to make every sentence correspond to a sentence in the machine-generated file.
-
-For example, if the TXT file has this:
-
-```
-An element of Douglas Allens argument that, er, I didn't expand on was the british navy.
-
-He has, eh, a separate paper called The British Navy Rules that goes, eh, in more detail on why he thinks institutional incentives made them successful from 1670 and 1827.
-```
-
-and the Markdown file has this (with one sentence per line):
-
-```
-An element of Douglas Allen's argument that I didn't expand on was the British Navy; he has a separate paper called \"The British Navy Rules\" that goes into more detail on why he thinks institutional incentives made them successful from 1670 and 1827.
-```
-
-You should return:
-
-```
-An element of Douglas Allen's argument that I didn't expand on was the British Navy.
-
-He has a separate paper called \"The British Navy Rules\" that goes into more detail on why he thinks institutional incentives made them successful from 1670 and 1827.
-```
-
-Notice that you always keep the text from the Markdown file and only deviate in order to make the punctuation match the text in the machine-generated file.
-
-Here's the machine-generated TXT file:
-
-```
-%s
-```
-
-And here's the human-edited Markdown file (with one sentence per line):
-
-```
-%s
-```
-
-Return only the contents of the new Markdown file with aligned punctuation, without any additional commentary. Do not enclose these contents in a code block. You can format the output with proper paragraph breaks as needed - it doesn't need to have one sentence per line."
-  "Prompt for aligning punctuation between a text file and a Markdown file.")
-
-(defconst tlon-dub-shorten-translation-prompt
-  "You are an expert translator who specializes in concise translations. I have a paragraph in a translated language that needs to be shortened while preserving its meaning.
-
-The paragraph needs to be shortened by approximately %d%% to match timing constraints for dubbing.
-
-Original translated paragraph:
-```
-%s
-```
-
-Please provide a shortened version that:
-1. Preserves the core meaning and key information
-2. Is approximately %d%% shorter than the original
-3. Maintains natural flow and proper grammar
-4. Sounds natural when read aloud
-
-Return only the shortened paragraph without any additional commentary or explanations."
-  "Prompt for shortening a translated paragraph to fit timing constraints.")
 
 ;;;; Helper Functions
 
@@ -893,249 +729,10 @@ to use exactly that many speakers."
      (list file nil n)))
   (tlon-whisperx-diarize audio-file (or language "en") speakers))
 
-;;;;; Timestamp propagation
 
-;;;;;; Machine timestamps
 
-;;;###autoload
-(defun tlon-dub-propagate-machine-timestamps (machine-transcript human-transcript)
-  "Propagate timestamps from MACHINE-TRANSCRIPT to HUMAN-TRANSCRIPT using AI.
-The AI will attempt to align the timestamps from the (machine-generated)
-WhisperX SRT output with the (human-edited) Markdown transcript. The result, an
-SRT file with the contents of the human-edited transcript and the timestamps
-from the machine-generated transcript, is saved to a new file specified by the
-user."
-  (interactive
-   (list (read-file-name "Machine-generated transcript: " nil nil t ".srt")
-	 (read-file-name "Human-edited transcript: " nil nil t ".md")))
-  (let ((whisperx-content (with-temp-buffer
-			    (insert-file-contents machine-transcript)
-			    (buffer-string)))
-	(human-text-content (with-temp-buffer
-			      (insert-file-contents human-transcript)
-			      (buffer-string))))
-    (if (or (string-empty-p whisperx-content) (string-empty-p human-text-content))
-	(user-error "One or both input files are empty")
-      (let ((prompt (format tlon-dub-propagate-machine-timestamps-prompt
-			    whisperx-content
-			    human-text-content)))
-	(message "Requesting AI to propagate timestamps...")
-	(tlon-make-gptel-request prompt nil
-				 (lambda (response info)
-				   (tlon-dub--propagate-machine-timestamps-callback response info human-transcript))
-				 tlon-dub-propagation-model
-				 'no-context-check)))))
 
-(defun tlon-dub--propagate-machine-timestamps-callback (response info human-transcript)
-  "Callback for `tlon-dub-propagate-machine-timestamps'.
-RESPONSE is the AI's response. INFO is the response info.
-HUMAN-TRANSCRIPT is the path to the original human-edited transcript file."
-  (if (not response)
-      (tlon-ai-callback-fail info)
-    (let* ((output-file (file-name-with-extension
-			 (concat (file-name-sans-extension human-transcript)
-				 "-timestamped")
-			 "srt")))
-      (with-temp-buffer
-	(insert response)
-	(write-file output-file))
-      (message "Timestamped SRT transcript saved to \"%s\"" output-file))))
 
-;;;;;; English timestamps
-
-;;;###autoload
-(defun tlon-dub-propagate-english-timestamps (english-timestamped-file translated-file)
-  "Propagate timestamps from ENGLISH-TIMESTAMPED-FILE to TRANSLATED-FILE using AI.
-The AI will attempt to align the timestamps from the (timestamped)
-English Markdown file with the (non-timestamped) translated Markdown file.
-The result, a Markdown file with the contents of the translated transcript and
-the timestamps from the English file, is saved to a new file specified by the
-user."
-  (interactive
-   (list (read-file-name "English transcript: " nil nil t ".srt")
-	 (read-file-name "Translation: " nil nil t ".md")))
-  (let ((english-content (with-temp-buffer
-			   (insert-file-contents english-timestamped-file)
-			   (buffer-string)))
-	(translated-content (with-temp-buffer
-			      (insert-file-contents translated-file)
-			      (buffer-string))))
-    (if (or (string-empty-p english-content) (string-empty-p translated-content))
-	(user-error "One or both input files are empty")
-      (let ((prompt (format tlon-dub-propagate-english-timestamps-prompt
-			    english-content
-			    translated-content)))
-	(message "Requesting AI to propagate English timestamps to translated file...")
-	(tlon-make-gptel-request prompt nil
-				 (lambda (response info)
-				   (tlon-dub--propagate-english-timestamps-callback response info translated-file))
-				 tlon-dub-propagation-model
-				 'no-context-check)))))
-
-(defun tlon-dub--propagate-english-timestamps-callback (response info translated-file)
-  "Callback for `tlon-dub-propagate-english-timestamps'.
-RESPONSE is the AI's response. INFO is the response info.
-TRANSLATED-FILE is the path to the original non-timestamped translated file."
-  (if (not response)
-      (tlon-ai-callback-fail info)
-    (let* ((output-file (file-name-with-extension
-			 (concat (file-name-sans-extension translated-file)
-				 "-timestamped")
-			 "srt"))) ; Output SRT file
-      (with-temp-buffer
-	(insert response)
-	(write-file output-file))
-      (message "Timestamped translated SRT transcript saved to \"%s\"" output-file))))
-
-;;;###autoload
-(defun tlon-dub-align-punctuation (text-file markdown-file)
-  "Align punctuation between TEXT-FILE and MARKDOWN-FILE using AI.
-Both files contain transcripts of the same audio, but may differ in
-punctuation. The AI will revise the Markdown file so that its sentence
-boundaries match those in the text file. The result is saved to a new file with
-'-aligned' suffix."
-  (interactive
-   (list (read-file-name "Text file: " nil nil t ".txt")
-         (read-file-name "Markdown file: " nil nil t ".md")))
-  (let ((text-content (with-temp-buffer
-                        (insert-file-contents text-file)
-                        (buffer-string)))
-        (markdown-content (with-temp-buffer
-                            (insert-file-contents markdown-file)
-                            (buffer-string))))
-    (if (or (string-empty-p text-content) (string-empty-p markdown-content))
-        (user-error "One or both input files are empty")
-      ;; Preprocess the markdown content to have one sentence per line
-      (let* ((preprocessed-markdown (tlon-dub--split-into-sentences markdown-content))
-             (prompt (format tlon-dub-align-punctuation-prompt
-                             text-content
-                             preprocessed-markdown)))
-        (message "Requesting AI to align punctuation between files...")
-        (tlon-make-gptel-request prompt nil
-                                 (lambda (response info)
-                                   (tlon-dub--align-punctuation-callback response info markdown-file))
-                                 tlon-dub-alignment-model
-                                 'no-context-check)))))
-
-(defun tlon-dub--align-punctuation-callback (response info markdown-file)
-  "Callback for `tlon-dub-align-punctuation'.
-RESPONSE is the AI's response. INFO is the response info.
-MARKDOWN-FILE is the path to the original Markdown file."
-  (if (not response)
-      (tlon-ai-callback-fail info)
-    (let* ((output-file (concat (file-name-sans-extension markdown-file)
-                                "-aligned.md")))
-      (with-temp-buffer
-        (insert response)
-        (write-file output-file))
-      (message "Aligned Markdown file saved to \"%s\"" output-file))))
-
-;;;###autoload
-(defun tlon-dub-optimize-translation-length (english-srt-file translated-srt-file &optional threshold)
-  "Optimize translation length by shortening paragraphs that exceed THRESHOLD.
-ENGLISH-SRT-FILE is the path to the English SRT file.
-TRANSLATED-SRT-FILE is the path to the translated SRT file.
-THRESHOLD is the maximum allowed ratio of translation length to English length.
-If nil, defaults to 1.2 (20% longer)."
-  (interactive
-   (list (read-file-name "English SRT file: " nil nil t ".srt")
-         (read-file-name "Translated SRT file: " nil nil t ".srt")
-         (read-number "Length threshold ratio (default 1.2): " 1.2)))
-  (let* ((threshold (or threshold 1.2))
-         (english-segments (tlon-dub--parse-srt english-srt-file))
-         (translated-segments (tlon-dub--parse-srt translated-srt-file))
-         (output-file (concat (file-name-sans-extension translated-srt-file) "-optimized.srt"))
-         (segments-to-optimize nil)
-         (total-segments (length english-segments)))
-    ;; Check if both files have the same number of segments
-    (unless (= (length english-segments) (length translated-segments))
-      (user-error "Files have different number of segments: English has %d, Translation has %d"
-                  (length english-segments) (length translated-segments)))
-    ;; Identify segments that exceed the threshold
-    (dotimes (i total-segments)
-      (let* ((eng-seg (nth i english-segments))
-             (trans-seg (nth i translated-segments))
-             (eng-text (plist-get eng-seg :text))
-             (trans-text (plist-get trans-seg :text))
-             (eng-length (length eng-text))
-             (trans-length (length trans-text))
-             (ratio (if (> eng-length 0) (/ (float trans-length) eng-length) 1.0)))
-        (when (> ratio threshold)
-          (push (cons i ratio) segments-to-optimize))))
-    (if segments-to-optimize
-        (progn
-          (setq segments-to-optimize (nreverse segments-to-optimize))
-          (message "Found %d segments exceeding threshold. Starting asynchronous processing..."
-                   (length segments-to-optimize))
-          ;; Process segments asynchronously
-          (tlon-dub--process-segments-to-optimize
-           segments-to-optimize english-segments translated-segments
-           threshold output-file)
-          (message "Optimization started. Results will be saved to %s when complete" output-file))
-      ;; No segments to optimize, just copy the file
-      (copy-file translated-srt-file output-file t)
-      (message "No segments exceed the threshold. Created copy at %s" output-file))))
-
-(defun tlon-dub--process-segments-to-optimize (segments-to-optimize english-segments translated-segments threshold output-file)
-  "Process segments that need optimization and save results to OUTPUT-FILE.
-SEGMENTS-TO-OPTIMIZE is a list of cons cells (index . ratio).
-ENGLISH-SEGMENTS and TRANSLATED-SEGMENTS are the parsed SRT segments.
-THRESHOLD is the maximum allowed ratio."
-  (let* ((total-to-optimize (length segments-to-optimize))
-         (pending-segments (copy-list segments-to-optimize))
-         (optimized-segments (copy-sequence translated-segments))
-         (state (list :pending pending-segments
-                      :optimized-segments optimized-segments
-                      :total total-to-optimize
-                      :processed 0
-                      :output-file output-file)))
-    
-    ;; Start processing the first segment
-    (tlon-dub--process-next-segment state english-segments translated-segments threshold)))
-
-(defun tlon-dub--process-next-segment (state english-segments translated-segments threshold)
-  "Process the next segment in the optimization queue.
-STATE is a plist containing the processing state.
-ENGLISH-SEGMENTS and TRANSLATED-SEGMENTS are the parsed SRT segments.
-THRESHOLD is the maximum allowed ratio."
-  (let* ((pending (plist-get state :pending))
-         (optimized-segments (plist-get state :optimized-segments))
-         (total (plist-get state :total))
-         (processed (plist-get state :processed))
-         (output-file (plist-get state :output-file)))
-    (if (null pending)
-        ;; All segments processed, write the file
-        (progn
-          (tlon-dub--write-srt-file optimized-segments output-file)
-          (message "Optimization complete. %d segments processed. Result saved to %s"
-                   processed output-file))
-      ;; Process the next segment
-      (let* ((segment-info (car pending))
-             (index (car segment-info))
-             (ratio (cdr segment-info))
-             (trans-seg (nth index translated-segments))
-             (trans-text (plist-get trans-seg :text))
-             (reduction-percent (round (* 100 (- 1 (/ threshold ratio)))))
-             (prompt (format tlon-dub-shorten-translation-prompt
-                             reduction-percent trans-text reduction-percent)))
-        (message "Optimizing segment %d/%d (needs %d%% reduction)..."
-                 (1+ processed) total reduction-percent)
-        ;; Make asynchronous request to AI with callback
-        (tlon-make-gptel-request
-         prompt nil
-         (lambda (response _info) ; info argument is unused
-           (let ((optimized-text (if response response trans-text)))
-             ;; Update the segment with optimized text
-             (setf (nth index optimized-segments)
-                   (plist-put (nth index optimized-segments) :text optimized-text))
-             ;; Update state and process next segment
-             (let ((new-state (list :pending (cdr pending)
-                                    :optimized-segments optimized-segments
-                                    :total total
-                                    :processed (1+ processed)
-                                    :output-file output-file)))
-               (tlon-dub--process-next-segment new-state english-segments translated-segments threshold))))
-         tlon-dub-alignment-model 'no-context-check)))))
 
 (defun tlon-dub--write-srt-file (segments file)
   "Write SRT SEGMENTS to FILE.
@@ -1293,23 +890,6 @@ file is empty."
   "Escape STR for CSV by doubling quotes and enclosing in quotes."
   (format "\"%s\"" (replace-regexp-in-string "\"" "\"\"" str)))
 
-(defun tlon-dub--split-into-sentences (text)
-  "Split TEXT into sentences, one per line.
-Attempts to handle common sentence-ending punctuation patterns."
-  (let ((result "")
-	(start 0))
-    (while (string-match sentence-end-base text start)
-      (let ((end (match-end 0)))
-        (setq result (concat result
-                             (if (string-empty-p result) "" "\n")
-                             (string-trim (substring text start end))))
-        (setq start end)))
-    ;; Add any remaining text as a final sentence
-    (when (< start (length text))
-      (setq result (concat result
-                           (if (string-empty-p result) "" "\n")
-                           (string-trim (substring text start)))))
-    result))
 
 ;;;;; video splitting
 
@@ -1672,16 +1252,7 @@ the pathname of OUTPUT-FILE."
              prompt '("all" "srt" "vtt" "txt" "tsv" "json" "aud")))
   :prompt "Transcription format: ")
 
-(transient-define-infix tlon-dub-infix-select-propagation-model ()
-  "AI model to use for propagating timestamps.
-If nil, use the default `gptel-model'."
-  :class 'tlon-model-selection-infix
-  :variable 'tlon-dub-propagation-model)
 
-(transient-define-infix tlon-dub-infix-select-alignment-model ()
-  "AI model to use for sentence alignment."
-  :class 'tlon-model-selection-infix
-  :variable 'tlon-dub-alignment-model)
 
 ;;;###autoload (autoload 'tlon-dub-menu "tlon-dub" nil t)
 (transient-define-prefix tlon-dub-menu ()
@@ -1699,8 +1270,6 @@ If nil, use the default `gptel-model'."
     ("t r" "Resegment SRT (speaker/min-30s)" tlon-dub-resegment-srt)
     ""
     "Options"
-    ("t -a" "Alignment model" tlon-dub-infix-select-alignment-model)
-    ("t -m" "Propagation model" tlon-dub-infix-select-propagation-model)
     ("t -f" "Transcription format" tlon-dub-infix-select-transcription-format)]
    ["Audio & video manipulation"
     "Split"
