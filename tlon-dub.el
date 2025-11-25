@@ -1469,8 +1469,8 @@ an error if no part files are found."
   "Extract the audio track from VIDEO-FILE and save it as OUTPUT-FILE.
 
 If OUTPUT-FILE is nil, a WAV file with the same basename as VIDEO-FILE is
-created in the same directory.  Uses ffmpeg with uncompressed pcm_s16le
-(-vn -acodec pcm_s16le).  Returns the pathname of the created file."
+created in the same directory. Uses ffmpeg with uncompressed pcm_s16le
+\\=(-vn -acodec pcm_s16le).  Returns the pathname of the created file."
   (interactive (list (read-file-name "Video file: " nil nil t)))
   (setq video-file (expand-file-name video-file))
   (unless output-file
@@ -1478,7 +1478,7 @@ created in the same directory.  Uses ffmpeg with uncompressed pcm_s16le
   (let ((args (list "-y" "-i" video-file "-vn" "-acodec" "pcm_s16le" output-file)))
     (message "Extracting audio to %s..." (file-name-nondirectory output-file))
     (unless (= 0 (apply #'call-process "ffmpeg" nil "*tlon-dub-ffmpeg*" t args))
-      (error "ffmpeg failed to create %s" output-file))
+      (error "The program `ffmpeg' failed to create %s" output-file))
     (message "Saved WAV audio to %s" output-file)
     output-file))
 
@@ -1514,7 +1514,7 @@ an error if ffmpeg fails."
                       "-c:v" "copy" "-c:a" "aac"
                       "-shortest" out)))
       (unless (= 0 (apply #'call-process "ffmpeg" nil "*tlon-dub-ffmpeg*" t args))
-        (error "ffmpeg failed to produce %s" out))
+        (error "The program `ffmpeg' failed to produce %s" out))
       (message "Saved video with replaced audio to %s" out)
       out)))
 
@@ -1646,7 +1646,7 @@ the pathname of OUTPUT-FILE."
                   (let ((args (list "-y" "-f" "concat" "-safe" "0" "-i" tmp-list "-c" "copy" output-file)))
                     (message "Concatenating %d media files with ffmpeg..." (length clean-paths))
                     (unless (= 0 (apply #'call-process "ffmpeg" nil "*tlon-dub-ffmpeg*" t args))
-                      (error "ffmpeg failed to concatenate files"))))
+                      (error "The program `ffmpeg' failed to concatenate files"))))
               (delete-file tmp-list)))
         ;; fallback to plain-text concatenation
         (with-temp-buffer
