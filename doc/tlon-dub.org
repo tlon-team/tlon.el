@@ -23,35 +23,17 @@ This module provides functionality to interact with the ElevenLabs Dubbing API, 
 
 + =tlon-core=
 + =tlon-tts= (for API key retrieval and language selection)
-+ =tlon-ai= (for AI model interaction and common AI utilities)
 + =json= (for parsing API responses)
 + =threads= (for the =cond->= macro)
 + =transient= (for the menu system)
-+ =gptel=, =gptel-core= (for AI model selection infrastructure)
 + External tools: =curl= (for API requests), =whisperx= (for local transcription).
 
-** Standard Workflow
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-dub-workflow
-:END:
-
-This workflow presupposes that we already have (1) the original audio and video files, (2) a human-edited transcript and (3) a translation into the target language made from that transcript.
-
-1. Generate a JSON transcript with timestamps from the original audio file using ~tlon-dub-transcribe-with-whisperx~ (Audio -> JSON).
-2. Create an English SRT file by combining the timestamps from the WhisperX JSON output with your human-edited English transcript (plain text/Markdown) using ~tlon-dub-propagate-machine-timestamps~ (JSON + en.txt -> en.srt).
-3. Create a translated SRT file by combining the timestamps from the English SRT file with your translated transcript (plain text/Markdown) using ~tlon-dub-propagate-english-timestamps~ (en.srt + lang.txt -> lang.srt).
-4. Create a CSV file from the English SRT and the translated SRT using ~tlon-dub-convert-srt-to-csv~ (en.srt + lang.srt -> .csv). This CSV will be in the format required by ElevenLabs (speaker, start_time, end_time, transcription, translation).
-5. Go to [[https://elevenlabs.io/app/dubbing]] and create a new manual dubbing project, uploading the original audio/video files and the CSV file created in the previous step.
 
 ** User Options
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-dub-options
 :END:
 
-#+vindex: tlon-dub-propagation-model
-+ ~tlon-dub-propagation-model~ :: Specifies the AI model to use for the ~tlon-dub-propagate-timestamps~ command. The value is a cons cell where the =car= is the backend name (e.g., "ChatGPT", "Gemini") and the =cdr= is the model symbol (e.g., =gpt-4.5-preview=, =gemini-2.0-flash-exp=). If =nil=, the default =gptel-model= is used. This can be set via the ~tlon-dub-menu~.
-#+vindex: tlon-dub-alignment-model
-+ ~tlon-dub-alignment-model~ :: Specifies the AI model to use for aligning sentences (e.g., in ~tlon-dub-align-punctuation~). Format is the same as ~tlon-dub-propagation-model~. If =nil=, the default =gptel-model= is used.
 
 ** Commands
 :PROPERTIES:
@@ -76,18 +58,10 @@ This workflow presupposes that we already have (1) the original audio and video 
 + ~tlon-dub-transcribe-with-whisperx~ :: (Autoloaded) Wrapper for ~tlon-whisperx-transcribe~. Generates a transcript for AUDIO-FILE asynchronously using whisperx. FORMAT defaults to the value of ~tlon-dub-transcription-format~.
 #+findex: tlon-dub-diarize-with-whisperx
 + ~tlon-dub-diarize-with-whisperx~ :: (Autoloaded) Wrapper for ~tlon-whisperx-diarize~. Diarizes AUDIO-FILE with whisperx. Optional LANGUAGE defaults to "en". If SPEAKERS > 0, whisperx is instructed to use exactly that many speakers.
-#+findex: tlon-dub-propagate-machine-timestamps
-+ ~tlon-dub-propagate-machine-timestamps~ :: (Autoloaded) Propagates timestamps from a =whisperx=-generated JSON transcript to a human-edited plain text/Markdown transcript using an AI model. Prompts for the =machine-transcript= (JSON) and the =human-transcript= (text/Markdown). The AI attempts to align timestamps from the JSON file with the human-edited text. The resulting timestamped transcript is saved as a new SRT file (e.g., =human-transcript-timestamped.srt=). The AI model used can be configured via ~tlon-dub-propagation-model~.
-#+findex: tlon-dub-propagate-english-timestamps
-+ ~tlon-dub-propagate-english-timestamps~ :: (Autoloaded) Propagates timestamps from a timestamped English SRT file to a translated plain text/Markdown file (which lacks timestamps) using an AI model. Prompts for the =english-timestamped-file= (SRT, typically the output of ~tlon-dub-propagate-machine-timestamps~) and the =translated-file= (text/Markdown). The AI attempts to align the timestamps from the English SRT file with the translated text. The resulting timestamped translated transcript is saved as a new SRT file (e.g., =translated-file-timestamped.srt=). The AI model used can be configured via ~tlon-dub-propagation-model~.
 #+findex: tlon-dub-convert-srt-to-csv
 + ~tlon-dub-convert-srt-to-csv~ :: (Autoloaded) Converts a pair of timestamped English and translated SRT files into a CSV file formatted for ElevenLabs. Prompts for the =english-srt-file=, the =translated-srt-file=, and an =output-csv-file= path. The output CSV has columns: =speaker,start_time,end_time,transcription,translation=. The function validates that both SRT files have the same number of segments and that corresponding segments share identical start and end timestamps; it raises an error if these conditions are not met.
 
-#+findex: tlon-dub-align-punctuation
-+ ~tlon-dub-align-punctuation~ :: (Autoloaded) Aligns punctuation between a text file and a Markdown file using AI. Both files contain transcripts of the same audio, but may differ in their punctuation. The AI will revise the Markdown file so that its sentence boundaries match those in the text file. Prompts for the =text-file= and the =markdown-file=. The resulting aligned Markdown file is saved with a "-aligned" suffix. The AI model used can be configured via ~tlon-dub-alignment-model~.
 
-#+findex: tlon-dub-optimize-translation-length
-+ ~tlon-dub-optimize-translation-length~ :: (Autoloaded) Optimizes translation length by shortening paragraphs that exceed a specified threshold. Prompts for an =english-srt-file=, a =translated-srt-file=, and a =threshold= ratio (default 1.2, meaning translations can be up to 20% longer than the English text). The function compares each segment's length between the English and translated files, identifies segments where the translation is too long, and uses AI to shorten those segments while preserving meaning. The result is saved to a new SRT file with "-optimized" suffix. The AI model used can be configured via ~tlon-dub-alignment-model~.
 
 #+findex: tlon-dub-split-video-at-timestamps
 + ~tlon-dub-split-video-at-timestamps~ :: (Autoloaded) Splits a video into
@@ -132,7 +106,6 @@ This workflow presupposes that we already have (1) the original audio and video 
     + =t= :: Transcribe with WhisperX (Audio -> srt) (~tlon-dub-transcribe-with-whisperx~)
     + =i= :: Diarize with WhisperX (Audio -> diarized srt/txt) (~tlon-dub-diarize-with-whisperx~)
     + =x= :: Clean diarized SRT (-> -cleaned.srt) (~tlon-dub-clean-diarized-srt~)
-    + =o= :: Optimize Translation Length (en.srt + lang.srt -> optimized.srt) (~tlon-dub-optimize-translation-length~)
     + =c= :: Convert SRTs to CSV (en.srt + lang.srt -> .csv) (~tlon-dub-convert-srt-to-csv~)
     + =r= :: Resegment SRT (speaker/min-30s) (~tlon-dub-resegment-srt~)
     + =p= :: Split video by timestamps (video + txt -> parts)
@@ -198,13 +171,5 @@ This workflow presupposes that we already have (1) the original audio and video 
 + ~tlon-dub--vtt-timestamp-marker~ :: Regexp to identify the beginning of a VTT timestamp line (e.g., "00:00:00.240 -->"). Uses POSIX character classes.
 #+vindex: tlon-dub--blank-line-regex
 + ~tlon-dub--blank-line-regex~ :: Regexp to match a blank or whitespace-only line.
-#+vindex: tlon-dub-propagate-machine-timestamps-prompt
-+ ~tlon-dub-propagate-machine-timestamps-prompt~ :: The prompt template used to instruct an AI model on how to propagate timestamps from a WhisperX JSON transcript to a human-edited plain text/Markdown transcript, outputting an SRT file.
-#+vindex: tlon-dub-propagate-english-timestamps-prompt
-+ ~tlon-dub-propagate-english-timestamps-prompt~ :: The prompt template used to instruct an AI model on how to propagate timestamps from a timestamped English SRT file to a non-timestamped translated plain text/Markdown file, outputting an SRT file.
-#+vindex: tlon-dub-align-punctuation-prompt
-+ ~tlon-dub-align-punctuation-prompt~ :: The prompt template used to instruct an AI model on how to align punctuation between a text file and a Markdown file, ensuring that sentence boundaries in the Markdown file match those in the text file.
-#+vindex: tlon-dub-shorten-translation-prompt
-+ ~tlon-dub-shorten-translation-prompt~ :: The prompt template used to instruct an AI model on how to shorten a translated paragraph by a specified percentage while preserving its meaning and maintaining natural flow.
 #+vindex: tlon-dub--srt-timestamp-regex
 + ~tlon-dub--srt-timestamp-regex~ :: Regexp to match an SRT timestamp line (e.g., "00:00:00,031 --> 00:00:06,360") and capture start and end times.
