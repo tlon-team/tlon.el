@@ -223,8 +223,14 @@ Returns the translated text as a string, or nil if parsing fails."
                (json-data (json-read))
                (translations (alist-get "translations" json-data nil nil #'string=))
                (first-translation (car translations)))
-          (when first-translation
-            (setq translation (tlon-deepl--translation-text first-translation))))
+          (cond
+           ;; Handle error object returned inside `translations', e.g. (("message" . "Bad request..."))
+           ((and (consp first-translation)
+                 (alist-get "message" first-translation nil nil #'string=))
+            (message "DeepL API error: %s"
+                     (alist-get "message" first-translation nil nil #'string=)))
+           (first-translation
+            (setq translation (tlon-deepl--translation-text first-translation)))))
       (error (message "Error parsing DeepL JSON response: %s" err)
              nil))
     (when translation

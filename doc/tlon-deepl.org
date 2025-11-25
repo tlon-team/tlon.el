@@ -221,7 +221,7 @@ This section lists non-interactive functions and variables used internally or po
 :END:
 
 #+findex: tlon-deepl-print-translation
-+ ~tlon-deepl-print-translation~ :: Default callback for translation requests. Parses the JSON response from the current buffer using ~json-read~, extracts the translated text, and either messages it or copies it to the kill ring if =COPY= is non-nil. Returns the translation string or nil if parsing fails.
++ ~tlon-deepl-print-translation~ :: Default callback for translation requests. Parses the JSON response from the current buffer using ~json-read~, extracts the translated text, and either messages it or copies it to the kill ring if =COPY= is non-nil. If the API returns an error object inside the translations array (for example, a "message" field such as "Bad request. Reason: Glossary ... not found"), it displays the error and returns nil. Returns the translation string or nil if parsing fails.
 
 #+findex: tlon-deepl-glossary-create-callback
 + ~tlon-deepl-glossary-create-callback~ :: Callback for glossary creation. Resets ~tlon-translate-target-language~, refreshes the local glossary list using ~tlon-deepl-get-glossaries~, and messages the API response.
