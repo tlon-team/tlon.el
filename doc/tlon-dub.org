@@ -111,6 +111,13 @@ This workflow presupposes that we already have (1) the original audio and video 
 #+findex: tlon-dub-extract-audio
 + ~tlon-dub-extract-audio~ :: (Autoloaded) Extracts the audio track from a single video file and saves it as WAV alongside the original. Prompts for a =video-file= and optionally an =output-file=. Internally runs =ffmpeg -i <video> -vn -acodec pcm_s16le <base>.wav=. Returns the path of the created WAV.
 
+#+findex: tlon-dub-replace-audio
++ ~tlon-dub-replace-audio~ :: (Autoloaded) Replaces the audio track in a video
+  with an external audio file. Prompts for the =video-file= and the
+  =audio-file=, and optionally an =output-file=. Copies the video stream
+  without re-encoding and encodes the audio as AAC for broad compatibility.
+  Uses =ffmpeg= and returns the path to the created output file.
+
 #+findex: tlon-dub-join-audio-files
 + ~tlon-dub-join-audio-files~ :: (Autoloaded) Convenience wrapper around ~tlon-dub-join-files~ that prompts for a list of audio files and produces a single joined output using =ffmpeg=. Suitable for concatenating audio segments produced by ~tlon-dub-split-audio-at-timestamps~.
 
@@ -132,6 +139,8 @@ This workflow presupposes that we already have (1) the original audio and video 
       (~tlon-dub-split-video-at-timestamps~)
     + =u= :: Extract audio from parts (parts.mp4 -> parts.wav)
       (~tlon-dub-extract-audio-from-parts~)
+    + =r= :: Replace audio in video (video + audio -> new video)
+      (~tlon-dub-replace-audio~)
   + *ElevenLabs API*:
     + =s= :: Start New Dubbing Project (~tlon-dub-start-project~)
     + =d= :: Get Project Metadata (~tlon-dub-get-project-metadata~)

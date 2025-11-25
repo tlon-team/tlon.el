@@ -1482,6 +1482,42 @@ created in the same directory.  Uses ffmpeg with uncompressed pcm_s16le
     (message "Saved WAV audio to %s" output-file)
     output-file))
 
+;;;;; audio replacement
+
+;;;###autoload
+(defun tlon-dub-replace-audio (video-file audio-file &optional output-file)
+  "Replace the audio track in VIDEO-FILE with AUDIO-FILE and write OUTPUT-FILE.
+VIDEO-FILE and AUDIO-FILE must be readable paths. If OUTPUT-FILE is nil,
+create <BASE>-replaced.<EXT> next to VIDEO-FILE, where <BASE> and <EXT> come
+from VIDEO-FILE. The video stream is copied without re-encoding; the audio
+is re-encoded as AAC for broad compatibility. Return OUTPUT-FILE or signal
+an error if ffmpeg fails."
+  (interactive (list (read-file-name "Video file: " nil nil t)
+                     (read-file-name "Audio file: " nil nil t)
+                     nil))
+  (setq video-file (expand-file-name video-file))
+  (setq audio-file (expand-file-name audio-file))
+  (unless (file-readable-p video-file)
+    (user-error "Cannot read video file: %s" video-file))
+  (unless (file-readable-p audio-file)
+    (user-error "Cannot read audio file: %s" audio-file))
+  (let* ((ext (or (file-name-extension video-file) "mp4"))
+         (out (or output-file
+                  (expand-file-name
+                   (format "%s-replaced.%s"
+                           (file-name-sans-extension video-file) ext)))))
+    (message "Replacing audio in %s using %s..."
+             (file-name-nondirectory video-file)
+             (file-name-nondirectory audio-file))
+    (let ((args (list "-y" "-i" video-file "-i" audio-file
+                      "-map" "0:v:0" "-map" "1:a:0"
+                      "-c:v" "copy" "-c:a" "aac"
+                      "-shortest" out)))
+      (unless (= 0 (apply #'call-process "ffmpeg" nil "*tlon-dub-ffmpeg*" t args))
+        (error "ffmpeg failed to produce %s" out))
+      (message "Saved video with replaced audio to %s" out)
+      out)))
+
 ;;;;; audio splitting
 
 ;;;###autoload
@@ -1678,7 +1714,10 @@ If nil, use the default `gptel-model'."
     ""
     "Extract"
     ("e a" "Extract audio from video (video -> wav)" tlon-dub-extract-audio)
-    ("e A" "Extract audio from video parts (parts -> wavs)" tlon-dub-extract-audio-from-parts)]
+    ("e A" "Extract audio from video parts (parts -> wavs)" tlon-dub-extract-audio-from-parts)
+    ""
+    "Replace"
+    ("r a" "Replace video audio (video + audio -> new video)" tlon-dub-replace-audio)]
    ["ElevenLabs API"
     ("a s" "Start New Dubbing Project" tlon-dub-start-project)
     ("a d" "Get Project Metadata" tlon-dub-get-project-metadata)
