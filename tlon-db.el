@@ -301,18 +301,26 @@ ATTEMPT is used to track retries in case of missing author names."
 		   ;; Split any compound author strings like
 		   ;; \"Doe, John and Roe, Jane\" into individual names.
 		   (all-names (cl-loop for n in missing-names
-				       append (tlon-db--split-author-string n))))
+				       append (tlon-db--split-author-string n)))
+                   (authors (tlon-db--author-value-from-entry entry-text)))
 	      (when all-names
-		(if (y-or-n-p
-		     (format "Missing author names not found (%s). Create them and retry? "
-			     (string-join all-names ", ")))
-		    (progn
-		      (dolist (name all-names)
-			(tlon-db-set-name name nil))
-		      (cl-return-from tlon-db-post-entry
-			(tlon-db-post-entry entry-key (1+ attempt))))
-		  (user-error "Entry not posted because these author names are missing: %s"
-			      (string-join all-names ", "))))))
+                (if tlon-db--sync-in-progress
+                    (progn
+                      (tlon-db--log-sync-action
+                       "Skipped (missing authors)"
+                       (format "%s — missing: %s — author: %s"
+                               entry-key (string-join all-names ", ") authors))
+                      (cl-return-from tlon-db-post-entry nil))
+		  (if (y-or-n-p
+		       (format "Entry %s has missing author names (%s). Create them and retry? Author: %s "
+			       entry-key (string-join all-names ", ") authors))
+		      (progn
+			(dolist (name all-names)
+			  (tlon-db-set-name name nil))
+			(cl-return-from tlon-db-post-entry
+			  (tlon-db-post-entry entry-key (1+ attempt))))
+		    (user-error "Entry %s not posted because these author names are missing: %s. Author: %s"
+				entry-key (string-join all-names ", ") authors))))))
 	  (if (or tlon-debug (not (and status-code (= status-code 200))))
 	      ;; Non‑200 or debug ⇒ show whole response
 	      (tlon-db--display-result-buffer
@@ -328,6 +336,14 @@ ATTEMPT is used to track retries in case of missing author names."
 	  ;; (tlon-db-ensure-key-is-unique entry-key)
 	  (= status-code 200)))
     (user-error "No BibTeX key found at point")))
+
+(defun tlon-db--author-value-from-entry (entry-text)
+  "Return the author value from ENTRY-TEXT or \"<none>\".
+ENTRY-TEXT is a BibTeX entry string. This extracts the contents of the
+author field braces and normalizes whitespace."
+  (if (string-match "\\bauthor\\s-*=[[:space:]]*{\\([^}]*\\)}" entry-text)
+      (tlon-db--normalize-name (match-string 1 entry-text))
+    "<none>"))
 
 ;; Helper to split a possibly multi-author string into individual names.
 (defun tlon-db--split-author-string (author-string)
@@ -1574,16 +1590,16 @@ the changes. If there are no differences, report and do nothing."
                     (deleted-count 0)
                     (parts '()))
                 (dolist (key added)
-                  (tlon-db-post-entry key)
-                  (setq created-count (1+ created-count))
-                  (tlon-db--log-sync-action "Created" key))
+                  (when (tlon-db-post-entry key)
+                    (setq created-count (1+ created-count))
+                    (tlon-db--log-sync-action "Created" key)))
                 (dolist (key modified)
                   (let ((before-text (with-current-buffer (find-file-noselect tlon-file-db-upstream)
                                        (bibtex-extras-get-entry-as-string key nil))))
-                    (tlon-db-post-entry key)
-                    (setq modified-count (1+ modified-count))
-                    (let ((after-text (bibtex-extras-get-entry-as-string key nil)))
-                      (tlon-db--log-sync-action-modified key before-text after-text))))
+                    (when (tlon-db-post-entry key)
+                      (setq modified-count (1+ modified-count))
+                      (let ((after-text (bibtex-extras-get-entry-as-string key nil)))
+                        (tlon-db--log-sync-action-modified key before-text after-text)))))
                 (dolist (key deleted)
                   (tlon-db-delete-entry key nil t)
                   (setq deleted-count (1+ deleted-count))
