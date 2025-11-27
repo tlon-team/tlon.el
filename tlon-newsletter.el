@@ -27,7 +27,6 @@
 
 (require 'tlon-ai)
 (require 'tlon-core)
-(require 'tlon-glossary)
 (require 'tlon-md)
 (require 'cl-macs)
 (require 'transient)
@@ -72,7 +71,6 @@ use a different model for creating a newsletter issue."
 
 ;;;;; Create issue
 
-;; TODO: pass glossary
 ;;;###autoload
 (defun tlon-newsletter-create-issue ()
   "Create a draft for a new newsletter issue using AI.
