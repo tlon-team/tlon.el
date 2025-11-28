@@ -102,15 +102,19 @@ news. The original input file is then overwritten with this new draft."
 	 (content-month-year (format "%s de %s" content-month content-year))
 	 (final-prompt (tlon-ai-maybe-edit-prompt
 			(format raw-prompt content-month-year issue-month sample-issue-content content))))
-    (tlon-make-gptel-request final-prompt
-			     nil
-			     #'tlon-newsletter--create-issue-callback
-			     tlon-newsletter-model
-			     'skip-content-check
-			     nil
-			     (list "search" "fetch_content" "slack_list_channels" "slack_get_channel_history")
-			     input-file-path
-			     (list "ddg-search" "slack-ae-racionalidad"))
+    (tlon-make-gptel-request
+     final-prompt
+     nil
+     #'tlon-newsletter--create-issue-callback
+     tlon-newsletter-model
+     'skip-content-check
+     nil
+     (list (list "mcp-ddg-search" "search")
+	   (list "mcp-ddg-search" "fetch_content")
+	   (list "mcp-slack-ae-racionalidad" "slack_list_channels")
+	   (list "mcp-slack-ae-racionalidad" "slack_get_channel_history"))
+     input-file-path
+     (list "ddg-search" "slack-ae-racionalidad"))
     (message "Requesting AI to draft newsletter issue (input: %s, prompt: %s)..."
 	     input-file-path tlon-newsletter-prompt-file)))
 
