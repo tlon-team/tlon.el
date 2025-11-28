@@ -25,11 +25,10 @@
 
 ;;; Code:
 
+(require 'markdown-mode)
+(require 'transient)
 (require 'tlon-ai)
 (require 'tlon-core)
-(require 'tlon-md)
-(require 'cl-macs)
-(require 'transient)
 
 ;;;; Variables
 
