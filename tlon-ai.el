@@ -2218,15 +2218,12 @@ If nil, use the default model."
 (defun tlon--ensure-mcp-servers (servers)
   "Ensure SERVERS are connected through MCP before a gptel request.
 
-SERVERS is a list of server names (strings).  For each name we try
-to call `gptel-mcp-connect'.  Errors are ignored so a missing or
-failing server never aborts the main request."
-  (when (and servers (fboundp 'gptel-mcp-connect))
-    (require 'gptel-mcp nil t)
-    ;; `gptel-mcp-connect' will start the server if necessary.
-    (dolist (srv servers)
-      (ignore-errors
-        (gptel-mcp-connect srv)))))
+SERVERS is a list of server names (strings).  Errors are ignored so a
+missing or failing server never aborts the main request."
+  (when (and servers (require 'gptel-integrations nil t))
+    ;; `gptel-mcp-connect' will start servers if necessary.
+    (ignore-errors
+      (gptel-mcp-connect servers nil nil))))
 
 (provide 'tlon-ai)
 ;;; tlon-ai.el ends here
