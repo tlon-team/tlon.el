@@ -53,7 +53,7 @@
 	  (const :tag "Ask" ask)))
 
 (defcustom tlon-bib-replace-citations-model
-  '("Gemini" . gemini-2.5-pro-preview-06-05)
+  '("Gemini" . gemini-pro-latest)
   "Model to use for replacing citations (`tlon-bib-replace-citations-in-file').
 The value is a cons cell whose car is the backend and whose cdr is the model
 itself. See `gptel-extras-ai-models' for the available options. If nil, use the
