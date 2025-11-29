@@ -55,7 +55,7 @@
 ;;;;; Custom models
 
 (defcustom tlon-ai-summarization-model
-  '("Gemini" . gemini-2.0-flash-thinking-exp)
+  '("Gemini" . gemini-flash-latest)
   "Model to use for summarization.
 The value is a cons cell whose car is the backend and whose cdr is the model
 itself. See `gptel-extras-ai-models' for available options. If nil, do not
@@ -67,7 +67,7 @@ than 1m tokens, since otherwise some books will not be summarized."
   :group 'tlon-ai)
 
 (defcustom tlon-ai-markdown-fix-model
-  '("Gemini" . gemini-2.0-flash-thinking-exp)
+  '("Gemini" . gemini-flash-latest)
   "Model to use for fixing the Markdown.
 The value is a cons cell whose car is the backend and whose cdr is the model
 itself. See `gptel-extras-ai-models' for the available options. If nil, do not
@@ -93,7 +93,7 @@ use a different model for proofreading the reference article."
   :group 'tlon-ai)
 
 (defcustom tlon-ai-summarize-commit-diffs-model
-  '("Gemini" . gemini-2.5-pro-preview-06-05)
+  '("Gemini" . gemini-pro-latest)
   "Model to use for summarizing commit diffs.
 The value is a cons cell whose car is the backend and whose cdr is the model
 itself. See `gptel-extras-ai-models' for the available options. If nil, do not
@@ -102,7 +102,7 @@ use a different model for summarizing commit diffs."
   :group 'tlon-ai)
 
 (defcustom tlon-ai-help-model
-  '("Gemini" . gemini-2.0-flash-thinking-exp)
+  '("Gemini" . gemini-flash-latest)
   "Model to use for the AI help command (`tlon-ai-ask-for-help').
 The value is a cons cell whose car is the backend and whose cdr is the model
 itself. See `gptel-extras-ai-models' for the available options. If nil, use the

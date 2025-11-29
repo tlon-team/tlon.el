@@ -59,18 +59,18 @@ If the user option ~tlon-ai-auto-proofread~ is set to a non-nil value, ~tlon~ wi
 
 ~tlon~ allows specifying different AI models for specific tasks, overriding the default =gptel= model configuration. This enables using models optimized for particular capabilities (e.g., large context window for summarization, advanced reasoning for proofreading).
 
-Each option takes a cons cell =(BACKEND . MODEL)=, where =BACKEND= is a string (e.g., ="ChatGPT"=, ="Gemini"=) and =MODEL= is a symbol representing the specific model (e.g., =gpt-4.5-preview=, =gemini-2.0-flash-thinking-exp=). Refer to ~gptel-extras-ai-models~ for available options. If an option is nil, the default =gptel= model is used for that task.
+Each option takes a cons cell =(BACKEND . MODEL)=, where =BACKEND= is a string (e.g., ="ChatGPT"=, ="Gemini"=) and =MODEL= is a symbol representing the specific model (e.g., =gpt-4.5-preview=, =gemini-flash-latest=). Refer to ~gptel-extras-ai-models~ for available options. If an option is nil, the default =gptel= model is used for that task.
 
 #+vindex: tlon-ai-summarization-model
 + ~tlon-ai-summarization-model~ :: Model for summarizing text (e.g., generating abstracts, synopses). It's recommended to use a model with a large context window.
   #+begin_src emacs-lisp
-  (setq tlon-ai-summarization-model '("Gemini" . gemini-2.0-flash-thinking-exp))
+  (setq tlon-ai-summarization-model '("Gemini" . gemini-flash-latest))
   #+end_src
 
 #+vindex: tlon-ai-markdown-fix-model
 + ~tlon-ai-markdown-fix-model~ :: Model for fixing Markdown formatting issues, especially when comparing original and translated documents.
   #+begin_src emacs-lisp
-  (setq tlon-ai-markdown-fix-model '("Gemini" . gemini-2.0-flash-thinking-exp))
+  (setq tlon-ai-markdown-fix-model '("Gemini" . gemini-flash-latest))
   #+end_src
 
 #+vindex: tlon-ai-create-reference-article-model
@@ -88,13 +88,13 @@ Each option takes a cons cell =(BACKEND . MODEL)=, where =BACKEND= is a string (
 #+vindex: tlon-ai-summarize-commit-diffs-model
 + ~tlon-ai-summarize-commit-diffs-model~ :: Model for summarizing commit diffs.
   #+begin_src emacs-lisp
-  (setq tlon-ai-summarize-commit-diffs-model '("Gemini" . gemini-2.5-pro-preview-06-05))
+  (setq tlon-ai-summarize-commit-diffs-model '("Gemini" . gemini-pro-latest))
   #+end_src
 
 #+vindex: tlon-ai-help-model
 + ~tlon-ai-help-model~ :: Model to use for the AI help command (~tlon-ai-ask-for-help~). The value is a cons cell whose car is the backend and whose cdr is the model itself. See ~gptel-extras-ai-models~ for the available options. If nil, use the default ~gptel-model~.
   #+begin_src emacs-lisp
-  (setq tlon-ai-help-model '("Gemini" . gemini-2.0-flash-lite-preview-02-05))
+  (setq tlon-ai-help-model '("Gemini" . gemini-flash-lite-latest))
   #+end_src
 
 #+vindex: tlon-ai-translation-model

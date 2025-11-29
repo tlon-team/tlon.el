@@ -55,7 +55,7 @@
                  (const :tag "AI" ai)))
 
 (defcustom tlon-translate-spot-errors-model
-  '("Gemini" . gemini-2.5-flash)
+  '("Gemini" . gemini-flash-latest)
   "Model to use for spotting errors in translations.
 See `tlon-translate-spot-errors'. The value is a cons cell whose car is the
 backend and whose cdr is the model itself. See `gptel-extras-ai-models' for the
@@ -64,7 +64,7 @@ available options. If nil, use the default `gptel-model'."
   :group 'tlon-translate)
 
 (defcustom tlon-translate-improve-flow-model
-  '("Gemini" . gemini-2.5-pro)
+  '("Gemini" . gemini-pro-latest)
   "Model to use for improving the flow of translations.
 See `tlon-translate-improve-flow'. The value is a cons cell whose car is the
 backend and whose cdr is the model itself. See `gptel-extras-ai-models' for the

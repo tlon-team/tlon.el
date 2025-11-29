@@ -53,13 +53,13 @@ This module provides a wide range of functions for interacting with BibTeX files
 #+vindex: tlon-bib-replace-citations-model
 + ~tlon-bib-replace-citations-model~ :: Model used by ~tlon-bib-replace-citations-in-file~ to identify and replace bibliographic citations.
   #+begin_src emacs-lisp
-  (setq tlon-bib-replace-citations-model '("Gemini" . gemini-2.5-pro-preview-06-05))
+  (setq tlon-bib-replace-citations-model '("Gemini" . gemini-pro-latest))
   #+end_src
 
 #+vindex: tlon-bib-add-missing-citations-model
 + ~tlon-bib-add-missing-citations-model~ :: Model used by ~tlon-bib-add-missing-citations~ to find information about missing citations and add them to the bibliography.
   #+begin_src emacs-lisp
-  (setq tlon-bib-add-missing-citations-model '("Gemini" . gemini-2.5-pro-preview-06-05))
+  (setq tlon-bib-add-missing-citations-model '("Gemini" . gemini-pro-latest))
   #+end_src
 
 ** Configuration
