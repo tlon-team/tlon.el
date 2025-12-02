@@ -1144,40 +1144,45 @@ region is selected, check only the region."
 
 ;;;;;; Translations
 
-(defun tlon-read-abstract-translations ()
-  "Read the JSON file with the abstract translations."
-  (tlon-read-json tlon-file-abstract-translations))
+(defun tlon-read-abstract-translations (&optional code)
+  "Read per-language JSON abstract translations for CODE as an alist (KEY . TEXT)."
+  (unless code (user-error "Language CODE is required"))
+  (tlon-read-json (tlon-bib--abstracts-file code)))
 
-(defun tlon-write-abstract-translations (data)
-  "Write DATA to the JSON file with the abstract translations."
-  (tlon-write-data tlon-file-abstract-translations data))
+(defun tlon-write-abstract-translations (data &optional code)
+  "Write DATA (alist of (KEY . TEXT)) to the per-language JSON store for CODE."
+  (unless code (user-error "Language CODE is required"))
+  (tlon-write-data (tlon-bib--abstracts-file code) data))
+
+(defun tlon-bib--abstracts-file (code)
+  "Return the abstract-translations.json path for language CODE."
+  (let ((base (file-name-directory tlon-file-abstract-translations)))
+    (file-name-concat base code "abstract-translations.json")))
 
 (defun tlon-add-abstract-translation (key target-lang translation &optional overwrite var)
-  "Add a TRANSLATION of KEY in TARGET-LANG.
+  "Add TRANSLATION for KEY in per-language store TARGET-LANG.
 If a translation already exists, do nothing unless OVERWRITE is non-nil. If KEY
-is not present, add a new entry for this KEY."
-  (let* ((data (or (symbol-value var) (tlon-read-abstract-translations)))
-	 (entry (assoc key data)))
-    (if entry
-	(let ((lang-entry (assoc target-lang (cdr entry))))
-	  (if lang-entry
-	      (when overwrite
-		(setcdr lang-entry translation))
-	    (setcdr entry (cons (cons target-lang translation) (cdr entry)))))
-      (setq data (cons (cons key (list (cons target-lang translation))) data)))
+is not present, add a new entry for this KEY. When VAR is non-nil, update that
+variable (alist of (KEY . TEXT)) instead of writing to disk."
+  (let* ((data (or (and var (symbol-value var))
+                   (tlon-read-abstract-translations target-lang)))
+         (cell (assoc key data)))
+    (if cell
+        (when overwrite
+          (setcdr cell translation))
+      (push (cons key translation) data))
     (if var
-	(set var data)
-      (tlon-write-abstract-translations data))))
+        (set var data)
+      (tlon-write-abstract-translations data target-lang))))
 
 ;;;###autoload
 (defun tlon-get-abstract-translation (bibkey code &optional translations)
-  "Return the translated abstract for BIBKEY in language CODE.
-If TRANSLATIONS is nil, reads it from `tlon-file-abstract-translations'. Returns
-nil if BIBKEY or CODE is not found."
-  (when-let* ((translations (or translations (tlon-read-abstract-translations)))
-	      (key-entry (assoc bibkey translations)))
-    (when-let ((translations (cdr key-entry)))
-      (alist-get code translations nil nil #'string=))))
+  "Return the translated abstract TEXT for BIBKEY in language CODE.
+If TRANSLATIONS is nil, read the per-language store for CODE. Return nil if not
+found."
+  (let* ((translations (or translations (tlon-read-abstract-translations code)))
+         (cell (assoc bibkey translations)))
+    (and cell (cdr cell))))
 
 (declare-function tlon-deepl-translate "tlon-deepl")
 (declare-function tlon-deepl-print-translation "tlon-deepl")
@@ -1225,12 +1230,12 @@ Make sure the relevant glossaries are loaded before running this function."
   "Callback for `tlon-translate-abstract'.
 KEY is the key of the entry and TARGET-LANG is the target language of the
 translation. If OVERWRITE is non-nil, overwrite the existing translation. If VAR
-is non-nil, save the translations in VAR; otherwise, save them in
-`tlon-file-abstract-translations'."
+is non-nil, save the translations in VAR; otherwise, save them in the
+per-language JSON file."
   (let ((translation (tlon-deepl-print-translation)))
     (tlon-add-abstract-translation key target-lang translation overwrite var)
     (when (null var)
-      (tlon-bib-unescape-escaped-characters tlon-file-abstract-translations))))
+      (tlon-bib-unescape-escaped-characters (tlon-bib--abstracts-file target-lang)))))
 
 ;;;;;; Report
 
