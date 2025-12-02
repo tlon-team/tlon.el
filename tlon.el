@@ -80,10 +80,6 @@ This variable should not be set manually.")
 (defvar tlon-post-init-hook nil
   "Hook run at the end of `tlon-initialize'.")
 
-(defconst tlon-file-abstract-translations
-  (file-name-concat (tlon-repo-lookup :dir :name "babel-refs")
-		    "bib" "abstract-translations.json")
-  "The JSON file containing the abstract translations.")
 
 (defconst tlon-file-bare-bibliography
   (file-name-concat (tlon-repo-lookup :dir :name "babel-refs")

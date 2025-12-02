@@ -72,8 +72,6 @@ This module provides a wide range of functions for interacting with BibTeX files
 :CUSTOM_ID: h:tlon-bib-constants
 :END:
 
-#+vindex: tlon-file-abstract-translations
-+ ~tlon-file-abstract-translations~ :: Base path used to locate per-language JSON files at =babel-refs/json/<code>/abstract-translations.json=.
 #+vindex: tlon-file-bare-bibliography
 + ~tlon-file-bare-bibliography~ :: Path to the JSON file containing the bare bibliography (author, date, title, key).
 #+vindex: tlon-bib-excluded-keys-file

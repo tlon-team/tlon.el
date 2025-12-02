@@ -1147,19 +1147,32 @@ region is selected, check only the region."
 (defun tlon-read-abstract-translations (&optional code-or-language)
   "Read per-language JSON abstract translations for CODE-OR-LANGUAGE as an alist (KEY . TEXT).
 Accepts either a two-letter CODE (e.g., \"es\") or a standard language name (e.g., \"spanish\")."
-  (tlon-read-json (tlon-bib--abstracts-file code-or-language)))
+  (tlon-read-json (tlon-bib--abstracts-file code-or-language) 'alist 'list 'string))
 
 (defun tlon-write-abstract-translations (data &optional code-or-language)
   "Write DATA (alist of (KEY . TEXT)) to the per-language JSON store for CODE-OR-LANGUAGE.
 Accepts either a two-letter CODE (e.g., \"es\") or a standard language name (e.g., \"spanish\")."
-  (tlon-write-data (tlon-bib--abstracts-file code-or-language) data))
+  (let* ((file (tlon-bib--abstracts-file code-or-language))
+         (dir  (file-name-directory file)))
+    (when (and (stringp dir) (not (file-directory-p dir)))
+      (make-directory dir t))
+    (tlon-write-data file data)))
 
 (defun tlon-bib--abstracts-file (code-or-language)
   "Return the abstract-translations.json path for CODE-OR-LANGUAGE.
 CODE-OR-LANGUAGE may be a two-letter code or a standard language name."
-  (let* ((base (file-name-directory tlon-file-abstract-translations))
+  (let* ((base (tlon-bib--abstracts-base-dir))
          (code (tlon-bib--ensure-lang-code code-or-language)))
     (file-name-concat base code "abstract-translations.json")))
+
+(defun tlon-bib--abstracts-base-dir ()
+  "Return the base directory for per-language abstract translations.
+
+This resolves to the \"json\" directory inside the babel-refs repo."
+  (let ((repo (tlon-repo-lookup :dir :name "babel-refs")))
+    (unless repo
+      (user-error "Could not locate babel-refs repo"))
+    (file-name-concat repo "json")))
 
 (defun tlon-bib--ensure-lang-code (code-or-language)
   "Return a two-letter code for CODE-OR-LANGUAGE.
