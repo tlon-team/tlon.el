@@ -395,9 +395,9 @@ These functions customize the BibTeX autokey generation process, likely used as 
 :END:
 
 #+findex: tlon-read-abstract-translations
-+ ~tlon-read-abstract-translations~ :: Reads and parses the per-language JSON data for a language CODE from =babel-refs/json/<code>/abstract-translations.json= using ~tlon-read-json~. Returns an alist of (KEY . TEXT).
++ ~tlon-read-abstract-translations~ :: Reads and parses the per-language JSON data for a language CODE or standard language NAME from =babel-refs/json/<code>/abstract-translations.json= using ~tlon-read-json~. NAME is resolved to CODE via ~(tlon-lookup tlon-languages-properties :code :standard NAME)~. Returns an alist of (KEY . TEXT).
 #+findex: tlon-write-abstract-translations
-+ ~tlon-write-abstract-translations~ :: Writes the provided =DATA= (alist of (KEY . TEXT)) to the per-language JSON file for a language CODE using ~tlon-write-data~.
++ ~tlon-write-abstract-translations~ :: Writes the provided =DATA= (alist of (KEY . TEXT)) to the per-language JSON file for a language CODE or standard language NAME using ~tlon-write-data~. NAME is resolved to CODE via ~(tlon-lookup tlon-languages-properties :code :standard NAME)~.
 #+findex: tlon-add-abstract-translation
 + ~tlon-add-abstract-translation~ :: Adds or updates a =TRANSLATION= for a given =KEY= in the per-language JSON store for =TARGET-LANG= (or an in-memory alist =VAR= when provided). Honors =OVERWRITE= when the key already exists.
 #+findex: tlon-get-abstract-translation
