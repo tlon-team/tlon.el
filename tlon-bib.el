@@ -1144,20 +1144,38 @@ region is selected, check only the region."
 
 ;;;;;; Translations
 
-(defun tlon-read-abstract-translations (&optional code)
-  "Read per-language JSON abstract translations for CODE as an alist (KEY . TEXT)."
-  (unless code (user-error "Language CODE is required"))
-  (tlon-read-json (tlon-bib--abstracts-file code)))
+(defun tlon-read-abstract-translations (&optional code-or-language)
+  "Read per-language JSON abstract translations for CODE-OR-LANGUAGE as an alist (KEY . TEXT).
+Accepts either a two-letter CODE (e.g., \"es\") or a standard language name (e.g., \"spanish\")."
+  (tlon-read-json (tlon-bib--abstracts-file code-or-language)))
 
-(defun tlon-write-abstract-translations (data &optional code)
-  "Write DATA (alist of (KEY . TEXT)) to the per-language JSON store for CODE."
-  (unless code (user-error "Language CODE is required"))
-  (tlon-write-data (tlon-bib--abstracts-file code) data))
+(defun tlon-write-abstract-translations (data &optional code-or-language)
+  "Write DATA (alist of (KEY . TEXT)) to the per-language JSON store for CODE-OR-LANGUAGE.
+Accepts either a two-letter CODE (e.g., \"es\") or a standard language name (e.g., \"spanish\")."
+  (tlon-write-data (tlon-bib--abstracts-file code-or-language) data))
 
-(defun tlon-bib--abstracts-file (code)
-  "Return the abstract-translations.json path for language CODE."
-  (let ((base (file-name-directory tlon-file-abstract-translations)))
+(defun tlon-bib--abstracts-file (code-or-language)
+  "Return the abstract-translations.json path for CODE-OR-LANGUAGE.
+CODE-OR-LANGUAGE may be a two-letter code or a standard language name."
+  (let* ((base (file-name-directory tlon-file-abstract-translations))
+         (code (tlon-bib--ensure-lang-code code-or-language)))
     (file-name-concat base code "abstract-translations.json")))
+
+(defun tlon-bib--ensure-lang-code (code-or-language)
+  "Return a two-letter code for CODE-OR-LANGUAGE.
+Accepts either a language CODE (e.g., \"es\") or a standard language NAME
+(e.g., \"spanish\"). Signals a `user-error' if it cannot be resolved."
+  (unless (and code-or-language
+               (stringp code-or-language)
+               (not (string-blank-p code-or-language)))
+    (user-error "Language code or name is required"))
+  (let* ((value (downcase code-or-language))
+         (as-code (tlon-lookup tlon-languages-properties :code :code value))
+         (code (or as-code
+                   (tlon-lookup tlon-languages-properties :code :standard value))))
+    (unless code
+      (user-error "Unrecognized language: %s" code-or-language))
+    code))
 
 (defun tlon-add-abstract-translation (key target-lang translation &optional overwrite var)
   "Add TRANSLATION for KEY in per-language store TARGET-LANG.
