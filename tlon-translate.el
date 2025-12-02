@@ -552,7 +552,7 @@ prompt using `tlon-read-multiple-languages'."
             (user-error "No target languages selected. Aborting"))
           ;; Precompute compact indexes for performance.
           (let* ((target-codes (mapcar (lambda (name)
-                                         (tlon-lookup tlon-languages-properties :code :name name))
+                                         (tlon-lookup tlon-languages-properties :code :standard name))
                                        target-names))
                  ;; JSON index: key -> set of language codes with non-empty translations (per-language files)
                  (json-index (let ((h (make-hash-table :test #'equal)))
