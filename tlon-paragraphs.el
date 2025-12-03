@@ -399,8 +399,9 @@ N is 1-based. Signal an error if there are no paragraphs."
     (if (and tlon-paragraphs--positions-cache
              (= tick tlon-paragraphs--tick-cache))
         tlon-paragraphs--positions-cache
-      (setq tlon-paragraphs--positions-cache (tlon-with-paragraphs nil #'ignore t)
-            tlon-paragraphs--tick-cache tick))))
+      (setq tlon-paragraphs--positions-cache (tlon-with-paragraphs nil #'ignore t))
+      (setq tlon-paragraphs--tick-cache tick)
+      tlon-paragraphs--positions-cache)))
 
 ;;;;;; Doom modeline integration
 
