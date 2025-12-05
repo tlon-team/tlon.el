@@ -93,6 +93,12 @@ This module provides functions for reading, writing, and manipulating YAML front
 #+findex: tlon-yaml-get-key
 + ~tlon-yaml-get-key~ :: Retrieves the value associated with a specific KEY from the YAML metadata of a FILE-OR-BUFFER.
 
+#+findex: tlon-yaml-copy-key
++ ~tlon-yaml-copy-key~ :: Copies the YAML =key= field value from the current
++  buffer or, when point is on a Markdown file in Dired, from that file, to the
++  kill ring. Signals an error when the file is not Markdown or the field is
++  missing. Returns the copied value.
+
 #+findex: tlon-yaml-get-list
 + ~tlon-yaml-get-list~ :: Returns the YAML list value of KEY from a FILE-OR-BUFFER
 +  as a list of strings. If the underlying YAML is a single string, returns a
