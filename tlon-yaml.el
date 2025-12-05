@@ -596,6 +596,30 @@ the file is an article, signal an error suggesting
         (save-buffer))
       final-status)))
 
+;;;###autoload
+(defun tlon-yaml-copy-key (&optional file)
+  "Copy the YAML field `key' from FILE or context to the kill ring.
+When in a Markdown buffer, operate on its file. When point is on a
+Markdown file in Dired, operate on that file. Signal an error when the
+file is not Markdown or the field is missing. Return the copied key."
+  (interactive)
+  (let* ((file (or file
+                   (when (derived-mode-p 'dired-mode)
+                     (dired-get-file-for-visit))
+                   (buffer-file-name)
+                   (user-error "No file at point")))
+         (ext (file-name-extension file)))
+    (unless (and ext (string= ext "md"))
+      (user-error "This command only works on Markdown files"))
+    (let ((val (tlon-yaml-get-key "key" file)))
+      (unless (and (stringp val)
+                   (not (string-empty-p (string-trim val))))
+        (user-error "YAML field `key' not found in %s"
+                    (file-name-nondirectory file)))
+      (kill-new val)
+      (message "Copied key: %s" val)
+      val)))
+
 ;;;;; tags format normalization
 
 ;;;###autoload
@@ -1342,6 +1366,7 @@ If nil, use the default model."
     ("i" "insert or edit field" tlon-yaml-insert-field)
     ("m" "list files missing field in dir" tlon-yaml-list-files-missing-field-in-dir)
     ("s" "set publication status" tlon-yaml-set-publication-status)
+    ("k" "copy key" tlon-yaml-copy-key)
     ""
     "Tags"
     ("t s" "suggest tags"   tlon-yaml-suggest-tags)
