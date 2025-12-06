@@ -208,6 +208,9 @@ This section details the interactive commands provided by =tlon-bib.el=.
   3. Collects all Markdown files in that directory with ~tlon-yaml-get-filenames-in-dir~ and reads their =key= via ~(tlon-yaml-get-key "key" FILE)~.
   4. For each collected BibTeX key whose =url= field is empty or missing, jumps to the entry and calls ~tlon-bib-populate-url-field~.
 
+#+findex: tlon-bib-populate-journaltitle-fields-in-language
++ ~tlon-bib-populate-journaltitle-fields-in-language~ :: Sets the =journaltitle= field for all BibTeX entries in the language of the entry at point. It computes the value once as ~(tlon-uqbar-front-get-message LANG "HomePage" "Title")~, where =LANG= is the two-letter code resolved from the entry’s =langid=, then applies it to each matching entry (prompting before overwriting existing values). The set of keys is obtained from the same articles directory as above.
+
 *** Translation Entry Creation
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-bib-translation-entry-commands
