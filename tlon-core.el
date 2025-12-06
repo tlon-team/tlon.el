@@ -1270,6 +1270,51 @@ INNER-VALUE-PROMPT is the prompt string for the inner value."
     (message "Updated '%s' for key '%s' in language(s)/key(s) %s in %s"
 	     chosen-inner-value chosen-outer-key (string-join chosen-langs ", ") file)))
 
+;;;;; uqbar front messages
+
+;;;###autoload
+(defun tlon-uqbar-front-get-message (lang outer inner)
+  "Return the value in Uqbar front messages for LANG, OUTER and INNER.
+LANG is a language code string like \"es\".
+OUTER is a top-level object key like \"HomePage\".
+INNER is a nested key inside OUTER like \"title\"."
+  (interactive (tlon-uqbar-front--read-args))
+  (let* ((repo-dir (tlon-repo-lookup :dir :name "uqbar")))
+    (unless repo-dir
+      (user-error "Could not locate the 'uqbar' repository"))
+    (let* ((messages-dir (file-name-concat repo-dir "uqbar-front/messages/"))
+           (file (file-name-concat messages-dir (concat lang ".json"))))
+      (unless (file-exists-p file)
+        (user-error "Messages file not found for language '%s'" lang))
+      (let* ((data (tlon-read-json file 'hash-table)))
+        (unless data
+          (user-error "Could not parse JSON in %s" file))
+        (let* ((outer-obj (gethash outer data)))
+          (unless outer-obj
+            (user-error "Key '%s' not found at top level" outer))
+          (let ((value (gethash inner outer-obj)))
+            (unless value
+              (user-error "Key '%s' not found under '%s'" inner outer))
+            (when (called-interactively-p 'interactive)
+              (message "%s" value))
+            value))))))
+
+(defun tlon-uqbar-front--read-args ()
+  "Read arguments for `tlon-uqbar-front-get-message'."
+  (let* ((repo-dir (tlon-repo-lookup :dir :name "uqbar")))
+    (unless repo-dir
+      (user-error "Could not locate the 'uqbar' repository"))
+    (let* ((messages-dir (file-name-concat repo-dir "uqbar-front/messages/"))
+           (langs (mapcar #'file-name-base (directory-files messages-dir nil "\\.json\\'")))
+           (lang (completing-read "Language code: " langs nil t))
+           (json-file (file-name-concat messages-dir (concat lang ".json")))
+           (json-data (tlon-read-json json-file 'hash-table))
+           (outer-keys (tlon-get-keys json-data))
+           (outer (completing-read "Outer key: " outer-keys nil t))
+           (inner-keys (let ((obj (gethash outer json-data))) (and obj (tlon-get-keys obj))))
+           (inner (completing-read "Inner key: " inner-keys nil t)))
+      (list lang outer inner))))
+
 ;;;;; tags
 
 ;; TODO: create pattern directly fro `tlon-tag-specs'

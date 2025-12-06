@@ -156,6 +156,10 @@ These functions provide convenient wrappers for looking up data within specific 
 #+findex: tlon-edit-json-mapping
 + ~tlon-edit-json-mapping~ :: Provides an interactive interface to edit key-value mappings within a JSON FILE, using specified prompts for outer keys and inner values.
 
+#+findex: tlon-uqbar-front-get-message
++ ~tlon-uqbar-front-get-message~ :: Returns a value from the Uqbar front
+  messages JSON files, given a language code (e.g., "es"), an outer key
+  (e.g., "HomePage"), and an inner key (e.g., "title").
 ** Org Mode Integration
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-core-org
