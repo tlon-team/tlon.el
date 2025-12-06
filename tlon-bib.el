@@ -761,8 +761,8 @@ LANG is the two-letter language code derived from the entry's `langid' field."
   "Populate the `url' field for all entries in the language at point.
 Determine LANG from the current entry's `langid', collect all article files in
 the corresponding site directory, read their `key' from YAML front matter, and
-for each matching BibTeX entry with a missing/empty `url', call
-`tlon-bib-populate-url-field'."
+for each matching BibTeX entry, if `url` is missing/empty, populate it; otherwise
+prompt to confirm overwriting and regenerate via `tlon-bib-populate-url-field'."
   (interactive)
   (tlon-ensure-bib)
   (cl-destructuring-bind (get-field _set-field)
@@ -792,7 +792,15 @@ for each matching BibTeX entry with a missing/empty `url', call
 	      (bibtex-narrow-to-entry)
 	      (let ((url (bibtex-extras-get-field "url")))
 		(if (and url (not (string-empty-p (string-trim url))))
-		    (cl-incf skipped)
+		    (if (y-or-n-p (format "Entry %s already has a url. Overwrite? " key))
+			(progn
+			  ;; remove existing url field to avoid double prompt downstream
+			  (when-let ((url-bounds (bibtex-search-forward-field "url" t)))
+			    (goto-char (bibtex-start-of-name-in-field url-bounds))
+			    (bibtex-kill-field nil t))
+			  (tlon-bib-populate-url-field)
+			  (cl-incf updated))
+		      (cl-incf skipped))
 		  (tlon-bib-populate-url-field)
 		  (cl-incf updated)))
 	      (widen)
