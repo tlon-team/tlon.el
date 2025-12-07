@@ -759,6 +759,7 @@ See <https://help.openai.com/en/articles/8555505-tts-api#h_273e638099>.")
 	   :stability 0.45 :similarity_boost 0.80 :style 0 :use_speaker_boost t :speed 1)
     (:name "Victoria" :id "lm0dJr2LmYD4zn0kFH9E" :language "multilingual" :gender "female" :role "main")
     (:name "Antonio Farina" :id "uScy1bXtKz8vPzfdFsFw" :language "multilingual" :gender "male")
+    (:name "Sam" :id "HmCe1ONH6vWxNYuZpe8K" :language "multilingual" :gender "neutral")
     (:name "Nicola Lorusso" :id "sKbNSlHXq99bttvf8rRF" :language "multilingual" :gender "male"))
   "Preferred ElevenLabs voices for different languages.
 A list of available voices may be found here:
