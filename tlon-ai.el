@@ -135,10 +135,6 @@ use the default `gptel-model'."
   "`gptel' failed with message: %s"
   "Error message to display when `gptel-quick' fails.")
 
-(defconst tlon-ai-changelog-file
-  (file-name-concat paths-dir-dotemacs "extras/gptel-extras-changelog-template.org")
-  "The file with the changelog template for `tlon-ai-summarize-commit-diffs'.")
-
 ;;;;; Language detection
 
 (defconst tlon-ai-detect-language-common-prompts
@@ -1994,7 +1990,7 @@ INCLUDE-STATS is non-nil (with prefix arg), include diffstats in the prompt."
                             tlon-ai-summarize-commit-diffs-prompt)
                     commit-diffs
                     (with-temp-buffer
-                      (insert-file-contents tlon-ai-changelog-file)
+                      (insert-file-contents gptel-extras-changelog-file)
                       (buffer-string)))))
       (tlon-make-gptel-request prompt nil (tlon-ai-summarize-commit-diffs-callback commits)
                                tlon-ai-summarize-commit-diffs-model t))))
