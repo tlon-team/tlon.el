@@ -829,7 +829,7 @@ If the field is already set, prompt before overwriting."
 	   (_ (unless lang-name (user-error "Entry has no langid field")))
 	   (lang (tlon-lookup tlon-languages-properties :code :name lang-name))
 	   (_ (unless lang (user-error "Could not determine language code for %s" lang-name)))
-	   (jt (tlon-uqbar-front-get-message lang "HomePage" "Title"))
+	   (jt (tlon-uqbar-front-get-message lang "HomePage" "title"))
 	   (_ (unless (and jt (not (string-empty-p jt)))
 		(user-error "Could not determine journaltitle for language %s" lang)))
 	   (repo-dir (tlon-repo-lookup :dir :subproject "uqbar" :language lang))
