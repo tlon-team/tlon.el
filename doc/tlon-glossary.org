@@ -168,7 +168,10 @@ Notes:
 
 - For missing source terms, the command asks whether to create a new entry. If
   you accept, it prompts for the term type and creates the entry before setting
-  the target translation; if you decline, the term is reported as missing.
+  the target translation; if you decline, the term is reported as missing. At
+  any prompt you can choose an option to create all future missing terms
+  automatically; if you do, all new terms will be added as =variable= without
+  further confirmation, and a warning will be shown.
 - Input is normalized for line endings and BOM. Empty or malformed lines are
   ignored.
 
