@@ -524,7 +524,8 @@ and paste the contents into a file."
          (glossary (tlon-parse-glossary))
          (tgt-key (intern tgt))
          (updated 0)
-         (missing '()))
+         (missing '())
+         (auto-create nil))
     (dolist (p pairs)
       (let* ((src-term (car p))
              (translation (cdr p))
@@ -533,20 +534,39 @@ and paste the contents into a file."
             (progn
               (tlon-ai--update-glossary-entry entry tgt-key translation)
               (cl-incf updated))
-          (if (y-or-n-p (format "No entry for \"%s\" in %s. Create it? " src-term (upcase src)))
-              (let* ((type (tlon-select-term-type))
-                     (new-entry (tlon-create-entry src-term type src)))
-                (tlon-ai--update-glossary-entry new-entry tgt-key translation)
-                (setq glossary (tlon-update-glossary glossary new-entry src-term src))
-                (cl-incf updated))
-            (push src-term missing)))))
-    (tlon-write-data tlon-file-glossary-source glossary)
-    (message "Imported %d translation(s) for %s→%s. Missing: %d"
-             updated (upcase src) (upcase tgt) (length missing))
-    (when missing
-      (message "No matching entries for: %s"
-               (mapconcat #'identity (nreverse missing) ", ")))
-    glossary))
+          (cond
+           (auto-create
+            (let* ((new-entry (tlon-create-entry src-term "variable" src)))
+              (tlon-ai--update-glossary-entry new-entry tgt-key translation)
+              (setq glossary (tlon-update-glossary glossary new-entry src-term src))
+              (cl-incf updated)))
+           (t
+            (let* ((choice (read-char-choice
+                            (format "No entry for \"%s\" in %s. Create it? [y]es, [n]o, [a]lways-as-variable "
+                                    src-term (upcase src))
+                            '(?y ?n ?a))))
+              (pcase choice
+                (?y
+                 (let* ((type (tlon-select-term-type))
+                        (new-entry (tlon-create-entry src-term type src)))
+                   (tlon-ai--update-glossary-entry new-entry tgt-key translation)
+                   (setq glossary (tlon-update-glossary glossary new-entry src-term src))
+                   (cl-incf updated)))
+                (?a
+                 (setq auto-create t)
+                 (let* ((new-entry (tlon-create-entry src-term "variable" src)))
+                   (tlon-ai--update-glossary-entry new-entry tgt-key translation)
+                   (setq glossary (tlon-update-glossary glossary new-entry src-term src))
+                   (cl-incf updated)))
+                (_
+                 (push src-term missing))))))))
+      (tlon-write-data tlon-file-glossary-source glossary)
+      (message "Imported %d translation(s) for %s→%s. Missing: %d"
+               updated (upcase src) (upcase tgt) (length missing))
+      (when missing
+	(message "No matching entries for: %s"
+		 (mapconcat #'identity (nreverse missing) ", ")))
+      glossary)))
 
 (defun tlon--glossary-parse-tsv (file)
   "Parse TSV FILE and return a list (SRC TGT PAIRS).
