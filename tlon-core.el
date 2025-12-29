@@ -237,6 +237,16 @@
 	   :key "q u"
 	   :url "https://efektifaltruizm.org"
 	   :help t)
+    (:name "uqbar-zh"
+	   :project "babel"
+	   :subproject "uqbar"
+	   :abbrev "uqbar-zh"
+	   :type content
+	   :subtype translations
+	   :language "zh"
+	   :key "q z"
+	   :url ""
+	   :help t)
     (:name "web-server"
 	   :project "tlon"
 	   :abbrev "web-server"
@@ -660,6 +670,7 @@ the actual user.")
 
 ;;;;; Bare directory translations
 
+;; TODO: probably this info should be obtained via `tlon-uqbar-front-get-message'
 (defconst tlon-core-bare-dirs
   '((("ar" . "مجلات")
      ("en" . "articles")
@@ -669,7 +680,8 @@ the actual user.")
      ("ja" . "記事")
      ("ko" . "기사")
      ("ru" . "статьи")
-     ("tr" . "makaleler"))
+     ("tr" . "makaleler")
+     ("zh" . "文章"))
     (("ar" . "الأوسمة")
      ("en" . "tags")
      ("es" . "temas")
@@ -678,7 +690,8 @@ the actual user.")
      ("ja" . "タグ")
      ("ko" . "태그")
      ("ru" . "теги")
-     ("tr" . "etiketler"))
+     ("tr" . "etiketler")
+     ("zh" . "标签"))
     (("ar" . "المؤلفون")
      ("en" . "authors")
      ("es" . "autores")
@@ -687,7 +700,8 @@ the actual user.")
      ("ja" . "著者")
      ("ko" . "저자")
      ("ru" . "авторы")
-     ("tr" . "yazarlar"))
+     ("tr" . "yazarlar")
+     ("zh" . "作者"))
     (("ar" . "مجموعات")
      ("en" . "collections")
      ("es" . "colecciones")
@@ -696,7 +710,8 @@ the actual user.")
      ("ja" . "コレクション")
      ("ko" . "컬렉션")
      ("ru" . "коллекции")
-     ("tr" . "koleksiyonlar")))
+     ("tr" . "koleksiyonlar")
+     ("zh" . "合集")))
   "Alist of bare directories and associated translations.")
 
 ;;;;; Languages
