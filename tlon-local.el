@@ -130,7 +130,7 @@ Steps:
 - uqbar: ./launch.py start LANG (or stop+start if already running and confirmed)
 At the end, open the local site in the default browser."
   (interactive)
-  (let* ((lang (or lang (tlon-select-language 'code t "Language: " t)))
+  (let* ((lang (or lang (tlon-select-language 'code t "Language: " 'require-match)))
          (ws-dir (tlon-repo-lookup :dir :name "web-server"))
          (uq-dir (tlon-repo-lookup :dir :name "uqbar")))
     (unless (and ws-dir (file-directory-p ws-dir))
@@ -266,7 +266,7 @@ Skip env in LANG. Return the updated commands."
   "Show recent Uqbar logs for LANG from the latest content build.
 If LANG is nil, prompt for a language."
   (interactive)
-  (let ((lang (or lang (tlon-select-language 'code t "Language: " t))))
+  (let ((lang (or lang (tlon-select-language 'code t "Language: " 'require-match))))
     (tlon-local--logs-all lang)))
 
 ;;;###autoload
@@ -323,7 +323,7 @@ response."
 
 (defun tlon-local--logs-all (lang)
   "Fetch and render errors, warnings, informational and frontend logs for LANG."
-  (let ((lang (or lang (tlon-select-language 'code t "Language: " t))))
+  (let ((lang (or lang (tlon-select-language 'code t "Language: " 'require-match))))
     (tlon-local--get-latest-build-label
      lang
      (lambda (label)
@@ -394,7 +394,7 @@ content_build label identifier."
 
 (defun tlon-local--logs (lang kind)
   "Fetch and render logs for LANG. KIND is `errors' or `warnings'."
-  (let ((lang (or lang (tlon-select-language 'code t "Language: " t))))
+  (let ((lang (or lang (tlon-select-language 'code t "Language: " 'require-match))))
     (tlon-local--get-latest-build-label
      lang
      (lambda (label)
