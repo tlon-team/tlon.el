@@ -2303,7 +2303,12 @@ The command:
 	 (effort-h    (and (string-match-p "\\S-" effort-str)
 			   (string-to-number effort-str)))
 	 (assignee    (tlon-select-assignee "Assignee: ")))
+    (unless repo-dir
+      (user-error "Could not determine repository directory"))
+    (unless (and forge-repo (object-p forge-repo))
+      (user-error "No tracked Forge repository found for %s" repo-dir))
     (let* ((new-num (tlon-create-issue title repo-dir nil :markdown)))
+      ;; Ensure local DB sees new issue + subsequent remote changes (assignee/labels).
       (tlon-forg--pull-sync forge-repo)
       (let* ((issue (tlon-forg--wait-for-issue new-num repo-dir forge-repo)))
 	(tlon-set-assignee assignee issue)
@@ -2313,15 +2318,27 @@ The command:
 	    (tlon-forg--set-github-project-estimate issue effort-h)))
 	(cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
 	  (tlon-forg--set-github-project-status issue status))
+	;; Refresh Forge DB so `issue' reflects the assignee/labels changes, and so
+	;; Org capture can reliably locate and link the topic.
+	(tlon-forg--pull-sync forge-repo)
+	(setq issue (tlon-forg--wait-for-issue new-num repo-dir forge-repo))
 	;; The assignee has been set on the remote, but the local `issue' object
-	;; may be stale (unassigned). We let-bind `tlon-when-assignee-is-nil'
-	;; to 'capture so that `tlon-capture-handle-assignee' proceeds anyway
-	;; instead of bailing out.
-	(let ((tlon-when-assignee-is-nil 'capture))
+	;; may still be stale. We let-bind `tlon-when-assignee-is-nil' and
+	;; `tlon-when-assignee-is-someone-else' so capture always proceeds.
+	(let ((tlon-when-assignee-is-nil 'capture)
+	      (tlon-when-assignee-is-someone-else 'capture))
 	  (tlon-capture-issue issue nil status))
+	;; After capture, locate the TODO by orgit id. Newer Org versions can
+	;; sometimes defer writes; force a save and retry once.
+	(unless (tlon-get-todo-position-from-issue issue)
+	  (when-let ((cap-buf (org-capture-get :buffer)))
+	    (with-current-buffer cap-buf
+	      (when (buffer-file-name)
+		(save-buffer))))
+	  (tlon-forg--pull-sync forge-repo))
 	(when-let ((pf (tlon-get-todo-position-from-issue issue)))
 	  (tlon-visit-todo pf)
-	  (org-todo status) ; Ensures Org state is correct
+	  (org-todo status)
 	  (when effort-h
 	    (tlon-forg--set-org-effort effort-h))
 	  (tlon-visit-counterpart)
