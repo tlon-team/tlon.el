@@ -197,7 +197,7 @@ Returns the translated text as a string, or nil if skipped."
   (interactive)
   (if (eq no-glossary 'skip)
       nil
-    (let* ((source-lang (or source-lang (tlon-select-language 'code 'babel "Source language: " t)))
+    (let* ((source-lang (or source-lang (tlon-select-language 'code 'babel "Source language: " 'require-match)))
 	   (excluded-lang (list (tlon-lookup tlon-languages-properties :standard :code source-lang)))
 	   (target-lang (or target-lang (tlon-select-language 'code 'babel "Target language: "
 							      'require-match nil nil excluded-lang)))

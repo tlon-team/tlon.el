@@ -197,7 +197,7 @@ Returns the translated text as a string, or nil if skipped."
   (interactive)
   (if (eq no-glossary 'skip)
       nil
-    (let* ((source-lang (or source-lang (tlon-select-language 'code 'babel "Source language: " t)))
+    (let* ((source-lang (or source-lang (tlon-select-language 'code 'babel "Source language: " 'require-match)))
 	   (excluded-lang (list (tlon-lookup tlon-languages-properties :standard :code source-lang)))
 	   (target-lang (or target-lang (tlon-select-language 'code 'babel "Target language: "
 							      'require-match nil nil excluded-lang)))
@@ -1101,7 +1101,7 @@ TYPE can be `errors' or `flow'."
     (unless (tlon-paragraph-files-are-aligned-p translation-file original-file)
       (user-error "Files have different paragraph counts; align them first with `tlon-paragraphs-align-with-ai'"))
     (let* ((lang-code (or (tlon-get-language-in-file translation-file)
-                          (tlon-select-language 'code 'babel "Language of translation file: " t)))
+                          (tlon-select-language 'code 'babel "Language of translation file: " 'require-match)))
            (language (or (tlon-lookup tlon-languages-properties :standard :code lang-code)
                          lang-code))
            (model (pcase type
