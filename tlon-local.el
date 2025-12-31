@@ -106,9 +106,10 @@ content build label."
   :group 'tlon-local)
 
 (defcustom tlon-local-logs-frontend-errors-filter
-  "| json | level =~ \"(ERROR|CRITICAL)\" |= \"Next.js\""
+  "| json | level = \"error\""
   "LogQL pipeline appended after the selector to select frontend (NextJS) errors.
-Adjust this if your log schema differs."
+This string is concatenated to the selector that already scopes to the current
+content build label."
   :type 'string
   :group 'tlon-local)
 

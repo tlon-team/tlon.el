@@ -66,6 +66,8 @@ These variables control defaults and behavior of the local environment and logs.
 #+vindex: tlon-local-logs-frontend-errors-filter
 + ~tlon-local-logs-frontend-errors-filter~ :: LogQL pipeline appended after the
   selector to select Frontend (NextJS) error logs for the current build label.
+  This must match the dashboard's query (e.g., some front-end logs use
+  ~level = "error"~).
 
 #+vindex: tlon-local-rebuild-content-database
 + ~tlon-local-rebuild-content-database~ :: When non-nil, pass
