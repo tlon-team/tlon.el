@@ -1,11 +1,12 @@
 ;;; tlon-bib-test.el --- Tests for tlon-bib -*- lexical-binding: t -*-
 
+;;; Code:
+
 (require 'ert)
 (require 'tlon-bib)
 
 (ert-deftest tlon-bib-populate-url-field-slugifies-unicode-punctuation ()
   "Ensure `tlon-bib-populate-url-field' generates URLs with clean slugs.
-
 This is a regression test for titles containing non-ASCII punctuation (e.g.,
 Japanese brackets \"【】\" and fullwidth colon \"：\"), which should not appear
 verbatim in the generated URL slug."
@@ -23,9 +24,13 @@ verbatim in the generated URL slug."
                      (`(:code (:name "japanese")) "ja")
                      (_ nil)))
                   ;; Resolve bare dir path for articles.
+                  ;;
+                  ;; In `tlon-bib-populate-url-field' this is called as:
+                  ;;   (tlon-lookup tlon-core-bare-dirs lang "en" "articles")
+                  ;; so KEY is the language code and PAIRS is ("en" "articles").
                   ((eq list tlon-core-bare-dirs)
                    (pcase (list key pairs)
-                     (`(nil (:code "ja" :en "en" :articles "articles")) "記事")
+                     (`("ja" ("en" "articles")) "記事")
                      (_ nil)))
                   (t nil))))
               ((symbol-function 'tlon-repo-lookup)
