@@ -211,53 +211,25 @@ Skip env in LANG. Return the updated commands."
 
 ;;;; Language-specific commands
 
-;;;###autoload
-(defun tlon-local-run-uqbar-ar ()
-  "Run the local web server and the Uqbar environment for Arabic."
-  (interactive)
-  (tlon-local-run-uqbar "ar"))
+(defun tlon-local--generate-language-commands ()
+  "Generate language-specific `tlon-local-run-uqbar-<code>' commands.
+The commands are generated from `tlon-project-languages'. For each language, we
+define an interactive command named `tlon-local-run-uqbar-<code>' that calls
+`tlon-local-run-uqbar' with the corresponding ISO 639-1 code."
+  (dolist (language tlon-project-languages)
+    (let* ((code (tlon-lookup tlon-languages-properties :code :name language))
+           (fn (intern (format "tlon-local-run-uqbar-%s" code)))
+           (doc (format "Run the local web server and the Uqbar environment for %s."
+                        (capitalize language))))
+      (when (and code (not (fboundp fn)))
+        (fset fn
+              `(lambda ()
+                 ,doc
+                 (interactive)
+                 (tlon-local-run-uqbar ,code)))
+        (autoload fn "tlon-local" doc t)))))
 
-;;;###autoload
-(defun tlon-local-run-uqbar-en ()
-  "Run the local web server and the Uqbar environment for English."
-  (interactive)
-  (tlon-local-run-uqbar "en"))
-
-;;;###autoload
-(defun tlon-local-run-uqbar-es ()
-  "Run the local web server and the Uqbar environment for Spanish."
-  (interactive)
-  (tlon-local-run-uqbar "es"))
-
-;;;###autoload
-(defun tlon-local-run-uqbar-fr ()
-  "Run the local web server and the Uqbar environment for French."
-  (interactive)
-  (tlon-local-run-uqbar "fr"))
-
-;;;###autoload
-(defun tlon-local-run-uqbar-it ()
-  "Run the local web server and the Uqbar environment for Italian."
-  (interactive)
-  (tlon-local-run-uqbar "it"))
-
-;;;###autoload
-(defun tlon-local-run-uqbar-ja ()
-  "Run the local web server and the Uqbar environment for Japanese."
-  (interactive)
-  (tlon-local-run-uqbar "ja"))
-
-;;;###autoload
-(defun tlon-local-run-uqbar-ko ()
-  "Run the local web server and the Uqbar environment for Korean."
-  (interactive)
-  (tlon-local-run-uqbar "ko"))
-
-;;;###autoload
-(defun tlon-local-run-uqbar-tr ()
-  "Run the local web server and the Uqbar environment for Turkish."
-  (interactive)
-  (tlon-local-run-uqbar "tr"))
+(tlon-local--generate-language-commands)
 
 ;;;; Logs
 
