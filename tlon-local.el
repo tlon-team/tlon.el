@@ -744,6 +744,7 @@ Returns a string like \"https://local-dev.example.org\" or nil if unknown."
     ("q t" "italian"                       tlon-local-run-uqbar-it)
     ("q j" "japanese"                      tlon-local-run-uqbar-ja)
     ("q k" "korean"                        tlon-local-run-uqbar-ko)
+    ("q b" "serbian"                       tlon-local-run-uqbar-sr)
     ("q u" "turkish"                       tlon-local-run-uqbar-tr)
     ""
     "Options"
