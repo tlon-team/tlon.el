@@ -227,6 +227,15 @@
 	   :language "ru"
 	   :key "q u"
 	   :help t)
+    (:name "uqbar-sr"
+	   :project "babel"
+	   :subproject "uqbar"
+	   :abbrev "uqbar-sr"
+	   :type content
+	   :subtype translations
+	   :language "sr"
+	   :key "q b"
+	   :help t)
     (:name "uqbar-tr"
 	   :project "babel"
 	   :subproject "uqbar"
