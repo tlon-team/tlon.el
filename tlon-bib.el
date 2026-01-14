@@ -761,8 +761,9 @@ LANG is the two-letter language code derived from the entry's `langid' field."
   "Populate the `url' field for all entries in the language at point.
 Determine LANG from the current entry's `langid', collect all article files in
 the corresponding site directory, read their `key' from YAML front matter, and
-for each matching BibTeX entry, if `url` is missing/empty, populate it; otherwise
-prompt to confirm overwriting and regenerate via `tlon-bib-populate-url-field'."
+for each matching BibTeX entry, populate the `url` field if missing or empty.
+If the field is present, prompt to confirm overwriting and regenerate it via
+`tlon-bib-populate-url-field'."
   (interactive)
   (tlon-ensure-bib)
   (cl-destructuring-bind (get-field _set-field)
@@ -817,6 +818,7 @@ prompt to confirm overwriting and regenerate via `tlon-bib-populate-url-field'."
       (message "Populate URLs (%s): %d updated, %d skipped (had url), %d not found"
 	       lang updated skipped missing))))
 
+(declare-function ebib--cur-db "ebib-utils")
 ;;;###autoload
 (defun tlon-bib-populate-journaltitle-fields-in-language ()
   "Populate the `journaltitle' field for all entries in the language at point.
@@ -886,7 +888,7 @@ If the field is already set, prompt before overwriting."
 		    (ebib-extras-set-field "journaltitle" jt)
 		    (cl-incf updated)))
 		(when (fboundp 'ebib-save-current-database)
-		  (ignore-errors (ebib-save-current-database))))
+		  (ignore-errors (ebib-save-current-database (ebib--cur-db)))))
 	       (t
 		(user-error "Unsupported mode: %s" major-mode))))
 	  (error
@@ -1237,13 +1239,15 @@ region is selected, check only the region."
 ;;;;;; Translations
 
 (defun tlon-read-abstract-translations (&optional code-or-language)
-  "Read per-language JSON abstract translations for CODE-OR-LANGUAGE as an alist (KEY . TEXT).
-Accepts either a two-letter CODE (e.g., \"es\") or a standard language name (e.g., \"spanish\")."
+  "Read abstract translations for CODE-OR-LANGUAGE as an alist (KEY . TEXT).
+CODE-OR-LANGUAGE may be a two-letter code (e.g., \"es\") or a standard language
+name (e.g., \"spanish\")."
   (tlon-read-json (tlon-bib--abstracts-file code-or-language) 'alist 'list 'string))
 
 (defun tlon-write-abstract-translations (data &optional code-or-language)
-  "Write DATA (alist of (KEY . TEXT)) to the per-language JSON store for CODE-OR-LANGUAGE.
-Accepts either a two-letter CODE (e.g., \"es\") or a standard language name (e.g., \"spanish\")."
+  "Write DATA (alist of (KEY . TEXT)) to the store for CODE-OR-LANGUAGE.
+CODE-OR-LANGUAGE may be a two-letter code (e.g., \"es\") or a standard language
+name (e.g., \"spanish\")."
   (let* ((file (tlon-bib--abstracts-file code-or-language))
          (dir  (file-name-directory file)))
     (when (and (stringp dir) (not (file-directory-p dir)))
