@@ -2305,7 +2305,7 @@ The command:
 	 (assignee    (tlon-select-assignee "Assignee: ")))
     (unless repo-dir
       (user-error "Could not determine repository directory"))
-    (unless (and forge-repo (object-p forge-repo))
+    (unless (and forge-repo (eieio-object-p forge-repo))
       (user-error "No tracked Forge repository found for %s" repo-dir))
     (let* ((new-num (tlon-create-issue title repo-dir nil :markdown)))
       ;; Ensure local DB sees new issue + subsequent remote changes (assignee/labels).

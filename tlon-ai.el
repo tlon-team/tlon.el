@@ -2211,9 +2211,9 @@ If nil, use the default model."
     ("w -p" "Proofread reference article" tlon-ai-infix-select-proofread-reference-article-model)
     ("a -a" "Help model" tlon-ai-infix-select-help-model)]])
 
+(autoload 'gptel-mcp-connect "gptel-integrations")
 (defun tlon--ensure-mcp-servers (servers)
   "Ensure SERVERS are connected through MCP before a gptel request.
-
 SERVERS is a list of server names (strings).  Errors are ignored so a
 missing or failing server never aborts the main request."
   (when (and servers (require 'gptel-integrations nil t))
