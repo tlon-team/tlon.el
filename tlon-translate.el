@@ -971,35 +971,50 @@ FILE is the absolute path to a file potentially modified by THUNK."
 For each DB translation entry, delete the corresponding original KEY from the
 per-language JSON file for that entry's language."
   (interactive)
-  (let* ((db-keys (tlon-bib-get-keys-in-file tlon-file-db))
-         (removed 0)
-         (total (length db-keys))
-         (processed 0)
-         (progress-interval (max 1 (ceiling (/ (float total) 10)))))
-    (tlon-translate--log "Scanning %d DB entr%s for duplicate abstract translations..."
-                         total (if (= total 1) "y" "ies"))
-    (dolist (tkey db-keys)
-      (setq processed (1+ processed))
-      (let* ((orig (tlon-bibliography-lookup "=key=" tkey "translation"))
-             (lang-name (tlon-bibliography-lookup "=key=" tkey "langid"))
-             (lang-code (and (stringp lang-name)
-                             (tlon-lookup tlon-languages-properties :code :name lang-name))))
-        (when (and (stringp orig) (not (string-blank-p orig))
-                   (stringp lang-code) (not (string-blank-p lang-code)))
-          (let* ((store (tlon-read-abstract-translations lang-code))
-                 (newstore (assoc-delete-all orig store)))
-            (when (< (length newstore) (length store))
-              (cl-incf removed)
-              (tlon-write-abstract-translations newstore lang-code)))))
-      (when (or (= processed total)
-                (zerop (mod processed progress-interval)))
-        (tlon-translate--log "Progress: %d/%d processed; removed %d duplicate%s"
-                             processed total
-                             removed (if (= removed 1) "" "s"))))
-    (if (> removed 0)
-        (tlon-translate--log "Removed %d per-language JSON translation%s"
-                             removed (if (= removed 1) "" "s"))
-      (tlon-translate--log "No duplicate per-language JSON translations found to remove"))))
+  (let ((buf (find-file-noselect tlon-file-db))
+        (lang->orig-keys (make-hash-table :test #'equal))
+        (langs 0)
+        (total-removals 0))
+    ;; Build lang → originals-to-remove map by parsing db.bib once.
+    (with-current-buffer buf
+      (save-excursion
+        (save-restriction
+          (widen)
+          (goto-char (point-min))
+          (bibtex-map-entries
+           (lambda (_key beg _end)
+             (goto-char beg)
+             (let* ((entry (bibtex-parse-entry t))
+                    (orig (cdr (assoc-string "translation" entry t)))
+                    (lang-name (cdr (assoc-string "langid" entry t)))
+                    (lang-code (and (stringp lang-name)
+                                    (tlon-lookup tlon-languages-properties :code :name lang-name))))
+               (when (and (stringp orig) (not (string-blank-p orig))
+                          (stringp lang-code) (not (string-blank-p lang-code)))
+                 (puthash lang-code
+                          (cons orig (gethash lang-code lang->orig-keys))
+                          lang->orig-keys))))))))
+    (if (zerop (hash-table-count lang->orig-keys))
+        (tlon-translate--log "No DB translation entries found; nothing to prune from JSON stores")
+      (maphash
+       (lambda (lang-code origs)
+         (setq langs (1+ langs))
+         (let* ((unique-origs (delete-dups origs))
+                (store (tlon-read-abstract-translations lang-code))
+                (before (length store))
+                (newstore store))
+           (dolist (orig unique-origs)
+             (setq newstore (assoc-delete-all orig newstore)))
+           (let ((removed (- before (length newstore))))
+             (when (> removed 0)
+               (cl-incf total-removals removed)
+               (tlon-write-abstract-translations newstore lang-code))
+             (tlon-translate--log "Pruned %d item%s for %s"
+                                  removed (if (= removed 1) "" "s") lang-code))))
+       lang->orig-keys)
+      (tlon-translate--log "Removed %d JSON abstract translation%s across %d language%s"
+                           total-removals (if (= total-removals 1) "" "s")
+                           langs (if (= langs 1) "" "s")))))
 
 ;;;;; Revision
 
