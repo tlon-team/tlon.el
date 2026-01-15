@@ -987,7 +987,7 @@ per-language JSON file for that entry's language."
         (when (and (stringp orig) (not (string-blank-p orig))
                    (stringp lang-code) (not (string-blank-p lang-code)))
           (let* ((store (tlon-read-abstract-translations lang-code))
-                 (newstore (assq-delete-all orig store)))
+                 (newstore (assoc-delete-all orig store)))
             (when (< (length newstore) (length store))
               (cl-incf removed)
               (tlon-write-abstract-translations newstore lang-code)))))
