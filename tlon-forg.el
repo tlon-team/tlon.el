@@ -1543,29 +1543,32 @@ Uses functions from `forge-extras.el` for GitHub Project interactions."
 	   (org-todo-keyword  (plist-get org-info :todo))
 	   (issue-number      (oref issue number))
 	   (repo-name         (oref repo name))
-	   (gh-fields         (ignore-errors
+	   (gh-fields         (condition-case err
 				(forge-extras-gh-parse-issue-fields
 				 (forge-extras-gh-get-issue-fields
-				  issue-number repo-name))))
+				  issue-number repo-name))
+			      (error
+			       (tlon-message-debug
+				"Cannot retrieve project data for issue #%s: %s"
+				issue-number (error-message-string err))
+			       nil)))
 	   (issue-node-id     (plist-get gh-fields :issue-node-id))
 	   (project-item-id   (plist-get gh-fields :project-item-id))
 	   (current-title     (oref issue title))
 	   (current-labels    (sort (copy-sequence
 				     (tlon-forg-get-labels issue)) #'string<))
 	   (current-status    (plist-get gh-fields :status)))
-      (unless issue-node-id
-	(user-error "Cannot retrieve project data for issue #%s" issue-number))
-      ;; 1. title
+      ;; 1. title (always possible via Forge, regardless of project membership)
       (unless (string= org-title current-title)
 	(tlon-message-debug "Updating issue title from '%s' to '%s'" current-title org-title)
 	(forge--set-topic-title repo issue (tlon-forg-org->md org-title)))
-      ;; 2. labels
+      ;; 2. labels (always possible via Forge, regardless of project membership)
       (let ((wanted-labels (sort (copy-sequence org-tags) #'string<)))
 	(unless (equal wanted-labels current-labels)
 	  (tlon-message-debug "Updating issue labels from %s to %s"
 			      current-labels wanted-labels)
 	  (forge--set-topic-labels repo issue wanted-labels)))
-      ;; 3. project status
+      ;; 3. project status (requires project data; do not abort if unavailable)
       (when org-todo-keyword
 	(let* ((target-status (car (cl-rassoc org-todo-keyword tlon-todo-statuses
 					      :test #'string=))))
@@ -1573,32 +1576,39 @@ Uses functions from `forge-extras.el` for GitHub Project interactions."
 	   ((null target-status)
 	    (tlon-message-debug "TODO keyword '%s' not mapped to a project status; skipping"
 				org-todo-keyword))
+	   ((null gh-fields)
+	    (tlon-message-debug
+	     "Skipping project status update for issue #%s (cannot retrieve project data)"
+	     issue-number))
 	   ((string= target-status current-status) nil)   ; already in sync
 	   (t
 	    (let* ((option-id (cdr (assoc target-status
 					  forge-extras-status-option-ids-alist
 					  #'string-equal)))) ; Use case-insensitive comparison
-	      (if option-id
-		  ;; Option ID found, proceed with update
-		  (if project-item-id
-		      ;; already in project → just update status
+	      (cond
+	       ((null option-id)
+		(tlon-message-debug
+		 "Cannot find option id for status '%s'; skipping update of project status."
+		 target-status))
+	       (project-item-id
+		(forge-extras-gh-update-project-item-status-field
+		 forge-extras-project-node-id project-item-id
+		 forge-extras-status-field-node-id option-id))
+	       (issue-node-id
+		(when (y-or-n-p
+		       (format "Issue #%s is not in Project %s.  Add it and set status to '%s'? "
+			       issue-number forge-extras-project-number target-status))
+		  (let ((new-item-id
+			 (forge-extras-gh-add-issue-to-project
+			  forge-extras-project-node-id issue-node-id)))
+		    (when new-item-id
 		      (forge-extras-gh-update-project-item-status-field
-		       forge-extras-project-node-id project-item-id
-		       forge-extras-status-field-node-id option-id)
-		    ;; not in project → ask to add & then set status
-		    (when (y-or-n-p
-			   (format "Issue #%s is not in Project %s.  Add it and set status to '%s'? "
-				   issue-number forge-extras-project-number target-status))
-		      (let ((new-item-id
-			     (forge-extras-gh-add-issue-to-project
-			      forge-extras-project-node-id issue-node-id)))
-			(when new-item-id
-			  (forge-extras-gh-update-project-item-status-field
-			   forge-extras-project-node-id new-item-id
-			   forge-extras-status-field-node-id option-id)))))
-		;; Option ID not found
-		(tlon-message-debug "Cannot find option id for status '%s'; skipping update of project status."
-				    target-status)))))))
+		       forge-extras-project-node-id new-item-id
+		       forge-extras-status-field-node-id option-id)))))
+	       (t
+		(tlon-message-debug
+		 "Skipping project status update for issue #%s (missing issue node id)"
+		 issue-number))))))))
       (message "Issue “%s” (#%s) updated successfully." org-title issue-number))))
 
 ;;;;; Files
