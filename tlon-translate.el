@@ -1611,7 +1611,8 @@ If nil, use the default model."
     ("t t" "Translate text" tlon-translate-text)
     ("t f" "Translate file" tlon-translate-file)
     ("t a" "Translate current abstract" tlon-translate-abstract-here)
-    ("t A" "Translate missing abstracts" tlon-translate-missing-abstracts)
+    ("t m" "Translate missing abstracts" tlon-translate-missing-abstracts)
+    ("t M" "Translate all missing abstracts" tlon-translate-missing-abstracts-all-languages)
     ("t d" "Remove duplicate abstracts" tlon-translate-remove-duplicate-abstract-translations)
     ""
     "Options"
