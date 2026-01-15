@@ -478,23 +478,14 @@ consider for case (II). When nil, prompts the user."
 
 ;;;###autoload
 (defun tlon-translate-missing-abstracts-all-languages ()
-  "Translate all missing abstracts into all known languages.
+  "Translate all missing abstracts into all project target languages.
 This runs both the internal DB pass and the external JSON-store pass, but
-avoids prompting by supplying every language in `tlon-languages-properties'
-as a target."
+avoids prompting by supplying `tlon-project-target-languages' as targets."
   (interactive)
   (cl-letf (((symbol-function 'kill-new) (lambda (&rest _args) nil))
             ((symbol-function 'kill-append) (lambda (&rest _args) nil)))
     (tlon-translate--internal-abstracts)
-    (tlon-translate--external-abstracts (tlon-translate--all-language-names))))
-
-(defun tlon-translate--all-language-names ()
-  "Return all language names present in `tlon-languages-properties'."
-  (delete-dups
-   (delq nil
-         (mapcar (lambda (cell)
-                   (plist-get (cdr cell) :standard))
-                 tlon-languages-properties))))
+    (tlon-translate--external-abstracts tlon-project-target-languages)))
 
 ;;;###autoload
 (defun tlon-translate-abstract-here ()
