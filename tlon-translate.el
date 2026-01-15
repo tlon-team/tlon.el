@@ -968,50 +968,53 @@ FILE is the absolute path to a file potentially modified by THUNK."
 ;;;###autoload
 (defun tlon-translate-remove-duplicate-abstract-translations ()
   "Remove JSON abstract entries where a DB translation exists, per language.
-For each DB translation entry, delete the corresponding original KEY from the
-per-language JSON file for that entry's language."
+For each DB translation entry, delete the corresponding translation entry KEY
+from the per-language JSON file for that entry's language."
   (interactive)
   (let ((buf (find-file-noselect tlon-file-db))
-        (lang->orig-keys (make-hash-table :test #'equal))
+        (lang->translation-keys (make-hash-table :test #'equal))
         (langs 0)
         (total-removals 0))
-    ;; Build lang → originals-to-remove map by parsing db.bib once.
+    ;; Build lang → translation-keys-to-remove map by parsing db.bib once.
     (with-current-buffer buf
       (save-excursion
         (save-restriction
           (widen)
           (goto-char (point-min))
           (bibtex-map-entries
-           (lambda (_key beg _end)
+           (lambda (key beg _end)
              (goto-char beg)
              (let* ((entry (bibtex-parse-entry t))
                     (orig (cdr (assoc-string "translation" entry t)))
                     (lang-name (cdr (assoc-string "langid" entry t)))
                     (lang-code (and (stringp lang-name)
                                     (tlon-lookup tlon-languages-properties :code :name lang-name))))
+               ;; We only prune JSON when the DB entry is a translation entry.
+               ;; JSON duplicate keys use the translation entry key (e.g., Foo2020BarEs),
+               ;; not the original key stored in the `translation' field.
                (when (and (stringp orig) (not (string-blank-p orig))
                           (stringp lang-code) (not (string-blank-p lang-code)))
                  (puthash lang-code
-                          (cons orig (gethash lang-code lang->orig-keys))
-                          lang->orig-keys))))))))
-    (if (zerop (hash-table-count lang->orig-keys))
+                          (cons key (gethash lang-code lang->translation-keys))
+                          lang->translation-keys))))))))
+    (if (zerop (hash-table-count lang->translation-keys))
         (tlon-translate--log "No DB translation entries found; nothing to prune from JSON stores")
       (maphash
-       (lambda (lang-code origs)
+       (lambda (lang-code keys)
          (setq langs (1+ langs))
-         (let* ((unique-origs (delete-dups origs))
+         (let* ((unique-keys (delete-dups keys))
                 (store (tlon-read-abstract-translations lang-code))
                 (before (length store))
                 (newstore store))
-           (dolist (orig unique-origs)
-             (setq newstore (assoc-delete-all orig newstore)))
+           (dolist (k unique-keys)
+             (setq newstore (assoc-delete-all k newstore)))
            (let ((removed (- before (length newstore))))
              (when (> removed 0)
                (cl-incf total-removals removed)
                (tlon-write-abstract-translations newstore lang-code))
              (tlon-translate--log "Pruned %d item%s for %s"
                                   removed (if (= removed 1) "" "s") lang-code))))
-       lang->orig-keys)
+       lang->translation-keys)
       (tlon-translate--log "Removed %d JSON abstract translation%s across %d language%s"
                            total-removals (if (= total-removals 1) "" "s")
                            langs (if (= langs 1) "" "s")))))
