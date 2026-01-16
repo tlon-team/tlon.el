@@ -199,8 +199,14 @@ Return a list of URLs that should be skipped."
       (message "Added %s to whitelist" url))))
 
 (defun tlon-lychee--is-whitelisted-p (url)
-  "Return t if URL is in the whitelist."
-  (member url (tlon-lychee--load-whitelist)))
+  "Return t if URL matches an entry in the whitelist.
+Whitelist entries are treated as regexps and are matched against URL."
+  (let ((whitelist (tlon-lychee--load-whitelist))
+        (matched nil))
+    (while (and whitelist (not matched))
+      (setq matched (string-match-p (car whitelist) url))
+      (setq whitelist (cdr whitelist)))
+    matched))
 
 ;;;;; Get URLs
 
