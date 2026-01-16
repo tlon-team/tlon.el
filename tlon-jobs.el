@@ -66,9 +66,6 @@
   "File containing the jobs.
 This variable should not be set manually.")
 
-(defvar tlon-file-url-correspondences
-  (file-name-concat (tlon-repo-lookup :dir :name "babel-refs") "url" "url-correspondences.json")
-  "File containing the URL correspondences.")
 
 ;;;; Functions
 
@@ -384,9 +381,7 @@ COMMIT is non-nil, commit the change."
 	(delete-char 1)
 	(insert "\n}")
 	(json-pretty-print (point-min) (point-max))
-	(write-file tlon-file-section-correspondences)
-	;; (tlon-url-correspondence-commit)
-	))))
+	(write-file tlon-file-section-correspondences)))))
 
 (declare-function ebib-extras-open-key "ebib-extras")
 (declare-function ebib-extras-get-field "ebib-get-field")
@@ -402,45 +397,36 @@ COMMIT is non-nil, commit the change."
 ;;;;; URL correspondences
 
 (declare-function tlon-edit-json-mapping "tlon-core")
-(defun tlon-edit-url-correspondences ()
-  "Add or edit a URL correspondence in `tlon-file-url-correspondences`."
+(declare-function tlon-url-correspondences-file "tlon-core")
+(defun tlon-edit-url-correspondences (&optional language)
+  "Add or edit a URL correspondence for LANGUAGE.
+LANGUAGE is a natural language string such as \"spanish\". When nil, prompt for
+a language from `tlon-project-languages'."
   (interactive)
-  (tlon-edit-json-mapping tlon-file-url-correspondences "Source URL: " "Target URL: "))
+  (let* ((language (or language
+		       (completing-read "Language: " tlon-project-languages nil t)))
+	 (language-code (tlon-get-language-code-from-name language))
+	 (file (tlon-url-correspondences-file language-code)))
+    (tlon-edit-json-mapping file "Source URL: " "Target URL: ")))
 
-;; TODO: consider adapting `tlon-commit-and-push' instead
-(defun tlon-url-correspondence-commit ()
-  "Commit modifications in `url-correspondences.json'."
-  (let ((default-directory (tlon-repo-lookup :dir :name "es")))
-    ;; save all unsaved files in repo
-    (magit-save-repository-buffers)
-    (call-interactively #'magit-pull-from-upstream nil)
-    ;; if there are staged files, we do not commit or push the changes
-    (unless (magit-staged-files)
-      (tlon-check-branch "main" default-directory)
-      (magit-run-git "add" tlon-file-url-correspondences)
-      (let ((magit-commit-ask-to-stage nil))
-	(magit-commit-create (list "-m" "Update URL correspondences"))))))
-
-(defun tlon-highlight-url-correspondences ()
-  "Highlight source URLs in URL correspondences file."
+(defun tlon-highlight-url-correspondences (&optional language)
+  "Highlight source URLs in URL correspondences file for LANGUAGE.
+LANGUAGE is a natural language string such as \"spanish\". When nil, prompt for
+a language from `tlon-project-languages'."
   (interactive)
-  ;; Load JSON file
-  (let* ((json-data (tlon-read-json tlon-file-url-correspondences 'hash-table 'vector 'symbol))
+  (let* ((language (or language
+		       (completing-read "Language: " tlon-project-languages nil t)))
+	 (language-code (tlon-get-language-code-from-name language))
+	 (file (tlon-url-correspondences-file language-code))
+	 (json-data (tlon-read-json file 'hash-table 'vector 'symbol))
 	 (key-urls (tlon-get-keys json-data))
-	 ;; Remove URL prefixes from keys
 	 (search-keywords (mapcar (lambda (url)
 				    (replace-regexp-in-string "^https?://\\(www\\.\\)?" "" url))
 				  key-urls))
-	 ;; Build list of keys
 	 (keywords-regex (regexp-opt search-keywords 'words))
-	 ;; Specify a custom face for highlighting
 	 (highlight-face '(:background "#D3FFD2")))
-
-    ;; Remove the previous highlighting
     (with-silent-modifications
       (remove-list-of-text-properties (point-min) (point-max) '(font-lock-face))
-
-      ;; Highlight each occurrence of a key from the JSON file
       (save-excursion
 	(goto-char (point-min))
 	(while (re-search-forward keywords-regex nil t)
