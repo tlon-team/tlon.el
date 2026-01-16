@@ -491,8 +491,8 @@ speakers.
 Returns the JSON response from the API, typically containing the `dubbing_id'."
   (interactive
    (list (read-file-name "Source file: ")
-	 (tlon-get-iso-code (tlon-read-language nil "Source language: " t nil)) ; Convert to ISO code
-	 (tlon-get-iso-code (tlon-read-language nil "Target language: " t nil)) ; Convert to ISO code
+	 (tlon-get-language-code-from-name (tlon-read-language nil "Source language: " t nil))
+	 (tlon-get-language-code-from-name (tlon-read-language nil "Target language: " t nil))
 	 (read-string "Project name: ")
 	 (completing-read "Voice ID (optional, press RET for default): "
 			  (mapcar (lambda (v) (plist-get v :id)) tlon-elevenlabs-voices)
@@ -587,7 +587,7 @@ LANGUAGE-CODE should be the ISO code (e.g., \"en\", \"es\") for the desired
 transcript."
   (interactive
    (list (read-string "Dubbing ID: ")
-	 (tlon-get-iso-code (tlon-read-language nil "Language code for transcript: " t nil))))
+	 (tlon-get-language-code-from-name (tlon-read-language nil "Language code for transcript: " t nil))))
   (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
 	 (url (format (concat tlon-dub-api-base-url tlon-dub-get-dubbing-endpoint)
 		      dubbing-id language-code))
