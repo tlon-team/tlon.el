@@ -4347,5 +4347,52 @@ Reads audio format choices based on the currently selected engine."
     ("A" "Abbreviation"                                         tlon-add-local-abbreviation)
     ("R" "Replacement"                                          tlon-add-local-replacement)]])
 
+;;;;; Temporary migration helpers
+
+(defun tlon-tts--migrate-old-json-to-per-language-files (input-file output-dir)
+  "Convert INPUT-FILE from the old multi-language JSON structure to new files.
+
+INPUT-FILE is expected to contain a JSON object mapping each term (string) to a
+nested object whose keys are language codes (e.g., \"es\", \"fr\", \"default\")
+and whose values are strings.
+
+This function writes one JSON file per language code into OUTPUT-DIR, using the
+new flat structure {term: value}. The special language key \"default\" is
+ignored (it is not a language code). Existing files are overwritten.
+
+Return a list of written file paths."
+  (let* ((data (tlon-read-json input-file 'hash-table))
+         (by-lang (make-hash-table :test 'equal))
+         written)
+    (unless (hash-table-p data)
+      (user-error "Expected JSON object in %s" input-file))
+    (unless (file-directory-p output-dir)
+      (make-directory output-dir t))
+    (maphash
+     (lambda (term lang-map)
+       (unless (hash-table-p lang-map)
+         (user-error "Expected object for term '%s' in %s" term input-file))
+       (maphash
+        (lambda (lang value)
+          (unless (stringp lang)
+            (setq lang (format "%s" lang)))
+          (when (and (stringp value)
+                     (not (string-empty-p value))
+                     (not (string= lang "default")))
+            (let ((tbl (or (gethash lang by-lang)
+                           (let ((new (make-hash-table :test 'equal)))
+                             (puthash lang new by-lang)
+                             new))))
+              (puthash term value tbl))))
+        lang-map))
+     data)
+    (maphash
+     (lambda (lang tbl)
+       (let ((outfile (file-name-concat output-dir (format "%s.json" lang))))
+         (tlon-write-data outfile tbl)
+         (push outfile written)))
+     by-lang)
+    (nreverse written)))
+
 (provide 'tlon-tts)
 ;;; tlon-tts.el ends here
