@@ -33,6 +33,7 @@
 (require 'bibtex)
 (require 'thingatpt)
 (require 'browse-url)
+(require 'subr-x)
 (eval-and-compile
   (require 'transient))
 
@@ -735,30 +736,95 @@ STDERR-CONTENT is the stderr output from the lychee command."
 
 (defun tlon-replace-url-across-projects (&optional url-dead url-live)
   "Replace URL-DEAD with URL-LIVE in all files across content repos.
-If URL-DEAD or URL-LIVE not provided, use URL at point or prompt for them."
+If URL-DEAD or URL-LIVE not provided, use URL at point or prompt for them.
+
+This command is intentionally conservative: it only replaces domain-root URLs
+when they appear either:
+
+- inside Markdown link targets: (URL)
+- as Markdown autolinks: <URL>
+
+It also matches common variations of the old URL (http/https, optional \"www.\",
+optional trailing slash), and avoids replacing longer URLs with slugs."
   (interactive)
   (let* ((url-dead (or url-dead (read-string "Dead URL: " (thing-at-point 'url t))))
-	 (url-live (or url-live (read-string "Live URL: ")))
-	 (files (cl-loop for dir in
+         (url-live (or url-live (read-string "Live URL: ")))
+         (patterns (tlon--url-replacement-patterns url-dead))
+         (files (cl-loop for dir in
 			 (append (tlon-repo-lookup-all :dir :type 'content :subtype 'originals)
 				 (tlon-repo-lookup-all :dir :type 'content :subtype 'translations))
 			 append (directory-files-recursively dir ".*")))
-	 (replacements 0)
-	 (affected-dirs nil))
+         (replacements 0)
+         (affected-dirs nil))
     (dolist (file files)
       (when (file-regular-p file)
         (with-temp-buffer
           (insert-file-contents file)
-          (when (search-forward url-dead nil t)
+          (when (tlon--replace-url-in-buffer patterns url-live)
             (cl-incf replacements)
             (push (file-name-directory file) affected-dirs)
-            (goto-char (point-min))
-            (while (search-forward url-dead nil t)
-              (replace-match url-live))
             (write-region (point-min) (point-max) file)))))
     (message "Made %d replacements in directories: %s"
              replacements
              (mapconcat #'identity (delete-dups affected-dirs) ", "))))
+
+(defun tlon--replace-url-in-buffer (patterns url-live)
+  "Replace URLs matching PATTERNS in the current buffer with URL-LIVE.
+PATTERNS is a list of regexps that each match a full URL occurrence in a
+specific Markdown context.  Return non-nil if any replacement was made."
+  (let ((modified nil))
+    (dolist (pattern patterns)
+      (goto-char (point-min))
+      (while (re-search-forward pattern nil t)
+        (replace-match (tlon--url-replacement-string pattern url-live) t nil)
+        (setq modified t)))
+    modified))
+
+(defun tlon--url-replacement-string (pattern url-live)
+  "Return replacement string for PATTERN using URL-LIVE."
+  (cond
+   ((string-prefix-p "<" pattern) (concat "<" url-live ">"))
+   (t (concat "(" url-live ")"))))
+
+(defun tlon--url-replacement-patterns (url-dead)
+  "Return a list of regexps that match URL-DEAD in supported Markdown contexts."
+  (let ((url-core (tlon--url-domain-root-core url-dead)))
+    (list (tlon--url-in-markdown-parens-regexp url-core)
+          (tlon--url-in-markdown-autolink-regexp url-core))))
+
+(defun tlon--url-domain-root-core (url)
+  "Return a regexp matching URL's domain root with common variations.
+The returned regexp matches:
+
+- http/https
+- optional \"www.\"
+- exact host (as in URL)
+- optional trailing slash
+
+Signals an error if URL is not a domain-root URL (i.e., contains a path other
+than \"/\" or empty)."
+  (let* ((trimmed (string-trim url))
+         (parsed (url-generic-parse-url trimmed))
+         (host (or (url-host parsed) ""))
+         (path (or (url-filename parsed) "")))
+    (when (string-empty-p host)
+      (error "Could not parse host from URL: %s" url))
+    (when (and (not (string-empty-p path))
+               (not (string= path "/")))
+      (error "URL replacement only supports domain roots, got: %s" url))
+    (concat
+     "https?://"
+     "\\(?:www\\.\\)?"
+     (regexp-quote host)
+     "/?")))
+
+(defun tlon--url-in-markdown-parens-regexp (url-core)
+  "Return a regexp matching URL-CORE inside Markdown link parentheses."
+  (concat "(" "\\(" url-core "\\)" ")"))
+
+(defun tlon--url-in-markdown-autolink-regexp (url-core)
+  "Return a regexp matching URL-CORE inside Markdown autolink angle brackets."
+  (concat "<" "\\(" url-core "\\)" ">"))
 
 ;;;###autoload
 (defun tlon-propagate-changed-urls ()
