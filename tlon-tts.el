@@ -3285,20 +3285,6 @@ the terms will match only if they are adjacent to non-word characters."
 	(while (re-search-forward find nil t)
 	  (save-match-data (funcall replacement-fun replacement)))))))
 
-(defun tlon-tts-get-associated-terms (var)
-  "Get associated terms for the current language in VAR.
-For each cons cell in VAR for the language in the current text-to-speech
-process, return its cdr."
-  (let ((result '()))
-    (dolist (cons var result)
-      (let* ((term (car cons))
-	     (lang (tlon-tts-get-current-language))
-	     (assoc (or (alist-get lang (cdr cons) nil nil #'string=)
-			(alist-get "default" (cdr cons) nil nil #'string=))))
-	(when assoc
-	  (push (cons term assoc) result))))
-    result))
-
 ;;;;;;; Local
 
 (defun tlon-tts-process-local-phonetic-replacements ()
