@@ -133,7 +133,7 @@ DIR is the directory where the repo is stored."
     ""
     "Uqbar"
     ("q q" "uqbar"                        tlon-magit-browse-uqbar)
-    ("q Q" "uqbqr: pull all"              tlon-uqbar-pull-all)
+    ("q Q" "uqbar: pull all"              tlon-uqbar-pull-all)
     ("q d" "uqbar-audio-content"          tlon-magit-browse-uqbar-audio-content)
     ("q p" "uqbar-audio-api"              tlon-magit-browse-uqbar-audio-api)
     ""
