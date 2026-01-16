@@ -144,8 +144,12 @@ Set to t to enable verbose logging from url.el.")
 (defun tlon-db-initialize ()
   "Initialize the `tlon-db' package."
   (tlon-db--initialize-sync)
-  (append paths-files-bibliography-all (list tlon-file-db))
-  (citar-extras-refresh-bibliography tlon-file-db))
+  (setq paths-files-bibliography-all
+        (delete-dups (append paths-files-bibliography-all (list tlon-file-db))))
+  (if (file-exists-p tlon-file-db)
+      (citar-extras-refresh-bibliography tlon-file-db)
+    (message "Skipping `tlon-db' initialization because db.bib was not found: %s"
+             tlon-file-db)))
 
 (defvar citar-bibliography)
 (declare-function citar-select-ref "citar")
