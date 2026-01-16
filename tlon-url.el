@@ -898,10 +898,16 @@ than \"/\" or empty)."
     ("f" "In file"                       tlon-fix-dead-urls-in-file)
     ("F" "In repo"                       tlon-fix-dead-urls-in-repo)
     ""
+    "Archive"
     ("a" "Get archived"                  tlon-get-archived)
     ("e" "Get earliest archived"         tlon-get-earliest-archived)
+    ""
+    "URL management"
     ("p" "Propagate changed URLs"        tlon-propagate-changed-urls)
-    ("r" "Replace URL across projects"   tlon-replace-url-across-projects)]])
+    ("r" "Replace URL across projects"   tlon-replace-url-across-projects)
+    ""
+    "URL correspondence"
+    ("c" "Edit URL correspondence"           tlon-edit-url-correspondences)]])
 
 (provide 'tlon-url)
 ;;; tlon-url.el ends here
