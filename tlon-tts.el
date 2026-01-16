@@ -4357,12 +4357,24 @@ nested object whose keys are language codes (e.g., \"es\", \"fr\", \"default\")
 and whose values are strings.
 
 This function writes one JSON file per language code into OUTPUT-DIR, using the
-new flat structure {term: value}. The special language key \"default\" is
-ignored (it is not a language code). Existing files are overwritten.
+new flat structure {term: value}.
+
+The output layout is:
+
+  OUTPUT-DIR/<lang>/<filename-of-input-file>
+
+For example, if INPUT-FILE is \"abbreviations.json\" and one of the languages is
+\"es\", the output file will be:
+
+  OUTPUT-DIR/es/abbreviations.json
+
+The special language key \"default\" is ignored (it is not a language code).
+Existing files are overwritten.
 
 Return a list of written file paths."
   (let* ((data (tlon-read-json input-file 'hash-table))
          (by-lang (make-hash-table :test 'equal))
+         (filename (file-name-nondirectory input-file))
          written)
     (unless (hash-table-p data)
       (user-error "Expected JSON object in %s" input-file))
@@ -4388,7 +4400,10 @@ Return a list of written file paths."
      data)
     (maphash
      (lambda (lang tbl)
-       (let ((outfile (file-name-concat output-dir (format "%s.json" lang))))
+       (let* ((lang-dir (file-name-concat output-dir lang))
+              (outfile (file-name-concat lang-dir filename)))
+         (unless (file-directory-p lang-dir)
+           (make-directory lang-dir t))
          (tlon-write-data outfile tbl)
          (push outfile written)))
      by-lang)
