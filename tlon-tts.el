@@ -3364,9 +3364,13 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
           (message "Exported ElevenLabs PLS dictionary to %s" path))))))
 
 (defun tlon-tts--phoneme-pairs-for-language (language)
-  "Return (TERM . IPA) pairs for LANGUAGE from global phonetic transcriptions."
-  (let* ((file (tlon-tts-phonetic-transcriptions-file language))
-         (data (tlon-read-json file 'hash-table))
+  "Return (TERM . IPA) pairs for LANGUAGE from global phonetic transcriptions.
+
+This includes entries stored under the special language code \"default\" (which
+apply to all languages), overridden by any language-specific entries."
+  (let* ((data (tlon-tts--read-global-tts-hash-with-default
+                #'tlon-tts-phonetic-transcriptions-file
+                language))
          (result '()))
     (when (and data (hash-table-p data))
       (maphash
@@ -4406,7 +4410,10 @@ For example, if INPUT-FILE is \"abbreviations.json\" and one of the languages is
 
   OUTPUT-DIR/es/abbreviations.json
 
-The special language key \"default\" is ignored (it is not a language code).
+The special language key \"default\" is preserved and written to
+OUTPUT-DIR/default/<filename>. These entries are intended to apply to all
+languages (with any language-specific entries overriding them).
+
 Existing files are overwritten.
 
 Return a list of written file paths."
