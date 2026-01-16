@@ -398,24 +398,8 @@ Older models (also supported):
 
 ;;;;; Paths
 
-(defconst tlon-dir-tts
-  (file-name-concat (tlon-repo-lookup :dir :name "babel-core") "tts/")
-  "Directory for files related to text-to-speech functionality.")
-
-(defconst tlon-file-global-abbreviations
-  (file-name-concat tlon-dir-tts "abbreviations.json")
-  "File with abbreviations.")
-
-(defconst tlon-file-global-phonetic-replacements
-  (file-name-concat tlon-dir-tts "phonetic-replacements.json")
-  "File with replacements.")
-
-(defconst tlon-file-global-phonetic-transcriptions
-  (file-name-concat tlon-dir-tts "phonetic-transcriptions.json")
-  "File with phonetic transcriptions.")
-
 (defconst tlon-file-elevenlabs-dictionary-locators
-  (file-name-concat tlon-dir-tts "pronunciation-dictionaries.json")
+  (file-name-concat (tlon-repo-lookup :dir :name "babel-core") "tts/pronunciation-dictionaries.json")
   "JSON file mapping lang codes to ElevenLabs pronunciation dictionary locators.")
 
 ;;;;; Staging buffer
@@ -3248,8 +3232,14 @@ variable `tlon-local-abbreviations'."
   "Get global abbreviations.
 We throw an error if no global abbreviations are found, since (unlike local
 abbreviations) this list should always be non-empty."
-  (or (tlon-tts-get-associated-terms (tlon-read-json tlon-file-global-abbreviations))
-      (user-error "Warning: no global abbreviations found; check `tlon-file-global-abbreviations'")))
+  (let* ((lang (tlon-tts-get-current-language))
+         (file (tlon-tts-abbreviations-file lang))
+         (data (tlon-read-json file 'hash-table)))
+    (or (and data (hash-table-p data)
+             (let (pairs)
+               (maphash (lambda (k v) (push (cons k v) pairs)) data)
+               (nreverse pairs)))
+        (user-error "No global abbreviations found in %s" file))))
 
 ;;;;;; Phonetic replacements
 
@@ -3300,7 +3290,13 @@ process, return its cdr."
 
 (defun tlon-tts-get-global-phonetic-replacements ()
   "Get simple replacements."
-  (tlon-tts-get-associated-terms (tlon-read-json tlon-file-global-phonetic-replacements)))
+  (let* ((lang (tlon-tts-get-current-language))
+         (file (tlon-tts-phonetic-replacements-file lang))
+         (data (tlon-read-json file 'hash-table)))
+    (when (and data (hash-table-p data))
+      (let (pairs)
+        (maphash (lambda (k v) (push (cons k v) pairs)) data)
+        (nreverse pairs)))))
 
 (defun tlon-tts-replace-global-phonetic-replacements (replacement)
   "When processing simple replacements, replace match with REPLACEMENT."
@@ -3316,7 +3312,13 @@ process, return its cdr."
 
 (defun tlon-tts-get-global-phonetic-transcriptions ()
   "Get the phonetic transcriptions."
-  (tlon-tts-get-associated-terms (tlon-read-json tlon-file-global-phonetic-transcriptions)))
+  (let* ((lang (tlon-tts-get-current-language))
+         (file (tlon-tts-phonetic-transcriptions-file lang))
+         (data (tlon-read-json file 'hash-table)))
+    (when (and data (hash-table-p data))
+      (let (pairs)
+        (maphash (lambda (k v) (push (cons k v) pairs)) data)
+        (nreverse pairs)))))
 
 (defun tlon-tts-replace-global-phonetic-transcriptions (replacement)
   "When processing phonetic transcriptions, replace match with pattern.
@@ -3346,15 +3348,17 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
 
 (defun tlon-tts--phoneme-pairs-for-language (language)
   "Return (TERM . IPA) pairs for LANGUAGE from global phonetic transcriptions."
-  (let ((data (tlon-read-json tlon-file-global-phonetic-transcriptions))
-        (result '()))
-    (dolist (entry data (nreverse result))
-      (let* ((term (car entry))
-             (langmap (cdr entry))
-             (ipa (or (alist-get language langmap nil nil #'string=)
-                      (alist-get "default" langmap nil nil #'string=))))
-        (when (and term ipa (stringp ipa) (not (string-empty-p ipa)))
-          (push (cons term ipa) result))))))
+  (let* ((file (tlon-tts-phonetic-transcriptions-file language))
+         (data (tlon-read-json file 'hash-table))
+         (result '()))
+    (when (and data (hash-table-p data))
+      (maphash
+       (lambda (term ipa)
+         (when (and (stringp term) (not (string-empty-p term))
+                    (stringp ipa) (not (string-empty-p ipa)))
+           (push (cons term ipa) result)))
+       data))
+    (nreverse result)))
 
 (defun tlon-tts--write-pls-file (path language pairs)
   "Write a W3C PLS 1.0 file at PATH for LANGUAGE from PAIRS."
@@ -4002,56 +4006,68 @@ is populated and the current buffer is the staging buffer."
 ;;;;;; Abbreviations
 
 (declare-function tlon-edit-json-mapping "tlon-core")
+(declare-function tlon-tts-abbreviations-file "tlon-core")
 ;;;###autoload
-(defun tlon-tts-edit-global-abbreviations ()
-  "Add or edit a global abbreviation."
+(defun tlon-tts-edit-global-abbreviations (&optional language)
+  "Add or edit a global abbreviation for LANGUAGE.
+LANGUAGE is a natural language string such as \"spanish\". When nil, prompt for
+a language from `tlon-project-languages'."
   (interactive)
-  (tlon-edit-json-mapping tlon-file-global-abbreviations "Abbreviation: " "Spoken form: "))
+  (let* ((language (or language
+                       (completing-read "Language: " tlon-project-languages nil t)))
+         (language-code (tlon-get-language-code-from-name language))
+         (file (tlon-tts-abbreviations-file language-code)))
+    (tlon-edit-json-mapping file "Abbreviation: " "Spoken form: ")))
 
 ;;;;;; Phonetic replacements
 
 ;;;###autoload
-(defun tlon-tts-edit-global-phonetic-replacements ()
-  "Add or edit a global phonetic replacement."
+(declare-function tlon-tts-phonetic-replacements-file "tlon-core")
+(defun tlon-tts-edit-global-phonetic-replacements (&optional language)
+  "Add or edit a global phonetic replacement for LANGUAGE.
+LANGUAGE is a natural language string such as \"spanish\". When nil, prompt for
+a language from `tlon-project-languages'."
   (interactive)
-  (tlon-edit-json-mapping tlon-file-global-phonetic-replacements "Term to replace: " "Replacement: "))
+  (let* ((language (or language
+                       (completing-read "Language: " tlon-project-languages nil t)))
+         (language-code (tlon-get-language-code-from-name language))
+         (file (tlon-tts-phonetic-replacements-file language-code)))
+    (tlon-edit-json-mapping file "Term to replace: " "Replacement: ")))
 
 ;;;;;; Phonetic transcriptions
 
 ;;;###autoload
-(defun tlon-tts-edit-global-phonetic-transcriptions ()
-  "Add or edit a global phonetic transcription.
-When adding a new term, suggest an IPA transcription via AI and
-pre-fill the prompt with that suggestion."
+(declare-function tlon-tts-phonetic-transcriptions-file "tlon-core")
+(defun tlon-tts-edit-global-phonetic-transcriptions (&optional language)
+  "Add or edit a global phonetic transcription for LANGUAGE.
+When adding a new term, suggest an IPA transcription via AI and pre-fill the
+prompt with that suggestion.
+
+LANGUAGE is a natural language string such as \"spanish\". When nil, prompt for
+a language from `tlon-project-languages'."
   (interactive)
-  (let* ((data (or (tlon-read-json tlon-file-global-phonetic-transcriptions) '()))
-         (existing-terms (mapcar #'car data))
+  (let* ((language (or language
+                       (completing-read "Language: " tlon-project-languages nil t)))
+         (language-code (tlon-get-language-code-from-name language))
+         (file (tlon-tts-phonetic-transcriptions-file language-code))
+         (data (or (tlon-read-json file 'hash-table) (make-hash-table :test 'equal)))
+         (existing-terms (sort (hash-table-keys data) #'string<))
          (term (completing-read "Term to transcribe: " existing-terms nil nil))
-         (lang (or (tlon-select-language 'code 'babel)
-                   (user-error "Language selection aborted")))
-         (entry (assoc term data))
-         (current-ipa (when entry (alist-get lang (cdr entry) nil nil #'string=))))
+         (current-ipa (gethash term data)))
     (cl-labels
         ((save-mapping
           (ipa)
-          (let* ((current (or (tlon-read-json tlon-file-global-phonetic-transcriptions) '()))
-                 (existing (assoc term current)))
-            (if existing
-                (let* ((langmap (cdr existing))
-                       (langmap* (cl-remove-if (lambda (kv) (string= (car kv) lang)) langmap)))
-                  (setcdr existing (cons (cons lang ipa) langmap*)))
-              (push (cons term (list (cons lang ipa))) current))
-            (tlon-write-data tlon-file-global-phonetic-transcriptions current)
-            (message "Saved IPA for \"%s\" (%s)" term lang))))
-      (if entry
-          (let ((ipa (read-string "IPA Transcription: " current-ipa)))
-            (save-mapping ipa))
+          (puthash term ipa data)
+          (tlon-write-data file data)
+          (message "Saved IPA for \"%s\" (%s)" term language-code)))
+      (if (and current-ipa (not (string-empty-p current-ipa)))
+          (save-mapping (read-string "IPA transcription: " current-ipa))
         (let* ((prompt (or (tlon-lookup tlon-ai-transcribe-phonetically-prompt
-                                        :prompt :language lang)
+                                        :prompt :language language-code)
                            (tlon-lookup tlon-ai-transcribe-phonetically-prompt
                                         :prompt :language "en"))))
           (unless prompt
-            (user-error "No prompt available for phonetic transcription in language %s" lang))
+            (user-error "No prompt available for phonetic transcription in language %s" language-code))
           (tlon-make-gptel-request
            prompt
            term
@@ -4059,9 +4075,8 @@ pre-fill the prompt with that suggestion."
              (let* ((suggestion (or (and (stringp response) (string-trim response)) "")))
                (when (and (stringp suggestion) (not (string-empty-p suggestion)))
                  (kill-new suggestion)
-                 (message "Copied AI suggestion to kill ring."))
-               (let ((ipa (read-string "IPA Transcription: " suggestion)))
-                 (save-mapping ipa))))))))))
+                 (message "Copied AI suggestion to kill ring"))
+               (save-mapping (read-string "IPA transcription: " suggestion))))))))))
 
 ;;;;; Local
 
