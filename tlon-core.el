@@ -1263,6 +1263,19 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
     (maphash (lambda (k _v) (push k keys)) data)
     keys))
 
+;;;;; JSON files
+
+(defun tlon-get-language-code-from-name (language)
+  "Return the ISO 639-1 code for LANGUAGE.
+LANGUAGE is a string such as \"spanish\"."
+  (or (tlon-get-iso-code language)
+      (user-error "Not a valid language: %s" language)))
+
+(defun tlon-url-correspondences-file (language-code)
+  "Return the URL correspondences file for LANGUAGE-CODE.
+LANGUAGE-CODE is a string such as \"es\"."
+  (file-name-concat tlon-json-dir language-code "url-correspondences.json"))
+
 ;;;;; JSON editing
 
 (defun tlon-edit-json-mapping (file outer-key-prompt inner-value-prompt)
