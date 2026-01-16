@@ -3228,18 +3228,47 @@ variable `tlon-local-abbreviations'."
   "Replace global abbreviations with their spoken equivalent."
   (tlon-tts-process-abbreviations 'global))
 
+(defun tlon-tts--hash-table-merge (base overrides)
+  "Return a new hash table with BASE merged with OVERRIDES.
+Keys in OVERRIDES overwrite keys in BASE. Either argument may be nil."
+  (let ((out (make-hash-table :test 'equal)))
+    (when (hash-table-p base)
+      (maphash (lambda (k v) (puthash k v out)) base))
+    (when (hash-table-p overrides)
+      (maphash (lambda (k v) (puthash k v out)) overrides))
+    out))
+
+(defun tlon-tts--read-global-tts-hash-with-default (file-fn lang)
+  "Read default + LANG JSON hash tables using FILE-FN and merge them.
+FILE-FN is a function that takes a language code string and returns a JSON file
+path. LANG is a language code like \"es\". The default file is read from the
+special language code \"default\".
+
+LANG entries override default entries.
+
+Return a hash table (possibly empty)."
+  (let* ((default-file (funcall file-fn "default"))
+         (lang-file (funcall file-fn lang))
+         (default-data (tlon-read-json default-file 'hash-table))
+         (lang-data (tlon-read-json lang-file 'hash-table)))
+    (tlon-tts--hash-table-merge default-data lang-data)))
+
 (defun tlon-tts-get-global-abbreviations ()
   "Get global abbreviations.
-We throw an error if no global abbreviations are found, since (unlike local
+These come from the merge of:
+- default abbreviations (apply to all languages)
+- language-specific abbreviations (override default)
+
+We throw an error if no abbreviations are found, since (unlike local
 abbreviations) this list should always be non-empty."
   (let* ((lang (tlon-tts-get-current-language))
-         (file (tlon-tts-abbreviations-file lang))
-         (data (tlon-read-json file 'hash-table)))
+         (data (tlon-tts--read-global-tts-hash-with-default #'tlon-tts-abbreviations-file lang)))
     (or (and data (hash-table-p data)
+             (> (hash-table-count data) 0)
              (let (pairs)
                (maphash (lambda (k v) (push (cons k v) pairs)) data)
                (nreverse pairs)))
-        (user-error "No global abbreviations found in %s" file))))
+        (user-error "No global abbreviations found for %s (including default)" lang))))
 
 ;;;;;; Phonetic replacements
 
@@ -3289,11 +3318,12 @@ process, return its cdr."
    'tlon-tts-replace-global-phonetic-replacements 'word-boundary))
 
 (defun tlon-tts-get-global-phonetic-replacements ()
-  "Get simple replacements."
+  "Get global phonetic replacements.
+This merges default replacements (apply to all languages) with language-specific
+replacements (override default)."
   (let* ((lang (tlon-tts-get-current-language))
-         (file (tlon-tts-phonetic-replacements-file lang))
-         (data (tlon-read-json file 'hash-table)))
-    (when (and data (hash-table-p data))
+         (data (tlon-tts--read-global-tts-hash-with-default #'tlon-tts-phonetic-replacements-file lang)))
+    (when (and data (hash-table-p data) (> (hash-table-count data) 0))
       (let (pairs)
         (maphash (lambda (k v) (push (cons k v) pairs)) data)
         (nreverse pairs)))))
@@ -3311,11 +3341,12 @@ process, return its cdr."
    'tlon-tts-replace-global-phonetic-transcriptions 'word-boundary))
 
 (defun tlon-tts-get-global-phonetic-transcriptions ()
-  "Get the phonetic transcriptions."
+  "Get global phonetic transcriptions.
+This merges default transcriptions (apply to all languages) with
+language-specific transcriptions (override default)."
   (let* ((lang (tlon-tts-get-current-language))
-         (file (tlon-tts-phonetic-transcriptions-file lang))
-         (data (tlon-read-json file 'hash-table)))
-    (when (and data (hash-table-p data))
+         (data (tlon-tts--read-global-tts-hash-with-default #'tlon-tts-phonetic-transcriptions-file lang)))
+    (when (and data (hash-table-p data) (> (hash-table-count data) 0))
       (let (pairs)
         (maphash (lambda (k v) (push (cons k v) pairs)) data)
         (nreverse pairs)))))
@@ -4013,12 +4044,19 @@ is populated and the current buffer is the staging buffer."
 ;;;###autoload
 (defun tlon-tts-edit-global-abbreviations (&optional language)
   "Add or edit a global abbreviation for LANGUAGE.
-LANGUAGE is a natural language string such as \"spanish\". When nil, prompt for
-a language from `tlon-project-languages'."
+LANGUAGE is a natural language string such as \"spanish\".
+
+When LANGUAGE is \"default\", the abbreviation applies to all languages (i.e.,
+it is stored under json/default/abbreviations.json).
+
+When LANGUAGE is nil, prompt for a language from `tlon-project-languages' plus
+the special candidate \"default\"."
   (interactive)
   (let* ((language (or language
-                       (completing-read "Language: " tlon-project-languages nil t)))
-         (language-code (tlon-get-language-code-from-name language))
+                       (completing-read "Language: " (cons "default" tlon-project-languages) nil t)))
+         (language-code (if (string= language "default")
+                            "default"
+                          (tlon-get-language-code-from-name language)))
          (file (tlon-tts-abbreviations-file language-code)))
     (tlon-edit-json-mapping file "Abbreviation: " "Spoken form: ")))
 
@@ -4027,12 +4065,19 @@ a language from `tlon-project-languages'."
 ;;;###autoload
 (defun tlon-tts-edit-global-phonetic-replacements (&optional language)
   "Add or edit a global phonetic replacement for LANGUAGE.
-LANGUAGE is a natural language string such as \"spanish\". When nil, prompt for
-a language from `tlon-project-languages'."
+LANGUAGE is a natural language string such as \"spanish\".
+
+When LANGUAGE is \"default\", the replacement applies to all languages (i.e.,
+it is stored under json/default/phonetic-replacements.json).
+
+When LANGUAGE is nil, prompt for a language from `tlon-project-languages' plus
+the special candidate \"default\"."
   (interactive)
   (let* ((language (or language
-                       (completing-read "Language: " tlon-project-languages nil t)))
-         (language-code (tlon-get-language-code-from-name language))
+                       (completing-read "Language: " (cons "default" tlon-project-languages) nil t)))
+         (language-code (if (string= language "default")
+                            "default"
+                          (tlon-get-language-code-from-name language)))
          (file (tlon-tts-phonetic-replacements-file language-code)))
     (tlon-edit-json-mapping file "Term to replace: " "Replacement: ")))
 
@@ -4045,12 +4090,19 @@ a language from `tlon-project-languages'."
 When adding a new term, suggest an IPA transcription via AI and pre-fill the
 prompt with that suggestion.
 
-LANGUAGE is a natural language string such as \"spanish\". When nil, prompt for
-a language from `tlon-project-languages'."
+LANGUAGE is a natural language string such as \"spanish\".
+
+When LANGUAGE is \"default\", the transcription applies to all languages (i.e.,
+it is stored under json/default/phonetic-transcriptions.json).
+
+When LANGUAGE is nil, prompt for a language from `tlon-project-languages' plus
+the special candidate \"default\"."
   (interactive)
   (let* ((language (or language
-                       (completing-read "Language: " tlon-project-languages nil t)))
-         (language-code (tlon-get-language-code-from-name language))
+                       (completing-read "Language: " (cons "default" tlon-project-languages) nil t)))
+         (language-code (if (string= language "default")
+                            "default"
+                          (tlon-get-language-code-from-name language)))
          (file (tlon-tts-phonetic-transcriptions-file language-code))
          (data (or (tlon-read-json file 'hash-table) (make-hash-table :test 'equal)))
          (existing-terms (sort (hash-table-keys data) #'string<))
