@@ -487,6 +487,10 @@ If `:help' is non-nil, include this repo in the list of directories scanned by
   (file-name-concat tlon-refs-dir "bib/")
   "Directory where BibTeX files are stored.")
 
+(defvar tlon-json-dir
+  (file-name-concat tlon-refs-dir "json/")
+  "Directory where the JSON files are stored.")
+
 (defvar tlon-file-fluid
   (file-name-concat tlon-bibtex-dir "fluid.bib")
   "File containing the fluid bibliography.")
