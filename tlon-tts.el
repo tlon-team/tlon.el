@@ -4007,6 +4007,9 @@ is populated and the current buffer is the staging buffer."
 
 (declare-function tlon-edit-json-mapping "tlon-core")
 (declare-function tlon-tts-abbreviations-file "tlon-core")
+(declare-function tlon-tts-phonetic-replacements-file "tlon-core")
+(declare-function tlon-tts-phonetic-transcriptions-file "tlon-core")
+
 ;;;###autoload
 (defun tlon-tts-edit-global-abbreviations (&optional language)
   "Add or edit a global abbreviation for LANGUAGE.
@@ -4022,7 +4025,6 @@ a language from `tlon-project-languages'."
 ;;;;;; Phonetic replacements
 
 ;;;###autoload
-(declare-function tlon-tts-phonetic-replacements-file "tlon-core")
 (defun tlon-tts-edit-global-phonetic-replacements (&optional language)
   "Add or edit a global phonetic replacement for LANGUAGE.
 LANGUAGE is a natural language string such as \"spanish\". When nil, prompt for
