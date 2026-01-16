@@ -1130,7 +1130,7 @@ described in the `tlon-get-abstract-with-ai' docstring."
 If TYPE is `synopsis', generate a synopsis. If TYPE is `abstract', nil, or any
 other value, generate an abstract."
   (if-let ((string (tlon-get-string-dwim file))
-	   (lang-2 (tlon-get-iso-code language)))
+	   (lang-2 (tlon-get-language-code-from-name language)))
       (let ((original-buffer (current-buffer))
 	    (key (pcase major-mode
 		   ('bibtex-mode (bibtex-extras-get-key))
@@ -1391,7 +1391,7 @@ If FILE is nil, use the current buffer."
 RESPONSE is the response from the AI model and INFO is the response info."
   (if (not response)
       (tlon-ai-callback-fail info)
-    (let ((lang (tlon-get-iso-code response)))
+    (let ((lang (tlon-get-language-code-from-name response)))
       (let ((jinx-save-languages))
 	(jinx-languages lang)))))
 
@@ -1433,8 +1433,8 @@ RESPONSE is the response from the AI model and INFO is the response info."
 	     (valid-response (tlon-validate-language response)))
 	(if (string= valid-langid valid-response)
 	    (tlon-ai-set-language-bibtex-when-equal valid-langid langid)
-	  (let ((langid-2 (tlon-get-iso-code valid-langid))
-		(response-2 (tlon-get-iso-code valid-response)))
+	  (let ((langid-2 (tlon-get-language-code-from-name valid-langid))
+		(response-2 (tlon-get-language-code-from-name valid-response)))
 	    (if (string= langid-2 response-2)
 		(tlon-ai-set-language-bibtex-when-equal valid-langid langid)
 	      (tlon-ai-set-language-bibtex-when-conflict langid response))))
