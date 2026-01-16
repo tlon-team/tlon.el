@@ -32,6 +32,7 @@
 (require 'url)
 (require 'subr-x)
 (require 'json)
+(require 'cl-lib)
 
 ;;;; Variables
 
@@ -233,6 +234,60 @@ define an interactive command named `tlon-local-run-uqbar-<code>' that calls
 
 ;;;; Logs
 
+(defconst tlon-local--check-pages-finished-string "Frontend checks completed."
+  "String printed by check-pages when frontend checks finish.")
+
+(defconst tlon-local--check-pages-timeout 600
+  "Maximum number of seconds to wait for check-pages to finish.")
+
+(defconst tlon-local--check-pages-poll-interval 2
+  "Number of seconds between polls while waiting for check-pages to finish.")
+
+(defun tlon-local--check-pages-container (lang)
+  "Return the Docker container name for check-pages for LANG."
+  (format "uqbar-%s-check-pages-1" lang))
+
+(defun tlon-local--check-pages-running-p (lang)
+  "Return non-nil if the check-pages container for LANG is running."
+  (unless (executable-find "docker")
+    (user-error "Docker CLI not found"))
+  (let* ((name (tlon-local--check-pages-container lang))
+         (cmd (format "docker ps --filter %s --format '{{.Names}}' | grep -q %s && echo true || echo false"
+                      (shell-quote-argument (format "name=^%s$" name))
+                      (shell-quote-argument name)))
+         (out (string-trim (shell-command-to-string cmd))))
+    (string= out "true")))
+
+(defun tlon-local--check-pages-finished-p (lang)
+  "Return non-nil if check-pages for LANG has printed its completion string."
+  (unless (executable-find "docker")
+    (user-error "Docker CLI not found"))
+  (let* ((name (tlon-local--check-pages-container lang))
+         (needle (shell-quote-argument tlon-local--check-pages-finished-string))
+         (cmd (format "docker logs %s 2>/dev/null | grep -Fq %s && echo true || echo false"
+                      (shell-quote-argument name) needle))
+         (out (string-trim (shell-command-to-string cmd))))
+    (string= out "true")))
+
+(defun tlon-local--wait-for-check-pages (lang callback)
+  "Wait until check-pages finishes for LANG, then call CALLBACK.
+If the check-pages container is not running, call CALLBACK immediately."
+  (if (not (tlon-local--check-pages-running-p lang))
+      (funcall callback)
+    (message "Waiting for check-pages to finish for %s…" lang)
+    (let ((start (float-time)))
+      (cl-labels
+          ((poll ()
+             (cond
+              ((tlon-local--check-pages-finished-p lang)
+               (message "check-pages finished for %s" lang)
+               (funcall callback))
+              ((> (- (float-time) start) tlon-local--check-pages-timeout)
+               (user-error "Timed out waiting for check-pages to finish for %s" lang))
+              (t
+               (run-at-time tlon-local--check-pages-poll-interval nil #'poll)))))
+        (poll)))))
+
 ;;;###autoload
 (defun tlon-local-logs (&optional lang)
   "Show recent Uqbar logs for LANG from the latest content build.
@@ -296,34 +351,37 @@ response."
 (defun tlon-local--logs-all (lang)
   "Fetch and render errors, warnings, informational and frontend logs for LANG."
   (let ((lang (or lang (tlon-select-language 'code t "Language: " 'require-match))))
-    (tlon-local--get-latest-build-label
+    (tlon-local--wait-for-check-pages
      lang
-     (lambda (label)
-       (let* ((range (tlon-local--logs-time-range))
-              (start (car range))
-              (end (cdr range))
-              (errors-filter tlon-local-logs-errors-filter)
-              (warnings-filter tlon-local-logs-warnings-filter)
-              (info-filter tlon-local-logs-informational-filter)
-              (frontend-filter tlon-local-logs-frontend-errors-filter)
-              (errors-query (format "{content_build=\"%s\"} %s" label errors-filter))
-              (warnings-query (format "{content_build=\"%s\"} %s" label warnings-filter))
-              (info-query (format "{content_build=\"%s\"} %s" label info-filter))
-              (frontend-query (format "{content_build=\"%s\"} %s" label frontend-filter)))
-         (tlon-local--loki-query-range
-          errors-query tlon-local-logs-limit "backward" start end
-          (lambda (errors-json)
+     (lambda ()
+       (tlon-local--get-latest-build-label
+        lang
+        (lambda (label)
+          (let* ((range (tlon-local--logs-time-range))
+                 (start (car range))
+                 (end (cdr range))
+                 (errors-filter tlon-local-logs-errors-filter)
+                 (warnings-filter tlon-local-logs-warnings-filter)
+                 (info-filter tlon-local-logs-informational-filter)
+                 (frontend-filter tlon-local-logs-frontend-errors-filter)
+                 (errors-query (format "{content_build=\"%s\"} %s" label errors-filter))
+                 (warnings-query (format "{content_build=\"%s\"} %s" label warnings-filter))
+                 (info-query (format "{content_build=\"%s\"} %s" label info-filter))
+                 (frontend-query (format "{content_build=\"%s\"} %s" label frontend-filter)))
             (tlon-local--loki-query-range
-             warnings-query tlon-local-logs-limit "backward" start end
-             (lambda (warnings-json)
+             errors-query tlon-local-logs-limit "backward" start end
+             (lambda (errors-json)
                (tlon-local--loki-query-range
-                info-query tlon-local-logs-limit "backward" start end
-                (lambda (info-json)
+                warnings-query tlon-local-logs-limit "backward" start end
+                (lambda (warnings-json)
                   (tlon-local--loki-query-range
-                   frontend-query tlon-local-logs-limit "backward" start end
-                   (lambda (frontend-json)
-                     (tlon-local--render-logs-buffer-all
-                      errors-json warnings-json info-json frontend-json lang label))))))))))))))
+                   info-query tlon-local-logs-limit "backward" start end
+                   (lambda (info-json)
+                     (tlon-local--loki-query-range
+                      frontend-query tlon-local-logs-limit "backward" start end
+                      (lambda (frontend-json)
+                        (tlon-local--render-logs-buffer-all
+                         errors-json warnings-json info-json frontend-json lang label))))))))))))))))
 
 (defun tlon-local--render-logs-buffer-all (errors-json warnings-json info-json frontend-json lang label)
   "Render Loki JSON for errors, warnings, informational and frontend for LANG.
@@ -367,20 +425,23 @@ content_build label identifier."
 (defun tlon-local--logs (lang kind)
   "Fetch and render logs for LANG. KIND is `errors' or `warnings'."
   (let ((lang (or lang (tlon-select-language 'code t "Language: " 'require-match))))
-    (tlon-local--get-latest-build-label
+    (tlon-local--wait-for-check-pages
      lang
-     (lambda (label)
-       (let* ((range (tlon-local--logs-time-range))
-              (start (car range))
-              (end (cdr range))
-              (filter (if (eq kind 'warnings)
-                          tlon-local-logs-warnings-filter
-                        tlon-local-logs-errors-filter))
-              (query (format "{content_build=\"%s\"} %s" label filter)))
-         (tlon-local--loki-query-range
-          query tlon-local-logs-limit "backward" start end
-          (lambda (json)
-            (tlon-local--render-logs-buffer json lang label kind))))))))
+     (lambda ()
+       (tlon-local--get-latest-build-label
+        lang
+        (lambda (label)
+          (let* ((range (tlon-local--logs-time-range))
+                 (start (car range))
+                 (end (cdr range))
+                 (filter (if (eq kind 'warnings)
+                             tlon-local-logs-warnings-filter
+                           tlon-local-logs-errors-filter))
+                 (query (format "{content_build=\"%s\"} %s" label filter)))
+            (tlon-local--loki-query-range
+             query tlon-local-logs-limit "backward" start end
+             (lambda (json)
+               (tlon-local--render-logs-buffer json lang label kind))))))))))
 
 (defun tlon-local--render-logs-buffer (json lang label kind)
   "Render Loki JSON into a buffer for LANG and build LABEL for KIND."
