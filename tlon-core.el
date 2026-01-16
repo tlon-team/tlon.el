@@ -1614,5 +1614,21 @@ keymap; otherwise switch to `special-mode'."
      (define-key map (kbd "RET") #'tlon-visit-file-at-point)
      map)))
 
+;;;;; uqbar
+
+;;;###autoload
+(defun tlon-uqbar-pull-all ()
+  "Run uqbar's pull-all.sh script.
+This is a thin wrapper around the repository's shell script."
+  (interactive)
+  (let* ((uqbar-dir (tlon-repo-lookup :dir :name "uqbar"))
+	 (script (and uqbar-dir (file-name-concat uqbar-dir "pull-all.sh"))))
+    (unless (and uqbar-dir (file-directory-p uqbar-dir))
+      (user-error "Could not locate the 'uqbar' repository"))
+    (unless (and script (file-exists-p script))
+      (user-error "Could not find %s" (or script "pull-all.sh")))
+    (let ((default-directory uqbar-dir))
+      (compile (format "bash %s" (shell-quote-argument script))))))
+
 (provide 'tlon-core)
 ;;; tlon-core.el ends here
