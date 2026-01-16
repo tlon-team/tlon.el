@@ -1276,6 +1276,21 @@ LANGUAGE is a string such as \"spanish\"."
 LANGUAGE-CODE is a string such as \"es\"."
   (file-name-concat tlon-json-dir language-code "url-correspondences.json"))
 
+(defun tlon-tts-abbreviations-file (language-code)
+  "Return the TTS abbreviations file for LANGUAGE-CODE.
+LANGUAGE-CODE is a string such as \"es\"."
+  (file-name-concat tlon-json-dir language-code "abbreviations.json"))
+
+(defun tlon-tts-phonetic-replacements-file (language-code)
+  "Return the TTS phonetic replacements file for LANGUAGE-CODE.
+LANGUAGE-CODE is a string such as \"es\"."
+  (file-name-concat tlon-json-dir language-code "phonetic-replacements.json"))
+
+(defun tlon-tts-phonetic-transcriptions-file (language-code)
+  "Return the TTS phonetic transcriptions file for LANGUAGE-CODE.
+LANGUAGE-CODE is a string such as \"es\"."
+  (file-name-concat tlon-json-dir language-code "phonetic-transcriptions.json"))
+
 ;;;;; JSON editing
 
 (defun tlon-edit-json-mapping (file outer-key-prompt inner-value-prompt)
