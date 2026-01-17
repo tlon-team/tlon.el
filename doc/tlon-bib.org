@@ -62,6 +62,12 @@ This module provides a wide range of functions for interacting with BibTeX files
   (setq tlon-bib-add-missing-citations-model '("Gemini" . gemini-pro-latest))
   #+end_src
 
+#+vindex: tlon-bib-replace-citations-max-concurrent
++ ~tlon-bib-replace-citations-max-concurrent~ :: Maximum number of Org files to process simultaneously when replacing citations with the AI agent (used by ~tlon-bib-replace-citations-in-org-files-in-directory~). Defaults to 5.
+  #+begin_src emacs-lisp
+  (setq tlon-bib-replace-citations-max-concurrent 5)
+  #+end_src
+
 ** Configuration
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-bib-config
@@ -436,6 +442,9 @@ These commands leverage AI to perform advanced bibliographic tasks.
 
 #+findex: tlon-bib-add-missing-citations
 + ~tlon-bib-add-missing-citations~ :: (Autoloaded) A companion to the above command. It instructs an AI agent to process a file or region, find all citations marked as missing (`{!...}`), use search tools to find an identifier (URL, DOI, etc.), and add a corresponding entry to the fluid bibliography file using the =add_bib_entry= tool. It then replaces the marked citation with a proper =<Cite>= tag.
+
+#+findex: tlon-bib-replace-citations-in-org-files-in-directory
++ ~tlon-bib-replace-citations-in-org-files-in-directory~ :: Runs ~tlon-bib-replace-citations-in-file~ on every =.org= file in a specified directory (non-recursively). Files are processed in batches of size ~tlon-bib-replace-citations-max-concurrent~, and the next batch starts only after all files in the current batch have finished processing.
 
 *** Field Modification Advice
 :PROPERTIES:
