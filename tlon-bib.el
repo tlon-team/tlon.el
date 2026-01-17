@@ -1213,6 +1213,50 @@ instead."
 	     (bibtex-extras-get-field "crossref"))
     (bibtex-next-entry)))
 
+;;;;;; Citation replacement (batching)
+
+(defun tlon-bib--replace-citations-in-files (files &optional label)
+  "Replace citations in FILES using the AI agent, batching requests.
+
+FILES is a list of file paths. LABEL, when non-nil, is used for progress
+messages.
+
+If the number of FILES exceeds `tlon-bib-replace-citations-max-concurrent',
+process them in batches of that size, starting the next batch only after all
+requests in the current batch have finished."
+  (let* ((files (delq nil (mapcar #'expand-file-name files)))
+	 (pending (copy-sequence files))
+	 (batch-size (max 1 tlon-bib-replace-citations-max-concurrent))
+	 (batch-num 0)
+	 (label (or label "file")))
+    (unless files
+      (user-error "No files selected"))
+    (cl-labels
+	((start-next-batch ()
+	   (when pending
+	     (cl-incf batch-num)
+	     (let* ((batch (cl-subseq pending 0 (min batch-size (length pending))))
+		    (remaining (nthcdr (length batch) pending))
+		    (done 0)
+		    (total (length batch))
+		    (failures 0))
+	       (setq pending remaining)
+	       (message "Starting batch %d (%d %s%s)..."
+			batch-num total label (if (= total 1) "" "s"))
+	       (dolist (file batch)
+		 (tlon-bib--replace-citations-in-file
+		  file
+		  (lambda (_file ok)
+		    (cl-incf done)
+		    (unless ok (cl-incf failures))
+		    (when (= done total)
+		      (message "Finished batch %d (%d ok, %d failed)."
+			       batch-num (- total failures) failures)
+		      (start-next-batch)))))))))
+      (message "Processing %d %s%s (batch size: %d)..."
+	       (length files) label (if (= (length files) 1) "" "s") batch-size)
+      (start-next-batch))))
+
 ;;;###autoload
 (defun tlon-bib-check-bibkeys (&optional file)
   "Check if all BibTeX keys in FILE are valid.
@@ -1832,10 +1876,7 @@ non-nil response)."
 ;;;###autoload
 (defun tlon-bib-replace-citations-in-file (&optional file)
   "Use AI to find and replace bibliographic citations with citation tags.
-When called from Dired with marked files, process all marked files. If the
-number of selected files exceeds `tlon-bib-replace-citations-max-concurrent',
-process them in batches of that size, starting the next batch only after all
-requests in the current batch have finished.
+When called from Dired with marked files, process all marked files.
 
 When called from a buffer visiting a file with an active region, process the
 current file (the agent will still see the full file contents).
@@ -1844,46 +1885,17 @@ Otherwise, prompt for a file.
 
 FILE, when non-nil, is processed directly."
   (interactive)
-  (let* ((files
-	  (cond
-	   (file (list file))
-	   ((and (derived-mode-p 'dired-mode) (fboundp 'dired-get-marked-files))
-	    (dired-get-marked-files nil nil))
-	   ((region-active-p)
-	    (list (or (buffer-file-name) (user-error "Buffer is not visiting a file"))))
-	   (t
-	    (list (read-file-name "File to process: " nil nil nil
-				  (file-relative-name (buffer-file-name) default-directory))))))
-	 (pending (copy-sequence files))
-	 (batch-size (max 1 tlon-bib-replace-citations-max-concurrent))
-	 (batch-num 0))
-    (unless files
-      (user-error "No files selected"))
-    (cl-labels
-	((start-next-batch ()
-	   (when pending
-	     (cl-incf batch-num)
-	     (let* ((batch (cl-subseq pending 0 (min batch-size (length pending))))
-		    (remaining (nthcdr (length batch) pending))
-		    (done 0)
-		    (total (length batch))
-		    (failures 0))
-	       (setq pending remaining)
-	       (message "Starting batch %d (%d file%s)..."
-			batch-num total (if (= total 1) "" "s"))
-	       (dolist (f batch)
-		 (tlon-bib--replace-citations-in-file
-		  f
-		  (lambda (_file ok)
-		    (cl-incf done)
-		    (unless ok (cl-incf failures))
-		    (when (= done total)
-		      (message "Finished batch %d (%d ok, %d failed)."
-			       batch-num (- total failures) failures)
-		      (start-next-batch)))))))))
-      (message "Processing %d file%s (batch size: %d)..."
-	       (length files) (if (= (length files) 1) "" "s") batch-size)
-      (start-next-batch))))
+  (let ((files
+	 (cond
+	  (file (list file))
+	  ((and (derived-mode-p 'dired-mode) (fboundp 'dired-get-marked-files))
+	   (dired-get-marked-files nil nil))
+	  ((region-active-p)
+	   (list (or (buffer-file-name) (user-error "Buffer is not visiting a file"))))
+	  (t
+	   (list (read-file-name "File to process: " nil nil nil
+				 (file-relative-name (buffer-file-name) default-directory)))))))
+    (tlon-bib--replace-citations-in-files files "file")))
 
 (defun tlon-bib-get-citation-replacement-prompt-examples (org)
   "Return a list of examples for replacing citations.
@@ -1908,38 +1920,10 @@ Files are processed in non-recursive batches of size
 after all requests in the current batch have finished."
   (interactive "DDirectory: ")
   (let* ((directory (file-name-as-directory (expand-file-name directory)))
-	 (files (directory-files directory t "\\.org\\'"))
-	 (pending (copy-sequence files))
-	 (batch-size (max 1 tlon-bib-replace-citations-max-concurrent))
-	 (batch-num 0))
+	 (files (directory-files directory t "\\.org\\'")))
     (unless files
       (user-error "No .org files found in %s" directory))
-    (cl-labels
-	((start-next-batch ()
-	   (when pending
-	     (cl-incf batch-num)
-	     (let* ((batch (cl-subseq pending 0 (min batch-size (length pending))))
-		    (remaining (nthcdr (length batch) pending))
-		    (done 0)
-		    (total (length batch))
-		    (failures 0))
-	       (setq pending remaining)
-	       (message "Starting batch %d (%d file%s)..."
-			batch-num total (if (= total 1) "" "s"))
-	       (dolist (file batch)
-		 (tlon-bib--replace-citations-in-file
-		  file
-		  (lambda (_file ok)
-		    (cl-incf done)
-		    (unless ok (cl-incf failures))
-		    (when (= done total)
-		      (message "Finished batch %d (%d ok, %d failed)."
-			       batch-num (- total failures) failures)
-		      (start-next-batch)))))))))
-      (message "Processing %d org file%s in %s (batch size: %d)..."
-	       (length files) (if (= (length files) 1) "" "s")
-	       directory batch-size)
-      (start-next-batch))))
+    (tlon-bib--replace-citations-in-files files "org file")))
 
 ;;;###autoload
 (defun tlon-bib-add-missing-citations ()
