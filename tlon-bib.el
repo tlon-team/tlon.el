@@ -38,6 +38,7 @@
 (require 'tlon-ai)
 (require 'transient)
 (require 'subr-x)
+(require 'json)
 
 ;;;; User options
 
