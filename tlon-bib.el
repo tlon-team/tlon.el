@@ -2144,3 +2144,6 @@ If DATE has a time component (e.g., YYYY-MM-DDTHH:MM:SS), strip it."
 
 (provide 'tlon-bib)
 ;;; tlon-bib.el ends here
+
+;; Local Variables:
+;; End:
