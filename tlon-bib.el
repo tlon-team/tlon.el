@@ -1988,8 +1988,8 @@ If nil, use the default model."
     ("m c" "Check BibTeX keys"                       tlon-bib-check-bibkeys)
     ""
     "AI"
-    ("m r" "Replace citations"                       tlon-bib-replace-citations-in-file)
-    ("m R" "Replace citations in org dir"            tlon-bib-replace-citations-in-org-files-in-directory)
+    ("m r" "Replace citations in file(s)"            tlon-bib-replace-citations-in-file)
+    ("m R" "Replace citations in dir"                tlon-bib-replace-citations-in-org-files-in-directory)
     ("m a" "Add missing citations"                   tlon-bib-add-missing-citations)
     ""
     "AI Models"
