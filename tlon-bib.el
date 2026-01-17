@@ -1280,7 +1280,7 @@ This resolves to the \"json\" directory inside the babel-refs repo."
 (defun tlon-bib--ensure-lang-code (code-or-language)
   "Return a two-letter code for CODE-OR-LANGUAGE.
 Accepts either a language CODE (e.g., \"es\") or a standard language NAME
-(e.g., \"spanish\"). Signals a `user-error' if it cannot be resolved."
+\\=(e.g., \"spanish\"). Signals a `user-error' if it cannot be resolved."
   (unless (and code-or-language
                (stringp code-or-language)
                (not (string-blank-p code-or-language)))
@@ -1828,20 +1828,32 @@ non-nil response)."
     (tlon-make-gptel-request prompt nil callback
 			     tlon-bib-replace-citations-model t nil tools nil '("ddg-search"))))
 
+(declare-function dired-get-marked-files "dired")
 ;;;###autoload
-(defun tlon-bib-replace-citations-in-file ()
-  "Use AI to find and replace bibliographic citations in a file with <Cite> tags.
-This command prompts for a file and then instructs an AI agent, equipped with
-tools like `search_bibliography`, `read_file`, and `edit_file`, to process the
-file. The AI will identify citations, find their corresponding BibTeX keys, and
-replace them with a citation tag based on file type (\"<Cite bibKey=\"KEY\" />\"
-if Markdown, \"[cite:@KEY]\", if org-mode."
+(defun tlon-bib-replace-citations-in-file (&optional file)
+  "Use AI to find and replace bibliographic citations with citation tags.
+
+When called from Dired with marked files, process all marked files.
+
+When called from a buffer visiting a file with an active region, process the
+current file (the agent will still see the full file contents).
+
+Otherwise, prompt for a file.
+
+FILE, when non-nil, is processed directly."
   (interactive)
-  (let ((file (if (region-active-p)
-		  (buffer-file-name)
-		(read-file-name "File to process: " nil nil nil
-				(file-relative-name (buffer-file-name) default-directory)))))
-    (tlon-bib--replace-citations-in-file file)))
+  (let ((files
+	 (cond
+	  (file (list file))
+	  ((and (derived-mode-p 'dired-mode) (fboundp 'dired-get-marked-files))
+	   (dired-get-marked-files nil nil))
+	  ((region-active-p)
+	   (list (or (buffer-file-name) (user-error "Buffer is not visiting a file"))))
+	  (t
+	   (list (read-file-name "File to process: " nil nil nil
+				 (file-relative-name (buffer-file-name) default-directory)))))))
+    (dolist (f files)
+      (tlon-bib--replace-citations-in-file f))))
 
 (defun tlon-bib-get-citation-replacement-prompt-examples (org)
   "Return a list of examples for replacing citations.
@@ -1963,6 +1975,7 @@ If nil, use the default model."
     ""
     "AI"
     ("m r" "Replace citations"                       tlon-bib-replace-citations-in-file)
+    ("m R" "Replace citations in org dir"            tlon-bib-replace-citations-in-org-files-in-directory)
     ("m a" "Add missing citations"                   tlon-bib-add-missing-citations)
     ""
     "AI Models"
