@@ -1893,7 +1893,7 @@ after all requests in the current batch have finished."
 		    (when (= done total)
 		      (message "Finished batch %d (%d ok, %d failed)."
 			       batch-num (- total failures) failures)
-		      (start-next-batch))))))))
+		      (start-next-batch)))))))))
       (message "Processing %d org file%s in %s (batch size: %d)..."
 	       (length files) (if (= (length files) 1) "" "s")
 	       directory batch-size)
