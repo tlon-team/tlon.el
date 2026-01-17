@@ -70,6 +70,13 @@ default `gptel-model'."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-bib)
 
+(defcustom tlon-bib-replace-citations-max-concurrent 5
+  "Number of org files to process simultaneously when replacing citations.
+This option controls the batch size for
+`tlon-bib-replace-citations-in-org-files-in-directory'."
+  :type 'natnum
+  :group 'tlon-bib)
+
 ;;;; Variables
 
 ;;;;; Files
@@ -1796,6 +1803,31 @@ replacements. RESPONSE is the AI's response, INFO is the response info."
 
 ;;;;;; Citation Replacement (AI Agent)
 
+(defun tlon-bib--replace-citations-in-file (file &optional done-callback)
+  "Replace citations in FILE with <Cite> tags using the AI agent.
+When DONE-CALLBACK is non-nil, call it with two arguments (FILE OK).
+OK is non-nil when the request finishes without error (i.e., when we receive a
+non-nil response)."
+  (let* ((org-file-p (string-suffix-p ".org" file t))
+	 (examples (tlon-bib-get-citation-replacement-prompt-examples org-file-p))
+	 (prompt-template (apply #'format tlon-bib-replace-citations-prompt examples))
+	 (prompt (format prompt-template file
+			 ;; return file contents
+			 (with-temp-buffer
+			   (insert-file-contents file)
+			   (buffer-string))))
+	 (tools '("search_bibliography" "fetch_content" "search" "edit_file" "apply_diff" "replace_file_contents"))
+	 (callback
+	  (lambda (response info)
+	    (tlon-bib-replace-citations-callback response info)
+	    (when done-callback
+	      (funcall done-callback file (not (null response)))))))
+    (unless (file-exists-p file)
+      (user-error "File does not exist: %s" file))
+    (message "Requesting AI to process citations in %s..." (file-name-nondirectory file))
+    (tlon-make-gptel-request prompt nil callback
+			     tlon-bib-replace-citations-model t nil tools nil '("ddg-search"))))
+
 ;;;###autoload
 (defun tlon-bib-replace-citations-in-file ()
   "Use AI to find and replace bibliographic citations in a file with <Cite> tags.
@@ -1805,26 +1837,11 @@ file. The AI will identify citations, find their corresponding BibTeX keys, and
 replace them with a citation tag based on file type (\"<Cite bibKey=\"KEY\" />\"
 if Markdown, \"[cite:@KEY]\", if org-mode."
   (interactive)
-  (let* ((file (if (region-active-p)
-		   (buffer-file-name)
-		 (read-file-name "File to process: " nil nil nil
-				 (file-relative-name (buffer-file-name) default-directory))))
-	 (org-file-p (string-suffix-p ".org" file t))
-	 (examples (tlon-bib-get-citation-replacement-prompt-examples org-file-p))
-	 (prompt-template (apply #'format tlon-bib-replace-citations-prompt examples))
-	 (prompt (format prompt-template file
-			 (if (region-active-p)
-			     (buffer-substring-no-properties (region-beginning) (region-end))
-			   ;; return file contents
-			   (with-temp-buffer
-			     (insert-file-contents file)
-			     (buffer-string)))))
-	 (tools '("search_bibliography" "fetch_content" "search" "edit_file" "apply_diff" "replace_file_contents")))
-    (unless (file-exists-p file)
-      (user-error "File does not exist: %s" file))
-    (message "Requesting AI to process citations in %s..." (file-name-nondirectory file))
-    (tlon-make-gptel-request prompt nil #'tlon-bib-replace-citations-callback
-			     tlon-bib-replace-citations-model t nil tools nil '("ddg-search"))))
+  (let ((file (if (region-active-p)
+		  (buffer-file-name)
+		(read-file-name "File to process: " nil nil nil
+				(file-relative-name (buffer-file-name) default-directory)))))
+    (tlon-bib--replace-citations-in-file file)))
 
 (defun tlon-bib-get-citation-replacement-prompt-examples (org)
   "Return a list of examples for replacing citations.
@@ -1840,6 +1857,47 @@ This function primarily exists to confirm that the AI agent has finished its
 task, as the file modifications are expected to be done via tools."
   (unless response
     (tlon-ai-callback-fail info)))
+
+;;;###autoload
+(defun tlon-bib-replace-citations-in-org-files-in-directory (directory)
+  "Run `tlon-bib-replace-citations-in-file' on each .org file in DIRECTORY.
+Files are processed in non-recursive batches of size
+`tlon-bib-replace-citations-max-concurrent'. The next batch is started only
+after all requests in the current batch have finished."
+  (interactive "DDirectory: ")
+  (let* ((directory (file-name-as-directory (expand-file-name directory)))
+	 (files (directory-files directory t "\\.org\\'"))
+	 (pending (copy-sequence files))
+	 (batch-size (max 1 tlon-bib-replace-citations-max-concurrent))
+	 (batch-num 0))
+    (unless files
+      (user-error "No .org files found in %s" directory))
+    (cl-labels
+	((start-next-batch ()
+	   (when pending
+	     (cl-incf batch-num)
+	     (let* ((batch (cl-subseq pending 0 (min batch-size (length pending))))
+		    (remaining (nthcdr (length batch) pending))
+		    (done 0)
+		    (total (length batch))
+		    (failures 0))
+	       (setq pending remaining)
+	       (message "Starting batch %d (%d file%s)..."
+			batch-num total (if (= total 1) "" "s"))
+	       (dolist (file batch)
+		 (tlon-bib--replace-citations-in-file
+		  file
+		  (lambda (_file ok)
+		    (cl-incf done)
+		    (unless ok (cl-incf failures))
+		    (when (= done total)
+		      (message "Finished batch %d (%d ok, %d failed)."
+			       batch-num (- total failures) failures)
+		      (start-next-batch))))))))
+      (message "Processing %d org file%s in %s (batch size: %d)..."
+	       (length files) (if (= (length files) 1) "" "s")
+	       directory batch-size)
+      (start-next-batch))))
 
 ;;;###autoload
 (defun tlon-bib-add-missing-citations ()
