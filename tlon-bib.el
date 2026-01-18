@@ -28,17 +28,17 @@
 
 (require 'bibtex-extras)
 (require 'citar-cache)
+(require 'cl-lib)
 (require 'gptel)
 (require 'gptel-extras)
-(require 'seq)
-(require 'cl-lib)
-(require 'shut-up)
-(require 'tlon)
-(require 'tlon-core)
-(require 'tlon-ai)
-(require 'transient)
-(require 'subr-x)
 (require 'json)
+(require 'seq)
+(require 'shut-up)
+(require 'subr-x)
+(require 'tlon)
+(require 'tlon-ai)
+(require 'tlon-core)
+(require 'transient)
 
 ;;;; User options
 
