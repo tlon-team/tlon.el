@@ -733,6 +733,7 @@ See <https://help.openai.com/en/articles/8555505-tts-api#h_273e638099>.")
     (:name "Bruce" :id "qUqZ27WoGID6BUp35xTV" :language "multilingual" :gender "male" :role "main")
     (:name "Cristian" :id "6hfb8itl0CXl6ZA7WVIA" :language "multilingual" :gender "male")
     (:name "Hades" :id "y3uxYtdWYpmzg8Wwx2k3" :language "multilingual" :gender "male")
+    (:name "David Martin 1" :id "Nh2zY9kknu6z4pZy6FhD" :language "multilingual" :gender "male")
     (:name "Mariluz" :id "m1VE7dnwBN0zMer3LcKv" :language "multilingual" :gender "female" :role "main")
     (:name "Michael" :id "8mLUlN9GCPCERe4bI7Wx" :language "multilingual" :gender "male" :role "alternate")
     (:name "Nate Silver" :id "IT5b7X3vlpkwXPfi0xBA" :language "multilingual" :gender "main"
