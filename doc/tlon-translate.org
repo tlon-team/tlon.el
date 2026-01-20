@@ -84,7 +84,7 @@ Note on counterpart resolution:
 + ~tlon-translate-abstract-here~ :: Translate the abstract of the entry at point. If the entry is a DB translation missing an abstract, the original’s abstract is translated into the entry’s language and written into =db.bib=. Otherwise, you select a target language; if a DB translation entry exists for that language, the translated abstract is written into that entry’s =abstract= field in =db.bib= (prompting before overwriting). If no such entry exists, it is stored in the per-language JSON store at =babel-refs/json/<code>/abstract-translations.json=. When both the source and target are in =tlon-project-languages=, a glossary is required; otherwise the translation proceeds without one.
 
 #+findex: tlon-translate-remove-duplicate-abstract-translations
-+ ~tlon-translate-remove-duplicate-abstract-translations~ :: Remove abstract translations from the per-language JSON files under =babel-refs/json/<code>/abstract-translations.json= when a corresponding translation entry exists in =db.bib= (detected via the =translation= and =langid= fields). Reports how many items were pruned and emits progress logs during the scan.
++ ~tlon-translate-remove-duplicate-abstract-translations~ :: Remove abstract translations from the per-language JSON files under =babel-refs/json/<code>/abstract-translations.json= when a corresponding translation entry exists in =db.bib= (detected via the =translation= and =langid= fields). The JSON stores are keyed by the original entry key (the value of the BibTeX =translation= field), so the command prunes those original keys (not the translation entry keys). Reports how many items were pruned and emits progress logs during the scan.
 
 *** Revision
 :PROPERTIES:
