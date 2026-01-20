@@ -979,21 +979,22 @@ FILE is the absolute path to a file potentially modified by THUNK."
 ;;;###autoload
 (defun tlon-translate-remove-duplicate-abstract-translations ()
   "Remove JSON abstract entries where a DB translation exists, per language.
-For each DB translation entry, delete the corresponding translation entry KEY
-from the per-language JSON file for that entry's language."
+For each DB translation entry, delete the corresponding ORIGINAL KEY (the value
+of the BibTeX \"translation\" field) from the per-language JSON file for that
+entry's language."
   (interactive)
   (let ((buf (find-file-noselect tlon-file-db))
         (lang->translation-keys (make-hash-table :test #'equal))
         (langs 0)
         (total-removals 0))
-    ;; Build lang → translation-keys-to-remove map by parsing db.bib once.
+    ;; Build lang → original-keys-to-remove map by parsing db.bib once.
     (with-current-buffer buf
       (save-excursion
         (save-restriction
           (widen)
           (goto-char (point-min))
           (bibtex-map-entries
-           (lambda (key beg _end)
+           (lambda (_key beg _end)
              (goto-char beg)
              (let* ((entry (bibtex-parse-entry t))
                     (orig (cdr (assoc-string "translation" entry t)))
@@ -1001,12 +1002,12 @@ from the per-language JSON file for that entry's language."
                     (lang-code (and (stringp lang-name)
                                     (tlon-lookup tlon-languages-properties :code :name lang-name))))
                ;; We only prune JSON when the DB entry is a translation entry.
-               ;; JSON duplicate keys use the translation entry key (e.g., Foo2020BarEs),
-               ;; not the original key stored in the `translation' field.
+               ;; The per-language JSON stores are keyed by the ORIGINAL key (ORIG),
+               ;; not by the translation entry key.
                (when (and (stringp orig) (not (string-blank-p orig))
                           (stringp lang-code) (not (string-blank-p lang-code)))
                  (puthash lang-code
-                          (cons key (gethash lang-code lang->translation-keys))
+                          (cons orig (gethash lang-code lang->translation-keys))
                           lang->translation-keys))))))))
     (if (zerop (hash-table-count lang->translation-keys))
         (tlon-translate--log "No DB translation entries found; nothing to prune from JSON stores")
