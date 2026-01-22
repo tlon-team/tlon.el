@@ -145,7 +145,8 @@ DIR is the directory where the repo is stored."
     ("q j" "uqbar-ja"                     tlon-magit-browse-uqbar-ja)
     ("q k" "uqbar-ko"                     tlon-magit-browse-uqbar-ko)
     ("q b" "uqbar-sr"                     tlon-magit-browse-uqbar-sr)
-    ("q u" "uqbar-tr"                     tlon-magit-browse-uqbar-tr)]
+    ("q u" "uqbar-tr"                     tlon-magit-browse-uqbar-tr)
+    ("q z" "uqbar-zh"                     tlon-magit-browse-uqbar-zh)]
    ["Projects"
     ("8 p" "80k podcast"                  tlon-magit-browse-80k-podcast)
     ("8 a" "ai-in-context"                tlon-magit-browse-ai-in-context)
@@ -223,7 +224,8 @@ DIR is the directory where the repo is stored."
     ("q j" "uqbar-ja"                     tlon-dired-browse-uqbar-ja)
     ("q k" "uqbar-ko"                     tlon-dired-browse-uqbar-ko)
     ("q b" "uqbar-sr"                     tlon-dired-browse-uqbar-sr)
-    ("q u" "uqbar-tr"                     tlon-dired-browse-uqbar-tr)]
+    ("q u" "uqbar-tr"                     tlon-dired-browse-uqbar-tr)
+    ("q z" "uqbar-zh"                     tlon-dired-browse-uqbar-zh)]
    ["Projects"
     ("8 p" "80k podcast"                  tlon-dired-browse-80k-podcast)
     ("8 a" "ai-in-context"                tlon-dired-browse-ai-in-context)
