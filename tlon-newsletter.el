@@ -100,8 +100,9 @@ news. The original input file is then overwritten with this new draft."
 	 (content-year (tlon-newsletter-get-content-year (file-name-base input-file-path)))
 	 (content-month (tlon-newsletter-get-previous-month issue-month))
 	 (content-month-year (format "%s de %s" content-month content-year))
+	 (one-month-ago-timestamp (tlon-newsletter--get-one-month-ago-timestamp))
 	 (final-prompt (tlon-ai-maybe-edit-prompt
-			(format raw-prompt content-month-year issue-month sample-issue-content content))))
+			(format raw-prompt content-month-year issue-month one-month-ago-timestamp sample-issue-content content))))
     (tlon-make-gptel-request
      final-prompt
      nil
@@ -181,6 +182,12 @@ response INFO."
       (user-error "Aborted"))))
 
 ;;;;;; Handle dates
+
+(defun tlon-newsletter--get-one-month-ago-timestamp ()
+  "Return the Unix timestamp for one month ago as a string."
+  (let* ((now (current-time))
+         (one-month-ago (time-subtract now (days-to-time 30))))
+    (format-time-string "%s" one-month-ago)))
 
 (defun tlon-newsletter--next-year-month (&optional time)
   "Return the YEAR and MONTH of the next calendar month as a cons cell.
