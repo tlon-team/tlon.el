@@ -278,7 +278,7 @@ If FILE is not provided, use the file visited by the current buffer."
       (magit-status-setup-buffer)
     (user-error "Repo `%s' not found" repo)))
 
-(declare-function files-extras-buffer-file-name "file-extras")
+(declare-function files-extras-buffer-file-name "files-extras")
 (autoload 'magit-extras-get-commit-file "magit-extra")
 (defun tlon-get-commit-key ()
   "Get key of commit file."
