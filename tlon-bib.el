@@ -1531,7 +1531,7 @@ ORIG-FUN is the original function, ARGS are the arguments passed to it."
 
 ;;;;; Misc
 
-(declare-function files-extras-lines-to-list "file-extras")
+(declare-function files-extras-lines-to-list "files-extras")
 (declare-function zotra-extras-add-multiple-urls "zotra-extras")
 (defun tlon-bib-add-multiple-urls-from-file (file)
   "Prompt user for FILE with a list of URLs and add each to `tlon-file-fluid'."
