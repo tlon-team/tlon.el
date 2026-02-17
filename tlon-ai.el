@@ -1157,7 +1157,8 @@ Otherwise return INFO."
   "Common function for getting an abstract.
 PROMPT is the prompt to use, STRING is the string to summarize, LANGUAGE is
 the language of the string, and CALLBACK is the callback function."
-  (if-let ((prompt (tlon-lookup prompt :prompt :language language)))
+  (if-let ((prompt (tlon-ai-maybe-edit-prompt
+		   (tlon-lookup prompt :prompt :language language))))
       (progn
 	(tlon-make-gptel-request prompt string callback tlon-ai-summarization-model)
 	(message "Getting AI abstract..."))
