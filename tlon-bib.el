@@ -473,7 +473,7 @@ remaining entries with linked files for AI processing."
 
 (defun tlon-batch-abstract--make-callback (key num)
   "Return a callback for the AI abstract request for KEY (entry NUM)."
-  (lambda (response info)
+  (lambda (response _info)
     (condition-case err
 	(if (not response)
 	    (message "[AI %d/%d] Failed for %s" num tlon-batch-abstract--total key)
