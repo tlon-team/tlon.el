@@ -369,6 +369,123 @@ errors gracefully."
   ;; add a period at the end of the abstract if missing
   (replace-regexp-in-string "\\([^\\.]\\)$" "\\1." string))
 
+;;;;; Batch abstract
+
+(defvar tlon-batch-abstract--queue nil
+  "Queue of keys awaiting AI abstract processing.")
+
+(defvar tlon-batch-abstract--total 0
+  "Total entries queued for AI abstract processing.")
+
+(defvar tlon-batch-abstract--ai-done 0
+  "Count of AI abstracts successfully set.")
+
+(declare-function tlon-make-gptel-request "tlon-ai")
+(declare-function tlon-ai-summarize-set-bibtex-abstract "tlon-ai")
+(defvar tlon-ai-get-abstract-prompts)
+(defvar tlon-ai-summarization-model)
+;;;###autoload
+(defun tlon-batch-set-abstracts ()
+  "Add abstracts to all entries in the current buffer that lack one.
+First try non-AI sources (CrossRef, Google Books, Zotra), then queue
+remaining entries with linked files for AI processing."
+  (interactive)
+  (unless (derived-mode-p 'bibtex-mode)
+    (user-error "Not in a BibTeX buffer"))
+  (widen)
+  (let ((non-ai-set 0) (non-ai-fail 0) (skipped 0)
+	(ai-candidates nil))
+    ;; Pass 1: non-AI
+    (bibtex-map-entries
+     (lambda (key _beg _end)
+       (if (ignore-errors (bibtex-extras-get-field "abstract"))
+	   (setq skipped (1+ skipped))
+	 (condition-case nil
+	     (let* ((doi (ignore-errors (bibtex-extras-get-field "doi")))
+		    (isbn (ignore-errors (bibtex-extras-get-field "isbn")))
+		    (url (ignore-errors (bibtex-extras-get-field "url")))
+		    (value (or (tlon-fetch-abstract-from-crossref doi)
+			       (tlon-fetch-abstract-from-google-books isbn)
+			       (tlon-fetch-abstract-with-zotra url url))))
+	       (if value
+		   (progn
+		     (bibtex-set-field "abstract" (tlon-abstract-cleanup value))
+		     (setq non-ai-set (1+ non-ai-set))
+		     (message "[non-AI %d] Set abstract for %s" non-ai-set key))
+		 (when (ignore-errors (ebib-extras-get-text-file))
+		   (push key ai-candidates))
+		 (setq non-ai-fail (1+ non-ai-fail))))
+	   (error (setq non-ai-fail (1+ non-ai-fail)))))))
+    (save-buffer)
+    (message "Non-AI pass: %d set, %d skipped, %d failed (%d queued for AI)."
+	     non-ai-set skipped non-ai-fail (length ai-candidates))
+    ;; Pass 2: AI
+    (if ai-candidates
+	(progn
+	  (setq tlon-batch-abstract--queue (nreverse ai-candidates)
+		tlon-batch-abstract--total (length ai-candidates)
+		tlon-batch-abstract--ai-done 0)
+	  (tlon-batch-abstract--process-ai-queue))
+      (message "No entries to process with AI."))))
+
+(defun tlon-batch-abstract--process-ai-queue ()
+  "Process the next entry in the AI abstract queue."
+  (if (null tlon-batch-abstract--queue)
+      (progn
+	(save-buffer)
+	(message "AI pass complete. %d abstracts set." tlon-batch-abstract--ai-done))
+    (let* ((key (pop tlon-batch-abstract--queue))
+	   (num (- tlon-batch-abstract--total (length tlon-batch-abstract--queue))))
+      (condition-case err
+	  (progn
+	    (widen)
+	    (save-excursion
+	      (goto-char (point-min))
+	      (if (bibtex-search-entry key)
+		  (let* ((file (ignore-errors (ebib-extras-get-text-file)))
+			 (language (or (ignore-errors (bibtex-extras-get-field "langid"))
+				       "english"))
+			 (lang-code (tlon-get-language-code-from-name language))
+			 (prompt (when lang-code
+				   (tlon-lookup tlon-ai-get-abstract-prompts
+					       :prompt :language lang-code))))
+		    (if (and file prompt)
+			(let ((string (ignore-errors (tlon-get-file-as-string file))))
+			  (if string
+			      (progn
+				(message "[AI %d/%d] %s..."
+					 num tlon-batch-abstract--total key)
+				(tlon-make-gptel-request
+				 prompt string
+				 (tlon-batch-abstract--make-callback key num)
+				 tlon-ai-summarization-model))
+			    (message "[AI %d/%d] Could not read file for %s"
+				     num tlon-batch-abstract--total key)
+			    (run-with-idle-timer 0 nil #'tlon-batch-abstract--process-ai-queue)))
+		      (message "[AI %d/%d] Skipping %s (no prompt for %s)"
+			       num tlon-batch-abstract--total key (or lang-code "?"))
+		      (run-with-idle-timer 0 nil #'tlon-batch-abstract--process-ai-queue)))
+		(message "[AI %d/%d] Key not found: %s" num tlon-batch-abstract--total key)
+		(run-with-idle-timer 0 nil #'tlon-batch-abstract--process-ai-queue))))
+	(error
+	 (message "[AI %d/%d] Error for %s: %S" num tlon-batch-abstract--total key err)
+	 (run-with-idle-timer 0 nil #'tlon-batch-abstract--process-ai-queue))))))
+
+(defun tlon-batch-abstract--make-callback (key num)
+  "Return a callback for the AI abstract request for KEY (entry NUM)."
+  (lambda (response info)
+    (condition-case err
+	(if (not response)
+	    (message "[AI %d/%d] Failed for %s" num tlon-batch-abstract--total key)
+	  (tlon-ai-summarize-set-bibtex-abstract response key)
+	  (setq tlon-batch-abstract--ai-done (1+ tlon-batch-abstract--ai-done))
+	  (message "[AI %d/%d] Set abstract for %s"
+		   num tlon-batch-abstract--total key))
+      (error
+       (message "[AI %d/%d] Callback error for %s: %S"
+		num tlon-batch-abstract--total key err)))
+    (run-with-idle-timer 1 nil #'tlon-batch-abstract--process-ai-queue)))
+
 ;;;;; Move entries
 
 ;;;###autoload
