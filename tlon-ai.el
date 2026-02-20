@@ -562,7 +562,9 @@ or PDF file associated with the current BibTeX entry, if either is found.
 					     (write-file file))
 					   file))))))
 	(tlon-get-file-as-string file)
-      (cond ((derived-mode-p 'markdown-mode)
+      (cond ((derived-mode-p 'bibtex-mode 'ebib-entry-mode)
+	     nil) ; no linked file found for this entry
+	    ((derived-mode-p 'markdown-mode)
 	     (tlon-md-read-content file))
 	    (t
 	     (buffer-substring-no-properties (point-min) (point-max)))))))
