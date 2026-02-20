@@ -505,20 +505,22 @@ This helps avoid calling CALLBACK for non-text streaming chunks."
 (declare-function ebib-extras-get-field "ebib-extras")
 (declare-function ebib--get-key-at-point "ebib")
 (defun tlon-ai-batch-continue ()
-  "Move to the next entry and call `tlon-ai-batch-fun'."
+  "Move to the next entry and call `tlon-ai-batch-fun'.
+Stop when there are no more entries."
   (when tlon-ai-batch-fun
-    (let ((next-key-info "N/A")) ; Default message part
+    (let ((prev-pos (point))
+	  (next-key nil))
       (pcase major-mode
 	('bibtex-mode
 	 (bibtex-next-entry)
-	 (setq next-key-info (or (bibtex-extras-get-key) "N/A")))
+	 (setq next-key (ignore-errors (bibtex-extras-get-key))))
 	('ebib-entry-mode
 	 (ebib-extras-next-entry)
-	 (setq next-key-info (or (ebib--get-key-at-point) "N/A"))))
-      ;; Always message, even if mode didn't match or key is nil
-      (message "Moving point to next entry (key: %s)." next-key-info))
-    ;; Always call the batch function if set
-    (funcall tlon-ai-batch-fun)))
+	 (setq next-key (ignore-errors (ebib--get-key-at-point)))))
+      (if (or (null next-key) (= (point) prev-pos))
+	  (message "Batch processing complete.")
+	(message "Moving point to next entry (key: %s)." next-key)
+	(funcall tlon-ai-batch-fun)))))
 
 (defun tlon-ai-try-try-try-again (original-fun)
   "Call ORIGINAL-FUN up to three times if it its response is nil, then give up."
@@ -1043,7 +1045,9 @@ To get an abstract with AI, the function uses
   (interactive)
   (if (tlon-fetch-and-set-abstract)
       ;; Non-AI succeeded; continue to next entry in batch mode
-      (run-with-idle-timer 0 nil #'tlon-ai-batch-continue)
+      (let ((buf (current-buffer)))
+	(run-with-idle-timer 0 nil (lambda () (with-current-buffer buf
+						(tlon-ai-batch-continue)))))
     ;; Non-AI failed or was skipped; try AI (handles batch continuation internally)
     (tlon-get-abstract-with-ai)))
 
@@ -1080,7 +1084,9 @@ TYPE is either `abstract' or `synopsis'."
     (when tlon-debug
       (message "`%s' is scheduling `tlon-ai-batch-continue' via timer." "tlon-get-abstract-with-ai"))
     ;; Use a timer to avoid deep recursion in batch mode when skipping many items
-    (run-with-idle-timer 0 nil #'tlon-ai-batch-continue)))
+    (let ((buf (current-buffer)))
+      (run-with-idle-timer 0 nil (lambda () (with-current-buffer buf
+					      (tlon-ai-batch-continue)))))))
 
 (declare-function bibtex-extras-get-field "bibtex-extras")
 (defun tlon-shorten-abstract-with-ai ()
