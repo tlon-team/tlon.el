@@ -250,11 +250,6 @@ abstract will, or will not, replace the existing one, respectively."
 
 (defvar tlon-ai-batch-fun)
 (autoload 'zotra-extras-fetch-field "zotra-extras")
-(defvar tlon-zotra-abstract-excluded-domains '("imdb.com")
-  "Domains from which Zotra should not attempt to fetch abstracts.
-Sites like IMDB yield only runtime strings (e.g. \"1h 35m | R\") rather
-than real abstracts.")
-
 (defun tlon-fetch-abstract-with-zotra (url doi)
   "Return the abstract of the work with URL or DOI.
 Give up after five seconds."
@@ -265,10 +260,7 @@ Give up after five seconds."
 		(catch 'found
 		  (dolist (field (list url (unless (string= url doi) doi)))
 		    (when (and field
-			       (not (string-match-p "\\.pdf$" field))
-			       (not (seq-some (lambda (domain)
-					       (string-match-p (regexp-quote domain) field))
-					     tlon-zotra-abstract-excluded-domains)))
+			       (not (string-match-p "\\.pdf$" field)))
 		      (when-let ((abstract
 				  (shut-up (zotra-extras-fetch-field
 					    "abstract" field (when tlon-ai-batch-fun 'no-error) 5))))
