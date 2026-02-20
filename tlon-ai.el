@@ -1041,7 +1041,10 @@ To get an abstract with AI, the function uses
 To get an abstract with AI, the function uses
 `tlon-get-abstract-with-ai'. See its docstring for details."
   (interactive)
-  (unless (tlon-fetch-and-set-abstract)
+  (if (tlon-fetch-and-set-abstract)
+      ;; Non-AI succeeded; continue to next entry in batch mode
+      (run-with-idle-timer 0 nil #'tlon-ai-batch-continue)
+    ;; Non-AI failed or was skipped; try AI (handles batch continuation internally)
     (tlon-get-abstract-with-ai)))
 
 (autoload 'tlon-abstract-may-proceed-p "tlon-bib")

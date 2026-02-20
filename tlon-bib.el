@@ -243,7 +243,8 @@ abstract will, or will not, replace the existing one, respectively."
 		(setq found t))
 	    (message "Could not find abstract for `%s' using non-AI methods." key)
 	    (setq found nil))
-	  (tlon-ai-batch-continue)
+	  (when (eq tlon-ai-batch-fun 'tlon-fetch-and-set-abstract)
+	    (run-with-idle-timer 0 nil #'tlon-ai-batch-continue))
 	  found)))))
 
 (defvar tlon-ai-batch-fun)
