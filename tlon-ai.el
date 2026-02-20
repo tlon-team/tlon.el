@@ -1196,10 +1196,10 @@ inserted; if nil, use the current buffer."
 	     (message "Copied AI-generated synopsis to the kill ring:\n\n%s" response))
 	    (_ ; Default is abstract, just copy to kill ring
 	     (kill-new response)
-	     (message "Copied AI-generated abstract to the kill ring:\n\n%s" response))))))
-      (when tlon-debug
-	(message "`%s' now calls `tlon-ai-batch-continue'" "tlon-get-abstract-callback"))
-      (tlon-ai-batch-continue))))
+	     (message "Copied AI-generated abstract to the kill ring:\n\n%s" response)))))
+	(when tlon-debug
+	  (message "`%s' now calls `tlon-ai-batch-continue'" "tlon-get-abstract-callback"))
+	(tlon-ai-batch-continue)))))
 
 ;;;;; Help
 
