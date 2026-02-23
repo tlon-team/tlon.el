@@ -1382,9 +1382,11 @@ Documentation files are collected from:
 (defun tlon-ai-detect-language-in-file (&optional file callback)
   "Detect the language in FILE and call CALLBACK.
 If FILE is nil, detect the language in the current buffer."
-  (let* ((string (tlon-get-string-dwim file))
-	 (sample (substring string 0 (min (length string) 1000))))
-    (tlon-make-gptel-request tlon-ai-detect-language-prompt sample callback)))
+  (if-let ((string (tlon-get-string-dwim file)))
+      (let ((sample (substring string 0 (min (length string) 1000))))
+	(tlon-make-gptel-request tlon-ai-detect-language-prompt sample callback))
+    (message "No text found for language detection; skipping.")
+    (tlon-ai-batch-continue)))
 
 (defun tlon-ai-set-language-in-file (&optional file)
   "Detect language of FILE and set it as the spell checker language.
