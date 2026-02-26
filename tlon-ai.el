@@ -410,11 +410,16 @@ the same BACKEND+MODEL by setting them buffer-locally before dispatch."
 		  gptel-use-tools (and gptel-tools t)
 		  gptel-include-reasoning nil)
       ;; Dispatch the request; gptel will consult buffer-local vars later, too.
-      (gptel-request full-prompt
-	:callback   callback
-	:buffer     buf
-	:context    context-data
-	:transforms gptel-prompt-transform-functions))))
+      (condition-case-unless-debug err
+	  (gptel-request full-prompt
+	    :callback   callback
+	    :buffer     buf
+	    :context    context-data
+	    :transforms gptel-prompt-transform-functions)
+	(error
+	 (message "gptel request failed: %s" (error-message-string err))
+	 (when callback
+	   (funcall callback nil nil)))))))
 
 ;; Helper: normalize (backend . model), allow strings, symbols, or objects
 (defun tlon--resolve-backend+model (full-model)
@@ -520,7 +525,16 @@ Stop when there are no more entries."
       (if (or (null next-key) (= (point) prev-pos))
 	  (message "Batch processing complete.")
 	(message "Moving point to next entry (key: %s)." next-key)
-	(funcall tlon-ai-batch-fun)))))
+	(condition-case-unless-debug err
+	    (funcall tlon-ai-batch-fun)
+	  (error
+	   (message "Batch: error processing entry `%s': %s. Continuing..."
+		    next-key (error-message-string err))
+	   (let ((buf (current-buffer)))
+	     (run-with-idle-timer 0 nil
+	      (lambda () (when (buffer-live-p buf)
+			   (with-current-buffer buf
+			     (tlon-ai-batch-continue))))))))))))
 
 (defun tlon-ai-try-try-try-again (original-fun)
   "Call ORIGINAL-FUN up to three times if it its response is nil, then give up."
@@ -1048,8 +1062,9 @@ To get an abstract with AI, the function uses
   (if (tlon-fetch-and-set-abstract)
       ;; Non-AI succeeded; continue to next entry in batch mode
       (let ((buf (current-buffer)))
-	(run-with-idle-timer 0 nil (lambda () (with-current-buffer buf
-						(tlon-ai-batch-continue)))))
+	(run-with-idle-timer 0 nil (lambda () (when (buffer-live-p buf)
+						(with-current-buffer buf
+						  (tlon-ai-batch-continue))))))
     ;; Non-AI failed or was skipped; try AI (handles batch continuation internally)
     (tlon-get-abstract-with-ai)))
 
@@ -1087,8 +1102,9 @@ TYPE is either `abstract' or `synopsis'."
       (message "`%s' is scheduling `tlon-ai-batch-continue' via timer." "tlon-get-abstract-with-ai"))
     ;; Use a timer to avoid deep recursion in batch mode when skipping many items
     (let ((buf (current-buffer)))
-      (run-with-idle-timer 0 nil (lambda () (with-current-buffer buf
-					      (tlon-ai-batch-continue)))))))
+      (run-with-idle-timer 0 nil (lambda () (when (buffer-live-p buf)
+					      (with-current-buffer buf
+						(tlon-ai-batch-continue))))))))
 
 (declare-function bibtex-extras-get-field "bibtex-extras")
 (defun tlon-shorten-abstract-with-ai ()
