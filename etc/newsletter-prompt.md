@@ -28,17 +28,7 @@ Aquí está el borrador del próximo número:
 %5$s
 ```
 
-Importante: no incluyas ningún mensaje que describa las herramientas que estás usando o los pasos que estás siguiendo (mensajes como "Ahora buscaré información sobre..." o "Usando la herramienta..."). Solo devuelve el contenido final del boletín, seguido de una sección de referencias con el siguiente formato:
-
-```
-<!-- REFERENCIAS
-- [Título de la subsección]: channel_id={ID del canal}, ts={timestamp del mensaje}
-- [Título de la subsección]: channel_id={ID del canal}, ts={timestamp del mensaje}
-...
--->
-```
-
-Esta sección debe incluir, para cada subsección del boletín cuya información provenga de un mensaje de Slack, el ID del canal y el timestamp (`ts`) exacto del mensaje fuente, tal como los devolvió la herramienta. No incluyas entradas para contenido obtenido de otras fuentes (como búsquedas web).
+Importante: no incluyas ningún mensaje que describa las herramientas que estás usando o los pasos que estás siguiendo (mensajes como "Ahora buscaré información sobre..." o "Usando la herramienta..."). Solo devuelve el contenido final del boletín sin comentarios adicionales.
 
 <!-- Local Variables: -->
 <!-- jinx-languages: "es" -->
