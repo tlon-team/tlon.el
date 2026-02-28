@@ -414,6 +414,31 @@ dedicated function."
 	(setq cnt (1+ cnt)))
       (message "Done. %d URLs were fixed." cnt))))
 
+;;;;;; heading hierarchy
+
+;;;###autoload
+(defun tlon-check-heading-hierarchy ()
+  "Check that Markdown heading levels do not skip levels.
+For example, a `##' followed by `####' (skipping `###') is flagged.
+Moves point to the first offending heading, or reports success."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (let ((prev-level 1)
+	  (found nil))
+      (while (and (not found)
+		  (re-search-forward "^\\(#{2,6}\\) " nil t))
+	(let ((level (length (match-string 1))))
+	  (when (> level (1+ prev-level))
+	    (setq found (match-beginning 0)))
+	  (setq prev-level level)))
+      (if found
+	  (progn
+	    (goto-char found)
+	    (message "Heading hierarchy violation: level %d after level %d"
+		     (length (match-string 1)) (1- (length (match-string 1)))))
+	(message "Heading hierarchy OK")))))
+
 ;;;;;; unbalanced chars
 
 ;;;###autoload
@@ -584,6 +609,7 @@ Return cons of the form (missing-open . POS) or (missing-close . POS), or nil."
     ;; ("m " "" tlon-manual-fix-foreign-words)
     ]
    ["Misc"
+    ("h" "check heading hierarchy" tlon-check-heading-hierarchy)
     ("u" "fix unbalanced character" tlon-check-unbalanced-character)
     ("U" "fix unbalanced character in dir" tlon-check-unbalanced-character-in-dir)]])
 
