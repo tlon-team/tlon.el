@@ -2485,7 +2485,8 @@ passing a non-nil DEBUG."
 		    (tlon--replace-headline-text marker new-text)
 		    (when hours
 		      (tlon-forg--set-org-effort hours))
-		    (tlon--dlog "Headline successfully replaced.")))))))
+		    (tlon--dlog "Headline successfully replaced."))
+		  (forge-visit-issue issue))))))
       ;; Always release the marker
       (set-marker marker nil))))
 
