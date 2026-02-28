@@ -2373,6 +2373,8 @@ The command:
   "Submit a bug report in the `tlon.el' repo."
   (interactive)
   (tlon-create-issue-in-dir (tlon-repo-lookup :dir :name "tlon.el"))
+  (setq-local forge--buffer-assignees
+	      (list (tlon-user-lookup :github :name user-full-name)))
   (tlon-prepopulate-bug-report-buffer))
 
 (defun tlon-prepopulate-bug-report-buffer ()
