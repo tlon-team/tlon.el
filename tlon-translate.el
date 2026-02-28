@@ -1648,5 +1648,41 @@ If nil, use the default model."
    ["General options"
     ("-c" "Commit changes" tlon-translate-infix-toggle-commit-changes)]])
 
+;;;###autoload
+(defun tlon-detect-translations-with-abstract ()
+  "Report all translation entries in the database that have a nonempty abstract."
+  (interactive)
+  (let ((buf (find-file-noselect tlon-file-db))
+	(results '()))
+    (with-current-buffer buf
+      (save-excursion
+	(save-restriction
+	  (widen)
+	  (goto-char (point-min))
+	  (bibtex-map-entries
+	   (lambda (key beg _end)
+	     (goto-char beg)
+	     (let* ((entry (bibtex-parse-entry t))
+		    (translation-of (cdr (assoc-string "translation" entry t)))
+		    (abstract (cdr (assoc-string "abstract" entry t))))
+	       (when (and (stringp translation-of)
+			  (not (string-blank-p translation-of))
+			  (stringp abstract)
+			  (not (string-blank-p (string-trim abstract))))
+		 (push key results))))))))
+    (setq results (nreverse results))
+    (if (null results)
+	(message "No translation entries with a nonempty abstract found.")
+      (let ((report (get-buffer-create "*tlon-translations-with-abstract*")))
+	(with-current-buffer report
+	  (let ((inhibit-read-only t))
+	    (erase-buffer)
+	    (insert (format "Translation entries with nonempty abstract: %d\n\n"
+			    (length results)))
+	    (dolist (key results)
+	      (insert key "\n"))))
+	(display-buffer report)
+	(message "%d translation entries with a nonempty abstract." (length results))))))
+
 (provide 'tlon-translate)
 ;;; tlon-translate.el ends here
