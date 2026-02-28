@@ -782,8 +782,9 @@ modification. Display a message reporting how many entries were updated."
       (while (and (or (not (numberp bibtex-autokey-titlewords))
 		      (< counter (+ bibtex-autokey-titlewords
 				    bibtex-autokey-titlewords-stretch)))
-		  (string-match "\\b\\w+" title))
-	(setq word (match-string 0 title)
+		  (string-match "\\b\\w[\\w''ʼ]*" title))
+	(setq word (replace-regexp-in-string "[''ʼ]" ""
+					     (match-string 0 title))
 	      title (substring title (match-end 0)))
 	;; `bibtex-autokey-titleword-ignore'.
 	(unless (let (case-fold-search)
@@ -793,7 +794,7 @@ modification. Display a message reporting how many entries were updated."
 		  (<= counter bibtex-autokey-titlewords))
 	      (push word titlewords)
 	    (push word titlewords-extra))))
-      (unless (string-match "\\b\\w+" title)
+      (unless (string-match "\\b\\w[\\w''ʼ]*" title)
 	(setq titlewords (append titlewords-extra titlewords)))
       (mapconcat #'bibtex-autokey-demangle-title (nreverse titlewords)
 		 bibtex-autokey-titleword-separator))))
