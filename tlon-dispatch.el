@@ -181,6 +181,9 @@ DIR is the directory where the repo is stored."
     "Docs"
     ("d" "tlon-docs"                    tlon-magit-browse-docs)
     ""
+    "Web"
+    ("w" "web-server"                     tlon-magit-browse-web-server)
+    ""
     "Sandbox"
     ("H-s" "sandbox"                        tlon-magit-browse-sandbox)]])
 
@@ -259,6 +262,9 @@ DIR is the directory where the repo is stored."
     ""
     "Docs"
     ("d" "tlon-docs"                      tlon-dired-browse-docs)
+    ""
+    "Web"
+    ("w" "web-server"                      tlon-dired-browse-web-server)
     ""
     "Misc"
     ("H-s" "sandbox"                        tlon-dired-browse-sandbox)]])
