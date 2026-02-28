@@ -333,6 +333,20 @@ If called with a prefix ARG, open the counterpart in the other window."
 Each value is a hash table mapping original bibliography keys to their
 corresponding translation file paths within that repository.")
 
+;;;###autoload
+(defun tlon-counterpart-invalidate-cache (&optional repo-dir)
+  "Invalidate the counterpart caches for REPO-DIR.
+If REPO-DIR is nil, invalidate caches for all repos.  Call this after
+creating or deleting content files so that subsequent counterpart
+lookups reflect the new state of the filesystem."
+  (interactive)
+  (if repo-dir
+      (progn
+	(remhash repo-dir tlon-counterpart--orig->trans-cache)
+	(remhash repo-dir tlon-counterpart--orig-key->orig-file-cache))
+    (clrhash tlon-counterpart--orig->trans-cache)
+    (clrhash tlon-counterpart--orig-key->orig-file-cache)))
+
 (defun tlon-counterpart--uqbar-repo-p (repo-dir)
   "Return non-nil iff REPO-DIR belongs to subproject \"uqbar\"."
   (string= "uqbar" (tlon-repo-lookup :subproject :dir repo-dir)))

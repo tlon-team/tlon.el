@@ -370,9 +370,11 @@ and AFTER-FN."
       (insert content))
     (tlon-translate--finalize-written-translation source-file target-file after-fn)))
 
+(declare-function tlon-counterpart-invalidate-cache "tlon-counterpart")
 (defun tlon-translate--finalize-written-translation (source-file target-file after-fn)
   "Finalize step after writing TARGET-FILE translated from SOURCE-FILE.
-If AFTER-FN is non-nil and the file type can be determined, call it."
+If AFTER-FN is non-nil and the file type can be determined, call it.
+Invalidate counterpart caches so the new file is immediately visible."
   (message "Translated %s to %s" source-file target-file)
   (condition-case err
       (find-file target-file)
@@ -386,7 +388,9 @@ If AFTER-FN is non-nil and the file type can be determined, call it."
         (when (functionp after-fn)
           (funcall after-fn target-file))
       (message "Skipping post-processing for %s: could not determine file type; tags will not be inserted"
-               (file-name-nondirectory target-file)))))
+               (file-name-nondirectory target-file))))
+  (tlon-counterpart-invalidate-cache
+   (tlon-get-repo-from-file target-file)))
 
 (declare-function tlon-metadata-in-repo "tlon-yaml")
 (defun tlon-translate--get-translation-from-original (original-file lang-code)
@@ -426,7 +430,13 @@ If AFTER-FN is non-nil and the file type can be determined, call it."
 
 (declare-function tlon-images-get-dir "tlon-images")
 (defun tlon-translate--copy-associated-images (orig-file target-file)
-  "Copy images associated with ORIG-FILE into TARGET-FILE’s corresponding paths."
+  "Copy images associated with ORIG-FILE into TARGET-FILE’s corresponding paths.
+Invalidate the counterpart cache for the target repo first, so that
+`tlon-get-image-counterpart’ can resolve the newly written translation."
+  ;; The target file has been saved to disk (with its YAML key) by the caller,
+  ;; but the counterpart cache may still be stale from an earlier lookup.
+  (tlon-counterpart-invalidate-cache
+   (tlon-get-repo-from-file target-file))
   (let ((src-dir (tlon-images-get-dir orig-file)))
     (when (and src-dir (file-directory-p src-dir))
       (let ((files (directory-files-recursively src-dir ".*"))
