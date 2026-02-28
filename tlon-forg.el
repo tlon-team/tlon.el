@@ -1609,7 +1609,10 @@ Uses functions from `forge-extras.el` for GitHub Project interactions."
 		(tlon-message-debug
 		 "Skipping project status update for issue #%s (missing issue node id)"
 		 issue-number))))))))
-      (message "Issue “%s” (#%s) updated successfully." org-title issue-number))))
+      ;; 4. close the issue when the TODO is DONE
+      (when (string= org-todo-keyword “DONE”)
+	(tlon-close-issue issue))
+      (message “Issue “%s” (#%s) updated successfully.” org-title issue-number))))
 
 ;;;;; Files
 
