@@ -286,7 +286,7 @@ in this tag and pass the URL as the value of the `src' attribute.")
 	  :doc "")
     (:tag "SimpleTable"
 	  :attributes ((:name "alt" :required t :valued t :group 3 :prompt "Alt text: ")
-		       (:name "include" :required nil :valued nil :group 5 :reader tlon-md-simple-table-include-reader))
+		       (:name "include" :required nil :valued t :group 5 :reader tlon-md-simple-table-include-reader))
 	  :type mdx
 	  :self-closing nil
 	  :doc "Encloses a Markdown table.")
@@ -957,8 +957,7 @@ the TTS engine read the numbers correctly."
 
 (defun tlon-md-simple-table-include-reader ()
   "Prompt the user to set the `include' attribute for a `SimpleTable' tag."
-  (let ((selection (completing-read "Include: " '("nothing" "everything" "body") nil t)))
-    (format " include=\"%s\"" selection)))
+  (completing-read "Include: " '("nothing" "everything" "body") nil t))
 
 ;;;###autoload
 (defun tlon-mdx-insert-visually-hidden ()
