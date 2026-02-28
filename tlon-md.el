@@ -222,7 +222,8 @@ A subheading is defined as any heading that is not top-level.")
     (:tag "Figure"
 	  :attributes ((:name "src" :required t :valued t  :group 3 :prompt "Image URL: ")
 		       (:name "alt" :required nil :valued t :group 5 :prompt "Alt text: ")
-		       (:name "ignore-content" :required nil :valued nil :group 7 :reader tlon-md-figure-ignore-content-reader))
+		       (:name "ignore-content" :required nil :valued nil :group 7 :reader tlon-md-figure-ignore-content-reader)
+		       (:name "id" :required nil :valued t :group 9 :prompt "ID: "))
 	  :type mdx
 	  :self-closing nil)
     (:tag "Footnote"
