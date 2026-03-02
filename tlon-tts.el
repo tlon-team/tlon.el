@@ -4390,5 +4390,47 @@ Reads audio format choices based on the currently selected engine."
     ("A" "Abbreviation"                                         tlon-add-local-abbreviation)
     ("R" "Replacement"                                          tlon-add-local-replacement)]])
 
+;;;;; Quick TTS
+
+(defcustom tlon-tts-quick-voice "sage"
+  "Voice to use for `tlon-tts-quick'.
+See `tlon-openai-voices' for available options."
+  :group 'tlon-tts
+  :type 'string)
+
+;;;###autoload
+(defun tlon-tts-quick (text destination)
+  "Generate an audio file from TEXT and save it to DESTINATION.
+When called interactively, use the active region or prompt for text, and prompt
+for the output file path.  Uses the OpenAI TTS engine with the voice specified
+by `tlon-tts-quick-voice'.  The JSON payload is written to a temp file to avoid
+shell quoting issues with long or complex text."
+  (interactive
+   (let ((text (if (use-region-p)
+		   (buffer-substring-no-properties (region-beginning) (region-end))
+		 (read-string "Text: "))))
+     (list text (read-file-name "Save audio to: " nil nil nil
+				(format "tts-output.%s" (cdr tlon-openai-audio-settings))))))
+  (let* ((destination (expand-file-name destination))
+	 (payload-file (make-temp-file "tlon-tts-quick-" nil ".json"))
+	 (payload (json-encode `(("model" . ,tlon-openai-model)
+				 ("input" . ,text)
+				 ("voice" . ,tlon-tts-quick-voice)))))
+    (with-temp-file payload-file
+      (insert payload))
+    (set-process-sentinel
+     (start-process "tlon-tts-quick" nil
+		    "curl" "-s"
+		    "https://api.openai.com/v1/audio/speech"
+		    "-H" (format "Authorization: Bearer %s" (tlon-tts-openai-get-or-set-key))
+		    "-H" "Content-Type: application/json"
+		    "-d" (concat "@" payload-file)
+		    "--output" destination)
+     (lambda (_process event)
+       (delete-file payload-file)
+       (if (string-match-p "finished" event)
+	   (message "Audio saved to %s" destination)
+	 (message "TTS generation failed: %s" (string-trim event)))))))
+
 (provide 'tlon-tts)
 ;;; tlon-tts.el ends here
