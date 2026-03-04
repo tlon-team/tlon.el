@@ -1612,7 +1612,7 @@ Uses functions from `forge-extras.el` for GitHub Project interactions."
       ;; 4. close the issue when the TODO is DONE
       (when (string= org-todo-keyword “DONE”)
 	(tlon-close-issue issue))
-      (message “Issue “%s” (#%s) updated successfully.” org-title issue-number))))
+      (message "Issue “%s” (#%s) updated successfully." org-title issue-number))))
 
 ;;;;; Files
 
