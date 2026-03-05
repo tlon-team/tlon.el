@@ -1,51 +1,62 @@
-#+title: tlon - Dictionary Functionality
+#+title: tlon-dict: Dictionary-related functions
 #+author: Pablo Stafforini
-#+EXCLUDE_TAGS: noexport
+#+email: pablo@stafforini.com
 #+language: en
-#+options: ':t toc:nil author:t email:t num:t
+#+options: ':t toc:t author:t email:t num:t
 #+startup: content
-#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
-#+texinfo_header: @set MAINTAINER Pablo Stafforini
-#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
-#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
-#+texinfo: @insertcopying
+#+export_file_name: tlon-dict.info
+#+texinfo_filename: tlon-dict.info
+#+texinfo_dir_category: Emacs misc features
+#+texinfo_dir_title: Dict: (tlon-dict)
+#+texinfo_dir_desc: Dictionary-related functions
 
-* Dictionary Functionality (=tlon-dict.el=)
+This manual describes the features and customization options for the Emacs Lisp file =tlon-dict.el=.
+
+* Overview
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-dict
+:CUSTOM_ID: h:overview
 :END:
 
-This module integrates with the external =reverso.el= package to provide dictionary-related features, specifically fetching synonyms, while ensuring that the language context aligns with the Tlön workflow.
+This module integrates with the external =reverso= package to provide dictionary-related features, specifically fetching synonyms. It ensures that the language context always matches the language of the current file, as determined by Tlon's language detection, rather than relying on the default language selection mechanism of =reverso.el=.
 
-** Dependencies
+* Commands
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-dict-dependencies
+:CUSTOM_ID: h:commands
 :END:
 
-This module requires the =reverso= package to be installed and available.
-
-** Commands
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-dict-commands
-:END:
-
-*** Get Synonyms via Reverso
+** ~tlon-reverso-get-synonyms~
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-reverso-get-synonyms
 :END:
 #+findex: tlon-reverso-get-synonyms
-The command ~tlon-reverso-get-synonyms~ fetches synonyms for the word currently at point using the =reverso.el= package.
 
-Crucially, it overrides the default language selection mechanism of =reverso.el=. Instead, it determines the language of the current file using ~tlon-get-language-in-file~, looks up the corresponding language code recognized by =reverso.el= using Tlön's configuration (~tlon-lookup~), and passes this language code to the underlying =reverso--get-synonyms= function.
+Fetch synonyms for a word using the =reverso.el= package. The command determines the language of the current file using ~tlon-get-language-in-file~ and looks up the corresponding language name recognized by Reverso via Tlon's configuration (~tlon-lookup~). If the language cannot be determined, the command signals an error.
 
-It prompts the user for the word, defaulting to the word at point (~thing-at-point 'word~). The results are displayed in a dedicated Reverso buffer, similar to how =reverso.el= typically operates.
+You are prompted for the word to look up, defaulting to the word at point (~thing-at-point 'word~). The results are displayed in a dedicated Reverso buffer, as with the standard =reverso.el= workflow.
 
-** Transient Menu
+* Transient menu
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-dict-menu
+:CUSTOM_ID: h:menu
 :END:
 #+findex: tlon-dict-menu
-The command ~tlon-dict-menu~ activates a =transient= menu interface for dictionary-related commands.
 
-Currently, it offers one option:
-+ =s= :: Calls ~tlon-reverso-get-synonyms~ to fetch synonyms for the word at point.
+The command ~tlon-dict-menu~ activates a =transient= menu interface for dictionary-related commands. It provides:
+
+- =s= :: Synonyms (~tlon-reverso-get-synonyms~)
+
+* Indices
+:PROPERTIES:
+:CUSTOM_ID: h:indices
+:END:
+
+** Function index
+:PROPERTIES:
+:INDEX: fn
+:CUSTOM_ID: h:function-index
+:END:
+
+** Variable index
+:PROPERTIES:
+:INDEX: vr
+:CUSTOM_ID: h:variable-index
+:END:

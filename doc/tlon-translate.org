@@ -1,173 +1,321 @@
-#+title: tlon - File Translation
+#+title: tlon-translate: Translate files
 #+author: Pablo Stafforini
-#+EXCLUDE_TAGS: noexport
+#+email: pablo@stafforini.com
 #+language: en
-#+options: ':t toc:nil author:t email:t num:t
+#+options: ':t toc:t author:t email:t num:t
 #+startup: content
-#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
-#+texinfo_header: @set MAINTAINER Pablo Stafforini
-#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
-#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
-#+texinfo: @insertcopying
+#+export_file_name: tlon-translate.info
+#+texinfo_filename: tlon-translate.info
+#+texinfo_dir_category: Emacs misc features
+#+texinfo_dir_title: Translate: (tlon-translate)
+#+texinfo_dir_desc: Translate files
 
-* File Translation (=tlon-translate.el=)
+This manual describes the features and customization options for the Emacs Lisp file =tlon-translate.el=.
+
+* Overview
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-translate
+:CUSTOM_ID: h:overview
 :END:
 
-This module provides functions for translating entire files using various translation engines.
+This module provides functionality for translating entire files using different translation engines (DeepL or AI via =gptel=). It handles:
 
-Note on counterpart resolution:
-+ Articles: counterparts are resolved by key. The YAML key of the original maps
-  to the translation via the bibliography database; the YAML key of a translation
-  maps back to the original key via its “translation” field. Do not use
-  original_path for articles.
-+ Tags/authors: counterparts are resolved by original_path. This field stores the
-  basename of the English original and is resolved under the English counterpart
-  directory.
+- Translating arbitrary text, files, and bibliographic abstracts.
+- AI-powered revision of translations: spotting errors and improving flow.
+- Chunked, parallel revision of large files.
+- Abstract translation for both internal DB entries and external JSON stores.
+- Deduplication of abstract translations across storage backends.
 
-** Dependencies
+Counterpart resolution varies by file category:
+
+- Articles: counterparts are resolved by key. The YAML key of the original maps to the translation via the bibliography database; the YAML key of a translation maps back to the original key via its =translation= field. Do not use =original_path= for articles.
+- Tags/authors: counterparts are resolved by =original_path=. This field stores the basename of the English original and is resolved under the English counterpart directory.
+
+* User options
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-translate-dependencies
+:CUSTOM_ID: h:user-options
 :END:
 
-+ =tlon-core=
-+ =tlon-counterpart=
-+ =tlon-deepl=
-+ =transient=
-+ =bibtex=
-
-** Configuration
+** ~tlon-translate-engine~
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-translate-config
+:CUSTOM_ID: h:tlon-translate-engine
 :END:
+#+vindex: tlon-translate-engine
 
-#+vindex: tlon-translation-engine
-+ ~tlon-translation-engine~ :: Specifies the translation engine to use. Supported values are ='deepl= (DeepL API) and ='ai= (LLM via gptel).
+The translation engine to use for file translation. The default value is =deepl=. The type is a choice between =deepl= (DeepL API) and =ai= (LLM via =gptel=). You can change it at runtime from the transient menu ([[#h:menu][transient menu]]).
+
+** ~tlon-translate-spot-errors-model~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-translate-spot-errors-model
+:END:
 #+vindex: tlon-translate-spot-errors-model
-+ ~tlon-translate-spot-errors-model~ :: Model to use for spotting errors in translations.
+
+Model to use for spotting errors in translations (see ~tlon-translate-spot-errors~). The value is a cons cell whose car is the backend and whose cdr is the model itself. See ~gptel-extras-ai-models~ for the available options. If nil, use the default ~gptel-model~. The default value is =("Gemini" . gemini-flash-latest)=.
+
+** ~tlon-translate-improve-flow-model~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-translate-improve-flow-model
+:END:
 #+vindex: tlon-translate-improve-flow-model
-+ ~tlon-translate-improve-flow-model~ :: Model to use for improving the flow of translations.
+
+Model to use for improving the flow of translations (see ~tlon-translate-improve-flow~). The value is a cons cell whose car is the backend and whose cdr is the model itself. See ~gptel-extras-ai-models~ for the available options. If nil, use the default ~gptel-model~. The default value is =("Gemini" . gemini-pro-latest)=.
+
+** ~tlon-translate-revise-commit-changes~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-translate-revise-commit-changes
+:END:
 #+vindex: tlon-translate-revise-commit-changes
-+ ~tlon-translate-revise-commit-changes~ :: Whether to commit changes after an AI revision.
+
+Whether to commit changes after an AI revision. The default value is =nil=. The type is boolean. When non-nil, the revision callback stages and commits the translation file automatically after applying changes.
+
+** ~tlon-translate-restrict-revision-to-paragraphs~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-translate-restrict-revision-to-paragraphs
+:END:
+#+vindex: tlon-translate-restrict-revision-to-paragraphs
+
+If non-nil, restrict AI revision to an inclusive paragraph range. The value must be a cons cell =(START . END)= where =START= and =END= are 1-based paragraph numbers. When nil (the default), the entire file is sent to the AI for revision. You can also set this per-invocation via the =-in-range= commands ([[#h:revision-commands][revision commands]]).
+
+** ~tlon-translate-revise-chunk-size~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-translate-revise-chunk-size
+:END:
 #+vindex: tlon-translate-revise-chunk-size
-+ ~tlon-translate-revise-chunk-size~ :: Number of aligned paragraphs to send per AI revision request (default 10).
+
+Number of aligned paragraphs sent per AI revision request. The AI will process the translation in batches of this many paragraphs to avoid extremely large prompts. The default value is =10=. The type is integer.
+
+** ~tlon-translate-revise-max-parallel~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-translate-revise-max-parallel
+:END:
 #+vindex: tlon-translate-revise-max-parallel
-+ ~tlon-translate-revise-max-parallel~ :: Maximum number of paragraph-chunk revision requests to dispatch concurrently (default 3).
-+ ~tlon-translate-restrict-revision-to-paragraphs~ :: When non-nil, restrict AI revision to the inclusive paragraph range =(START . END)=.  Nil (default) means revise the whole file.
 
-** Commands
+Maximum number of paragraph-chunk revision requests to run in parallel. If the number of chunks to process is less than or equal to this value, the requests are dispatched concurrently; otherwise they are processed in parallel batches of this size. The default value is =3=. The type is integer.
+
+* Commands
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-translate-commands
+:CUSTOM_ID: h:commands
 :END:
 
+** Text translation
+:PROPERTIES:
+:CUSTOM_ID: h:text-translation
+:END:
+
+*** ~tlon-translate-text~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-translate-text
+:END:
+#+findex: tlon-translate-text
+
+Translate TEXT from SOURCE-LANG into TARGET-LANG and execute CALLBACK. If SOURCE-LANG is nil, prompt for a source language. If CALLBACK is nil, use the default print/copy-to-kill-ring behavior. If NO-GLOSSARY is non-nil, do not ask for confirmation when no glossary is found. If NO-GLOSSARY is the symbol =skip=, skip the translation and return nil without signaling an error.
+
+When called interactively, the command prompts for:
+
+1. A source language code.
+2. A target language code (excluding the source language).
+3. The text to translate, defaulting to the active region or the word at point.
+
+The translation is dispatched to the engine selected by ~tlon-translate-engine~ ([[#h:tlon-translate-engine][~tlon-translate-engine~]]). Returns the translated text as a string, or nil if skipped.
+
+** File translation
+:PROPERTIES:
+:CUSTOM_ID: h:file-translation
+:END:
+
+*** ~tlon-translate-file~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-translate-file
+:END:
 #+findex: tlon-translate-file
-+ ~tlon-translate-file~ :: Translates a file into a specified language.
-  - Prompts for the source =FILE= and the target =LANG= (two-letter code).
-  - Resolves the output path, preferring an existing counterpart if present (asking before overwriting). If the counterpart directory cannot be determined, you will be prompted to select one. Otherwise proposes a default path based on the file category, determined by ~(tlon-get-bare-dir FILE t)~:
-    - Articles: requires a DB translation entry for the selected language; if none exists, an error is raised. The default filename is derived from the DB translation entry's title (slugified). After writing the translation, the YAML ~key~ is set to the DB translation key, translated tags are inserted, the buffer is saved, and associated images are copied.
-    - Tags/authors: the default filename is derived by translating the YAML ~title~ and slugifying it. After writing, the YAML ~title~ is overwritten with the translated title, the buffer is saved, and ~tlon-yaml-guess-english-counterpart~ is run on the new file.
-    - Other: falls back to the previous behavior (title-based default naming if available; otherwise a slugified basename) and writes the translated content.
-  - The content of the source file is read, translated with the selected engine, and then written to the target file, which is opened.
 
-#+findex: tlon-translate-missing-abstracts
-+ ~tlon-translate-missing-abstracts~ :: Translate abstracts that are missing from two sources:
-  - (I) Internal DB translations: iterate over =db.bib= and, for any translation entry (non-empty ~translation~ field) lacking an ~abstract~, translate the original entry's abstract and set it as the ~abstract~ of the translation entry. If the original has no abstract, a message is logged and the entry is skipped.
-  - (II) External works: across the =fluid= and =stable= bibliographies (and =db.bib= originals), if a cited work does not have a DB translation entry, create missing abstract translations in the per-language stores under =babel-refs/json/<code>/abstract-translations.json=. For each selected target language, if a translated abstract already exists in the JSON store, it is not re-created.
+Translate FILE into LANG using the engine specified by ~tlon-translate-engine~. When called interactively, prompts for the source file (defaulting to the current buffer's file) and the target language code. If a counterpart already exists, prompts for confirmation before overwriting.
 
-  When both the source and target languages are in =tlon-project-languages=, a glossary must be present; if either language lies outside that set, the abstract is translated immediately without requiring a glossary.
+Branching rules for the target filename and post-processing:
 
-#+findex: tlon-translate-missing-abstracts-all-languages
-+ ~tlon-translate-missing-abstracts-all-languages~ :: Like ~tlon-translate-missing-abstracts~, but translates missing abstracts into all languages found in =tlon-languages-properties= (no prompting).
+- *Articles*: requires a DB translation entry for the selected language; if none exists, an error is raised. The default filename is derived from the DB translation entry's title (slugified). After writing the translation, the YAML =key= is set to the DB translation key, translated tags are inserted, the buffer is saved, and associated images are copied.
+- *Tags/authors*: the YAML =title= is translated to derive the default filename. After writing, the YAML =title= is overwritten with the translated title, the buffer is saved, and ~tlon-yaml-guess-english-counterpart~ is run on the new file.
+- *Other*: falls back to a title-based default naming (slugified) and writes the translated content.
 
-#+findex: tlon-translate-abstract-here
-+ ~tlon-translate-abstract-here~ :: Translate the abstract of the entry at point. If the entry is a DB translation missing an abstract, the original’s abstract is translated into the entry’s language and written into =db.bib=. Otherwise, you select a target language; if a DB translation entry exists for that language, the translated abstract is written into that entry’s =abstract= field in =db.bib= (prompting before overwriting). If no such entry exists, it is stored in the per-language JSON store at =babel-refs/json/<code>/abstract-translations.json=. When both the source and target are in =tlon-project-languages=, a glossary is required; otherwise the translation proceeds without one.
+The content of the source file is read, translated with the selected engine, and then written to the target file, which is opened.
 
-#+findex: tlon-translate-remove-duplicate-abstract-translations
-+ ~tlon-translate-remove-duplicate-abstract-translations~ :: Remove abstract translations from the per-language JSON files under =babel-refs/json/<code>/abstract-translations.json= when a corresponding translation entry exists in =db.bib= (detected via the =translation= and =langid= fields). The JSON stores are keyed by the original entry key (the value of the BibTeX =translation= field), so the command prunes those original keys (not the translation entry keys). Reports how many items were pruned and emits progress logs during the scan.
-
-*** Revision
+** Abstract translation
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-translate-revision
+:CUSTOM_ID: h:abstract-translation
 :END:
 
-#+findex: tlon-translate-spot-errors
-+ ~tlon-translate-spot-errors~ :: Use an AI agent to spot errors in a translation. The agent is instructed to compare the translation with the original and correct any errors found, such as missing content, corrupted code, or inconsistent use of abbreviations. If the original counterpart cannot be determined automatically, you will be prompted to select it.
-
-#+findex: tlon-translate-improve-flow
-+ ~tlon-translate-improve-flow~ :: Use an AI agent to improve the flow of a translation. The agent is instructed to make the translation less literal, while respecting the terminology in the relevant glossary. If the original counterpart cannot be determined automatically, you will be prompted to select it.
-
-#+findex: tlon-translate-spot-errors-in-range
-+ ~tlon-translate-spot-errors-in-range~ :: Spot errors but only within a user-specified inclusive paragraph range.
-
-#+findex: tlon-translate-improve-flow-in-range
-+ ~tlon-translate-improve-flow-in-range~ :: Improve the flow only within a user-specified inclusive paragraph range.
-
-#+findex: tlon-translate-revise-abort
-+ ~tlon-translate-revise-abort~ :: Abort all ongoing revision requests, immediately stopping any remaining AI jobs.
-
-The revision log buffer is updated in the background and is not auto-displayed
-when chunks finish. Use ~tlon-translate-show-log~ or the “Show log” menu command
-to view it when you want.
-
-*** Transient Menu
+*** ~tlon-translate-abstract-here~
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-translate-menu
+:CUSTOM_ID: h:tlon-translate-abstract-here
+:END:
+#+findex: tlon-translate-abstract-here
+
+Translate the abstract of the BibTeX entry at point. If point is on a DB translation entry that lacks an abstract, translate the original's abstract into the entry's language and write it into =db.bib=. Otherwise, prompt for a target language: if a DB translation entry exists for that language, write the translated abstract into that entry's =abstract= field in =db.bib= (prompting before overwriting); if no such entry exists, store it in =abstract-translations.json=.
+
+When both the source and target languages are in ~tlon-project-languages~, a glossary must be present; if either language lies outside that set, the abstract is translated immediately without requiring a glossary.
+
+*** ~tlon-translate-missing-abstracts~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-translate-missing-abstracts
+:END:
+#+findex: tlon-translate-missing-abstracts
+
+Translate abstracts that are missing from both internal and external sources.
+
+- *(I) Internal DB translations*: iterate over =db.bib= and, for any translation entry (non-empty =translation= field) lacking an =abstract=, translate the original entry's abstract and set it as the =abstract= of the translation entry. If the original has no abstract, a message is logged and the entry is skipped.
+- *(II) External works*: across the =fluid= and =stable= bibliographies (and =db.bib= originals), if a cited work does not have a DB translation entry, create missing abstract translations in the per-language stores under =babel-refs/json/<code>/abstract-translations.json=. For each selected target language, if a translated abstract already exists in the JSON store, it is not re-created.
+
+If LANGS is non-nil, it is a list of language names to consider for case (II). When nil, the command prompts you for the target languages.
+
+*** ~tlon-translate-missing-abstracts-all-languages~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-translate-missing-abstracts-all-languages
+:END:
+#+findex: tlon-translate-missing-abstracts-all-languages
+
+Like ~tlon-translate-missing-abstracts~ ([[#h:tlon-translate-missing-abstracts][~tlon-translate-missing-abstracts~]]), but translates missing abstracts into all languages found in ~tlon-project-target-languages~ without prompting.
+
+*** ~tlon-translate-remove-duplicate-abstract-translations~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-translate-remove-duplicate-abstract-translations
+:END:
+#+findex: tlon-translate-remove-duplicate-abstract-translations
+
+Remove abstract translations from the per-language JSON files under =babel-refs/json/<code>/abstract-translations.json= when a corresponding translation entry exists in =db.bib= (detected via the =translation= and =langid= fields). The JSON stores are keyed by the original entry key (the value of the BibTeX =translation= field), so the command prunes those original keys (not the translation entry keys). Reports how many items were pruned and emits progress logs during the scan.
+
+*** ~tlon-detect-translations-with-abstract~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-detect-translations-with-abstract
+:END:
+#+findex: tlon-detect-translations-with-abstract
+
+Report all translation entries in the database that have a nonempty abstract. Scans =db.bib= for entries with a non-empty =translation= field and a non-empty =abstract= field, then displays the matching keys in a dedicated report buffer.
+
+** Revision
+:PROPERTIES:
+:CUSTOM_ID: h:revision-commands
+:END:
+
+*** ~tlon-translate-spot-errors~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-translate-spot-errors
+:END:
+#+findex: tlon-translate-spot-errors
+
+Use an AI agent to spot errors in a translation. The agent is instructed to compare the translation with the original and correct any errors found, such as missing content, corrupted code, inadvertently translated custom tags, or inconsistent use of abbreviations. If the original counterpart cannot be determined automatically, you will be prompted to select it. The files must have aligned paragraph counts; otherwise an error is raised.
+
+*** ~tlon-translate-improve-flow~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-translate-improve-flow
+:END:
+#+findex: tlon-translate-improve-flow
+
+Use an AI agent to improve the flow of a translation. The agent is instructed to make the translation less literal while respecting the terminology in the relevant glossary. If the original counterpart cannot be determined automatically, you will be prompted to select it. When the revision type is =flow=, a filtered glossary CSV is generated (or reused if it already exists) and attached to the AI request as context.
+
+*** ~tlon-translate-spot-errors-in-range~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-translate-spot-errors-in-range
+:END:
+#+findex: tlon-translate-spot-errors-in-range
+
+Spot errors but only within a user-specified inclusive paragraph range. You are prompted for start and end paragraph numbers (empty inputs mean the beginning or end of the file respectively).
+
+*** ~tlon-translate-improve-flow-in-range~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-translate-improve-flow-in-range
+:END:
+#+findex: tlon-translate-improve-flow-in-range
+
+Improve the flow only within a user-specified inclusive paragraph range. You are prompted for start and end paragraph numbers (empty inputs mean the beginning or end of the file respectively).
+
+*** ~tlon-translate-revise-abort~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-translate-revise-abort
+:END:
+#+findex: tlon-translate-revise-abort
+
+Abort all ongoing revision requests, immediately stopping any remaining AI jobs. Any live asynchronous processes started by the revision commands are killed. If there are no such processes, the command does nothing.
+
+** Logging
+:PROPERTIES:
+:CUSTOM_ID: h:logging
+:END:
+
+*** ~tlon-translate-show-log~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-translate-show-log
+:END:
+#+findex: tlon-translate-show-log
+
+Display the =tlon-translate= log buffer in another window. The log buffer is updated in the background as revision chunks finish and is not auto-displayed. Use this command (or the "Show log" entry in the transient menu) to view it when you want.
+
+* Functions
+:PROPERTIES:
+:CUSTOM_ID: h:functions
+:END:
+
+** ~tlon-translate-abstract-dispatch~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-translate-abstract-dispatch
+:END:
+#+findex: tlon-translate-abstract-dispatch
+
+Translate the ABSTRACT of entry KEY into LANGS. LANGS is a list of languages, such as =("spanish" "french")=. If LANGS is nil, use ~tlon-project-target-languages~. When called interactively (with a prefix argument), determines KEY from the BibTeX entry at point and prompts for a single target language; when called non-interactively, iterates through the specified languages.
+
+** ~tlon-glossary-target-path~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-glossary-target-path
+:END:
+#+findex: tlon-glossary-target-path
+
+Return the target path for a glossary from SOURCE-LANGUAGE to TARGET-LANGUAGE. The file extension is chosen based on the RECIPIENT argument.
+
+* Transient menu
+:PROPERTIES:
+:CUSTOM_ID: h:menu
 :END:
 #+findex: tlon-translate-menu
-The command ~tlon-translate-menu~ activates a =transient= menu for file translation operations.
 
-It provides the following groups and commands:
-+ *Translate*:
-  + =f= :: Translate file (~tlon-translate-file~)
-+ *Revise*:
-  + =e= :: Spot errors (~tlon-translate-spot-errors~)
-  + =f= :: Improve flow (~tlon-translate-improve-flow~)
-  + =E= :: Spot errors in range (~tlon-translate-spot-errors-in-range~)
-  + =F= :: Improve flow in range (~tlon-translate-improve-flow-in-range~)
-+ *Options*:
-  + =c= :: Commit changes after revision (~tlon-translate-infix-toggle-commit-changes~)
-  + =n= :: Paragraph chunk size (~tlon-translate-infix-set-chunk-size~)
-  + =e= :: Select Engine (~tlon-translation-engine-infix~) - Select the translation engine (e.g., 'deepl).
-  + =d= :: DeepL model (~tlon-deepl-model-type-infix~)
-  + =a= :: AI model (~tlon-ai-infix-select-translation-model~)
-  + =m -e= :: Revise errors model (~tlon-translate-infix-select-spot-errors-model~)
-  + =m -f= :: Revise flow model (~tlon-translate-infix-select-improve-flow-model~)
+The command ~tlon-translate-menu~ activates a =transient= menu for file translation operations. It provides the following groups and commands:
 
-** Internal Functions
+- *Translate*:
+  - =t t= :: Translate text (~tlon-translate-text~)
+  - =t f= :: Translate file (~tlon-translate-file~)
+  - =t a= :: Translate current abstract (~tlon-translate-abstract-here~)
+  - =t m= :: Translate missing abstracts (~tlon-translate-missing-abstracts~)
+  - =t M= :: Translate all missing abstracts (~tlon-translate-missing-abstracts-all-languages~)
+  - =t d= :: Remove duplicate abstracts (~tlon-translate-remove-duplicate-abstract-translations~)
+  - Options:
+    - =t -t= :: Translation engine (~tlon-translate-engine-infix~)
+    - =t -d= :: DeepL model (~tlon-deepl-model-type-infix~)
+    - =t -a= :: AI model (~tlon-ai-infix-select-translation-model~)
+- *Revise*:
+  - =r e= :: Spot errors (~tlon-translate-spot-errors~)
+  - =r f= :: Improve flow (~tlon-translate-improve-flow~)
+  - =r E= :: Spot errors in range (~tlon-translate-spot-errors-in-range~)
+  - =r F= :: Improve flow in range (~tlon-translate-improve-flow-in-range~)
+  - =r l= :: Show log (~tlon-translate-show-log~)
+  - =r a= :: Abort revision (~tlon-translate-revise-abort~)
+  - Options:
+    - =r -e= :: Spot errors model (~tlon-translate-infix-select-spot-errors-model~)
+    - =r -f= :: Improve flow model (~tlon-translate-infix-select-improve-flow-model~)
+    - =r -c= :: Chunk size (~tlon-translate-infix-set-chunk-size~)
+    - =r -p= :: Max parallel (~tlon-translate-infix-set-max-parallel~)
+- *General options*:
+  - =-c= :: Commit changes after revision (~tlon-translate-infix-toggle-commit-changes~)
+
+* Indices
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-translate-internals
+:CUSTOM_ID: h:indices
 :END:
 
-#+findex: tlon-translate--do-translate
-+ ~tlon-translate--do-translate~ :: Handles the actual translation process. It reads the source file, calls the selected translation engine's function, writes the result to the target file, and opens it.
-#+findex: tlon-translate--external-abstracts
-+ ~tlon-translate--external-abstracts~ :: Implements case (II): finds and translates missing abstracts for non-DB works into the JSON store.
-#+findex: tlon-translate--internal-abstracts
-+ ~tlon-translate--internal-abstracts~ :: Implements case (I): scans =db.bib= for translation entries missing an ~abstract~, translates from the original entry's abstract, and writes the result into =db.bib=.
-#+findex: tlon-translate--db-set-abstract
-+ ~tlon-translate--db-set-abstract~ :: Helper to write/update the ~abstract~ field of a DB entry directly in =db.bib=.
+** Function index
+:PROPERTIES:
+:INDEX: fn
+:CUSTOM_ID: h:function-index
+:END:
 
-#+findex: tlon-translate--get-translation-from-original
-+ ~tlon-translate--get-translation-from-original~ :: A helper that, given an original file, finds its translation for a specific =LANG-CODE=. It checks metadata and falls back to constructing a path in a counterpart directory if no metadata entry is found.
-
-#+findex: tlon-translate--get-deepl-translation-from-buffer
-+ ~tlon-translate--get-deepl-translation-from-buffer~ :: A callback function used with ~tlon-deepl-translate~ to parse the JSON response from the DeepL API and extract the translated text string.
-
-#+findex: tlon-translate--revise-common
-+ ~tlon-translate--revise-common~ :: A helper function that handles the common logic for both revision commands. It prompts for the translation file, finds its original, prepares the prompt and tools, and makes the AI request.
-
-#+findex: tlon-translate--revise-callback
-+ ~tlon-translate--revise-callback~ :: The callback function for the revision commands. After the AI agent finishes, it commits the changes to the file with an appropriate message.
-
-#+findex: tlon-translation-engine-infix
-+ ~tlon-translation-engine-infix~ :: The transient infix command for selecting the translation engine via ~tlon-translation-engine~.
-
-#+findex: tlon-translate-infix-select-spot-errors-model
-+ ~tlon-translate-infix-select-spot-errors-model~ :: The transient infix command for selecting the AI model for spotting errors.
-
-#+findex: tlon-translate-infix-select-improve-flow-model
-+ ~tlon-translate-infix-select-improve-flow-model~ :: The transient infix command for selecting the AI model for improving flow.
-
-#+findex: tlon-translate-infix-toggle-commit-changes
-+ ~tlon-translate-infix-toggle-commit-changes~ :: The transient infix command for toggling whether to commit changes after an AI revision.
+** Variable index
+:PROPERTIES:
+:INDEX: vr
+:CUSTOM_ID: h:variable-index
+:END:
