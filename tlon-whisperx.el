@@ -48,13 +48,18 @@ and \"aud\"."
 (defun tlon-whisperx--start (audio-file args buffer-name callback)
   "Run whisperx on AUDIO-FILE with ARGS, log to BUFFER-NAME, call CALLBACK.
 CALLBACK is called as (CALLBACK transcript-path t) on success, or (CALLBACK nil
-nil) on failure. The transcript path is <basename>.txt for diarization, or
-<basename>.json for transcription."
+nil) on failure. The transcript extension is determined from the
+--output_format argument in ARGS (defaulting to \"txt\")."
   (let* ((buffer (get-buffer-create buffer-name))
          (default-directory (file-name-directory (expand-file-name audio-file)))
          (basename (file-name-sans-extension (file-name-nondirectory audio-file)))
          (process-name (format "whisperx-%s-process" basename))
-         (cmd (cons "whisperx" args)))
+         (cmd (cons "whisperx" args))
+         ;; Determine expected output extension from --output_format arg
+         (fmt-pos (cl-position "--output_format" args :test #'string=))
+         (output-ext (if (and fmt-pos (< (1+ fmt-pos) (length args)))
+                         (nth (1+ fmt-pos) args)
+                       "txt")))
     (with-current-buffer buffer
       (goto-char (point-max))
       (insert (format "Running: %s\n\n" (string-join cmd " "))))
@@ -64,9 +69,10 @@ nil) on failure. The transcript path is <basename>.txt for diarization, or
      :command cmd
      :sentinel
      (lambda (_proc event)
-       (let* ((success (and (string= event "finished\n")
-			    (file-exists-p (expand-file-name (concat basename ".txt")))))
-	      (transcript-path (when success (expand-file-name (concat basename ".txt")))))
+       (let* ((expected-file (expand-file-name (concat basename "." output-ext)))
+              (success (and (string= event "finished\n")
+			    (file-exists-p expected-file)))
+	      (transcript-path (when success expected-file)))
          (with-current-buffer buffer
            (goto-char (point-max))
            (insert (format "Process %s event: %s\n" process-name event)))

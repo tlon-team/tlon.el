@@ -284,8 +284,12 @@ the \"tlon.team-content\" repository to create a thumbnail image."
 
 (defun tlon-youtube--sanitize-draw-string (str)
   "Sanitize STR for use in ImageMagick -draw text command.
-Replaces single quotes with escaped single quotes (e.g., ' -> \\\\')."
-  (replace-regexp-in-string "'" "\\\\'" str t t))
+Escapes backslashes, double quotes, and single quotes."
+  (let ((result str))
+    (setq result (replace-regexp-in-string "\\\\" "\\\\\\\\" result t t))
+    (setq result (replace-regexp-in-string "\"" "\\\\\"" result t t))
+    (setq result (replace-regexp-in-string "'" "\\\\'" result t t))
+    result))
 
 ;;;;; Upload
 

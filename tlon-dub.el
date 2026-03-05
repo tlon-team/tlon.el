@@ -530,10 +530,14 @@ Returns the JSON response from the API, typically containing the `dubbing_id'."
 			       ;; Add num_speakers if > 0
 			       (and num-speakers (> num-speakers 0))
 			       (append (list "--form" (format "num_speakers=%d" num-speakers)))))
-	   (command (mapconcat #'shell-quote-argument final-args " ")))
+	   ;; Use call-process with argument list to avoid shell quoting issues
+	   (curl-args (cdr final-args)))
       (message "Starting dubbing project '%s' for %s..." project-name (file-name-nondirectory source-file))
-      (when tlon-debug (message "Debug: Running command: %s" command))
-      (let ((response-string (shell-command-to-string command)))
+      (when tlon-debug (message "Debug: Running command: curl %s"
+				(mapconcat #'shell-quote-argument curl-args " ")))
+      (let ((response-string (with-temp-buffer
+			       (apply #'call-process "curl" nil t nil curl-args)
+			       (buffer-string))))
 	(message "Dubbing project started. Response:\n%s" response-string)
 	;; Attempt to parse the JSON response
 	(condition-case err

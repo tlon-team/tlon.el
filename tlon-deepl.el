@@ -62,9 +62,15 @@ See <https://developers.deepl.com/docs/api-reference/translate#request-body-desc
 
 ;;;; Variables
 
-(defconst tlon-deepl-key
-  (auth-source-pass-get "key" (concat "tlon/babel/deepl.com/" (getenv "WORK_EMAIL")))
-  "The DeepL API key.")
+(defvar tlon-deepl-key nil
+  "The DeepL API key.
+Lazily initialized; use `tlon-deepl-get-key' to access.")
+
+(defun tlon-deepl-get-key ()
+  "Return the DeepL API key, initializing it lazily if needed."
+  (or tlon-deepl-key
+      (setq tlon-deepl-key
+	    (auth-source-pass-get "key" (concat "tlon/babel/deepl.com/" (getenv "WORK_EMAIL"))))))
 
 (defconst tlon-deepl-url-prefix
   "https://api.deepl.com/v2/"
@@ -158,27 +164,29 @@ non-nil, don't ask for confirmation when no glossary is found."
                     (funcall url-suffix-or-fun)
                   (concat tlon-deepl-url-prefix url-suffix-or-fun)))
            (payload (when json (funcall json no-glossary)))
-           (temp-file (make-temp-file "deepl-payload-" nil ".json")))
+           (temp-file (when payload (make-temp-file "deepl-payload-" nil ".json"))))
       (when payload
 	(with-temp-file temp-file
           (insert payload)))
-      (with-temp-buffer
-        (set-buffer-multibyte t)
-        (set-buffer-file-coding-system 'utf-8)
-        (let ((args (list "-s" "-X" method url
-                          "-H" "Content-Type: application/json"
-                          "-H" (concat "Authorization: DeepL-Auth-Key " tlon-deepl-key))))
-          (when payload
-            (setq args (append args (list "--data" (concat "@" temp-file)))))
-          (apply #'call-process "curl" nil t nil args))
-        (when payload (delete-file temp-file))
-        (goto-char (point-min))
-        (when (re-search-forward "^{\\|\\[{" nil t)
-          (goto-char (match-beginning 0)))
-        (condition-case err
-            (funcall callback)
-          (error
-           (message "Error in DeepL callback: %S" err)))))))
+      (unwind-protect
+          (with-temp-buffer
+            (set-buffer-multibyte t)
+            (set-buffer-file-coding-system 'utf-8)
+            (let ((args (list "-s" "-X" method url
+                              "-H" "Content-Type: application/json"
+                              "-H" (concat "Authorization: DeepL-Auth-Key " (tlon-deepl-get-key)))))
+              (when payload
+                (setq args (append args (list "--data" (concat "@" temp-file)))))
+              (apply #'call-process "curl" nil t nil args))
+            (goto-char (point-min))
+            (when (re-search-forward "^{\\|\\[{" nil t)
+              (goto-char (match-beginning 0)))
+            (condition-case err
+                (funcall callback)
+              (error
+               (message "Error in DeepL callback: %S" err))))
+        (when (and temp-file (file-exists-p temp-file))
+          (delete-file temp-file))))))
 
 ;;;;; Translation
 
@@ -355,8 +363,6 @@ even if the caller passes data."
           (alist-get "glossaries" (tlon-read-json) nil nil #'string=)))
   (message "Read glossaries from DeepL API."))
 
-(tlon-deepl-get-glossaries)
-
 ;;;;;; Supported language pairs
 
 ;;;###autoload
@@ -389,8 +395,6 @@ even if the caller passes data."
       (message "Updated supported glossary pairs: %d pair(s), %d language code(s)."
                (length tlon-deepl-supported-glossary-pairs)
                (length tlon-deepl-supported-glossary-languages)))))
-
-(tlon-deepl-refresh-supported-glossary-languages)
 
 ;;;;;; Create glossary
 

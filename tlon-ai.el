@@ -537,11 +537,14 @@ Stop when there are no more entries."
 			     (tlon-ai-batch-continue))))))))))))
 
 (defun tlon-ai-try-try-try-again (original-fun)
-  "Call ORIGINAL-FUN up to three times if it its response is nil, then give up."
-  (while (< tlon-ai-retries 3)
-    (setq tlon-ai-retries (1+ tlon-ai-retries))
-    (message "Retrying language detection (try %d of 3)..." tlon-ai-retries)
-    (funcall original-fun)))
+  "Call ORIGINAL-FUN up to three times if its response is nil, then give up."
+  (setq tlon-ai-retries 0)
+  (let ((result nil))
+    (while (and (< tlon-ai-retries 3) (not result))
+      (setq tlon-ai-retries (1+ tlon-ai-retries))
+      (message "Retrying language detection (try %d of 3)..." tlon-ai-retries)
+      (setq result (funcall original-fun)))
+    result))
 
 (autoload 'ebib-extras-get-text-file "ebib-extras")
 (autoload 'tlon-md-read-content "tlon-md")
@@ -591,11 +594,14 @@ text using `eww`."
   (let ((original-file-path file))
     (cond
      ((string= (file-name-extension original-file-path) "html")
-      (let ((rendered-text nil))
+      (let ((rendered-text nil)
+	    (eww-buf nil))
 	(save-selected-window
 	  (eww-browse-url (concat "file://" (expand-file-name original-file-path)))
-	  (setq rendered-text (buffer-substring-no-properties (point-min) (point-max)))
-	  (kill-buffer (current-buffer)))
+	  (setq eww-buf (current-buffer))
+	  (setq rendered-text (buffer-substring-no-properties (point-min) (point-max))))
+	(when (buffer-live-p eww-buf)
+	  (kill-buffer eww-buf))
 	rendered-text))
      ((string= (file-name-extension original-file-path) "pdf")
       (with-temp-buffer
@@ -1977,6 +1983,16 @@ commit hash."
 		 (file-name-nondirectory target-file) (plist-get info :status))
 	(tlon-ai-callback-fail info)) ; Use existing fail message
     (message "AI provided changes for %s. Applying..." (file-name-nondirectory target-file))
+    ;; Validate response before overwriting
+    (let ((original-content (when (file-exists-p target-file)
+			      (with-temp-buffer
+				(insert-file-contents target-file)
+				(buffer-string)))))
+      (when (or (string-empty-p (string-trim response))
+		(and original-content
+		     (< (length response) (/ (length original-content) 4))))
+	(user-error "AI response for %s is empty or suspiciously short; refusing to overwrite"
+		    target-file)))
     ;; Overwrite the target file with the AI's response
     (condition-case err
 	(let ((buf (find-file-noselect target-file)))

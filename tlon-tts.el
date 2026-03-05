@@ -1935,7 +1935,7 @@ CHUNK-NUMBER is 1-based."
 
 (defun tlon-tts-open-file (file)
   "Open generated TTS FILE."
-  (shell-command (format "open %s" file)))
+  (shell-command (format "open %s" (shell-quote-argument file))))
 
 (defun tlon-tts-process-chunk-sentinel (process event chunk-index captured-staging-buffer-name)
   "Process sentinel for TTS chunk generation at CHUNK-INDEX.
@@ -2195,7 +2195,7 @@ should be cleaned up."
       (setq success t)
       ;; Deletion of original API chunks is handled below, based on tlon-tts-delete-file-chunks
       (dired (file-name-directory final-output-file))
-      (shell-command (format "open '%s'" final-output-file))
+      (shell-command (format "open %s" (shell-quote-argument final-output-file)))
       (message "TTS narration complete for %s" (file-name-nondirectory final-output-file)))
      ((string-match "exited abnormally" event)
       (message "Error joining chunks asynchronously: %s" event)
@@ -2473,8 +2473,11 @@ If LOCALE is nil, use the locale of the current voice."
 		     (read-number "Miliseconds: ")))
   (let ((duration (tlon-tts-get-new-duration file miliseconds))
 	(output-filename (tlon-tts-get-output-filename file miliseconds)))
-    (shell-command (format "mp3splt 0.0 %s %2$s -o %2$s" duration file))
-    (shell-command (format "mv %s %s" output-filename file))))
+    (let ((quoted-file (shell-quote-argument file)))
+      (shell-command (format "mp3splt 0.0 %s %s -o %s" duration quoted-file quoted-file))
+      (shell-command (format "mv %s %s"
+			     (shell-quote-argument output-filename)
+			     quoted-file)))))
 
 ;;;###autoload
 (defun tlon-tts-normalize-audio-files (&optional files)
@@ -2517,8 +2520,8 @@ The duration is returned in the format minutes.seconds.hundreds, which is the
 format used by `mp3split'."
   (let* ((output (string-chop-newline
 		  (shell-command-to-string
-		   (format "ffmpeg -i \"%s\"  2>&1 | grep \"Duration\" | awk '{print $2}' | tr -d ,"
-			   file)))))
+		   (format "ffmpeg -i %s  2>&1 | grep \"Duration\" | awk '{print $2}' | tr -d ,"
+			   (shell-quote-argument file))))))
     (cl-destructuring-bind (h m s) (split-string output ":")
       (let* ((seconds (+ (* (string-to-number h) 3600)
 			 (* (string-to-number m) 60)
@@ -2544,8 +2547,8 @@ with the simpler version were not recognized by some audio players."
 	(intermediate-file (concat (file-name-sans-extension output-file) ".ts")))
     (with-temp-file concat-file
       (insert (format "file '%s'\nfile '%s'\n"
-		      (shell-quote-argument input-file)
-		      (shell-quote-argument silence-file))))
+		      (replace-regexp-in-string "'" "'\\\\'''" input-file)
+		      (replace-regexp-in-string "'" "'\\\\'''" silence-file))))
     (shell-command (format "ffmpeg -y -f concat -safe 0 -i %s -c copy -f mpegts %s"
 			   (shell-quote-argument concat-file)
 			   (shell-quote-argument intermediate-file)))
