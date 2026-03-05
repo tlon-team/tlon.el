@@ -525,10 +525,9 @@ the primary bottleneck when running `tlon-sync-all-issues-in-repo'."
 (defun tlon-forg--sync-tags (issue)
   "Reconcile the tags between ISSUE and the Org heading."
   (let* ((gh-labels-raw (tlon-forg-get-labels issue)) ; Raw labels from GH
-	 (org-tags-raw (org-get-tags))               ; Raw tags from Org
-	 ;; For comparison, normalize GH tags. For Org tags, use valid tags.
-	 (issue-tags-for-compare (tlon-forg--normalize-tags gh-labels-raw))
-	 ;; tlon-forg--valid-tags already downcases, sorts, and handles empty/nil.
+	 (org-tags-raw (org-get-tags nil t))          ; Local tags from Org (no inherited)
+	 ;; For comparison, filter both sides to admissible tags.
+	 (issue-tags-for-compare (tlon-forg--valid-tags gh-labels-raw))
 	 (org-tags-for-compare-and-display (tlon-forg--valid-tags org-tags-raw))
 	 (issue-context (tlon-get-issue-name issue)))
     (unless (equal issue-tags-for-compare org-tags-for-compare-and-display)
@@ -550,13 +549,13 @@ Possible symbols are `title', `status' and `tags'."
 	 (issue-title  (string-trim (replace-regexp-in-string "\n" " " issue-title-org)))
 	 (issue-status (let ((st (tlon-get-status-in-issue issue)))
 			 (when st (upcase st))))
-	 ;; For comparison, use normalized raw tags
-	 (issue-tags-for-compare (sort (mapcar #'downcase (tlon-forg-get-labels issue)) #'string<))
+	 ;; For comparison, filter both sides to admissible tags
+	 (issue-tags-for-compare (tlon-forg--valid-tags (tlon-forg-get-labels issue)))
 	 (org-title    (string-trim (tlon-forg--org-heading-title)))
 	 (org-status   (let ((st (org-get-todo-state)))
 			 (when st (upcase st))))
-	 ;; For comparison, use normalized raw tags
-	 (org-tags-for-compare (sort (mapcar #'downcase (org-get-tags)) #'string<))
+	 ;; Local tags only (no inherited), filtered to admissible tags
+	 (org-tags-for-compare (tlon-forg--valid-tags (org-get-tags nil t)))
 	 (diff '()))
     (unless (string= issue-title org-title)   (push 'title  diff))
     (unless (string= issue-status org-status) (push 'status diff))
