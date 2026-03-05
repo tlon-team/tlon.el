@@ -39,17 +39,14 @@
 ;;;; tlon--check-unbalanced--pair
 
 (ert-deftest tlon-fix-pair-parens ()
-  "Look up parenthesis pair.
-Note: when given a closing char, the rassoc reverse lookup returns
-\(CLOSE . OPEN) rather than (OPEN . CLOSE) — a bug in the source."
+  "Look up parenthesis pair, both from open and close char."
   (should (equal '("(" . ")") (tlon--check-unbalanced--pair "(")))
-  (should (equal '(")" . "(") (tlon--check-unbalanced--pair ")"))))
+  (should (equal '("(" . ")") (tlon--check-unbalanced--pair ")"))))
 
 (ert-deftest tlon-fix-pair-brackets ()
-  "Look up bracket pair.
-Same rassoc reversal bug as with parentheses."
+  "Look up bracket pair, both from open and close char."
   (should (equal '("[" . "]") (tlon--check-unbalanced--pair "[")))
-  (should (equal '("]" . "[") (tlon--check-unbalanced--pair "]"))))
+  (should (equal '("[" . "]") (tlon--check-unbalanced--pair "]"))))
 
 (ert-deftest tlon-fix-pair-guillemets ()
   "Look up guillemet pair."

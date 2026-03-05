@@ -367,7 +367,7 @@ errors gracefully."
   ;; remove a bunch of stuff
   (dolist (regexp '("<[^>]+>" ; XML tags
 		    "{\\\\textless}.?p{\\\\textgreater}" ; LaTeX tag
-		    "^summary\\|^abstract\\(:? ?\\)" ; extraneous leading words
+		    "^\\(?:summary\\|abstract\\)\\(:? ?\\)" ; extraneous leading words
 		    )
 		  string)
     (setq string (replace-regexp-in-string regexp "" string)))

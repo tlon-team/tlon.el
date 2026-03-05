@@ -2028,8 +2028,8 @@ CAPTURED-STAGING-BUFFER-NAME is the name of the buffer this process belongs to."
                (line (buffer-substring-no-properties line-start line-end)))
          ;; Check if line starts with "request-id:", case-insensitive
          (let ((case-fold-search t)) ; Enable case-insensitive matching for this check
-           (when (string-match-p (rx-to-string '(seq bol (0+ space) "request-id:" (0+ space)))
-                                 line)
+           (when (string-match (rx-to-string '(seq bol (0+ space) "request-id:" (0+ space)))
+                              line)
              ;; Extract the value after the colon, trimming whitespace
              (setq request-id (string-trim (substring line (match-end 0))))
              ;; Stop searching once found

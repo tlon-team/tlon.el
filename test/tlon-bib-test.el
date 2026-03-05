@@ -22,16 +22,11 @@
   (should (equal "Hello."
                  (tlon-abstract-cleanup "{\\textless}.p{\\textgreater}Hello"))))
 
-(ert-deftest tlon-abstract-cleanup-removes-leading-abstract ()
-  "Strip 'abstract' prefix (with trailing space via regex group)."
+(ert-deftest tlon-abstract-cleanup-removes-leading-words ()
+  "Strip 'abstract' or 'summary' prefix including trailing space."
   (should (equal "This is the text."
-                 (tlon-abstract-cleanup "abstract This is the text."))))
-
-(ert-deftest tlon-abstract-cleanup-removes-leading-summary ()
-  "Strip 'summary' prefix.
-Note: the regex does not consume the trailing space for 'summary',
-only for 'abstract' (which has a group for optional colon/space)."
-  (should (equal " This is the text."
+                 (tlon-abstract-cleanup "abstract This is the text.")))
+  (should (equal "This is the text."
                  (tlon-abstract-cleanup "summary This is the text."))))
 
 (ert-deftest tlon-abstract-cleanup-adds-trailing-period ()

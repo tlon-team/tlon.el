@@ -521,7 +521,7 @@ Prompts for CHAR when called interactively. Scans each regular file in
 		  ("*" . "*")))
 	 (found (or (assoc char pairs)
 		    (let ((rev (rassoc char pairs)))
-		      (when rev (cons (cdr rev) (car rev)))))))
+		      (when rev (cons (car rev) (cdr rev)))))))
     (or found (cons char char))))
 
 (defun tlon--check-unbalanced--scan (open close)

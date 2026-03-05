@@ -125,13 +125,10 @@
 ;;;; tlon-tts--parse-elevenlabs-request-id
 
 (ert-deftest tlon-tts-parse-elevenlabs-request-id-found ()
-  "Extract request-id from curl headers.
-Note: the function uses `string-match-p' (which does not set match data)
-then calls `match-end', relying on stale match data — a bug in the source.
-We test only that it returns a non-nil string."
+  "Extract request-id from curl headers."
   (let ((output "HTTP/2 200\ncontent-type: audio/mpeg\nrequest-id: abc-123-def\n\n"))
-    (let ((result (tlon-tts--parse-elevenlabs-request-id output)))
-      (should (stringp result)))))
+    (should (equal "abc-123-def"
+                   (tlon-tts--parse-elevenlabs-request-id output)))))
 
 (ert-deftest tlon-tts-parse-elevenlabs-request-id-not-found ()
   "Return nil when no request-id header."
