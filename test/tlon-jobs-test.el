@@ -16,8 +16,8 @@
   (should (equal "Translate" (tlon-jobs-get-action-in-label "Job: Translate"))))
 
 (ert-deftest tlon-jobs-get-action-single-word ()
-  "Return nil for single-word label."
-  (should (null (tlon-jobs-get-action-in-label "Review"))))
+  "Signal error for single-word label."
+  (should-error (tlon-jobs-get-action-in-label "Review") :type 'user-error))
 
 (provide 'tlon-jobs-test)
 ;;; tlon-jobs-test.el ends here
