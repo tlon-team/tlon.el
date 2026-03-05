@@ -1,302 +1,423 @@
-#+title: tlon - Markdown Functionality
+#+title: tlon-md: Markdown functionality for Tlon
 #+author: Pablo Stafforini
-#+EXCLUDE_TAGS: noexport
+#+email: pablo@stafforini.com
 #+language: en
-#+options: ':t toc:nil author:t email:t num:t
+#+options: ':t toc:t author:t email:t num:t
 #+startup: content
-#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
-#+texinfo_header: @set MAINTAINER Pablo Stafforini
-#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
-#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
-#+texinfo: @insertcopying
+#+export_file_name: tlon-md.info
+#+texinfo_filename: tlon-md.info
+#+texinfo_dir_category: Emacs misc features
+#+texinfo_dir_title: Markdown: (tlon-md)
+#+texinfo_dir_desc: Markdown functionality for Tlon
 
-* Markdown Functionality (=tlon-md.el=)
+This manual describes the features and customization options for the Emacs Lisp file =tlon-md.el=.
+
+* Overview
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-md
+:CUSTOM_ID: h:overview
 :END:
 
-This module provides specialized functionality for working with Markdown files within the Tlön workflow. It includes commands for inserting and managing various Markdown, HTML, MDX, and SSML elements, handling footnotes, sorting content, and interacting with YAML front matter. It also defines numerous constants (mostly regular expressions) for identifying these elements.
+The =tlon-md= module provides specialized functionality for working with Markdown files within the Tlon workflow. It includes commands for inserting and managing various Markdown, HTML, MDX, and SSML elements, handling footnotes, sorting content, and interacting with YAML front matter. It also defines numerous constants (mostly regular expressions) for identifying these elements.
 
-** Dependencies
+The central data structure is the ~tlon-tag-specs~ alist, which defines properties for all supported HTML, MDX, and SSML tags: their type, attributes, self-closing status, documentation, attribute readers, and capture groups. All tag insertion and editing commands consult this alist.
+
+* User options
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-md-dependencies
-:END:
-
-+ =markdown-mode-extras=
-+ =tlon-core=
-+ =tlon-yaml=
-
-** User Options
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-md-options
+:CUSTOM_ID: h:user-options
 :END:
 
 #+vindex: tlon-md-special-characters
-+ ~tlon-md-special-characters~ :: An alist defining special characters that can be inserted using the ~tlon-insert-special-character~ command. The key is the descriptive name (e.g., "en dash") and the value is the character itself (e.g., "–").
+~tlon-md-special-characters~ is an alist of special characters you can insert with ~tlon-insert-special-character~. Each entry maps a descriptive name (e.g., ="en dash"=) to the character itself (e.g., ="--"=). The default set includes bullets, en and em dashes, curly quotes, narrow non-break spaces, soft hyphens, and ellipses.
 
-** Commands
+By default the value is:
+
+#+begin_src emacs-lisp
+(setq tlon-md-special-characters
+      '(("bullet" . "~b~")
+        ("en dash" . "--")
+        ("em dash" . "---")
+        ("opening single quote" . "'")
+        ("closing single quote" . "'")
+        ("opening double quote" . "\N{LEFT DOUBLE QUOTATION MARK}")
+        ("closing double quote" . "\N{RIGHT DOUBLE QUOTATION MARK}")
+        ("narrow non-break space" . "\N{NARROW NO-BREAK SPACE}")
+        ("soft hyphen" . "\N{SOFT HYPHEN}")
+        ("ellipsis" . "...")))
+#+end_src
+
+You can add or remove entries to customize the completion candidates.
+
+* Commands
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-md-commands
+:CUSTOM_ID: h:commands
 :END:
 
-This section details the interactive commands provided by =tlon-md.el=.
-
-*** YAML Front Matter
+** YAML front matter
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-md-yaml-commands
+:CUSTOM_ID: h:yaml-front-matter
 :END:
+
 #+findex: tlon-edit-yaml-field
-+ ~tlon-edit-yaml-field~ :: Edits the YAML field at point. It retrieves the key and value using ~tlon-yaml-get-field-at-point~ and then prompts the user to re-insert/modify them using ~tlon-yaml-insert-field~.
+~tlon-edit-yaml-field~ edits the YAML field at point. It retrieves the key and value via ~tlon-yaml-get-field-at-point~ and then prompts you to modify them using ~tlon-yaml-insert-field~. Use this when you need to quickly change a metadata field without manually editing the YAML block.
 
-*** Links and Sorting
+** Links and sorting
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-md-link-sort-commands
+:CUSTOM_ID: h:links-and-sorting
 :END:
+
 #+findex: tlon-insert-internal-link
-+ ~tlon-insert-internal-link~ :: Inserts a Markdown link to another Tlön entity (article, author, tag). It uses completion based on titles found in the repository's metadata (~tlon-metadata-in-repo~). It handles existing links at point and uses the active region as default link text.
+~tlon-insert-internal-link~ inserts a Markdown link to another Tlon entity (article, author, or tag). It offers completion candidates from the repository's metadata (~tlon-metadata-in-repo~). If point is on an existing link, the command re-edits it; if a region is active, the selected text becomes the default link text.
 
 #+findex: tlon-md-open-src-file
-+ ~tlon-md-open-src-file~ :: If point is on a tag with a =src= attribute (e.g., =<Figure>=, =<LiteralLink>=, =<Embedded>=), this command opens the file specified in the attribute. It correctly resolves relative paths from the current file's location.
+~tlon-md-open-src-file~ opens the file specified in the =src= attribute of the tag at point. This works for tags such as =<Figure>=, =<LiteralLink>=, and =<Embedded>=. It resolves relative paths from the directory of the current file.
 
 #+findex: tlon-md-sort-related-entries
-+ ~tlon-md-sort-related-entries~ :: Sorts the list items (assumed to be links separated by " • ") alphabetically within the "Entradas relacionadas" section of the current buffer. Uses ~tlon-md-sort-elements-in-paragraph~ internally.
+~tlon-md-sort-related-entries~ sorts the list items alphabetically in the "Entradas relacionadas" section of the current buffer. Items are assumed to be separated by =" ~bullet~ "=. If no such section is found, the command does nothing.
 
-*** Tag Insertion/Editing (HTML, MDX, SSML)
+** Tag insertion and editing
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-md-tag-commands
+:CUSTOM_ID: h:tag-insertion
 :END:
-These commands insert or edit specific tags at point or around the selected region. They generally use ~tlon-md-insert-or-edit-tag~ internally, which checks if the tag already exists at point and either edits it or inserts a new one. Many prompt for necessary attributes.
 
-+ *HTML Tags*:
-  #+findex: tlon-html-insert-subscript
-  + ~tlon-html-insert-subscript~ :: Inserts/edits =<sub>= tags.
-  #+findex: tlon-html-insert-superscript
-  + ~tlon-html-insert-superscript~ :: Inserts/edits =<sup>= tags.
-  #+findex: tlon-html-insert-quote
-  + ~tlon-html-insert-quote~ :: Inserts/edits =<q>= tags (inline quote).
+These commands insert or edit specific tags at point or around the selected region. They use ~tlon-md-insert-or-edit-tag~ internally, which checks whether the tag already exists at point and either edits it or inserts a new one. Many prompt for necessary attributes.
 
-+ *MDX Tags*:
-  #+findex: tlon-mdx-insert-aside
-  + ~tlon-mdx-insert-aside~ :: Inserts/edits =<Aside>= tags.
-  #+findex: tlon-mdx-insert-cite
-  + ~tlon-mdx-insert-cite~ :: Inserts/edits =<Cite>= tags. Prompts for BibTeX key (=bibKey=), locator, and length (short/long) using custom readers (~tlon-md-cite-bibkey-reader~, ~tlon-md-cite-locator-reader~, ~tlon-md-cite-length-reader~).
-  #+findex: tlon-mdx-insert-figure
-  + ~tlon-mdx-insert-figure~ :: Inserts/edits =<Figure>= tags. Prompts for image URL (=src=), alt text (=alt=), and whether to ignore the tag's content for TTS (=ignore-content= using ~tlon-md-figure-ignore-content-reader~).
-  #+findex: tlon-mdx-insert-language
-  + ~tlon-mdx-insert-language~ :: Inserts/edits =<Language>= tags. Prompts for language ID (=id=).
-  #+findex: tlon-mdx-insert-literal-link
-  + ~tlon-mdx-insert-literal-link~ :: Inserts/edits =<LiteralLink>= tags. Prompts for the link URL (=src=).
-  #+findex: tlon-mdx-insert-math
-  + ~tlon-mdx-insert-math~ :: Inserts/edits =<Math>= tags. Prompts for alt text (=alt=) and display type (inline/display) using ~tlon-md-math-display-reader~. Suggests using ~tlon-ai-translate-math~ for AI-generated alt text.
-  #+findex: tlon-mdx-insert-embedded
-  + ~tlon-mdx-insert-embedded~ :: Inserts/edits =<Embedded>= tags (self-closing). Prompts for chart URL (=src=), alt text (=alt=), and height (=height=).
-  #+findex: tlon-mdx-insert-replace-audio
-  + ~tlon-mdx-insert-replace-audio~ :: Inserts/edits =<ReplaceAudio>= tags. Prompts for the audio text (=text=, which can be empty) and optional voice role (=role=) using ~tlon-md-replace-audio-voice-reader~. An empty role selection defaults to inheriting the surrounding voice. If the =text= attribute is empty or omitted, the content enclosed by the tag will be removed during TTS preparation.
-  #+findex: tlon-mdx-insert-romantlon-insert-mdx-roman
-  + ~tlon-mdx-insert-romantlon-insert-mdx-roman~ :: Inserts/edits =<Roman>= tags (for Roman numerals in small caps with correct TTS).
-  #+findex: tlon-mdx-insert-small-caps
-  + ~tlon-mdx-insert-small-caps~ :: Inserts/edits =<SmallCaps>= tags (for general small caps text).
-  #+findex: tlon-mdx-insert-table
-  + ~tlon-mdx-insert-table~ :: (Not yet developed) Intended for inserting complex =<Table>= tags.
-  #+findex: tlon-mdx-insert-simple-table
-  + ~tlon-mdx-insert-simple-table~ :: Inserts/edits =<SimpleTable>= tags. Prompts for alt text (=alt=) and inclusion scope (=include=) using ~tlon-md-simple-table-include-reader~.
-  #+findex: tlon-mdx-insert-visually-hidden
-  + ~tlon-mdx-insert-visually-hidden~ :: Inserts/edits =<VisuallyHidden>= tags.
-  #+findex: tlon-mdx-insert-voice-role
-  + ~tlon-mdx-insert-voice-role~ :: Inserts/edits =<VoiceRole>= tags. Prompts for the voice role (=role=) using ~tlon-md-replace-audio-voice-reader~.
-
-+ *SSML Tags*:
-  #+findex: tlon-tts-insert-ssml-break
-  + ~tlon-tts-insert-ssml-break~ :: Inserts/edits =<break>= tags (self-closing). Prompts for time duration (=time=).
-  #+findex: tlon-tts-insert-ssml-emphasis
-  + ~tlon-tts-insert-ssml-emphasis~ :: Inserts/edits =<emphasis>= tags. Prompts for emphasis level (=level=) using ~tlon-md-emphasis-level-reader~.
-  #+findex: tlon-tts-insert-ssml-lang
-  + ~tlon-tts-insert-ssml-lang~ :: Inserts/edits =<lang>= tags. Prompts for language code (=xml:lang=) using ~tlon-md-lang-reader~.
-  #+findex: tlon-tts-insert-ssml-phoneme
-  + ~tlon-tts-insert-ssml-phoneme~ :: Inserts/edits =<phoneme>= tags. Prompts for alphabet type (=alphabet=) using ~tlon-md-phoneme-alphabet-reader~ and phonetic symbols (=ph=).
-  #+findex: tlon-tts-insert-ssml-say-as
-  + ~tlon-tts-insert-ssml-say-as~ :: Inserts/edits =<say-as>= tags. Prompts for interpretation type (=interpret-as=) using ~tlon-md-say-as-interpret-as-reader~.
-
-*** Note Classification
+*** HTML tags
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-md-note-commands
+:CUSTOM_ID: h:html-tags
 :END:
-These commands manage the classification of footnotes as either standard footnotes or sidenotes using =<Footnote>= and =<Sidenote>= MDX tags.
+
+#+findex: tlon-html-insert-subscript
+~tlon-html-insert-subscript~ inserts or edits =<sub>= tags at point or around the selected region. Use this when you need subscript text.
+
+#+findex: tlon-html-insert-superscript
+~tlon-html-insert-superscript~ inserts or edits =<sup>= tags at point or around the selected region. Use this when you need superscript text.
+
+#+findex: tlon-html-insert-quote
+~tlon-html-insert-quote~ inserts or edits =<q>= tags (inline quote) at point or around the selected region.
+
+*** MDX tags
+:PROPERTIES:
+:CUSTOM_ID: h:mdx-tags
+:END:
+
+#+findex: tlon-mdx-insert-aside
+~tlon-mdx-insert-aside~ inserts or edits =<Aside>= tags at point or around the selected region.
+
+#+findex: tlon-mdx-insert-cite
+~tlon-mdx-insert-cite~ inserts or edits =<Cite>= tags. This is a self-closing tag. You are prompted for the BibTeX key (=bibKey=) via ~citar-select-refs~, an optional locator, and a citation length (short or long).
+
+#+findex: tlon-mdx-insert-figure
+~tlon-mdx-insert-figure~ inserts or edits =<Figure>= tags. When the current file is a translation in the =uqbar= subproject, the command attempts to find the corresponding figure in the original file, translate its alt text via DeepL, and insert the tag with the translated values. Otherwise, you are prompted for the image URL (=src=), alt text (=alt=), and optionally whether to ignore the tag content for TTS.
+
+#+findex: tlon-mdx-insert-language
+~tlon-mdx-insert-language~ inserts or edits =<Language>= tags. You are prompted for a language ID. The enclosed text will be interpreted as belonging to that language (e.g., for hyphenation).
+
+#+findex: tlon-mdx-insert-literal-link
+~tlon-mdx-insert-literal-link~ inserts or edits =<LiteralLink>= tags. You are prompted for the link URL (=src=). Use this when you want to prevent the URL from being rewritten by downstream scripts.
+
+#+findex: tlon-mdx-insert-math
+~tlon-mdx-insert-math~ inserts or edits =<Math>= tags. You are prompted for alt text (=alt=) and display type (inline or display). After insertion, the command suggests using ~tlon-ai-translate-math~ for AI-generated alt text.
+
+#+findex: tlon-mdx-insert-embedded
+~tlon-mdx-insert-embedded~ inserts or edits =<Embedded>= tags (self-closing). You are prompted for a chart URL (=src=), alt text (=alt=), and height (=height=).
+
+#+findex: tlon-mdx-insert-replace-audio
+~tlon-mdx-insert-replace-audio~ inserts or edits =<ReplaceAudio>= tags. Text enclosed by this tag will be displayed, but during narration the value of the =text= attribute is used instead. You are prompted for the audio text and an optional voice role (=role=).
+
+#+findex: tlon-mdx-insert-romantlon-insert-mdx-roman
+~tlon-mdx-insert-romantlon-insert-mdx-roman~ inserts or edits =<Roman>= tags. Text enclosed by this tag is displayed in small caps and is also read correctly by the TTS engine. Use this specifically for Roman numerals.
+
+#+findex: tlon-mdx-insert-small-caps
+~tlon-mdx-insert-small-caps~ inserts or edits =<SmallCaps>= tags. Text enclosed by this tag is displayed in small caps. For Roman numerals, prefer ~tlon-mdx-insert-romantlon-insert-mdx-roman~ ([[#h:mdx-tags][MDX tags]]) because =<Roman>= additionally ensures correct TTS pronunciation.
+
+#+findex: tlon-mdx-insert-table
+~tlon-mdx-insert-table~ is intended for inserting complex =<Table>= tags. This command is not yet developed.
+
+#+findex: tlon-mdx-insert-simple-table
+~tlon-mdx-insert-simple-table~ inserts or edits =<SimpleTable>= tags. You are prompted for alt text (=alt=) and inclusion scope (=include=: "nothing", "everything", or "body").
+
+#+findex: tlon-mdx-insert-visually-hidden
+~tlon-mdx-insert-visually-hidden~ inserts or edits =<VisuallyHidden>= tags. Text enclosed by this tag will be narrated but not displayed.
+
+#+findex: tlon-mdx-insert-voice-role
+~tlon-mdx-insert-voice-role~ inserts or edits =<VoiceRole>= tags. You are prompted for the voice role (=role=). The enclosed text will be narrated in the specified voice.
+
+*** SSML tags
+:PROPERTIES:
+:CUSTOM_ID: h:ssml-tags
+:END:
+
+#+findex: tlon-tts-insert-ssml-break
+~tlon-tts-insert-ssml-break~ inserts or edits =<break>= tags (self-closing). You are prompted for a time duration (e.g., ="1s"=).
+
+#+findex: tlon-tts-insert-ssml-emphasis
+~tlon-tts-insert-ssml-emphasis~ inserts or edits =<emphasis>= tags. You are prompted for the emphasis level (=level=), with completion against ~tlon-md-ssml-emphasis-levels~ (="none"=, ="reduced"=, ="moderate"=, ="strong"=). The default is ="moderate"=.
+
+#+findex: tlon-tts-insert-ssml-lang
+~tlon-tts-insert-ssml-lang~ inserts or edits =<lang>= tags. You are prompted for the language code (=xml:lang=) via ~tlon-select-language~.
+
+#+findex: tlon-tts-insert-ssml-phoneme
+~tlon-tts-insert-ssml-phoneme~ inserts or edits =<phoneme>= tags. You are prompted for the alphabet type (=alphabet=, defaulting to ="ipa"=) and phonetic symbols (=ph=).
+
+#+findex: tlon-tts-insert-ssml-say-as
+~tlon-tts-insert-ssml-say-as~ inserts or edits =<say-as>= tags. You are prompted for the interpretation type (=interpret-as=), with completion against values such as ="cardinal"=, ="ordinal"=, ="digits"=, ="date"=, ="time"=, and others.
+
+#+findex: tlon-tts-insert-ssml-voice
+~tlon-tts-insert-ssml-voice~ inserts or edits =<voice>= tags. You are prompted for the voice name (=name=) based on the voices available for the current TTS engine (~tlon-tts-global-engine~).
+
+** Note classification
+:PROPERTIES:
+:CUSTOM_ID: h:note-classification
+:END:
+
+These commands manage the classification of footnotes as either standard footnotes or sidenotes using =<Footnote />= and =<Sidenote />= MDX markers.
 
 #+findex: tlon-insert-footnote-marker
-+ ~tlon-insert-footnote-marker~ :: Inserts a =<Footnote />= marker at the beginning of the footnote content at point. If =OVERWRITE= is non-nil (or called interactively), it replaces an existing =<Sidenote />= marker.
+~tlon-insert-footnote-marker~ inserts a =<Footnote />= marker at the beginning of the footnote content at point. When called interactively (or with OVERWRITE non-nil), it replaces an existing =<Sidenote />= marker if one is present.
+
 #+findex: tlon-insert-sidenote-marker
-+ ~tlon-insert-sidenote-marker~ :: Inserts a =<Sidenote />= marker at the beginning of the footnote content at point. If =OVERWRITE= is non-nil (or called interactively), it replaces an existing =<Footnote />= marker.
+~tlon-insert-sidenote-marker~ inserts a =<Sidenote />= marker at the beginning of the footnote content at point. When called interactively (or with OVERWRITE non-nil), it replaces an existing =<Footnote />= marker if one is present.
+
 #+findex: tlon-auto-classify-note-at-point
-+ ~tlon-auto-classify-note-at-point~ :: Automatically classifies the footnote at point based on its content (using ~tlon-note-automatic-type~) and inserts the corresponding marker (=<Footnote />= or =<Sidenote />=), overwriting any existing marker.
+~tlon-auto-classify-note-at-point~ automatically classifies the footnote at point based on its content. The classification criterion is implemented in ~tlon-note-automatic-type~: if the note contains at least one =<Cite>= tag and no more than four words (excluding citations), it is classified as a footnote; otherwise, it is classified as a sidenote.
+
 #+findex: tlon-auto-classify-notes-in-file
-+ ~tlon-auto-classify-notes-in-file~ :: Applies ~tlon-auto-classify-note-at-point~ to all footnotes in the current buffer (or specified =FILE=).
+~tlon-auto-classify-notes-in-file~ applies ~tlon-auto-classify-note-at-point~ to all footnotes in the current buffer or the specified FILE.
+
 #+findex: tlon-auto-classify-notes-in-directory
-+ ~tlon-auto-classify-notes-in-directory~ :: Applies ~tlon-auto-classify-notes-in-file~ to all Markdown files in the specified =DIR= (or current directory).
+~tlon-auto-classify-notes-in-directory~ applies ~tlon-auto-classify-notes-in-file~ to all Markdown files in the specified DIR, or the current directory if DIR is nil.
+
 #+findex: tlon-classify-note-at-point
-+ ~tlon-classify-note-at-point~ :: Manually classify the note at point. Prompts the user to choose between "footnote" and "sidenote" and inserts the corresponding marker, optionally overwriting an existing one.
+~tlon-classify-note-at-point~ manually classifies the note at point. You are prompted to choose between "footnote" and "sidenote", and the corresponding marker is inserted. If OVERWRITE is non-nil, any existing marker is replaced.
 
-*** Miscellaneous Commands
+** Miscellaneous commands
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-md-misc-commands
+:CUSTOM_ID: h:misc-commands
 :END:
+
 #+findex: tlon-offset-timestamps
-+ ~tlon-offset-timestamps~ :: Increases all MM:SS timestamps (in the format =[MM:SS]=) within the current buffer by a specified =OFFSET= (also in MM:SS format).
+~tlon-offset-timestamps~ increases all =[MM:SS]= timestamps in the current buffer by a specified OFFSET (also in =MM:SS= format). Use this when you need to shift all timestamps forward by a fixed amount.
+
 #+findex: tlon-insert-special-character
-+ ~tlon-insert-special-character~ :: Prompts the user (with completion based on ~tlon-md-special-characters~) to select a special character and inserts it at point.
+~tlon-insert-special-character~ prompts you (with completion based on ~tlon-md-special-characters~) to select a special character and inserts it at point.
+
 #+findex: tlon-md-beginning-of-buffer-dwim
-+ ~tlon-md-beginning-of-buffer-dwim~ :: Moves point to the beginning of the main content area, skipping the YAML front matter. Called twice, moves to the beginning of the buffer.
+~tlon-md-beginning-of-buffer-dwim~ moves point to the beginning of the main content area, skipping the YAML front matter. When called twice consecutively, it moves to the very beginning of the buffer.
+
 #+findex: tlon-md-end-of-buffer-dwim
-+ ~tlon-md-end-of-buffer-dwim~ :: Moves point to the end of the main content area, stopping before the "Local Variables" block. Called twice, moves to the end of the buffer.
+~tlon-md-end-of-buffer-dwim~ moves point to the end of the main content area, stopping before the "Local Variables" block. When called twice consecutively, it moves to the very end of the buffer.
+
+#+findex: tlon-md-read-content
+~tlon-md-read-content~ reads the substantive content of FILE (or the file visited by the current buffer), excluding the YAML front matter and the local variables section. Returns the content as a string.
+
+#+findex: tlon-md-insert-attribute-value
+~tlon-md-insert-attribute-value~ inserts or replaces the value of ATTRIBUTE in the tag at point. If the tag already contains an attribute with the same name, its value is replaced. You can optionally provide CONTENT for the tag body.
+
+** Transient menu
+:PROPERTIES:
+:CUSTOM_ID: h:transient-menu
+:END:
+
 #+findex: tlon-md-menu
-+ ~tlon-md-menu~ :: Activates a =transient= menu interface providing quick access to many of the commands in this module, grouped by category (YAML, TTS, Note markers, Citations, Quotes, Images, Link, Sub/Superscripts, Misc, Caps, Table).
+~tlon-md-menu~ activates a transient menu interface providing quick access to the commands in this module. The menu groups commands by category: YAML, TTS, note markers, citations, quotes, images, links, subscripts/superscripts, miscellaneous, caps, and tables.
 
-** Internal Functions and Variables
+* Functions
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-md-internals
+:CUSTOM_ID: h:functions
 :END:
 
-This section lists non-interactive functions, variables, and constants used internally or potentially useful for advanced customization.
-
-*** Constants
+** Tag section handling
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-md-constants
+:CUSTOM_ID: h:tag-section-handling
 :END:
-+ *Local Variables Delimiters*: ~tlon-md-local-variables-line-start~, ~tlon-md-local-variables-line-end~.
-+ *Tag Sections*: ~tlon-md-canonical-tag-sections~ (defines standard section names like "Further reading" in different languages).
-+ *Markdown Regexps*:
-  + ~markdown-regex-italic~ (modified default), ~tlon-md-regexp-link-formatter~, ~tlon-md-image~, ~tlon-md-image-sans-alt~, ~tlon-md-blockquote~, ~tlon-md-math-power~, ~tlon-md-math-big-number~, ~tlon-md-footnote-start~, ~tlon-md-heading-template~, ~tlon-md-heading~, ~tlon-md-subheading~.
-+ *SSML Constants*: ~tlon-md-ssml-emphasis-levels~, ~tlon-tts-ssml-default-emphasis-level~, ~tlon-md-ssml-phoneme-alphabets~, ~tlon-tts-ssml-phoneme-default-alphabet~, ~tlon-md-ssml-interpret-as-values~.
-+ *Tag Specifications*: ~tlon-tag-specs~ (central alist defining properties for all supported HTML, MDX, and SSML tags: type, attributes, self-closing status, documentation, attribute readers/prompts, capture groups).
 
-*** Tag Section Handling
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-md-tag-section-internals
-:END:
 #+findex: tlon-md-get-tag-section
-+ ~tlon-md-get-tag-section~ :: Translates a canonical section name (e.g., "Further reading") to its equivalent in a =TARGET-LANGUAGE= based on ~tlon-md-canonical-tag-sections~.
+~tlon-md-get-tag-section~ translates a canonical section name (e.g., ="Further reading"=) to its equivalent in a TARGET-LANGUAGE, based on ~tlon-md-canonical-tag-sections~.
 
-*** Link and Sorting Helpers
+** Link and sorting helpers
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-md-link-sort-internals
+:CUSTOM_ID: h:link-sorting-helpers
 :END:
+
 #+findex: tlon-md-get-title-in-link-target
-+ ~tlon-md-get-title-in-link-target~ :: Retrieves the =title= metadata for the file specified in a Markdown link's =TARGET=.
-#+findex: tlon-md-sort-elements-in-paragraph
-+ ~tlon-md-sort-elements-in-paragraph~ :: Helper function to sort elements within the current paragraph separated by a given =SEPARATOR=. Used by ~tlon-md-sort-related-entries~.
+~tlon-md-get-title-in-link-target~ retrieves the =title= metadata for the file specified in a Markdown link's TARGET path.
 
-*** Tag Handling Logic
+#+findex: tlon-md-sort-elements-in-paragraph
+~tlon-md-sort-elements-in-paragraph~ sorts elements within the current paragraph, separated by a given SEPARATOR string, in alphabetical order using Unicode-aware collation. Used internally by ~tlon-md-sort-related-entries~ ([[#h:links-and-sorting][Links and sorting]]).
+
+** Tag handling logic
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-md-tag-internals
+:CUSTOM_ID: h:tag-handling-logic
 :END:
-This group contains the core logic for inserting, editing, formatting, and parsing the various tags (HTML, MDX, SSML).
 
 #+findex: tlon-md-insert-or-edit-tag
-+ ~tlon-md-insert-or-edit-tag~ :: Decides whether to insert a new tag or edit an existing one at point based on ~tlon-looking-at-tag-p~.
-#+findex: tlon-looking-at-tag-p
-+ ~tlon-looking-at-tag-p~ :: Checks if point is currently looking at a specific =TAG= using its regex pattern.
-#+findex: tlon-md-edit-tag
-+ ~tlon-md-edit-tag~ :: Edits the tag at point. Can optionally take pre-defined attribute =VALUES= and =CONTENT=. Uses ~tlon-get-tag-at-point~, ~tlon-md-get-tag-pattern~, ~tlon-get-tag-attribute-values~, and ~tlon-md-return-tag~.
-#+findex: tlon-md-set-tag-attribute-value
-+ ~tlon-md-set-tag-attribute-value~ :: Creates a new list of attribute values with the specified =ATTRIBUTE= set to =VALUE= for a given =TAG=.
-#+findex: tlon-md-insert-attribute-value
-+ ~tlon-md-insert-attribute-value~ :: Inserts or replaces a specific =ATTRIBUTE= =VALUE= in the tag at point by calling ~tlon-md-edit-tag~.
-#+findex: tlon-md-return-tag
-+ ~tlon-md-return-tag~ :: Core function to generate or insert a tag string. Takes the =TAG= name, optional attribute =VALUES=, optional =CONTENT=, and a =FORMAT= specifier (`get-match-string`, `get-placeholders`, `get-values`, `insert-values`, `insert-prompt`). Calls ~tlon-md-format-tag~ and ~tlon-md-act-on-returned-tag~.
-#+findex: tlon-md-act-on-returned-tag
-+ ~tlon-md-act-on-returned-tag~ :: Performs the final action based on the =FORMAT= specifier (insert string or return it).
-#+findex: tlon-md-format-tag
-+ ~tlon-md-format-tag~ :: Formats the opening and closing tags (or just the opening tag for self-closing ones) based on the =TAG= name, =VALUES=, and =FORMAT=. Calls ~tlon-md-format-tag-with-attributes~. Returns a cons cell =(OPEN . CLOSE)= or a list =(OPEN)=.
-#+findex: tlon-md-get-tag-filled
-+ ~tlon-md-get-tag-filled~ :: Returns a complete tag string with specified =VALUES= and =CONTENT=. Uses ~tlon-md-format-tag~ with `get-values` format.
-#+findex: tlon-md-get-tag-to-fill
-+ ~tlon-md-get-tag-to-fill~ :: Returns a tag string template with placeholders for content and attributes. Uses ~tlon-md-format-tag~ with `get-placeholders` format.
-#+findex: tlon-get-tag-at-point
-+ ~tlon-get-tag-at-point~ :: Identifies the name of the tag at point by checking against all tags defined in ~tlon-tag-specs~.
-#+findex: tlon-get-tag-groups
-+ ~tlon-get-tag-groups~ :: Returns a list of the regex capture group numbers for a =TAG='s attributes (or attribute values if =VALUES= is non-nil), based on ~tlon-tag-specs~.
-#+findex: tlon-get-tag-attribute-names
-+ ~tlon-get-tag-attribute-names~ :: Returns a list of attribute names for a =TAG= from ~tlon-tag-specs~.
-#+findex: tlon-get-tag-attribute-values
-+ ~tlon-get-tag-attribute-values~ :: Extracts the current values of all attributes for the =TAG= at point using regex match data and group numbers from ~tlon-tag-specs~.
-#+findex: tlon-md-lookup-tag-attribute-property
-+ ~tlon-md-lookup-tag-attribute-property~ :: Retrieves a specific =PROPERTY= (e.g., =:group=, =:required=) for a named =ATTRIBUTE= of a =TAG= from ~tlon-tag-specs~.
-#+findex: tlon-md-format-tag-with-attributes
-+ ~tlon-md-format-tag-with-attributes~ :: Formats the attribute part of a tag string based on the =TAG=, optional =VALUES=, and =FORMAT=. Iterates through attributes, calls ~tlon-md-format-attribute-with-placeholder~, and handles user input via attribute readers or prompts if =FORMAT= is `insert-prompt`.
-#+findex: tlon-md-format-attribute-with-placeholder
-+ ~tlon-md-format-attribute-with-placeholder~ :: Creates a format string for a single attribute (e.g., = name="%s"= or = name="\(?:%s\)"= if =CAPTURE= is t).
-#+findex: tlon-make-attribute-pattern-searchable
-+ ~tlon-make-attribute-pattern-searchable~ :: Converts an attribute format string into a searchable regex pattern, adding capture groups and making it optional if =REQUIRED= is nil.
-#+findex: tlon-md-format-tag-with-attributes-from-user
-+ ~tlon-md-format-tag-with-attributes-from-user~ :: Helper to call the attribute reader function (=FUN=) and ensure a value is provided if =REQUIRED-P= is non-nil.
-#+findex: tlon-md-get-tag-pattern
-+ ~tlon-md-get-tag-pattern~ :: Generates the complete regex pattern for matching a given =TAG=, including its attributes. Uses ~tlon-md-format-tag~ with `get-match-string` format.
+~tlon-md-insert-or-edit-tag~ is the core dispatcher: it checks whether point is on an existing TAG (via ~tlon-looking-at-tag-p~) and either edits it or inserts a new one.
 
-*** Attribute Readers
+#+findex: tlon-looking-at-tag-p
+~tlon-looking-at-tag-p~ returns non-nil if point is currently looking at the specified TAG, by matching its regex pattern.
+
+#+findex: tlon-md-edit-tag
+~tlon-md-edit-tag~ edits the tag at point. It optionally accepts pre-defined attribute VALUES, CONTENT, and a FORMAT specifier (=get-match-string=, =get-placeholders=, =get-values=, =insert-values=, or =insert-prompt=).
+
+#+findex: tlon-md-set-tag-attribute-value
+~tlon-md-set-tag-attribute-value~ returns a new list of attribute values with the specified ATTRIBUTE set to VALUE for the given TAG.
+
+#+findex: tlon-md-return-tag
+~tlon-md-return-tag~ is the core function for generating or inserting a tag string. It takes the TAG name, optional attribute VALUES, optional CONTENT, and a FORMAT specifier. It delegates to ~tlon-md-format-tag~ and ~tlon-md-act-on-returned-tag~.
+
+#+findex: tlon-md-act-on-returned-tag
+~tlon-md-act-on-returned-tag~ performs the final action based on the FORMAT specifier: for =insert-prompt= or =insert-values= it inserts the string; for =get-match-string=, =get-placeholders=, or =get-values= it returns it.
+
+#+findex: tlon-md-format-tag
+~tlon-md-format-tag~ formats the opening and closing tags (or just the opening tag for self-closing ones) based on the TAG name, VALUES, and FORMAT. Returns a cons cell =(OPEN . CLOSE)= or a list =(OPEN)=.
+
+#+findex: tlon-md-get-tag-filled
+~tlon-md-get-tag-filled~ returns a complete tag string with specified VALUES and CONTENT.
+
+#+findex: tlon-md-get-tag-to-fill
+~tlon-md-get-tag-to-fill~ returns a tag string template with placeholders for content and attributes.
+
+#+findex: tlon-get-tag-at-point
+~tlon-get-tag-at-point~ identifies the name of the tag at point by checking against all tags defined in ~tlon-tag-specs~.
+
+#+findex: tlon-get-tag-groups
+~tlon-get-tag-groups~ returns a list of the regex capture group numbers for a TAG's attributes. If VALUES is non-nil, returns capture group numbers for attribute values instead.
+
+#+findex: tlon-get-tag-attribute-names
+~tlon-get-tag-attribute-names~ returns a list of attribute names for a TAG from ~tlon-tag-specs~.
+
+#+findex: tlon-get-tag-attribute-values
+~tlon-get-tag-attribute-values~ extracts the current values of all attributes for the TAG at point using regex match data and group numbers from ~tlon-tag-specs~.
+
+#+findex: tlon-md-lookup-tag-attribute-property
+~tlon-md-lookup-tag-attribute-property~ retrieves a specific PROPERTY (e.g., =:group=, =:required=) for a named ATTRIBUTE of a TAG from ~tlon-tag-specs~.
+
+#+findex: tlon-md-format-tag-with-attributes
+~tlon-md-format-tag-with-attributes~ formats the attribute portion of a tag string based on the TAG, optional VALUES, and FORMAT. It iterates through attributes and handles user input via readers or prompts when FORMAT is =insert-prompt=.
+
+#+findex: tlon-md-format-attribute-with-placeholder
+~tlon-md-format-attribute-with-placeholder~ creates a format string for a single attribute (e.g., = name="%s"=). If CAPTURE is non-nil, encloses the placeholder in a named capture group.
+
+#+findex: tlon-make-attribute-pattern-searchable
+~tlon-make-attribute-pattern-searchable~ converts an attribute format string into a searchable regex pattern, adding capture groups and making it optional if REQUIRED is nil.
+
+#+findex: tlon-md-format-tag-with-attributes-from-user
+~tlon-md-format-tag-with-attributes-from-user~ calls the attribute reader function FUN and keeps prompting until a non-empty value is entered when REQUIRED-P is non-nil.
+
+#+findex: tlon-md-get-tag-pattern
+~tlon-md-get-tag-pattern~ generates the complete regex pattern for matching a given TAG, including its attributes.
+
+** Attribute readers
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-md-attribute-readers
+:CUSTOM_ID: h:attribute-readers
 :END:
-These functions are used by ~tlon-md-format-tag-with-attributes~ when prompting the user for specific attribute values.
+
+These functions are used by ~tlon-md-format-tag-with-attributes~ when prompting for specific attribute values.
 
 #+findex: tlon-md-cite-bibkey-reader
-+ ~tlon-md-cite-bibkey-reader~ :: Reads =bibKey= using =citar-select-refs=.
+~tlon-md-cite-bibkey-reader~ reads the =bibKey= attribute by invoking ~citar-select-refs~.
+
 #+findex: tlon-md-cite-locator-reader
-+ ~tlon-md-cite-locator-reader~ :: Reads =locator= using completion against ~tlon-locators~.
+~tlon-md-cite-locator-reader~ reads the =locator= attribute with completion against ~tlon-locators~.
+
 #+findex: tlon-md-cite-length-reader
-+ ~tlon-md-cite-length-reader~ :: Reads citation length ("short" or "long") and returns the appropriate attribute string (" short" or "").
+~tlon-md-cite-length-reader~ reads the citation length (="short"= or ="long"=) and returns the appropriate attribute string (=" short"= or =""=).
+
 #+findex: tlon-md-figure-ignore-content-reader
-+ ~tlon-md-figure-ignore-content-reader~ :: Prompts the user whether to ignore the content of the =<Figure>= tag for TTS. Returns =" ignore-content"= if yes, =nil= otherwise.
+~tlon-md-figure-ignore-content-reader~ prompts whether to ignore the content of the =<Figure>= tag for TTS. Returns =" ignore-content"= if yes, =nil= otherwise.
+
 #+findex: tlon-md-emphasis-level-reader
-+ ~tlon-md-emphasis-level-reader~ :: Reads =level= for =<emphasis>= using completion against ~tlon-md-ssml-emphasis-levels~.
+~tlon-md-emphasis-level-reader~ reads the =level= attribute for =<emphasis>= with completion against ~tlon-md-ssml-emphasis-levels~. The default is ="moderate"=.
+
 #+findex: tlon-md-lang-reader
-+ ~tlon-md-lang-reader~ :: Reads =xml:lang= using ~tlon-select-language~.
+~tlon-md-lang-reader~ reads the =xml:lang= attribute via ~tlon-select-language~.
+
 #+findex: tlon-md-math-display-reader
-+ ~tlon-md-math-display-reader~ :: Reads display type ("inline" or "display") for =<Math>= and returns the attribute string (" inline" or " display").
+~tlon-md-math-display-reader~ reads the display type (="inline"= or ="display"=) for =<Math>= and returns the formatted attribute string.
+
 #+findex: tlon-md-phoneme-alphabet-reader
-+ ~tlon-md-phoneme-alphabet-reader~ :: Reads =alphabet= for =<phoneme>= using completion against ~tlon-md-ssml-phoneme-alphabets~.
+~tlon-md-phoneme-alphabet-reader~ reads the =alphabet= attribute for =<phoneme>= with completion against ~tlon-md-ssml-phoneme-alphabets~. The default is ="ipa"=.
+
 #+findex: tlon-md-replace-audio-voice-reader
-+ ~tlon-md-replace-audio-voice-reader~ :: Reads =role= for =<ReplaceAudio>= or =<VoiceRole>= using completion against a predefined list of roles. Allows an empty selection, which defaults to inheriting the surrounding voice context.
+~tlon-md-replace-audio-voice-reader~ reads the =role= attribute for =<ReplaceAudio>= or =<VoiceRole>= with completion against a predefined list of roles: =""= (inherit surrounding context), ="inherit"=, ="main"=, ="alternate"=, ="male"=, ="female"=, ="alternate gender"=.
+
 #+findex: tlon-md-say-as-interpret-as-reader
-+ ~tlon-md-say-as-interpret-as-reader~ :: Reads =interpret-as= for =<say-as>= using completion against ~tlon-md-ssml-interpret-as-values~.
+~tlon-md-say-as-interpret-as-reader~ reads the =interpret-as= attribute for =<say-as>= with completion against ~tlon-md-ssml-interpret-as-values~.
+
 #+findex: tlon-md-simple-table-include-reader
-+ ~tlon-md-simple-table-include-reader~ :: Reads =include= scope for =<SimpleTable>= ("nothing", "everything", "body") and returns the formatted attribute string.
+~tlon-md-simple-table-include-reader~ reads the =include= scope for =<SimpleTable>= with completion against ="nothing"=, ="everything"=, ="body"=.
 
-*** Note Handling
+#+findex: tlon-md-voice-name-reader
+~tlon-md-voice-name-reader~ reads the =name= attribute for =<voice>= by presenting a completion list of voices configured for the current ~tlon-tts-global-engine~. Returns the friendly voice name (e.g., ="Brian"=), not the voice ID.
+
+** Note handling
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-md-note-internals
+:CUSTOM_ID: h:note-handling
 :END:
+
 #+findex: tlon-insert-note-marker
-+ ~tlon-insert-note-marker~ :: Helper function to insert a =MARKER= (=<Footnote />= or =<Sidenote />=) at the beginning of the footnote content at point, optionally overwriting the other marker type.
-#+findex: tlon-md-get-note
-+ ~tlon-md-get-note~ :: Returns the text content of footnote =N= (or the one at point). Optionally returns only the content after the marker if =CONTENT-ONLY= is non-nil. Uses ~tlon-md-get-note-bounds~.
-#+findex: tlon-md-get-note-bounds
-+ ~tlon-md-get-note-bounds~ :: Returns a cons cell =(START . END)= representing the boundaries of footnote =N= (or the one at point). Uses ~markdown-footnote-find-text~, ~tlon-md-get-note-beginning~, and ~tlon-md-get-note-end~.
-#+findex: tlon-md-get-note-beginning
-+ ~tlon-md-get-note-beginning~ :: Finds the starting position of the footnote definition (e.g., =[^N]:=) or the start of the content after the marker if =CONTENT-ONLY= is non-nil. Uses =markdown-footnote-text-positions= or regex search.
-#+findex: tlon-md-get-note-end
-+ ~tlon-md-get-note-end~ :: Finds the end position of the footnote at point by searching for the start of the next footnote definition.
-#+findex: tlon-get-note-type
-+ ~tlon-get-note-type~ :: Determines if a =NOTE= string (or the note at point) contains a =<Footnote>= or =<Sidenote>= tag and returns the corresponding symbol (`footnote` or `sidenote`).
-#+findex: tlon-note-automatic-type
-+ ~tlon-note-automatic-type~ :: Implements the automatic classification logic: returns `footnote` if the =NOTE= contains a =<Cite>= tag and has 4 or fewer words (excluding citations), otherwise returns `sidenote`.
+~tlon-insert-note-marker~ inserts a MARKER (=<Footnote />= or =<Sidenote />=) at the beginning of the footnote content at point, optionally overwriting the other marker type.
 
-*** Miscellaneous Helpers
+#+findex: tlon-md-get-note
+~tlon-md-get-note~ returns the text content of footnote N (or the one at point). If CONTENT-ONLY is non-nil, returns only the content after the marker.
+
+#+findex: tlon-md-get-note-bounds
+~tlon-md-get-note-bounds~ returns a cons cell =(START . END)= representing the boundaries of footnote N (or the one at point).
+
+#+findex: tlon-md-get-note-beginning
+~tlon-md-get-note-beginning~ finds the starting position of the footnote definition (e.g., =[^N]:=), or the start of the content after the marker if CONTENT-ONLY is non-nil.
+
+#+findex: tlon-md-get-note-end
+~tlon-md-get-note-end~ finds the end position of the footnote at point by searching for the start of the next footnote definition or the local variables section.
+
+#+findex: tlon-get-note-type
+~tlon-get-note-type~ determines if a NOTE string (or the note at point) contains a =<Footnote>= or =<Sidenote>= tag and returns the corresponding symbol (~footnote~ or ~sidenote~).
+
+#+findex: tlon-note-automatic-type
+~tlon-note-automatic-type~ implements the automatic classification logic: returns ~footnote~ if the NOTE contains a =<Cite>= tag and has four or fewer words (excluding citations), otherwise returns ~sidenote~.
+
+** Miscellaneous helpers
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-md-misc-internals
+:CUSTOM_ID: h:misc-helpers
 :END:
+
 #+findex: tlon-ensure-markdown-mode
-+ ~tlon-ensure-markdown-mode~ :: Checks if the current buffer is in a mode derived from =markdown-mode= and signals an error if not.
+~tlon-ensure-markdown-mode~ checks if the current buffer is in a mode derived from ~markdown-mode~ and signals an error if not.
+
 #+findex: tlon-md-beginning-of-content
-+ ~tlon-md-beginning-of-content~ :: Returns the position after the YAML front matter (using ~tlon-md-end-of-metadata~) or the beginning of the buffer.
+~tlon-md-beginning-of-content~ returns the position after the YAML front matter, or ~point-min~ if there is no front matter.
+
 #+findex: tlon-md-end-of-content
-+ ~tlon-md-end-of-content~ :: Returns the position before the "Local Variables" block (using ~tlon-md-beginning-of-local-variables~) or the end of the buffer.
+~tlon-md-end-of-content~ returns the position before the "Local Variables" block, or ~point-max~ if there is no such block.
+
 #+findex: tlon-md-beginning-of-local-variables
-+ ~tlon-md-beginning-of-local-variables~ :: Finds the start position of the "Local Variables" block using ~tlon-get-delimited-region-pos~.
+~tlon-md-beginning-of-local-variables~ returns the start position of the "Local Variables" block.
+
 #+findex: tlon-md-end-of-metadata
-+ ~tlon-md-end-of-metadata~ :: Finds the end position of the YAML front matter using ~tlon-get-delimited-region-pos~.
+~tlon-md-end-of-metadata~ returns the end position of the YAML front matter.
+
 #+findex: tlon-md-get-local-variables
-+ ~tlon-md-get-local-variables~ :: Returns the text content of the "Local Variables" block.
+~tlon-md-get-local-variables~ returns the text content of the "Local Variables" block.
+
 #+findex: tlon-md-get-metadata
-+ ~tlon-md-get-metadata~ :: Returns the text content of the YAML front matter.
-#+findex: tlon-md-read-content
-+ ~tlon-md-read-content~ :: Reads the content of a =FILE= (or current buffer) excluding the front matter and local variables sections.
+~tlon-md-get-metadata~ returns the text content of the YAML front matter.
+
+#+findex: tlon-md-tag-list
+~tlon-md-tag-list~ returns a list of all tag names defined in ~tlon-tag-specs~.
+
+* Indices
+:PROPERTIES:
+:CUSTOM_ID: h:indices
+:END:
+
+** Function index
+:PROPERTIES:
+:INDEX: fn
+:CUSTOM_ID: h:function-index
+:END:
+
+** Variable index
+:PROPERTIES:
+:INDEX: vr
+:CUSTOM_ID: h:variable-index
+:END:
