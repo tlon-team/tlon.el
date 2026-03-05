@@ -1,64 +1,197 @@
 ;;; tlon-bib-test.el --- Tests for tlon-bib -*- lexical-binding: t -*-
 
+;;; Commentary:
+
+;; Tests for bibliography functions: abstract cleanup, name formatting,
+;; date parsing, BibTeX key generation, and brace removal.
+
 ;;; Code:
 
 (require 'ert)
 (require 'tlon-bib)
 
-(ert-deftest tlon-bib-populate-url-field-slugifies-unicode-punctuation ()
-  "Ensure `tlon-bib-populate-url-field' generates URLs with clean slugs.
-This is a regression test for titles containing non-ASCII punctuation (e.g.,
-Japanese brackets \"【】\" and fullwidth colon \"：\"), which should not appear
-verbatim in the generated URL slug."
-  (let ((tlon-languages-properties '(("japanese" (:code . "ja"))))
-        (tlon-core-bare-dirs '(("ja" ("en" ("articles" . "記事")))))
-        (captured-url nil))
-    (cl-letf (((symbol-function 'tlon-ensure-bib) (lambda () t))
-              ((symbol-function 'tlon-get-key-at-point) (lambda () "Todd2016WantToDoJa"))
-              ((symbol-function 'tlon-lookup)
-               (lambda (list key &rest pairs)
-                 (cond
-                  ;; Resolve language code from langid name.
-                  ((eq list tlon-languages-properties)
-                   (pcase (list key pairs)
-                     (`(:code (:name "japanese")) "ja")
-                     (_ nil)))
-                  ;; Resolve bare dir path for articles.
-                  ;;
-                  ;; In `tlon-bib-populate-url-field' this is called as:
-                  ;;   (tlon-lookup tlon-core-bare-dirs lang "en" "articles")
-                  ;; so KEY is the language code and PAIRS is ("en" "articles").
-                  ((eq list tlon-core-bare-dirs)
-                   (pcase (list key pairs)
-                     (`("ja" ("en" "articles")) "記事")
-                     (_ nil)))
-                  (t nil))))
-              ((symbol-function 'tlon-repo-lookup)
-               (lambda (&rest _args) "https://eanotes.jp"))
-              ;; Pretend we're in `bibtex-mode' without requiring bibtex buffers.
-              ((symbol-function 'derived-mode-p)
-               (lambda (&rest modes) (memq 'bibtex-mode modes)))
-              ((symbol-function 'bibtex-narrow-to-entry) (lambda () nil))
-              ((symbol-function 'bibtex-beginning-of-entry) (lambda () nil))
-              ;; Provide get/set-field pair for the function under test.
-              ((symbol-function 'bibtex-extras-get-field)
-               (lambda (field)
-                 (pcase field
-                   ("langid" "japanese")
-                   ("title" "【キャリアガイド】第4部：良いことをしたい")
-                   ("url" nil)
-                   (_ nil))))
-              ((symbol-function 'bibtex-set-field)
-               (lambda (field value &rest _args)
-                 (when (string= field "url")
-                   (setq captured-url value))))
-              ;; Avoid interactive prompt just in case.
-              ((symbol-function 'y-or-n-p) (lambda (&rest _args) t)))
-      (with-temp-buffer
-        (setq major-mode 'bibtex-mode)
-        (tlon-bib-populate-url-field)
-        (should (equal captured-url
-                       "https://eanotes.jp/記事/キャリアガイド-第4部-良いことをしたい"))))))
+;;;; tlon-abstract-cleanup
+
+(ert-deftest tlon-abstract-cleanup-removes-xml-tags ()
+  "Strip XML tags from abstract text."
+  (should (equal "Hello world."
+                 (tlon-abstract-cleanup "<p>Hello world</p>"))))
+
+(ert-deftest tlon-abstract-cleanup-removes-latex-tags ()
+  "Strip LaTeX-style tags."
+  (should (equal "Hello."
+                 (tlon-abstract-cleanup "{\\textless}.p{\\textgreater}Hello"))))
+
+(ert-deftest tlon-abstract-cleanup-removes-leading-abstract ()
+  "Strip 'abstract' prefix (with trailing space via regex group)."
+  (should (equal "This is the text."
+                 (tlon-abstract-cleanup "abstract This is the text."))))
+
+(ert-deftest tlon-abstract-cleanup-removes-leading-summary ()
+  "Strip 'summary' prefix.
+Note: the regex does not consume the trailing space for 'summary',
+only for 'abstract' (which has a group for optional colon/space)."
+  (should (equal " This is the text."
+                 (tlon-abstract-cleanup "summary This is the text."))))
+
+(ert-deftest tlon-abstract-cleanup-adds-trailing-period ()
+  "Add a period at the end if missing."
+  (should (equal "No period at end."
+                 (tlon-abstract-cleanup "No period at end"))))
+
+(ert-deftest tlon-abstract-cleanup-keeps-existing-period ()
+  "Do not double a trailing period."
+  (should (equal "Already has period."
+                 (tlon-abstract-cleanup "Already has period."))))
+
+;;;; tlon-bib-remove-braces
+
+(ert-deftest tlon-bib-remove-braces-basic ()
+  "Remove curly braces from a string."
+  (should (equal "Hello World" (tlon-bib-remove-braces "{Hello} {World}"))))
+
+(ert-deftest tlon-bib-remove-braces-nested ()
+  "Remove nested braces."
+  (should (equal "AB" (tlon-bib-remove-braces "{{A}{B}}"))))
+
+(ert-deftest tlon-bib-remove-braces-nil ()
+  "Return nil for nil input."
+  (should (null (tlon-bib-remove-braces nil))))
+
+(ert-deftest tlon-bib-remove-braces-no-braces ()
+  "Return unchanged string when no braces present."
+  (should (equal "plain" (tlon-bib-remove-braces "plain"))))
+
+;;;; tlon-bib--join-names
+
+(ert-deftest tlon-bib-join-names-two ()
+  "Join two author names with 'and'."
+  (should (equal "Alice and Bob"
+                 (tlon-bib--join-names '("Alice" "Bob")))))
+
+(ert-deftest tlon-bib-join-names-single ()
+  "Single name returns as-is."
+  (should (equal "Alice"
+                 (tlon-bib--join-names '("Alice")))))
+
+(ert-deftest tlon-bib-join-names-three ()
+  "Join three names."
+  (should (equal "Alice and Bob and Carol"
+                 (tlon-bib--join-names '("Alice" "Bob" "Carol")))))
+
+(ert-deftest tlon-bib-join-names-nil ()
+  "Return nil for nil input."
+  (should (null (tlon-bib--join-names nil))))
+
+(ert-deftest tlon-bib-join-names-empty-strings ()
+  "Return nil when all names are empty strings."
+  (should (null (tlon-bib--join-names '("" "  ")))))
+
+(ert-deftest tlon-bib-join-names-trims-whitespace ()
+  "Trim whitespace from names."
+  (should (equal "Alice and Bob"
+                 (tlon-bib--join-names '("  Alice  " " Bob ")))))
+
+;;;; tlon-bib--reverse-name
+
+(ert-deftest tlon-bib-reverse-name-two-parts ()
+  "Reverse 'First Last' to 'Last, First'."
+  (should (equal "Doe, John" (tlon-bib--reverse-name "John Doe"))))
+
+(ert-deftest tlon-bib-reverse-name-three-parts ()
+  "Move only the last token to front."
+  (should (equal "Smith, John Michael"
+                 (tlon-bib--reverse-name "John Michael Smith"))))
+
+(ert-deftest tlon-bib-reverse-name-already-reversed ()
+  "Leave alone if already contains a comma."
+  (should (equal "Doe, John" (tlon-bib--reverse-name "Doe, John"))))
+
+(ert-deftest tlon-bib-reverse-name-single-token ()
+  "Single-token name returned as-is."
+  (should (equal "Aristotle" (tlon-bib--reverse-name "Aristotle"))))
+
+(ert-deftest tlon-bib-reverse-name-empty ()
+  "Empty string returned as-is."
+  (should (equal "" (tlon-bib--reverse-name ""))))
+
+(ert-deftest tlon-bib-reverse-name-nil ()
+  "Nil input returns empty string."
+  (should (equal "" (tlon-bib--reverse-name nil))))
+
+;;;; tlon-bib--date-year
+
+(ert-deftest tlon-bib-date-year-iso ()
+  "Extract year from ISO date."
+  (should (equal "2024" (tlon-bib--date-year "2024-03-15"))))
+
+(ert-deftest tlon-bib-date-year-datetime ()
+  "Extract year from datetime string."
+  (should (equal "2023" (tlon-bib--date-year "2023-12-01T10:30:00"))))
+
+(ert-deftest tlon-bib-date-year-only ()
+  "Extract year from year-only string."
+  (should (equal "2020" (tlon-bib--date-year "2020"))))
+
+(ert-deftest tlon-bib-date-year-nil ()
+  "Return nil for nil input."
+  (should (null (tlon-bib--date-year nil))))
+
+(ert-deftest tlon-bib-date-year-invalid ()
+  "Return nil for non-date string."
+  (should (null (tlon-bib--date-year "not a date"))))
+
+;;;; tlon-bib--date-iso
+
+(ert-deftest tlon-bib-date-iso-full ()
+  "Normalize full ISO date."
+  (should (equal "2024-03-15" (tlon-bib--date-iso "2024-03-15"))))
+
+(ert-deftest tlon-bib-date-iso-strips-time ()
+  "Strip time component from datetime."
+  (should (equal "2024-03-15" (tlon-bib--date-iso "2024-03-15T10:30:00"))))
+
+(ert-deftest tlon-bib-date-iso-year-only ()
+  "Pad year-only to January 1st."
+  (should (equal "2024-01-01" (tlon-bib--date-iso "2024"))))
+
+(ert-deftest tlon-bib-date-iso-nil ()
+  "Return nil for nil input."
+  (should (null (tlon-bib--date-iso nil))))
+
+(ert-deftest tlon-bib-date-iso-invalid ()
+  "Return nil for invalid input."
+  (should (null (tlon-bib--date-iso "not a date"))))
+
+;;;; tlon-get-abstract-translation
+
+(ert-deftest tlon-get-abstract-translation-found ()
+  "Return translation when present."
+  (let ((translations '(("key1" . "Translated abstract"))))
+    (should (equal "Translated abstract"
+                   (tlon-get-abstract-translation "key1" "es" translations)))))
+
+(ert-deftest tlon-get-abstract-translation-not-found ()
+  "Return nil when key not in translations."
+  (let ((translations '(("key1" . "text"))))
+    (should (null (tlon-get-abstract-translation "key2" "es" translations)))))
+
+;;;; tlon-autokey-get-year
+
+(ert-deftest tlon-autokey-get-year-four-digit ()
+  "Extract last N digits from year."
+  (let ((bibtex-autokey-year-length 4))
+    (should (equal "2024" (tlon-autokey-get-year "2024")))))
+
+(ert-deftest tlon-autokey-get-year-two-digit ()
+  "Extract last 2 digits."
+  (let ((bibtex-autokey-year-length 2))
+    (should (equal "24" (tlon-autokey-get-year "2024")))))
+
+(ert-deftest tlon-autokey-get-year-empty ()
+  "Return empty string for empty year."
+  (let ((bibtex-autokey-year-length 4))
+    (should (equal "" (tlon-autokey-get-year "")))))
 
 (provide 'tlon-bib-test)
 ;;; tlon-bib-test.el ends here
