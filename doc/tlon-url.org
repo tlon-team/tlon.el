@@ -1,199 +1,279 @@
-#+title: tlon - URL Handling
+#+title: tlon-url: Dead URL checking
 #+author: Pablo Stafforini
-#+EXCLUDE_TAGS: noexport
+#+email: pablo@stafforini.com
 #+language: en
-#+options: ':t toc:nil author:t email:t num:t
+#+options: ':t toc:t author:t email:t num:t
 #+startup: content
-#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
-#+texinfo_header: @set MAINTAINER Pablo Stafforini
-#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
-#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
-#+texinfo: @insertcopying
-* URL Handling (=tlon-url.el=)
+#+export_file_name: tlon-url.info
+#+texinfo_filename: tlon-url.info
+#+texinfo_dir_category: Emacs misc features
+#+texinfo_dir_title: Tlon URL: (tlon-url)
+#+texinfo_dir_desc: Dead URL checking
+
+This manual describes the features and customization options for the Emacs Lisp file =tlon-url.el=.
+
+* Overview
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-url
+:CUSTOM_ID: h:overview
 :END:
 
-This module provides tools for checking dead URLs within files and replacing URLs across multiple Tlön content repositories. It integrates with the external =linkchecker= command-line tool and the Wayback Machine (web.archive.org).
+=tlon-url= provides tools for detecting and fixing dead URLs within project files. It integrates with the external =lychee= link checker to scan files and repositories for broken links, the Internet Archive's Wayback Machine to find archived versions of dead URLs, and a whitelist mechanism to skip known-good URLs. The module supports both Markdown and BibTeX file formats and can operate on individual files or entire repositories. It also provides commands for propagating URL changes across all Tlon content repositories.
 
-** Dependencies
+* Commands
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-url-dependencies
+:CUSTOM_ID: h:commands
 :END:
 
-+ =tlon-core=
-+ =transient=
-+ =json= (Built-in Emacs 27.1+, or package)
-+ =cl-lib= (Built-in)
-+ =ffap= (Find File At Point, built-in)
-+ =lychee= (External command-line tool for ~tlon-lychee-fix-dead-links~ and ~tlon-check-urls-in-file~)
-
-** Commands
+** Listing dead URLs
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-url-commands
+:CUSTOM_ID: h:listing-dead-urls
 :END:
 
-*** List dead URLs in File
+*** ~tlon-list-dead-urls-in-file~
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-check-urls-in-file-cmd
+:CUSTOM_ID: h:tlon-list-dead-urls-in-file
 :END:
 #+findex: tlon-list-dead-urls-in-file
-The command ~tlon-check-urls-in-file~ (Autoloaded) checks all URLs found in a specified =FILE= (or the current buffer's file) for dead links using the external =lychee= tool. It delegates to the internal helper ~tlon-lychee--check-urls~, which runs `lychee` on the given file within an =eshell= buffer, displaying the results there.
 
-*** List dead URLs in Repo
+Check all URLs in FILE for dead links using the external =lychee= tool.
+
+When called interactively, you are prompted for the file (defaulting to the current buffer's file). If FILE is =nil=, it uses the current buffer's file. For =.bib= files, the command first extracts all URLs into a temporary file to work around lychee limitations with large BibTeX files, then runs lychee on that temporary file. For all other files, lychee is run directly. Results are displayed in an =eshell= buffer.
+
+*** ~tlon-list-dead-urls-in-repo~
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-check-urls-in-repo-cmd
+:CUSTOM_ID: h:tlon-list-dead-urls-in-repo
 :END:
 #+findex: tlon-list-dead-urls-in-repo
-The command ~tlon-list-dead-urls-in-repo~ (Autoloaded) checks all URLs in the current repository for dead links using the external =lychee= tool.
-1. It determines the current repository root.
-2. It prompts the user whether to get the output in JSON format.
-3. It calls the internal function ~tlon-lychee--check-urls~, targeting the whole repository (`.`).
-4. This opens an eshell buffer and runs `lychee`, displaying the output.
 
-*** Get Archived URL
+Check all URLs in the current repository for dead links. You are prompted whether to use JSON format for the output. The command determines the repository root via ~tlon-get-repo~ and runs =lychee= on the entire directory, displaying results in an =eshell= buffer.
+
+** Fixing dead URLs
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-get-archived-cmd
-:END:
-#+findex: tlon-get-archived
-The command ~tlon-get-archived~ (Autoloaded) fetches the latest working archived version of a given =URL= from the Wayback Machine and copies the archived URL to the kill ring.
-1. Prompts for the =URL=, defaulting to the URL at point (~thing-at-point 'url t~).
-2. Calls the internal function ~tlon--get-wayback-machine-url~ to fetch the archive URL.
-3. If an archive URL is found, it's displayed in a message and copied to the kill ring using =kill-new=.
-4. If no archive is found or an error occurs, an appropriate message is displayed.
-
-*** Get Earliest Archived URL
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-get-earliest-archived-cmd
-:END:
-#+findex: tlon-get-earliest-archived
-The command ~tlon-get-earliest-archived~ (Autoloaded) fetches the earliest
-working archived version of a given =URL= from the Wayback Machine and copies
-the archived URL to the kill ring.
-1. Prompts for the =URL=, defaulting to the URL at point
-   (~thing-at-point 'url t~).
-2. Calls the internal function
-   ~tlon--get-earliest-wayback-machine-url~ to fetch the archive URL sorted
-   chronologically.
-3. If an archive URL is found, it's displayed in a message and copied to the
-   kill ring using =kill-new=.
-4. If no archive is found or an error occurs, an appropriate message is
-   displayed.
-
-*** Replace URL Across Projects
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-replace-url-across-projects-cmd
-:END:
-#+findex: tlon-replace-url-across-projects
-The command ~tlon-replace-url-across-projects~ performs a search-and-replace operation for URLs across all files within Tlön content repositories (both originals and translations).
-1. Prompts for the =URL-DEAD= (the URL to replace), defaulting to the URL at point.
-2. Prompts for the =URL-LIVE= (the replacement URL).
-3. Gathers a list of all repository directories marked as =type= 'content using ~tlon-repo-lookup-all~.
-4. Recursively finds all files within these directories using =directory-files-recursively=.
-5. Iterates through each regular file:
-   - Reads the file content into a temporary buffer.
-   - Checks if =URL-DEAD= exists in the buffer.
-   - If found:
-     - Increments a replacement counter.
-     - Records the directory of the affected file.
-     - Performs a global search-and-replace within the temporary buffer, replacing all occurrences of =URL-DEAD= with =URL-LIVE=.
-     - Writes the modified content back to the original file.
-6. After processing all files, displays a message indicating the total number of replacements made and the unique directories affected.
-
-*** Replace Changed URLs in Unstaged
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-propagate-changed-urls-cmd
-:END:
-#+findex: tlon-propagate-changed-urls
-The command ~tlon-propagate-changed-urls~ (Autoloaded) scans the
-unstaged changes in the current Git repository, detects URL replacements, and
-applies each replacement across all Tlön content repositories by calling
-~tlon-replace-url-across-projects~ with each =OLD -> NEW= pair.
-1. Runs ~git diff -U0 --no-color~ at the repository root.
-2. For each diff hunk, collects URLs present on removed lines (= - =) and added
-   lines (= + =), in order.
-3. Zips removed and added URL lists per hunk to form candidate replacement
-   pairs, and deduplicates them.
-4. For each unique pair where =OLD ≠ NEW=, calls
-   ~tlon-replace-url-across-projects OLD NEW~.
-
-*** Transient Menu
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-url-menu-cmd
-:END:
-#+findex: tlon-url-menu
-The command ~tlon-url-menu~ (Autoloaded) activates a =transient= menu interface for URL-related operations.
-
-It provides the following options under the "" (main) group:
-+ =a= :: Get archived URL (~tlon-get-archived~)
-+ =d= :: Fix dead URLs in file (~tlon-fix-dead-urls-in-file~)
-+ =f= :: List dead URLs in file (~tlon-list-dead-urls-in-file~)
-+ =l= :: Fix dead URLs in repo (~tlon-fix-dead-urls-in-repo~)
-+ =r= :: List dead URLs in repo (~tlon-list-dead-urls-in-repo~)
-+ =p= :: Replace URL across projects (~tlon-replace-url-across-projects~)
-
-** Internal Functions and Variables
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-url-internals
+:CUSTOM_ID: h:fixing-dead-urls
 :END:
 
-This section lists non-interactive functions used internally or potentially useful for advanced customization.
-
-#+findex: tlon-get-urls-in-file
-+ ~tlon-get-urls-in-file~ :: Extracts a list of unique URLs from a given =FILE= (or the current buffer's file). The method of extraction depends on the file type. For Markdown files, it searches for URLs using =browse-url-button-regexp=. For BibTeX files, it extracts the content of the =url= field from each entry. For other file types, it defaults to the Markdown method.
-
-#+findex: tlon-get-urls-in-dir
-+ ~tlon-get-urls-in-dir~ :: Recursively finds all files with a specific =EXTENSION= (defaulting to "md") within a given =DIR= (defaulting to the current repository) and returns a combined list of all unique URLs found within those files by calling ~tlon-get-urls-in-file~ on each.
-
-#+findex: tlon-save-list-of-urls
-+ ~tlon-save-list-of-urls~ :: Takes a list of =URLS=, creates a temporary file, writes the URLs (one per line) prefixed with a =# LinkChecker URL list= header, and returns the path to the temporary file. (Note: This function seems unused within the current module).
-
-#+findex: tlon-lychee--check-urls
-+ ~tlon-lychee--check-urls~ :: Takes a =TARGET= (file path or ".") and an optional =JSON= flag. It ensures `lychee` is available, opens an =eshell= buffer, and executes `lychee` against the target with a standard set of accepted status codes.
-
-*** Fix Dead URLs in Repo
+*** ~tlon-fix-dead-urls-in-file~
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-lychee-fix-dead-links-cmd
+:CUSTOM_ID: h:tlon-fix-dead-urls-in-file
+:END:
+#+findex: tlon-fix-dead-urls-in-file
+
+Run =lychee= to find and interactively fix dead links in a single FILE. When called interactively, you are prompted for the file (defaulting to the current buffer's file). The command runs =lychee= in JSON mode asynchronously and, once complete, presents each dead link with the following action choices:
+
+| Key | Action    | Description                                               |
+|-----+-----------+-----------------------------------------------------------|
+| =a= | Archive   | Fetch a Wayback Machine archive and replace the dead link |
+| =r= | Replace   | Manually enter a replacement URL                          |
+| =d= | Delete    | Remove the URL markup, keeping any link text              |
+| =w= | Whitelist | Add the URL to the whitelist to skip in future runs       |
+| =s= | Skip      | Skip this link and move to the next                       |
+| =q= | Quit      | Stop processing remaining dead links                      |
+
+The "Archive" option is not available for URLs that are already Wayback Machine URLs.
+
+*** ~tlon-fix-dead-urls-in-repo~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-fix-dead-urls-in-repo
 :END:
 #+findex: tlon-fix-dead-urls-in-repo
-The command ~tlon-fix-dead-urls-in-repo~ (Autoloaded) automates finding and fixing dead links using =lychee= and the Wayback Machine.
-1. Identifies the current project's root directory using ~tlon-get-repo~.
-2. Ensures the =lychee= executable is found.
-3. Constructs the =lychee= command to scan all supported files in the project, outputting in JSON format and redirecting stderr to a temporary file.
-4. Calls ~tlon-lychee--run-and-process~ to execute =lychee= asynchronously.
-The subsequent processing, including parsing output, finding archived URLs, and replacing links, is handled by a chain of internal helper functions (see below).
 
-** Internal Functions and Variables
+Run =lychee= to find dead links across the entire repository and interactively fix them. This command operates on the current project's root directory (identified by ~tlon-get-repo~) and provides the same interactive fixing workflow as ~tlon-fix-dead-urls-in-file~ ([[#h:tlon-fix-dead-urls-in-file][above]]).
+
+The process is asynchronous: =lychee= runs in the background, and when it completes, dead links are presented one at a time for your action. Each dead link is also opened in the secondary browser so you can verify its status.
+
+** Wayback Machine archive retrieval
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-url-internals
+:CUSTOM_ID: h:wayback-machine
 :END:
 
-This section lists non-interactive functions used internally or potentially useful for advanced customization.
+*** ~tlon-get-archived~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-get-archived
+:END:
+#+findex: tlon-get-archived
 
-#+findex: tlon--get-wayback-machine-url
-+ ~tlon--get-wayback-machine-url~ :: Takes a =URL= string and a =CALLBACK= function. It asynchronously fetches the latest working archived version of the =URL= from the Wayback Machine's CDX API. The =CALLBACK= is then called with two arguments: the =ARCHIVE-URL= (or =nil= if not found or on error) and the =ORIGINAL-URL=.
+Return the latest working archived version of URL from the Wayback Machine and copy it to the kill ring. When called interactively, you are prompted for the URL. If an archived version is found, it is displayed in a message and copied to the kill ring. If no archive is found, an appropriate message is displayed.
 
+*** ~tlon-get-earliest-archived~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-get-earliest-archived
+:END:
+#+findex: tlon-get-earliest-archived
+
+Return the earliest working archived version of URL from the Wayback Machine and copy it to the kill ring. This is useful for determining when a page was first archived. The command uses the Wayback Machine CDX API to find the oldest snapshot with a 200 status code. When called interactively, you are prompted for the URL.
+
+** URL propagation
+:PROPERTIES:
+:CUSTOM_ID: h:url-propagation
+:END:
+
+*** ~tlon-replace-url-across-projects~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-replace-url-across-projects
+:END:
+#+findex: tlon-replace-url-across-projects
+
+Replace URL-DEAD with URL-LIVE in all files across Tlon content repositories (both originals and translations).
+
+When called interactively, you are prompted for the dead URL (defaulting to URL at point) and the replacement URL. The command is intentionally conservative: it only replaces domain-root URLs when they appear inside Markdown link targets =(URL)= or as Markdown autolinks =<URL>=. It also matches common variations (http/https, optional ="www."=, optional trailing slash) and avoids replacing longer URLs with path slugs.
+
+After processing, a message reports the number of replacements and affected directories.
+
+*** ~tlon-propagate-changed-urls~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-propagate-changed-urls
+:END:
+#+findex: tlon-propagate-changed-urls
+
+Find URL replacements in unstaged Git changes and apply them across all Tlon content repositories.
+
+This command scans the output of =git diff -U0= in the current repository, pairs up URLs found on removed lines with URLs found on added lines within each hunk, and calls ~tlon-replace-url-across-projects~ for each unique (OLD, NEW) pair where OLD differs from NEW.
+
+** Transient menu
+:PROPERTIES:
+:CUSTOM_ID: h:transient-menu
+:END:
+
+*** ~tlon-url-menu~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-url-menu-command
+:END:
+#+findex: tlon-url-menu
+
+Display a =transient= menu interface for URL-related operations. The menu provides the following groups:
+
+| Key | Description                  | Command                             |
+|-----+------------------------------+-------------------------------------|
+| =l= | List dead URLs in file       | ~tlon-list-dead-urls-in-file~       |
+| =L= | List dead URLs in repo       | ~tlon-list-dead-urls-in-repo~       |
+| =f= | Fix dead URLs in file        | ~tlon-fix-dead-urls-in-file~        |
+| =F= | Fix dead URLs in repo        | ~tlon-fix-dead-urls-in-repo~        |
+| =a= | Get archived URL             | ~tlon-get-archived~                 |
+| =e= | Get earliest archived URL    | ~tlon-get-earliest-archived~        |
+| =p= | Propagate changed URLs       | ~tlon-propagate-changed-urls~       |
+| =r= | Replace URL across projects  | ~tlon-replace-url-across-projects~  |
+| =c= | Edit URL correspondence      | ~tlon-edit-url-correspondences~     |
+| =C= | Add URL correspondence       | ~tlon-add-url-correspondence~       |
+
+* Functions
+:PROPERTIES:
+:CUSTOM_ID: h:functions
+:END:
+
+** URL extraction
+:PROPERTIES:
+:CUSTOM_ID: h:url-extraction
+:END:
+
+*** ~tlon-get-urls-in-file~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-get-urls-in-file
+:END:
+#+findex: tlon-get-urls-in-file
+
+Return a list of all URL strings found in FILE. If FILE is =nil=, use the file visited by the current buffer. The extractor is chosen based on the file type:
+
+- Files ending in =.bib= (or buffers in ~bibtex-mode~) are parsed with a BibTeX-specific extractor that reads the =url= field from each entry.
+- Markdown files (=.md= or =.markdown=, or buffers in ~markdown-mode~) are parsed using ~markdown-regex-link-inline~ to extract link targets.
+- Any other file type defaults to the Markdown extractor.
+
+*** ~tlon-get-urls-in-dir~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-get-urls-in-dir
+:END:
+#+findex: tlon-get-urls-in-dir
+
+Return a list of all URLs found in files within DIR. If DIR is =nil=, use the current repository (via ~tlon-get-repo~). If EXTENSION is =nil=, use ="md"=. Files are found recursively using ~directory-files-recursively~ and each is processed by ~tlon-get-urls-in-file~.
+
+*** ~tlon-save-list-of-urls~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-save-list-of-urls
+:END:
+#+findex: tlon-save-list-of-urls
+
+Save the list of URLS to a temporary file (one URL per line, with a =# LinkChecker URL list= header) and return the file path.
+
+** URL replacement helpers
+:PROPERTIES:
+:CUSTOM_ID: h:url-replacement-helpers
+:END:
+
+*** ~tlon-lychee-replace-in-file~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-lychee-replace-in-file
+:END:
 #+findex: tlon-lychee-replace-in-file
-+ ~tlon-lychee-replace-in-file~ :: Takes a =FILE-PATH=, an =OLD-URL=, and a =NEW-URL=. It reads the content of =FILE-PATH=, replaces all occurrences of =OLD-URL= with =NEW-URL=, and writes the modified content back to the file. Returns =t= if any replacements were made, =nil= otherwise. =OLD-URL= is escaped for literal matching.
 
-#+findex: tlon-lychee--run-and-process
-+ ~tlon-lychee--run-and-process~ :: Takes =CMD-STRING=, =STDOUT-BUFFER=, =STDERR-FILE=, and =REPO-DIR=. Runs the =lychee= command asynchronously and sets a process sentinel to call ~tlon-lychee--handle-completion~.
+Replace OLD-URL with NEW-URL in FILE-PATH. The function tries to match variations of OLD-URL (as-is, hexified, decoded) to account for different URL encoding styles. Returns =t= if a replacement was made, =nil= otherwise.
 
-#+findex: tlon-lychee--handle-completion
-+ ~tlon-lychee--handle-completion~ :: Called by the process sentinel from ~tlon-lychee--run-and-process~. It retrieves stdout and stderr content, cleans up temporary resources, parses the JSON output from =lychee=, and calls ~tlon-lychee--process-parsed-report~. Handles errors related to process failure or JSON parsing.
+*** ~tlon-lychee-remove-url-from-file~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-lychee-remove-url-from-file
+:END:
+#+findex: tlon-lychee-remove-url-from-file
 
-#+findex: tlon-lychee--process-parsed-report
-+ ~tlon-lychee--process-parsed-report~ :: Takes the parsed =REPORT=, =REPO-DIR=, and =STDERR-CONTENT=. It initializes counters for replacements and processed links, calls ~tlon-lychee--count-dead-links-in-report~ to get the total number of dead links. If dead links are found, it messages the user and calls ~tlon-lychee--iterate-and-attempt-fixes~. Otherwise, it reports that no dead links were found.
+Remove URL markup from FILE-PATH, keeping the link text. For Markdown links =[text](URL)=, keeps only the text. For bare URLs, removes the URL entirely. Returns =t= if a removal was made, =nil= otherwise.
 
-#+findex: tlon-lychee--count-dead-links-in-report
-+ ~tlon-lychee--count-dead-links-in-report~ :: Takes the parsed =REPORT= from =lychee=. It iterates through the report and returns the total count of links that are not "Ok", "Cached(Ok...)", or "Excluded".
+** Wayback Machine internals
+:PROPERTIES:
+:CUSTOM_ID: h:wayback-machine-internals
+:END:
 
-#+findex: tlon-lychee--iterate-and-attempt-fixes
-+ ~tlon-lychee--iterate-and-attempt-fixes~ :: Takes the =REPORT=, =REPO-DIR=, =TOTAL-DEAD-LINKS= count, and references to counters for replacements and processed links, along with =STDERR-CONTENT=. It iterates through each file entry and link status in the report. For each dead link, it calls ~tlon-lychee--attempt-single-fix~.
+*** ~tlon--get-wayback-machine-url~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon--get-wayback-machine-url
+:END:
+#+findex: tlon--get-wayback-machine-url
 
-#+findex: tlon-lychee--attempt-single-fix
-+ ~tlon-lychee--attempt-single-fix~ :: Takes =FULL-FILE-PATH=, relative =FILENAME=, the =TARGET-URL= (dead link), =TOTAL-DEAD-LINKS= count, and references to counters and =STDERR-CONTENT=. It calls ~tlon--get-wayback-machine-url~ for the =TARGET-URL=, providing ~tlon-lychee--handle-wayback-response~ as the callback.
+Fetch the latest working archived version of URL from the Wayback Machine asynchronously. Call CALLBACK with =(ARCHIVE-URL ORIGINAL-URL)=. ARCHIVE-URL is =nil= if no archive is found or an error occurs.
 
-#+findex: tlon-lychee--handle-wayback-response
-+ ~tlon-lychee--handle-wayback-response~ :: Callback function for ~tlon--get-wayback-machine-url~. Takes =ARCHIVE-URL=, =ORIGINAL-DEAD-URL=, file path information, total dead links count, counter references, and =STDERR-CONTENT=. It increments the processed links counter. If an =ARCHIVE-URL= is found, it attempts to replace the =ORIGINAL-DEAD-URL= in the file using ~tlon-lychee-replace-in-file~ and increments the replacements counter if successful. It logs messages about the outcome. When all dead links have been processed, it prints a final summary message, including any stderr output from =lychee=.
+*** ~tlon--get-earliest-wayback-machine-url~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon--get-earliest-wayback-machine-url
+:END:
+#+findex: tlon--get-earliest-wayback-machine-url
 
+Fetch the earliest working archived version of URL from the Wayback Machine using the CDX API. Call CALLBACK with =(ARCHIVE-URL ORIGINAL-URL)=. ARCHIVE-URL is =nil= if no archive is found or an error occurs.
+
+** Whitelist management
+:PROPERTIES:
+:CUSTOM_ID: h:whitelist-management
+:END:
+
+*** ~tlon-lychee-whitelist-file~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-lychee-whitelist-file
+:END:
+#+vindex: tlon-lychee-whitelist-file
+
+File path where whitelisted URLs are stored (one per line). Whitelisted URLs are skipped during the dead link fixing workflow. The file is located at =etc/tlon-url-lychee-whitelist.txt= within the =tlon= package directory.
+
+* Variables
+:PROPERTIES:
+:CUSTOM_ID: h:variables
+:END:
+
+** ~tlon-lychee-accept-option~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-lychee-accept-option
+:END:
+#+vindex: tlon-lychee-accept-option
+
+Lychee command-line flag specifying which HTTP status codes to accept as valid. The default value accepts a broad range of codes including redirects and rate-limiting responses: =--accept 200,201,202,204,206,300,301,302,303,307,308,400,401,429=.
+
+* Indices
+:PROPERTIES:
+:CUSTOM_ID: h:indices
+:END:
+
+** Function index
+:PROPERTIES:
+:INDEX: fn
+:CUSTOM_ID: h:function-index
+:END:
+
+** Variable index
+:PROPERTIES:
+:INDEX: vr
+:CUSTOM_ID: h:variable-index
+:END:

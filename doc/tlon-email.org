@@ -1,69 +1,147 @@
-#+title: tlon - Email Functionality
+#+title: tlon-email: Send emails to coworkers and clients
 #+author: Pablo Stafforini
-#+EXCLUDE_TAGS: noexport
+#+email: pablo@stafforini.com
 #+language: en
-#+options: ':t toc:nil author:t email:t num:t
+#+options: ':t toc:t author:t email:t num:t
 #+startup: content
-#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
-#+texinfo_header: @set MAINTAINER Pablo Stafforini
-#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
-#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
-#+texinfo: @insertcopying
-* Email Functionality (=tlon-email.el=)
+#+export_file_name: tlon-email.info
+#+texinfo_filename: tlon-email.info
+#+texinfo_dir_category: Emacs misc features
+#+texinfo_dir_title: Tlon Email: (tlon-email)
+#+texinfo_dir_desc: Send emails to coworkers and clients
+
+This manual describes the features and customization options for the Emacs Lisp file =tlon-email.el=.
+
+* Overview
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-email
+:CUSTOM_ID: h:overview
 :END:
 
-This module provides functions for composing and sending emails using predefined templates stored in Org mode files, potentially integrating with contact information from =tlon-contacts.el= and using =mu4e= for composing.
+=tlon-email= provides functionality for composing and sending templated emails to coworkers and clients. Email templates are stored as Org mode files in the =babel-core= repository, with "Subject" and "Body" headings that are automatically extracted and inserted into a =mu4e= compose buffer. The module integrates with =tlon-contacts= for recipient address lookup and =org-msg= for rich email composition.
 
-** Commands
+* Commands
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-email-commands
+:CUSTOM_ID: h:commands
 :END:
 
+** ~tlon-email-send~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-email-send
+:END:
 #+findex: tlon-email-send
-+ ~tlon-email-send~ :: Composes an email based on a selected TEMPLATE.
-  - Interactively prompts the user to select a TEMPLATE file (an Org file) from the directory specified by ~tlon-email-templates-directory~.
-  - Optionally takes a recipient ADDRESS and an ATTACHMENT path as arguments. If ADDRESS is not provided, it attempts to retrieve the "EMAIL" property of a contact selected via ~tlon-contacts-get-property-value-of-contact~.
-  - Sets the sender address using the current user's nickname (looked up via ~tlon-user-lookup~) and appending "@tlon.team".
-  - Extracts the subject and body content from the selected Org TEMPLATE file using ~tlon-email-get-template-content~ (looking for "Subject" and "Body" headings).
-  - Opens a new email composition buffer using `mu4e-compose-new` addressed to the determined recipient.
-  - Inserts the extracted subject.
-  - Uses `org-msg-extras-begin-compose` (likely to enable Org mode features within the email body).
-  - Inserts the extracted body content.
-  - If an ATTACHMENT path was provided, attaches the file using `mml-attach-file`.
-  - *Note:* This command prepares the email in a `mu4e` compose buffer but does *not* automatically send it. The user must review and send the email manually.
 
-** Helper Functions
+Compose and prepare an email based on a selected template.
+
+When called interactively, you are prompted to choose a template file from the available =.org= files in the templates directory ([[#h:tlon-email-templates-directory][~tlon-email-templates-directory~]]). You may also supply an optional ADDRESS and ATTACHMENT argument programmatically.
+
+The command performs the following steps:
+
+1. Determines the recipient address. If ADDRESS is not provided, it retrieves the "EMAIL" property from a contact selected via ~tlon-contacts-get-property-value-of-contact~.
+2. Sets the sender address by looking up the current user's nickname via ~tlon-user-lookup~ and appending =@tlon.team=.
+3. Extracts the subject and body from the template file. The template must contain top-level Org headings named "Subject" and "Body" (see [[#h:tlon-email-get-template-content][~tlon-email-get-template-content~]]).
+4. Opens a new =mu4e= compose buffer addressed to the recipient using ~mu4e-compose-new~.
+5. Inserts the extracted subject line and body text, using ~org-msg-extras-begin-compose~ to enable Org mode features in the email body.
+6. If ATTACHMENT is provided, attaches the file using ~mml-attach-file~.
+
+The email is prepared in the compose buffer but is not sent automatically. You must review and send it manually.
+
+* Functions
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-email-helpers
+:CUSTOM_ID: h:functions
 :END:
 
+** Template retrieval
+:PROPERTIES:
+:CUSTOM_ID: h:template-retrieval
+:END:
+
+*** ~tlon-email-get-templates~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-email-get-templates
+:END:
 #+findex: tlon-email-get-templates
-+ ~tlon-email-get-templates~ :: Returns a list of available email template filenames (Org files ending in `.org`) found within the directory specified by ~tlon-email-templates-directory~. Excludes dotfiles.
 
-#+findex: tlon-email-get-template-content
-+ ~tlon-email-get-template-content~ :: Reads the specified TEMPLATE Org file (path constructed using ~tlon-email-templates-directory~) and extracts the content found under the top-level headings "Subject" and "Body". Returns the extracted content as a cons cell `(SUBJECT . BODY)`. Uses ~tlon-email-get-heading-contents~ internally.
+Return a list of available email template filenames. This function scans the directory specified by ~tlon-email-templates-directory~ for files ending in =.org=, excluding dotfiles.
 
-#+findex: tlon-email-get-heading-contents
-+ ~tlon-email-get-heading-contents~ :: Parses the current Org buffer using `org-element-parse-buffer` and searches for a top-level headline whose raw value matches the specified HEADING string. Returns the content between the headline's `:contents-begin` and `:contents-end` properties, or nil if the heading or content is not found.
-
-#+findex: tlon-email-unset-variables
-+ ~tlon-email-unset-variables~ :: Resets the internal variables ~tlon-email-name~ and ~tlon-email-language~ to nil. (Note: These variables appear unused in the current implementation of ~tlon-email-send~).
-
-** Variables
+*** ~tlon-email-get-template-content~
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-email-variables
+:CUSTOM_ID: h:tlon-email-get-template-content
+:END:
+#+findex: tlon-email-get-template-content
+
+Return the subject and body of the email TEMPLATE as a cons cell =(SUBJECT . BODY)=. The function reads the specified template Org file (constructing the full path from ~tlon-email-templates-directory~) and extracts the text under the "Subject" and "Body" headings using ~tlon-email-get-heading-contents~.
+
+*** ~tlon-email-get-heading-contents~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-email-get-heading-contents
+:END:
+#+findex: tlon-email-get-heading-contents
+
+Return the contents of HEADING in the current =org-mode= buffer. This function parses the buffer with ~org-element-parse-buffer~ and searches for a top-level headline whose raw value matches HEADING. It returns the text between the heading's =:contents-begin= and =:contents-end= properties, or =nil= if the heading is not found.
+
+** Variable management
+:PROPERTIES:
+:CUSTOM_ID: h:variable-management
 :END:
 
+*** ~tlon-email-unset-variables~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-email-unset-variables
+:END:
+#+findex: tlon-email-unset-variables
+
+Reset the internal variables ~tlon-email-name~ and ~tlon-email-language~ to =nil=. These variables are intended for placeholder replacement within email templates, though the replacement logic is not yet implemented in ~tlon-email-send~.
+
+* Variables
+:PROPERTIES:
+:CUSTOM_ID: h:variables
+:END:
+
+** ~tlon-email-templates-directory~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-email-templates-directory
+:END:
 #+vindex: tlon-email-templates-directory
-+ ~tlon-email-templates-directory~ :: A constant string specifying the directory path where Org mode email templates are stored. It's constructed by concatenating the path of the `babel-core` repository (obtained via ~tlon-repo-lookup~) with "email-templates/".
 
+Directory path where Org mode email templates are stored. This constant is constructed by concatenating the =babel-core= repository directory (obtained via ~tlon-repo-lookup~) with ="email-templates/"=.
+
+** ~tlon-email-name~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-email-name
+:END:
 #+vindex: tlon-email-name
-+ ~tlon-email-name~ :: A variable intended to hold the recipient's name, likely for placeholder replacement within email templates. (Currently unused in ~tlon-email-send~).
 
+Variable intended to hold the recipient's name for placeholder replacement within email templates. Currently unused by ~tlon-email-send~.
+
+** ~tlon-email-language~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-email-language
+:END:
 #+vindex: tlon-email-language
-+ ~tlon-email-language~ :: A variable intended to hold the language, likely for placeholder replacement or template selection. (Currently unused in ~tlon-email-send~).
 
+Variable intended to hold the language for placeholder replacement or template selection. Currently unused by ~tlon-email-send~.
+
+** ~tlon-email-replacements~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-email-replacements
+:END:
 #+vindex: tlon-email-replacements
-+ ~tlon-email-replacements~ :: A constant alist defining placeholder strings (e.g., "name", "language") and the corresponding variables whose values should replace them within email templates. (The replacement logic itself is not implemented in the provided ~tlon-email-send~ function).
+
+An alist defining placeholder strings (e.g., ="name"=, ="language"=) and the corresponding variables whose values should replace them within email templates. Each element is a cons cell where the car is the placeholder string and the cdr is the replacement value (evaluated at load time from ~tlon-email-name~ and ~tlon-email-language~). The replacement mechanism is defined but not yet invoked by ~tlon-email-send~.
+
+* Indices
+:PROPERTIES:
+:CUSTOM_ID: h:indices
+:END:
+
+** Function index
+:PROPERTIES:
+:INDEX: fn
+:CUSTOM_ID: h:function-index
+:END:
+
+** Variable index
+:PROPERTIES:
+:INDEX: vr
+:CUSTOM_ID: h:variable-index
+:END:

@@ -1,127 +1,307 @@
-#+title: tlon - YouTube Functionality
+#+title: tlon-youtube: YouTube integration for Tlon
 #+author: Pablo Stafforini
-#+EXCLUDE_TAGS: noexport
+#+email: pablo@stafforini.com
 #+language: en
-#+options: ':t toc:nil author:t email:t num:t
+#+options: ':t toc:t author:t email:t num:t
 #+startup: content
-#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
-#+texinfo_header: @set MAINTAINER Pablo Stafforini
-#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
-#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
-#+texinfo: @insertcopying
+#+export_file_name: tlon-youtube.info
+#+texinfo_filename: tlon-youtube.info
+#+texinfo_dir_category: Emacs misc features
+#+texinfo_dir_title: Tlon YouTube: (tlon-youtube)
+#+texinfo_dir_desc: YouTube integration for Tlon
 
-* YouTube Functionality (=tlon-youtube.el=)
+This manual describes the features and customization options for the Emacs Lisp file =tlon-youtube.el=.
+
+* Overview
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-youtube
+:CUSTOM_ID: h:overview
 :END:
 
-This module provides functionality to process and upload podcast episodes to YouTube.
+=tlon-youtube= provides functionality for processing and uploading podcast episodes to YouTube. It covers the full workflow: generating animated wavelength videos from audio files, creating thumbnails with ImageMagick, uploading videos and thumbnails via the YouTube Data API v3 (using OAuth 2.0 with resumable uploads), and managing playlist assignments. Authentication is handled by the =oauth2-auto= library.
 
-** Menu
+* User options
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-youtube-menu
+:CUSTOM_ID: h:user-options
 :END:
 
-#+findex: tlon-youtube-menu
-+ ~tlon-youtube-menu~ :: Opens the main transient menu for YouTube-related operations. This menu allows access to commands and options for video generation and YouTube integration.
-
-** User Options
+** ~tlon-youtube-video-resolution~
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-youtube-options
+:CUSTOM_ID: h:tlon-youtube-video-resolution
 :END:
-
 #+vindex: tlon-youtube-video-resolution
-+ ~tlon-youtube-video-resolution~ :: A cons cell `(WIDTH . HEIGHT)` specifying the video resolution for generated videos. Defaults to 720p `(1280 . 720)`. Common resolutions include:
-  - 720p:  `(1280 . 720)`
-  - 1080p: `(1920 . 1080)`
-  - 1440p: `(2560 . 1440)`
-  - 4K (2160p): `(3840 . 2160)`
-  This option can be configured via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
 
+Video resolution =(WIDTH . HEIGHT)= for generated videos.
+
+The default value is =(1280 . 720)= (720p). The type is a cons cell of two integers. Common resolutions:
+
+- 720p: =(1280 . 720)=
+- 1080p: =(1920 . 1080)=
+- 1440p: =(2560 . 1440)=
+- 4K (2160p): =(3840 . 2160)=
+
+You can change this value via the transient menu ([[#h:tlon-youtube-menu-command][~tlon-youtube-menu~]]) using the "Video Resolution" option, which presents a predefined list of choices.
+
+** ~tlon-youtube-api-key~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-youtube-api-key
+:END:
 #+vindex: tlon-youtube-api-key
-+ ~tlon-youtube-api-key~ :: YouTube Data API v3 key for API requests. This should be obtained from the Google Cloud Console. Currently used for read-only operations.
 
+YouTube Data API v3 key for API requests.
+
+The default value is =nil=. The type is a string or =nil=.
+
+Get this from the Google Cloud Console. This key is used for read-only API operations.
+
+** ~tlon-youtube-client-id~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-youtube-client-id
+:END:
 #+vindex: tlon-youtube-client-id
-+ ~tlon-youtube-client-id~ :: OAuth 2.0 client ID for YouTube API authentication. This should be obtained from the Google Cloud Console and is required for uploading videos and thumbnails.
 
+OAuth 2.0 client ID for YouTube API authentication.
+
+The default value is retrieved from =auth-source-pass= using the shared Tlon email. The type is a string or =nil=.
+
+This must be a *Desktop app* client ID from the Google Cloud Console. Web application client IDs will not work with the =oauth2-auto= authorization flow. See [[#h:authentication-setup][authentication setup]] for details.
+
+** ~tlon-youtube-client-secret~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-youtube-client-secret
+:END:
 #+vindex: tlon-youtube-client-secret
-+ ~tlon-youtube-client-secret~ :: OAuth 2.0 client secret for YouTube API authentication. This should be obtained from the Google Cloud Console and is required for uploading videos and thumbnails.
 
+OAuth 2.0 client secret for YouTube API authentication.
+
+The default value is retrieved from =auth-source-pass= using the shared Tlon email. The type is a string or =nil=.
+
+Must correspond to the same Desktop app client as ~tlon-youtube-client-id~.
+
+** ~tlon-youtube-default-privacy~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-youtube-default-privacy
+:END:
 #+vindex: tlon-youtube-default-privacy
-+ ~tlon-youtube-default-privacy~ :: Default privacy setting for uploaded videos. Valid values are "private", "unlisted", or "public". Defaults to "private".
 
-** Video Generation
+Default privacy setting for uploaded videos.
+
+The default value is ="private"=. Valid values are ="private"=, ="unlisted"=, and ="public"=.
+
+This value is used as the default selection when you are prompted for a privacy setting during video upload.
+
+* Commands
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-youtube-video-generation
+:CUSTOM_ID: h:commands
 :END:
 
+** Video generation
+:PROPERTIES:
+:CUSTOM_ID: h:video-generation
+:END:
+
+*** ~tlon-youtube-generate-wavelength-video~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-youtube-generate-wavelength-video
+:END:
 #+findex: tlon-youtube-generate-wavelength-video
-+ ~tlon-youtube-generate-wavelength-video~ :: Generates a video with an animated wavelength from an audio file using ~seewav~. The command runs asynchronously and opens the generated video file externally upon completion. The resolution of the video is determined by the ~tlon-youtube-video-resolution~ user option. Prompts the user to select an audio file from the "uqbar-audio" repository. The output video is saved in the ~paths-dir-downloads~ directory with a ~.mp4~ extension, using the original audio file name. This command can also be accessed via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
 
+Generate a video with an animated wavelength visualization from an audio file.
+
+The command uses =seewav= to generate the animation. You are prompted to select an audio file from the ="uqbar-audio"= repository. The output video is saved in ~paths-dir-downloads~ with a =.mp4= extension, using the original audio file's base name. The resolution is determined by ~tlon-youtube-video-resolution~ ([[#h:tlon-youtube-video-resolution][above]]).
+
+The process runs asynchronously. Upon successful completion, the generated video is opened externally via ~tlon-browse-file~. If the process fails, the output buffer is displayed for debugging.
+
+Requires the =seewav= command-line tool to be installed and in your =PATH=.
+
+*** ~tlon-youtube-generate-thumbnail~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-youtube-generate-thumbnail
+:END:
 #+findex: tlon-youtube-generate-thumbnail
-+ ~tlon-youtube-generate-thumbnail~ :: Generates a thumbnail image for a video.
-  The dimensions of the thumbnail are determined by the ~tlon-youtube-video-resolution~ user option.
-  It prompts the user for a video title and author(s).
-  The Tlön logo (from the "tlon.team-content" repository, specifically ~images/ea-logo-transparent.png~) is automatically trimmed, resized, and added to the thumbnail.
-  The output image is saved as ~thumbnail.png~ in the ~paths-dir-downloads~ directory.
-  This command can also be accessed via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
 
-** YouTube API Integration
+Generate a thumbnail image for a video using ImageMagick.
+
+You are prompted for a video title and author(s). The command creates a thumbnail with:
+
+- A gradient background.
+- The title rendered in the center using GilliusADF-Regular font.
+- The author name(s) below the title.
+- The Tlon/EA logo (from the ="tlon.team-content"= repository) in the bottom-right corner.
+- The URL ="altruismoeficaz.net"= in the bottom-left corner.
+
+The thumbnail dimensions match ~tlon-youtube-video-resolution~ and the image is rendered at 300 DPI for quality, then scaled down to the target resolution. The output is saved as =thumbnail.png= in ~paths-dir-downloads~.
+
+Requires the =magick= (ImageMagick) command-line tool and the specified font files in =~/Library/Fonts/=.
+
+** Video upload
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-youtube-api
+:CUSTOM_ID: h:video-upload
 :END:
 
+*** ~tlon-youtube-upload-video~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-youtube-upload-video
+:END:
 #+findex: tlon-youtube-upload-video
-+ ~tlon-youtube-upload-video~ :: Uploads a video file to YouTube using the YouTube Data API v3 resumable upload method. This command uses the ~curl~ command-line tool to perform a two-step upload process: first initializing the upload to get an upload URL, then uploading the actual video file. Prompts the user to select a video file (filtered to show only ~.mp4~ files), enter a title and description, choose a privacy setting ("private", "unlisted", or "public"), and optionally select a playlist to add the video to. The resumable upload method is more reliable for larger files and processes correctly. If a playlist is selected, the video will be automatically added to that playlist after successful upload. Requires ~tlon-youtube-client-id~ and ~tlon-youtube-client-secret~ to be configured for OAuth 2.0 authentication. This command can also be accessed via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
 
-#+findex: tlon-youtube-prepare-upload-command
-+ ~tlon-youtube-prepare-upload-command~ :: Prepares the `curl` command for a YouTube video upload without executing the final upload step. This command is useful for debugging, as it automatically runs the initialization step and then displays the exact `curl` command needed to upload the video file. Also prompts for playlist selection, though playlist addition is not included in the manual commands (it requires the automated upload process). The command can be copied and run manually in a terminal for testing purposes. This command can also be accessed via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
+Upload a video file to YouTube using the YouTube Data API v3 resumable upload method.
 
-#+findex: tlon-youtube-upload-thumbnail
-+ ~tlon-youtube-upload-thumbnail~ :: Uploads a thumbnail image to an existing YouTube video. Prompts the user to select a thumbnail file (filtered to show ~.png~, ~.jpg~, and ~.jpeg~ files) and enter the YouTube video ID. Requires the same authentication setup as ~tlon-youtube-upload-video~. This command can also be accessed via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
+You are prompted for:
+- A video file (filtered to =.mp4= files, defaulting to ~paths-dir-downloads~).
+- A title for the YouTube video.
+- A description.
+- A privacy setting (="private"=, ="unlisted"=, or ="public"=; defaults to ~tlon-youtube-default-privacy~).
+- An optional playlist to add the video to after upload (from ~tlon-youtube-playlists~).
 
-#+findex: tlon-youtube-add-to-playlist
-+ ~tlon-youtube-add-to-playlist~ :: Adds an existing YouTube video to a playlist. Prompts the user to enter a YouTube video ID and select from the available playlists defined in ~tlon-youtube-playlists~. This is useful for testing the playlist functionality without having to upload a new video. Requires the same authentication setup as ~tlon-youtube-upload-video~. This command can also be accessed via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
+The upload uses a two-step process: an initialization request to obtain a resumable upload URL, followed by the actual file upload. Both steps use =curl=. If a playlist is selected, the video is automatically added to it after a successful upload.
 
-#+findex: tlon-youtube-authorize
-+ ~tlon-youtube-authorize~ :: Forces a new OAuth 2.0 authorization for the YouTube API. This is useful if the stored tokens are invalid or have been revoked. The authorization process is handled automatically by the `oauth2-auto.el` library, which starts a local server to capture the authorization token from your browser. This command can also be accessed via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
+Requires ~tlon-youtube-client-id~ and ~tlon-youtube-client-secret~ to be configured.
 
-*** Authentication Setup
+*** ~tlon-youtube-prepare-upload-command~
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-youtube-auth
+:CUSTOM_ID: h:tlon-youtube-prepare-upload-command
+:END:
+#+findex: tlon-youtube-prepare-upload-command
+
+Prepare the upload command for debugging without executing the final upload step.
+
+This command runs the initialization step automatically to obtain an upload URL, then displays the exact =curl= command needed for the video upload in a =*YouTube Upload Commands*= buffer. You can copy and run this command manually in a terminal for testing. It uses the same prompts as ~tlon-youtube-upload-video~.
+
+** Thumbnail upload
+:PROPERTIES:
+:CUSTOM_ID: h:thumbnail-upload
 :END:
 
-To upload videos and thumbnails to YouTube, you must first authorize the Tlön application to access your Google Account. This is done using OAuth 2.0. The authorization process is handled by the `oauth2-auto.el` library, which provides a robust and automated flow.
+*** ~tlon-youtube-upload-thumbnail~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-youtube-upload-thumbnail
+:END:
+#+findex: tlon-youtube-upload-thumbnail
 
-**IMPORTANT**: For this to work, you *must* use an OAuth 2.0 Client ID of type **Desktop app**. If you have been using a "Web application" client ID, it will not work with this authorization flow.
+Upload a thumbnail image to an existing YouTube video.
 
-Please follow these steps carefully to ensure you have the correct credentials:
+You are prompted for a thumbnail file (filtered to =.png=, =.jpg=, and =.jpeg= files) and a YouTube video ID. The thumbnail is uploaded via the YouTube API using OAuth 2.0 authentication.
+
+Requires ~tlon-youtube-client-id~ and ~tlon-youtube-client-secret~ to be configured.
+
+** Playlist management
+:PROPERTIES:
+:CUSTOM_ID: h:playlist-management
+:END:
+
+*** ~tlon-youtube-add-to-playlist~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-youtube-add-to-playlist
+:END:
+#+findex: tlon-youtube-add-to-playlist
+
+Add an existing YouTube video to a playlist.
+
+You are prompted for a YouTube video ID and a playlist selection from the playlists defined in ~tlon-youtube-playlists~. This is useful for adding videos to playlists without re-uploading.
+
+Requires ~tlon-youtube-client-id~ and ~tlon-youtube-client-secret~ to be configured.
+
+** Authorization
+:PROPERTIES:
+:CUSTOM_ID: h:authorization
+:END:
+
+*** ~tlon-youtube-authorize~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-youtube-authorize
+:END:
+#+findex: tlon-youtube-authorize
+
+Force re-authorization for YouTube API access. This is useful if the stored OAuth 2.0 tokens are invalid or have been revoked. The command triggers the =oauth2-auto= re-authorization flow, which opens your browser for Google account authorization.
+
+** Transient menu
+:PROPERTIES:
+:CUSTOM_ID: h:transient-menu
+:END:
+
+*** ~tlon-youtube-menu~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-youtube-menu-command
+:END:
+#+findex: tlon-youtube-menu
+
+Display a =transient= menu interface for YouTube operations. The menu provides the following groups:
+
+- *Generate*: Generate wavelength video (~tlon-youtube-generate-wavelength-video~), generate thumbnail (~tlon-youtube-generate-thumbnail~).
+- *Upload*: Upload video (~tlon-youtube-upload-video~), upload thumbnail (~tlon-youtube-upload-thumbnail~), add video to playlist (~tlon-youtube-add-to-playlist~).
+- *Debug*: Prepare upload command (~tlon-youtube-prepare-upload-command~).
+- *Options*: Video resolution (~tlon-youtube-video-resolution~), authorize YouTube API (~tlon-youtube-authorize~).
+
+* Authentication setup
+:PROPERTIES:
+:CUSTOM_ID: h:authentication-setup
+:END:
+
+To upload videos and thumbnails to YouTube, you must authorize the application to access your Google Account using OAuth 2.0. The authorization is handled by the =oauth2-auto= library.
+
+You *must* use an OAuth 2.0 Client ID of type *Desktop app*. Web application client IDs will not work with this flow.
+
+** Creating credentials
+:PROPERTIES:
+:CUSTOM_ID: h:creating-credentials
+:END:
 
 1. Go to the [[https://console.cloud.google.com/apis/credentials][Credentials page]] in the Google Cloud Console.
-2. Select the project you are using for Tlön.
-3. Click *+ CREATE CREDENTIALS* at the top of the page and select *OAuth client ID*.
-4. For the *Application type*, choose **Desktop app**. This is critical.
-5. Give it a name (e.g., "Tlön Emacs Desktop App").
-6. Click *CREATE*.
-7. A window will pop up showing your new *Client ID* and *Client Secret*. Copy these values.
-8. Configure `tlon-youtube-client-id` and `tlon-youtube-client-secret` in Emacs with these new values. You can set them in your `init.el` or via `M-x customize-group RET tlon-youtube RET`.
+2. Select the project you are using for Tlon.
+3. Click *+ CREATE CREDENTIALS* and select *OAuth client ID*.
+4. For *Application type*, choose *Desktop app*.
+5. Give it a name (e.g., "Tlon Emacs Desktop App").
+6. Click *CREATE* and copy the *Client ID* and *Client Secret*.
+7. Configure ~tlon-youtube-client-id~ and ~tlon-youtube-client-secret~ with these values.
 
-**** Getting Authorization
+** Authorization flow
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-youtube-authorization
+:CUSTOM_ID: h:authorization-flow
 :END:
 
-Once your **Desktop app** credentials are configured correctly, the authorization process is fully automated within Emacs. The first time you run a command that requires authentication (like ~tlon-youtube-upload-video~), `oauth2-auto.el` will automatically initiate the authorization flow.
+Once credentials are configured, the first time you run a command that requires authentication (such as ~tlon-youtube-upload-video~), =oauth2-auto= automatically initiates the authorization flow:
 
-**Automated Workflow:**
-1. The first time you perform an action that requires authorization, your browser will open to Google's authorization page.
-2. Sign in with your Google account and grant the requested permissions.
-3. After you approve, Google will redirect your browser to a local server address that `oauth2-auto.el` is listening on.
-4. The library will automatically capture the authorization code, exchange it for tokens, and store them securely.
-5. A success message will appear in your browser, and you can simply close the tab.
+1. Your browser opens to Google's authorization page.
+2. Sign in and grant the requested permissions.
+3. Google redirects your browser to a local server that =oauth2-auto= is listening on.
+4. The library captures the authorization code, exchanges it for tokens, and stores them securely.
 
-There is no need to copy or paste anything. The access and refresh tokens are stored and managed automatically by `oauth2-auto.el`.
+You should only need to authorize once. The system automatically refreshes tokens as they expire. If you need to re-authorize (e.g., after revoking access), use ~tlon-youtube-authorize~ ([[#h:tlon-youtube-authorize][above]]).
 
-**That's it!** The system will automatically use the refresh token to get new access tokens when they expire, so you should only need to authorize once.
+* Variables
+:PROPERTIES:
+:CUSTOM_ID: h:variables
+:END:
 
-**Forcing Re-authorization:** If you ever need to re-authorize (e.g., if you revoke access from your Google Account settings), you can run ~M-x tlon-youtube-authorize~.
+** ~tlon-youtube-playlists~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-youtube-playlists
+:END:
+#+vindex: tlon-youtube-playlists
+
+Alist of playlist names and their corresponding YouTube playlist IDs. Each entry is a cons cell =(NAME . ID)=. These playlists are offered as choices when uploading a video or adding a video to a playlist.
+
+** ~tlon-youtube-thumbnail-command-template~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-youtube-thumbnail-command-template
+:END:
+#+vindex: tlon-youtube-thumbnail-command-template
+
+ImageMagick command template for generating YouTube thumbnails. This is a format string with 27 positional arguments controlling DPI, canvas dimensions, fonts, text content, logo placement, and output path. Used internally by ~tlon-youtube-generate-thumbnail~.
+
+* Indices
+:PROPERTIES:
+:CUSTOM_ID: h:indices
+:END:
+
+** Function index
+:PROPERTIES:
+:INDEX: fn
+:CUSTOM_ID: h:function-index
+:END:
+
+** Variable index
+:PROPERTIES:
+:INDEX: vr
+:CUSTOM_ID: h:variable-index
+:END:

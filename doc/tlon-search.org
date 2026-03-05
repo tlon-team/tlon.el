@@ -1,100 +1,127 @@
-#+title: tlon - Search Functionality
+#+title: tlon-search: Miscellaneous search commands
 #+author: Pablo Stafforini
-#+EXCLUDE_TAGS: noexport
+#+email: pablo@stafforini.com
 #+language: en
-#+options: ':t toc:nil author:t email:t num:t
+#+options: ':t toc:t author:t email:t num:t
 #+startup: content
-#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
-#+texinfo_header: @set MAINTAINER Pablo Stafforini
-#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
-#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
-#+texinfo: @insertcopying
-* Search Functionality (=tlon-search.el=)
+#+export_file_name: tlon-search.info
+#+texinfo_filename: tlon-search.info
+#+texinfo_dir_category: Emacs misc features
+#+texinfo_dir_title: Tlon Search: (tlon-search)
+#+texinfo_dir_desc: Miscellaneous search commands
+
+This manual describes the features and customization options for the Emacs Lisp file =tlon-search.el=.
+
+* Overview
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-search
+:CUSTOM_ID: h:overview
 :END:
 
-This module provides miscellaneous search commands, integrating with =magit=, =consult=, =forge=, and external web services for various search needs within the Tlön workflow.
+=tlon-search= provides search commands for the Tlon workflow, integrating with =magit= for Git history searches, =consult= (via =ripgrep=) for file content searches, =forge= for issue searches, and external web services for translation lookups. All commands are accessible through a unified transient menu.
 
-** Dependencies
+* Commands
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-search-dependencies
+:CUSTOM_ID: h:commands
 :END:
 
-+ =tlon= (specifically =tlon-core=)
-+ =transient=
-+ =magit-log=
-+ =consult=
-+ =forge=
-+ =goldendict-ng= (optional, for translation)
-
-** Commands
+** Git history searches
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-search-commands
+:CUSTOM_ID: h:git-history-searches
 :END:
 
-This section details the interactive commands provided by =tlon-search.el=.
-
-*** Search Commits
+*** ~tlon-search-commits~
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-search-commits
 :END:
 #+findex: tlon-search-commits
-The command ~tlon-search-commits~ searches for a =SEARCH-STRING= within the commit messages of a Git repository.
-1. Prompts the user for the =SEARCH-STRING=.
-2. Optionally takes a =REPO= directory path. If nil, uses the current repository (=default-directory=).
-3. Calls =magit-log-all= with the =--grep= argument and the =SEARCH-STRING= to display the matching commits in a Magit log buffer.
 
-*** Search Commit Diffs
+Search for SEARCH-STRING in REPO's commit history.
+
+When called interactively, you are prompted for the search string. If REPO is =nil=, the current directory is used. This command calls ~magit-log-all~ with the =--grep= argument, displaying all commits whose messages match the search string in a Magit log buffer.
+
+*** ~tlon-search-commit-diffs~
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-search-commit-diffs
 :END:
 #+findex: tlon-search-commit-diffs
-The command ~tlon-search-commit-diffs~ searches for a =SEARCH-STRING= within the content (diffs) of commits in a Git repository.
-1. Prompts the user for the =SEARCH-STRING=.
-2. Optionally takes a =REPO= directory path. If nil, uses the current repository (=default-directory=).
-3. Calls =magit-log-all= with the =-S= argument (pickaxe search) and the =SEARCH-STRING= to display commits where the string was added or removed.
 
-*** Search Files (Ripgrep)
+Search for SEARCH-STRING in REPO's commit diff history.
+
+When called interactively, you are prompted for the search string. If REPO is =nil=, the current directory is used. This command calls ~magit-log-all~ with the =-S= (pickaxe) argument, displaying commits where the string was added or removed in the diff content. This is useful for finding when a specific piece of code or text was introduced or removed.
+
+** File content search
+:PROPERTIES:
+:CUSTOM_ID: h:file-content-search
+:END:
+
+*** ~tlon-search-files~
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-search-files
 :END:
 #+findex: tlon-search-files
-The command ~tlon-search-files~ searches for a =SEARCH-STRING= within the files of a Tlön repository using =consult-ripgrep=.
-1. Prompts the user for the =SEARCH-STRING=.
-2. Optionally takes a =REPO= directory path. If nil, it determines the current repository using ~tlon-get-repo~ (including all sub-repositories).
-3. Calls =consult-ripgrep= with the determined repository path and the search string, presenting results in the minibuffer with live preview.
 
-*** Search for Translation
+Search for SEARCH-STRING in REPO files using =consult-ripgrep=.
+
+When called interactively, you are prompted for the search string. If REPO is =nil=, the current repository is determined using ~tlon-get-repo~ (with the =include-all= flag). Results are presented in the minibuffer with live preview via =consult-ripgrep=.
+
+** Translation search
+:PROPERTIES:
+:CUSTOM_ID: h:translation-search
+:END:
+
+*** ~tlon-search-for-translation~
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-search-for-translation
 :END:
 #+findex: tlon-search-for-translation
-The command ~tlon-search-for-translation~ searches for a Spanish translation of an English =STRING= using various online resources and the local =goldendict-ng= application.
-1. Prompts the user for the English =STRING= to translate.
-2. Defines a list of URL templates for different translation websites (Spanish Stack Exchange, Bab.la, Wikipedia, Reverso Context, Linguee).
-3. Iterates through the URLs, formats them with the URL-encoded =STRING=, and opens each in a new browser buffer using =browse-url=.
-4. Calls =goldendict-ng-search-string= to search for the =STRING= in the locally installed GoldenDict-NG application (if configured).
 
-*** Search Menu
+Search for a Spanish translation of an English STRING using multiple online resources and a local dictionary.
+
+When called interactively, you are prompted for the English string to translate. The command opens the following websites in new browser tabs, each searching for the provided string:
+
+- Spanish Stack Exchange
+- Bab.la (English-Spanish dictionary)
+- Wikipedia (English, full-text search)
+- Reverso Context (English-Spanish translation)
+- Linguee (English-Spanish search)
+
+It also searches for the string in the locally installed GoldenDict-NG application via ~goldendict-ng-search-string~.
+
+** Transient menu
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-search-menu-cmd
+:CUSTOM_ID: h:transient-menu
+:END:
+
+*** ~tlon-search-menu~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-search-menu-command
 :END:
 #+findex: tlon-search-menu
-The command ~tlon-search-menu~ activates a =transient= menu interface for accessing the various search commands.
 
-It provides the following options under the "Search" group:
-+ =c= :: Commits (~tlon-search-commits~)
-+ =d= :: Commit diffs (~tlon-search-commit-diffs~)
-+ =f= :: Files (~tlon-search-files~)
-+ =i= :: Issues (current repo) (~forge-search~)
-+ =I= :: Issues (all repos) (~tlon-forge-search~)
-+ =t= :: Translation (~tlon-search-for-translation~)
+Display a =transient= menu interface for accessing search commands. The menu provides the following options under the "Search" group:
 
-** Internal Functions and Variables
+| Key | Description              | Command                          |
+|-----+--------------------------+----------------------------------|
+| =c= | Commits                  | ~tlon-search-commits~            |
+| =d= | Commit diffs             | ~tlon-search-commit-diffs~       |
+| =f= | Files                    | ~tlon-search-files~              |
+| =i= | Issues (current repo)    | ~forge-search~                   |
+| =I= | Issues (all repos)       | ~tlon-forge-search~              |
+| =t= | Translation              | ~tlon-search-for-translation~    |
+
+* Indices
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-search-internals
+:CUSTOM_ID: h:indices
 :END:
 
-This module primarily consists of interactive commands and the transient menu definition. There are no significant internal-only functions or variables exposed for general customization beyond the declared dependencies.
+** Function index
+:PROPERTIES:
+:INDEX: fn
+:CUSTOM_ID: h:function-index
+:END:
 
+** Variable index
+:PROPERTIES:
+:INDEX: vr
+:CUSTOM_ID: h:variable-index
+:END:
