@@ -328,6 +328,10 @@ option can be set temporarily via `tlon-forg-menu'."
   "Alist mapping GitHub Project item statuses (car) to Org TODO keywords (cdr).
 The `cdr` values should be present in `org-todo-keywords'.")
 
+(defconst tlon-todo-keywords
+  (mapcar #'cdr tlon-todo-statuses)
+  "List of Org TODO keywords derived from `tlon-todo-statuses'.")
+
 (defconst tlon-todo-tags
   '("PendingReview" "Later")
   "List of admissible TODO tags.")
@@ -734,6 +738,48 @@ If called with a prefix ARG, the initial pull from forge is omitted."
 	  (find-file file-to-open)
 	  (org-capture-goto-last-stored))))))
 
+(defun tlon-forg--group-issues-by-repo (project-items)
+  "Group PROJECT-ITEMS by repository.
+Return a hash table mapping repo names to repo directories."
+  (let ((issue-repos (make-hash-table :test 'equal)))
+    (dolist (item project-items)
+      (when (eq (plist-get item :type) 'issue)
+	(let* ((repo-fullname (plist-get item :repo))
+	       (repo-parts (split-string repo-fullname "/"))
+	       (repo-name (cadr repo-parts))
+	       (repo-dir (tlon-repo-lookup :dir :name repo-name)))
+	  (when repo-dir
+	    (puthash repo-name repo-dir issue-repos)))))
+    issue-repos))
+
+(defun tlon-forg--for-each-repo (issue-repos action-fn finish-fn &optional skip-pull)
+  "Process each repository in ISSUE-REPOS.
+ISSUE-REPOS is a hash table mapping repo names to repo directories.
+For each repo, pull from forge (unless SKIP-PULL) then call ACTION-FN
+with the repo-name, repo-dir, and forge-repo object. FINISH-FN is called
+once per repository after processing (whether skipped or completed)."
+  (maphash
+   (lambda (repo-name repo-dir)
+     (let ((default-directory repo-dir))
+       (let ((forge-repo (tlon-forg--safe-get-repository repo-dir)))
+	 (if (null forge-repo)
+	     (progn
+	       (message "Skipping repository %s: not registered in forge (run `forge-add-repository` there first)" repo-name)
+	       (funcall finish-fn))
+	   (progn
+	     (tlon-message-debug "Processing repository %s..." repo-name)
+	     (if skip-pull
+		 (progn
+		   (funcall action-fn repo-name repo-dir forge-repo)
+		   (funcall finish-fn))
+	       (tlon-pull-silently
+		(format "Pulling issues from %s..." repo-name)
+		(lambda ()
+		  (funcall action-fn repo-name repo-dir forge-repo)
+		  (funcall finish-fn))
+		forge-repo)))))))
+   issue-repos))
+
 ;;;###autoload
 (defun tlon-capture-all-issues-in-project (arg)
   "Capture all open issues in the GitHub Project.
@@ -749,29 +795,19 @@ upon completion.
 
 If called with a prefix ARG, the initial pull from forge is omitted and the
 cached project items list is used instead of fetching a fresh one."
-  (interactive "P")
+  (interactive “P”)
   ;; Inform the user what is happening and how to skip it.
   (unless arg
-    (message "Pulling issues from all repositories in project... (use “C-u %s” to skip this pull)"
+    (message “Pulling issues from all repositories in project... (use \”C-u %s\” to skip this pull)”
 	     this-command))
   (let* ((original-window-config (current-window-configuration))
 	 (project-items (forge-extras-list-project-items-ordered nil nil arg))
-	 (issue-repos (make-hash-table :test 'equal))
+	 (issue-repos (tlon-forg--group-issues-by-repo project-items))
 	 (origin-file (if (and (eq major-mode 'org-mode) (buffer-file-name))
 			  (buffer-file-name)
 			nil)))
-
-    ;; Group issues by repository
-    (dolist (item project-items)
-      (when (eq (plist-get item :type) 'issue)
-	(let* ((repo-fullname (plist-get item :repo))
-	       (repo-parts (split-string repo-fullname "/"))
-	       (repo-name (cadr repo-parts))
-	       (repo-dir (tlon-repo-lookup :dir :name repo-name)))
-	  (when repo-dir
-	    (puthash repo-name repo-dir issue-repos)))))
     (if (= (hash-table-count issue-repos) 0)
-	(user-error "No repositories with issues found in the project")
+	(user-error “No repositories with issues found in the project”)
       ;; Process each repository
       (let* ((total-repos (hash-table-count issue-repos))
 	     (repos-finished 0)
@@ -781,17 +817,16 @@ cached project items list is used instead of fetching a fresh one."
 		(when (= repos-finished total-repos)
 		  ;; restore frame, clear cache, sort, final message
 		  (org-refile-cache-clear)
-		  (org-refile-cache-clear) ; For capture phase
 
 		  (let ((do-sync (pcase tlon-forg-sync-after-capture-project
 				   ('t t)
 				   ('nil nil)
-				   ('prompt (y-or-n-p "Sync all issues in project after capture? ")))))
+				   ('prompt (y-or-n-p “Sync all issues in project after capture? “)))))
 		    (when do-sync
-		      (message "Proceeding to sync issues in project after capture...")
+		      (message “Proceeding to sync issues in project after capture...”)
 		      ;; Pass `arg` to tlon-sync-all-issues-in-project to use cached project items.
 		      (tlon-sync-all-issues-in-project arg)
-		      (message "Sync after capture complete.")))
+		      (message “Sync after capture complete.”)))
 
 		  (set-window-configuration original-window-config)
 		  (when tlon-forg-sort-after-sync-or-capture
@@ -799,29 +834,14 @@ cached project items list is used instead of fetching a fresh one."
 		      (when (and todos-file (file-exists-p todos-file))
 			(with-current-buffer (find-file-noselect todos-file)
 			  (tlon-forg-sort-by-status-and-project-order t)))))
-		  (message "Finished capturing issues from %d repositories in project. Subsequent sync (if any) also completed. Refile cache cleared."
+		  (message “Finished capturing issues from %d repositories in project. Subsequent sync (if any) also completed. Refile cache cleared.”
 			   total-repos)))))
-	(maphash
-	 (lambda (repo-name repo-dir)
-	   (let ((default-directory repo-dir))
-	     (let ((forge-repo (tlon-forg--safe-get-repository repo-dir)))
-	       (if (null forge-repo)
-		   (progn
-		     (message "Skipping repository %s: not registered in forge (run `forge-add-repository` there first)" repo-name)
-		     (funcall finish))
-		 (progn
-		   (tlon-message-debug "Processing repository %s..." repo-name)
-		   (if arg
-		       (progn
-			 (tlon-capture-all-issues-in-repo-after-pull forge-repo project-items origin-file)
-			 (funcall finish))
-		     (tlon-pull-silently
-		      (format "Pulling issues from %s..." repo-name)
-		      (lambda ()
-			(tlon-capture-all-issues-in-repo-after-pull forge-repo project-items origin-file)
-			(funcall finish))
-		      forge-repo)))))))
-	 issue-repos)))))
+	(tlon-forg--for-each-repo
+	 issue-repos
+	 (lambda (_repo-name _repo-dir forge-repo)
+	   (tlon-capture-all-issues-in-repo-after-pull forge-repo project-items origin-file))
+	 finish
+	 arg)))))
 
 (defun tlon-pull-silently (&optional message callback repo)
   "Pull all issues from forge for REPO.
@@ -835,10 +855,7 @@ result of the CALLBACK function, or nil if no callback."
 	(forge-repo (or repo (tlon-forg-get-or-select-repository))))
     (unless forge-repo
       (user-error "Cannot determine repository for pull operation"))
-    (let ((default-directory (oref forge-repo worktree))) ; Set context for forge--pull
-      ;; Perform the forge pull silently and synchronously.
-      (shut-up
-	(forge--pull forge-repo nil))) ; Pass nil to forge--pull to make it synchronous.
+    (tlon-forg--pull-sync forge-repo)
     ;; After the silent pull is complete, execute the callback if provided.
     ;; This ensures the callback runs outside the shut-up context and not from a sentinel.
     (let (callback-result)
@@ -1223,16 +1240,7 @@ cached project items list is used instead of fetching a fresh one."
   (interactive "P")
   (let* ((original-window-config (current-window-configuration))
 	 (project-items (forge-extras-list-project-items-ordered nil nil arg))
-	 (issue-repos (make-hash-table :test 'equal)))
-    ;; Group issues by repository
-    (dolist (item project-items)
-      (when (eq (plist-get item :type) 'issue)
-	(let* ((repo-fullname (plist-get item :repo))
-	       (repo-parts (split-string repo-fullname "/"))
-	       (repo-name (cadr repo-parts))
-	       (repo-dir (tlon-repo-lookup :dir :name repo-name)))
-	  (when repo-dir
-	    (puthash repo-name repo-dir issue-repos)))))
+	 (issue-repos (tlon-forg--group-issues-by-repo project-items)))
     (if (= (hash-table-count issue-repos) 0)
 	(user-error "No repositories with issues found in the project")
       ;; Process each repository
@@ -1252,27 +1260,12 @@ cached project items list is used instead of fetching a fresh one."
 			  (tlon-forg-sort-by-status-and-project-order t)))))
 		  (message "Finished syncing issues from %d repositories in project. Refile cache cleared."
 			   total-repos)))))
-	(maphash
-	 (lambda (repo-name repo-dir)
-	   (let ((default-directory repo-dir))
-	     (let ((forge-repo (tlon-forg--safe-get-repository repo-dir)))
-	       (if (null forge-repo)
-		   (progn
-		     (message "Skipping repository %s: not registered in forge (run `forge-add-repository` there first)" repo-name)
-		     (funcall finish))
-		 (progn
-		   (message "Processing repository %s..." repo-name)
-		   (if arg
-		       (progn
-			 (tlon-sync-all-issues-in-repo-after-pull forge-repo project-items)
-			 (funcall finish))
-		     (tlon-pull-silently
-		      (format "Pulling issues from %s..." repo-name)
-		      (lambda ()
-			(tlon-sync-all-issues-in-repo-after-pull forge-repo project-items)
-			(funcall finish))
-		      forge-repo)))))))
-	 issue-repos)))))
+	(tlon-forg--for-each-repo
+	 issue-repos
+	 (lambda (_repo-name _repo-dir forge-repo)
+	   (tlon-sync-all-issues-in-repo-after-pull forge-repo project-items))
+	 finish
+	 arg)))))
 
 (defun tlon-forg--get-all-todo-files ()
   "Return a list of all Org TODO files to be processed.
@@ -1953,7 +1946,7 @@ comparison in `org-sort-entries'. Lower values sort earlier."
 	  (setq issue-number (oref issue number))
 	  ;; Calculate status-priority
 	  (let* ((status-keyword (org-get-todo-state))
-		 (todo-order (mapcar #'cdr tlon-todo-statuses))
+		 (todo-order tlon-todo-keywords)
 		 (done-keyword "DONE")) ; Assuming "DONE" is the keyword for completed tasks
 	    (cond
 	     ((null status-keyword) (setq status-priority 100)) ; No status
@@ -2024,7 +2017,7 @@ PROJECT-ITEM-DATA is a plist that may contain :status and :estimate."
   "Return the status of the `org-mode' heading at point.
 The status is returned downcased."
   (when-let ((status (org-get-todo-state)))
-    (when (member status (mapcar #'cdr tlon-todo-statuses))
+    (when (member status tlon-todo-keywords)
       (downcase status))))
 
 ;;;;;; job phases
@@ -2092,7 +2085,7 @@ A tag is valid iff it is a member of `tlon-todo-tags'."
   "Return t iff status of TODO at point it is a valid TODO status.
 A status is valid iff it is one of the `cdr` values in `tlon-todo-statuses'."
   (when-let ((status (org-get-todo-state)))
-    (member status (mapcar #'cdr tlon-todo-statuses))))
+    (member status tlon-todo-keywords)))
 
 ;;;###autoload
 (defun tlon-forg-check-for-duplicate-todos (&optional file)
@@ -2156,7 +2149,7 @@ If ISSUE is nil, use issue at point or in the current buffer."
   "Prompt the user to select a status label.
 Use PROMPT as the prompt, defaulting to \"TODO status? \"."
   (let* ((prompt (or prompt "TODO status? "))
-	 (label (completing-read prompt (mapcar #'downcase (mapcar #'cdr tlon-todo-statuses)) nil t)))
+	 (label (completing-read prompt (mapcar #'downcase tlon-todo-keywords) nil t)))
     label))
 
 (defun tlon-set-assignee (assignee &optional issue)
@@ -2315,7 +2308,7 @@ The command:
 	 (status      (completing-read
 		       "Status: "
 		       (seq-remove (lambda (s) (string= s "DONE"))
-				   (mapcar #'cdr tlon-todo-statuses))
+				   tlon-todo-keywords)
 		       nil t "DOING"))
 	 (effort-str  (read-string "Effort hours (optional): "))
 	 (effort-h    (and (string-match-p "\\S-" effort-str)
