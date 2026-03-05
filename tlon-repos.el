@@ -130,9 +130,15 @@ those repos, use `tlon-clone-missing-repos'."
       (let ((default-directory repo))
 	(unless (forge-get-repository :tracked?)
 	  (forge-extras-track-repo-all-topics repo)
-	  (while (not (forge-get-repository :tracked?))
-	    (message "Adding repo %s..." (tlon-repo-lookup :name :dir repo))
-	    (sleep-for 1))))))
+	  (let ((retries 0))
+	    (while (and (not (forge-get-repository :tracked?))
+			(< retries 30))
+	      (message "Adding repo %s..." (tlon-repo-lookup :name :dir repo))
+	      (sleep-for 1)
+	      (setq retries (1+ retries)))
+	    (unless (forge-get-repository :tracked?)
+	      (message "Warning: repo %s may not have been tracked after %d retries"
+		       (tlon-repo-lookup :name :dir repo) retries)))))))
   (message "Added all missing repos to the Forge database."))
 
 ;;;;;; Pull GitHub issues
@@ -379,7 +385,7 @@ Restore CONFIG-FILE from BACKUP-FILE when finished."
     ""
     ("p" "Pull issues in repo"           tlon-pull-issues-in-repo)
     ("P" "Pull issues in all repos"      tlon-pull-issues-in-all-repos)
-    ("u" "Unlock uqbar git-crypt"        tlon-git-crypt-unlock)]])
+    ("U" "Unlock uqbar git-crypt"        tlon-git-crypt-unlock)]])
 
 (provide 'tlon-repos)
 ;;; tlon-repos.el ends here

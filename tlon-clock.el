@@ -49,9 +49,10 @@ The second capture group handles the `.md' extension, which we used previously."
   "Return bibtex key in clocked heading.
 Assumes key is enclosed in backticks."
   ;; second capture group handles optional .md extension
-  (if (string-match tlon-key-regexp (tlon-get-clock))
-      (match-string 1 (tlon-get-clock))
-    (user-error "I wasn't able to find a file in clocked heading")))
+  (let ((clock (tlon-get-clock)))
+    (if (string-match tlon-key-regexp clock)
+	(match-string 1 clock)
+      (user-error "I wasn't able to find a file in clocked heading"))))
 
 (declare-function tlon-get-file-from-key "tlon")
 (defun tlon-get-clock-file ()
@@ -70,11 +71,12 @@ Assumes key is enclosed in backticks."
     (user-error "No clock running"))
   (save-window-excursion
     (org-clock-goto)
-    (org-narrow-to-subtree)
-    (when (re-search-forward org-link-bracket-re)
-      (let ((raw-link (org-link-unescape (match-string-no-properties 1))))
-	(string-match "orgit-topic:\\(.+\\)" raw-link)
-	(match-string 1 raw-link)))))
+    (save-restriction
+      (org-narrow-to-subtree)
+      (when (re-search-forward org-link-bracket-re nil t)
+	(let ((raw-link (org-link-unescape (match-string-no-properties 1))))
+	  (string-match "orgit-topic:\\(.+\\)" raw-link)
+	  (match-string 1 raw-link))))))
 
 (declare-function forge-visit-issue "forge-commands")
 (defun tlon-open-clock-issue ()

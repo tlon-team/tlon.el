@@ -95,8 +95,8 @@ This variable should not be set manually.")
 
 (defun tlon-jobs-get-action-in-label (label)
   "Return action associated with LABEL."
-  (let ((action (cadr (split-string label))))
-    action))
+  (or (cadr (split-string label))
+      (user-error "Could not extract action from label: %s" label)))
 
 (autoload 'orgit-topic-open "orgit-forge")
 (autoload 'magit-pull-from-upstream "magit-pull")
@@ -175,7 +175,7 @@ for the process that is being initialized."
 (defun tlon-jobs-act-on-issue (original-key label assignee &optional close)
   "Apply LABEL and ASSIGNEE to issue associated with ORIGINAL-KEY.
 If CLOSE is non-nil, close the issue."
-  (let* ((issue-title (format "Job: `%s" original-key))
+  (let* ((issue-title (format "Job: `%s`" original-key))
 	 (issue (tlon-issue-lookup issue-title))
 	 (default-directory (tlon-get-repo 'error 'include-all)))
     (tlon-set-labels `(,label) 'phase issue)

@@ -115,9 +115,11 @@ DIR is the directory where the repo is stored."
      (magit-status ,dir)))
 
 (dolist (repo tlon-repos)
-  (eval `(tlon-generate-magit-browse-commands
-	  ,(plist-get repo :abbrev)
-	  ,(plist-get repo :dir))))
+  (when-let ((abbrev (plist-get repo :abbrev))
+	     (dir (plist-get repo :dir)))
+    (eval `(tlon-generate-magit-browse-commands
+	    ,abbrev
+	    ,dir))))
 
 ;;;###autoload (autoload 'tlon-magit-repo-menu "tlon-dispatch" nil t)
 (transient-define-prefix tlon-magit-repo-menu ()
@@ -198,9 +200,11 @@ DIR is the directory where the repo is stored."
      (dired ,dir)))
 
 (dolist (repo tlon-repos)
-  (eval `(tlon-generate-dired-browse-commands
-	  ,(plist-get repo :abbrev)
-	  ,(plist-get repo :dir))))
+  (when-let ((abbrev (plist-get repo :abbrev))
+	     (dir (plist-get repo :dir)))
+    (eval `(tlon-generate-dired-browse-commands
+	    ,abbrev
+	    ,dir))))
 
 ;;;###autoload (autoload 'tlon-dired-repo-menu "tlon-dispatch" nil t)
 (transient-define-prefix tlon-dired-repo-menu ()
@@ -281,7 +285,8 @@ DIR is the directory where the repo is stored."
        (tlon-find-file-in-repo ,repo))))
 
 (dolist (repo (tlon-repo-lookup-all :dir))
-  (eval `(tlon-generate-open-file-in-repo-commands ,repo)))
+  (when repo
+    (eval `(tlon-generate-open-file-in-repo-commands ,repo))))
 
 ;;;;; Files menu
 

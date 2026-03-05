@@ -46,6 +46,10 @@ confirmation."
   (interactive (list (org-read-date)))
   (let* ((default-directory (tlon-clock-get-repo))
 	 (file (tlon-clock-get-file-for-date date)))
+    (when (and (file-exists-p file)
+	       (> (file-attribute-size (file-attributes file)) 0)
+	       (not (y-or-n-p (format "File %s already exists. Overwrite? " file))))
+      (user-error "Aborted"))
     (find-file file)
     (erase-buffer)
     (insert (format "#+TITLE: %s\n\n" date))
@@ -193,7 +197,7 @@ Rows that include the words \"Total time\" or \"/File time/\" are skipped."
         ;; also skip summary rows.
         (unless (or (not (string= col1 ""))
 		    (or (string-match-p "Total time" headline)
-                        (string-match-p "\\/File time\\*" headline)))
+                        (string-match-p "File time" headline)))
           ;; Try to get a time value from column 3 or, if blank, column 4.
           (let ((time-cell (or (nth 2 cells) (nth 3 cells))))
 	    (when (and time-cell (not (string= time-cell "")))

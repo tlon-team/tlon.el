@@ -507,12 +507,12 @@ the primary bottleneck when running `tlon-sync-all-issues-in-repo'."
          (issue-context (tlon-get-issue-name issue)))
     ;; --- 2. *Selective* live re‑validation --------------------------
     ;; Only hit the network when we *think* everything is already in sync.
-    (when (and project-item-data (string= issue-status todo-status))
+    (when (and project-item-data (equal issue-status todo-status))
       (setq issue-status
             (let ((st (tlon-get-status-in-issue issue nil nil))) ; unconditional live fetch
               (when st (upcase st)))))
     ;; --- 3. Reconcile -----------------------------------------------
-    (unless (string= issue-status todo-status)
+    (unless (equal issue-status todo-status)
       (pcase (tlon-forg--prompt-element-diff
               "Statuses" issue-status todo-status issue-context)
         (?i (org-todo issue-status))
@@ -1012,7 +1012,7 @@ that it can be yanked afterwards."
 (defun tlon-forg--ensure-prepend (tpl)
   "Return a copy of capture template TPL with `:prepend t' ensured.
 This makes the template always insert at the beginning of its target."
-  (let ((tpl (copy-sequence tpl)))
+  (let ((tpl (copy-tree tpl)))
     (unless (plist-member (nthcdr 5 tpl) :prepend)
       (nconc tpl '(:prepend t)))
     tpl))
@@ -1090,11 +1090,16 @@ The appropriate action is determined by the value of
 (defun tlon-forg-change-assignee (&optional issue)
   "Change the assignee of ISSUE to the current user.
 If ISSUE is nil, use the issue at point or in the current buffer."
-  (let ((issue (or issue (forge-current-topic))))
+  (let ((issue (or issue (forge-current-topic)))
+	(retries 0))
     (tlon-set-assignee (tlon-user-lookup :github :name user-full-name) issue)
-    (while (not (tlon-assignee-is-current-user-p issue))
+    (while (and (not (tlon-assignee-is-current-user-p issue))
+		(< retries 30))
       (tlon-pull-silently "Changing assignee...")
-      (sleep-for 0.1))))
+      (sleep-for 0.5)
+      (setq retries (1+ retries)))
+    (unless (tlon-assignee-is-current-user-p issue)
+      (user-error "Failed to change assignee after %d retries" retries))))
 
 (defun tlon-capture-handle-phase (issue)
   "Take appropriate action when ISSUE has no valid job phase."
@@ -1723,7 +1728,7 @@ point."
 
 (defun tlon-get-issue-number-from-heading ()
   "Get the GitHub issue number from the `org-mode' heading at point."
-  (when-let ((issue-number (tlon-get-element-from-heading "#\\([[:digit:]]\\{1,4\\}\\)")))
+  (when-let ((issue-number (tlon-get-element-from-heading "#\\([[:digit:]]\\{1,\\}\\)")))
     (string-to-number issue-number)))
 
 (defun tlon-get-repo-from-heading ()
@@ -2081,7 +2086,7 @@ A tag is valid iff it is a member of `tlon-todo-tags'."
 	(user (or
 	       tlon-forg-enforce-user
 	       (tlon-user-lookup :github :name user-full-name))))
-    (string= assignee user)))
+    (and assignee user (string= assignee user))))
 
 (defun tlon-todo-has-valid-status-p ()
   "Return t iff status of TODO at point it is a valid TODO status.

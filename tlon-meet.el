@@ -191,9 +191,14 @@ If GROUP is non-nil, include the \"group\" option in the prompt."
         (progn
           (tlon-create-issue title dir)
           (tlon-forg--pull-sync repo)
-          (while (not (tlon-issue-lookup title dir))
-            (sleep-for 0.1))
-          (forge-visit-issue (tlon-issue-lookup title dir))))
+          (let ((retries 0))
+            (while (and (not (tlon-issue-lookup title dir))
+                        (< retries 30))
+              (sleep-for 0.5)
+              (setq retries (1+ retries)))
+            (if-let ((found-issue (tlon-issue-lookup title dir)))
+                (forge-visit-issue found-issue)
+              (user-error "Issue \"%s\" not found after %d retries" title retries)))))
       (format "*forge: %s %s*"
               (oref repo slug)
               (oref (forge-current-topic) slug)))))
