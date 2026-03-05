@@ -1,262 +1,482 @@
-#+title: tlon - Core Functionality
+#+title: tlon-core: Core Tlon functionality
 #+author: Pablo Stafforini
-#+EXCLUDE_TAGS: noexport
+#+email: pablo@stafforini.com
 #+language: en
-#+options: ':t toc:nil author:t email:t num:t
+#+options: ':t toc:t author:t email:t num:t
 #+startup: content
-#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
-#+texinfo_header: @set MAINTAINER Pablo Stafforini
-#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
-#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
-#+texinfo: @insertcopying
-* Core Functionality (=tlon-core.el=)
+#+export_file_name: tlon-core.info
+#+texinfo_filename: tlon-core.info
+#+texinfo_dir_category: Emacs misc features
+#+texinfo_dir_title: Tlon Core: (tlon-core)
+#+texinfo_dir_desc: Core Tlon functionality
+
+This manual describes the features and customization options for the Emacs Lisp file =tlon-core.el=.
+
+* Overview
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-core
+:CUSTOM_ID: h:overview
 :END:
 
-This module provides the fundamental building blocks, utility functions, and data lookup mechanisms used throughout the Tlön Emacs Lisp ecosystem. It handles repository management, language settings, data lookups, JSON processing, Org mode integration helpers, transient menu utilities, string/number formatting, and Git interaction checks.
+The file =tlon-core.el= provides the foundational building blocks used throughout the ~tlon~ package. Every other module in the package depends on this file, either directly or transitively. It defines the central data structures (repository metadata, user records, language tables, label configurations), the generic lookup engine that queries them, and a broad set of utility functions for tasks such as JSON processing, Org mode integration, number formatting, Git state inspection, and transient menu construction.
 
-** Repository Management
+The key abstractions provided by this module are:
+
+- *Repository registry*: the constant ~tlon-repos~ holds a comprehensive plist-based database of all Tlon repositories, including their names, abbreviations, types, subtypes, languages, URLs, and directory paths.
+- *Generic lookup engine*: the family of ~tlon-lookup~ / ~tlon-lookup-all~ functions, together with their specialized wrappers (~tlon-repo-lookup~, ~tlon-user-lookup~, ~tlon-metadata-lookup~, ~tlon-label-lookup~, ~tlon-issue-lookup~), provide a uniform way to query any plist-based or alist-based data structure by key-value pairs.
+- *Language handling*: functions for selecting, validating, and converting language identifiers between names, ISO 639-1 codes, and locale strings.
+- *JSON utilities*: reading, writing, and editing JSON files.
+- *Number formatting*: language-aware parsing of formatted numbers with locale-specific thousands and decimal separators.
+
+This module requires the ~elpaca~, ~json~, ~paths~, and ~transient~ packages.
+
+* User options
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-core-repo
+:CUSTOM_ID: h:user-options
 :END:
 
-#+findex: tlon-set-dir
-+ ~tlon-set-dir~ :: Sets the current working directory based on the specified Tlön REPO name.
-
-#+findex: tlon-get-repo
-+ ~tlon-get-repo~ :: Retrieves the name of the Tlön repository associated with the current context (e.g., current buffer's file path). If NO-PROMPT is nil, it may prompt the user to select a repository. If INCLUDE-ALL is non-nil, it might consider all known repositories, not just content ones.
-
-#+findex: tlon-get-repo-from-file
-+ ~tlon-get-repo-from-file~ :: Determines the Tlön repository name associated with a given FILE path. If ERROR is non-nil, signals an error if the repository cannot be determined.
-
-#+findex: tlon-get-repo-from-dir
-+ ~tlon-get-repo-from-dir~ :: Determines the Tlön repository name associated with a given directory DIR.
-
-** Data Lookup Functions
+** ~tlon-debug~
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-core-lookup
+:CUSTOM_ID: h:tlon-debug
 :END:
 
-These functions provide a consistent way to search through lists of alists (association lists) or other data structures based on key-value pairs.
+#+vindex: tlon-debug
+When set to non-~nil~, the ~tlon~ package emits additional diagnostic messages via the ~tlon-message-debug~ macro. These messages are useful when investigating unexpected behavior in any module that uses the macro. The debug toggle is also exposed as a transient infix in the main dispatch menu ([[info:tlon-dispatch][tlon-dispatch]]).
 
-#+findex: tlon-all-pairs-in-entry-p
-+ ~tlon-all-pairs-in-entry-p~ :: Checks if all specified key-value PAIRS exist within a single ENTRY (alist). CASE-INSENSITIVE controls matching behavior.
+The default value is ~nil~. The type is boolean.
 
-#+findex: tlon-get-value-in-entry
-+ ~tlon-get-value-in-entry~ :: Retrieves the value associated with a specific KEY within a single ENTRY (alist).
-
-#+findex: tlon-lookup-builder
-+ ~tlon-lookup-builder~ :: The underlying builder function for single-result lookups. Finds the first entry in LIST that matches all specified key-value PAIRS and returns the value associated with the target KEY. CASE-INSENSITIVE controls matching.
-
-#+findex: tlon-lookup
-+ ~tlon-lookup~ :: A case-sensitive wrapper around ~tlon-lookup-builder~. Finds the first entry in LIST matching PAIRS and returns the value of KEY.
-
-#+findex: tlon-lookup-case-insensitive
-+ ~tlon-lookup-case-insensitive~ :: A case-insensitive wrapper around ~tlon-lookup-builder~.
-
-#+findex: tlon-lookup-all-builder
-+ ~tlon-lookup-all-builder~ :: The underlying builder function for multiple-result lookups. Finds all entries in LIST that match all specified key-value PAIRS and returns a list of values associated with the target KEY. CASE-INSENSITIVE controls matching.
-
-#+findex: tlon-lookup-all
-+ ~tlon-lookup-all~ :: A case-sensitive wrapper around ~tlon-lookup-all-builder~. Finds all entries in LIST matching PAIRS and returns a list of values for KEY.
-
-#+findex: tlon-lookup-all-case-insensitive
-+ ~tlon-lookup-all-case-insensitive~ :: A case-insensitive wrapper around ~tlon-lookup-all-builder~.
-
-*** Specialized Lookups
+** ~tlon-visit-file-other-window~
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-core-lookup-specialized
+:CUSTOM_ID: h:tlon-visit-file-other-window
 :END:
 
-These functions provide convenient wrappers for looking up data within specific Tlön data structures (metadata, repository info, user info, labels).
+#+vindex: tlon-visit-file-other-window
+When set to non-~nil~, the command ~tlon-visit-file-at-point~ opens the target file in another window rather than replacing the current one ([[#h:visit-file-at-point][Visiting files at point]]). This is convenient when you want to keep a log or error buffer visible while jumping to the referenced file.
 
-#+findex: tlon-metadata-lookup
-+ ~tlon-metadata-lookup~ :: Performs a lookup within a METADATA structure (likely an alist retrieved from YAML) for a specific KEY, filtered by additional KEY-VALUE pairs.
+The default value is ~nil~. The type is boolean.
 
-#+findex: tlon-metadata-lookup-all
-+ ~tlon-metadata-lookup-all~ :: Performs a lookup for all matching values within a METADATA structure.
-
-#+findex: tlon-repo-lookup
-+ ~tlon-repo-lookup~ :: Performs a lookup within the global Tlön repository configuration data for a specific KEY, filtered by KEY-VALUE pairs.
-
-#+findex: tlon-repo-lookup-all
-+ ~tlon-repo-lookup-all~ :: Performs a lookup for all matching values within the global Tlön repository configuration data.
-
-#+findex: tlon-user-lookup
-+ ~tlon-user-lookup~ :: Performs a lookup within the global Tlön user configuration data.
-
-#+findex: tlon-user-lookup-all
-+ ~tlon-user-lookup-all~ :: Performs a lookup for all matching values within the global Tlön user configuration data.
-
-#+findex: tlon-label-lookup
-+ ~tlon-label-lookup~ :: Performs a lookup within the global Tlön label configuration data (likely for issue tracking).
-
-#+findex: tlon-label-lookup-all
-+ ~tlon-label-lookup-all~ :: Performs a lookup for all matching values within the global Tlön label configuration data.
-
-#+findex: tlon-issue-lookup
-+ ~tlon-issue-lookup~ :: Looks up issue details based on a STRING (likely an issue number or key) within a specific repository DIR.
-
-** Directory and Language Handling
+** ~tlon-email-shared~
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-core-dir-lang
+:CUSTOM_ID: h:tlon-email-shared
 :END:
 
-#+findex: tlon-get-bare-dir-translation
-+ ~tlon-get-bare-dir-translation~ :: Finds the corresponding "bare directory" (root content directory) for a translation, given the TARGET-LANG, SOURCE-LANG, and the source BARE-DIR.
+#+vindex: tlon-email-shared
+The shared Gmail address used by the Tlon team for organizational email. Modules that send or reference team-wide email (such as newsletter or contact workflows) use this variable.
 
-#+findex: tlon-get-bare-dir
-+ ~tlon-get-bare-dir~ :: Determines the bare directory associated with a given FILE or the current buffer.
+The default value is ="tlon.shared@gmail.com"=. The type is a string.
 
-#+findex: tlon-select-bare-dir
-+ ~tlon-select-bare-dir~ :: Prompts the user to select a bare directory for a specific language LANG.
-
-#+findex: tlon-get-language-in-file
-+ ~tlon-get-language-in-file~ :: Determines the language associated with a FILE, likely by checking metadata or file path conventions. If ERROR is non-nil, signals an error if the language cannot be determined.
-
-#+findex: tlon-get-language-in-mode
-+ ~tlon-get-language-in-mode~ :: Determines the language based on the current major mode or buffer settings.
-
-#+findex: tlon-validate-language
-+ ~tlon-validate-language~ :: Checks if LANGUAGE is a valid Tlön language identifier. Returns the validated language, potentially in a specific FORMAT (e.g., ISO code, full name).
-
-#+findex: tlon-get-iso-code
-+ ~tlon-get-iso-code~ :: Returns the ISO language code (e.g., "en", "es") for a given LANGUAGE name.
-
-#+findex: tlon-select-language
-+ ~tlon-select-language~ :: Prompts the user to select a language from the list of Tlön-supported languages, potentially offering completion. Options control output FORMAT, inclusion of BABEL languages, the PROMPT string, whether a match is REQUIRED, INITIAL-INPUT, and additional/excluded languages.
-
-#+findex: tlon-get-formatted-languages
-+ ~tlon-get-formatted-languages~ :: Takes a SELECTION of languages and returns them formatted according to FORMAT.
-
-#+findex: tlon-read-language
-+ ~tlon-read-language~ :: A user-facing function to read a single language, wrapping ~tlon-select-language~ with common defaults.
-
-#+findex: tlon-read-multiple-languages
-+ ~tlon-read-multiple-languages~ :: Prompts the user to select multiple languages.
-
-#+findex: tlon-get-language-candidates
-+ ~tlon-get-language-candidates~ :: Returns a list of available language candidates for completion, respecting BABEL, ADDITIONAL-LANGS, and EXCLUDED-LANGS options.
-
-** JSON Utilities
+* Commands
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-core-json
+:CUSTOM_ID: h:commands
 :END:
 
-#+findex: tlon-read-json
-+ ~tlon-read-json~ :: Reads and parses JSON data from a FILE. Optional arguments control the expected type (object, array) and key type for parsing. Defaults are `alist` for objects, `list` for arrays, and `string` for keys.
-
-#+findex: tlon-write-data
-+ ~tlon-write-data~ :: Writes Emacs Lisp DATA to a FILE in JSON format, ensuring UTF-8 encoding.
- 
-#+findex: tlon-get-keys
-+ ~tlon-get-keys~ :: Extracts the keys from a JSON DATA structure (likely an alist).
-
-#+findex: tlon-edit-json-mapping
-+ ~tlon-edit-json-mapping~ :: Provides an interactive interface to edit key-value mappings within a JSON FILE, using specified prompts for outer keys and inner values.
-
-#+findex: tlon-uqbar-front-get-message
-+ ~tlon-uqbar-front-get-message~ :: Returns a value from the Uqbar front
-  messages JSON files, given a language code (e.g., "es"), an outer key
-  (e.g., "HomePage"), and an inner key (e.g., "title").
-** Org Mode Integration
+** Searching across repositories
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-core-org
-:END:
-
-#+findex: tlon-make-tag-replace-pattern
-+ ~tlon-make-tag-replace-pattern~ :: Creates a regular expression pattern for replacing Org mode tags based on a PAIR (old-tag . new-tag), potentially considering a specific FORMAT.
-
-#+findex: tlon-get-or-set-org-var
-+ ~tlon-get-or-set-org-var~ :: Retrieves the value of an Org mode variable VAR associated with a specific Org ID. If not set, it might set it.
-
-#+findex: tlon-get-file-with-org-id
-+ ~tlon-get-file-with-org-id~ :: Finds the file containing the Org entry with the specified ID.
-
-#+findex: tlon-ensure-org-mode
-+ ~tlon-ensure-org-mode~ :: Checks if the current buffer is in Org mode, signaling an error if not.
-
-#+findex: tlon-sort-headings
-+ ~tlon-sort-headings~ :: Sorts the top-level headings in an Org FILE or the current buffer alphabetically.
-
-** Transient Menu Utilities
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-core-transient
-:END:
-
-#+findex: tlon-transient-read-symbol-choice
-+ ~tlon-transient-read-symbol-choice~ :: Prompts the user to select a symbol from CHOICES within a transient menu context.
-
-#+findex: tlon-transient-read-number-choice
-+ ~tlon-transient-read-number-choice~ :: Prompts the user to select a number from CHOICES within a transient menu context.
-
-#+findex: tlon-transient-read-string-choice
-+ ~tlon-transient-read-string-choice~ :: Prompts the user to select a string from CHOICES within a transient menu context.
-
-#+findex: tlon-transient-toggle-variable-value
-+ ~tlon-transient-toggle-variable-value~ :: Creates a transient action to toggle the value of a boolean variable VAR-NAME.
-
-** Formatting and String Utilities
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-core-format
-:END:
-
-#+findex: tlon-concatenate-list
-+ ~tlon-concatenate-list~ :: Concatenates the elements of LIST into a single string.
-
-#+findex: tlon-get-delimited-region-pos
-+ ~tlon-get-delimited-region-pos~ :: Finds the start and end positions of a region delimited by specific markers (e.g., YAML `---`), starting the search from BEGIN (optional END). EXCLUDE-DELIMS controls whether the delimiter lines themselves are included.
-
-#+findex: tlon-get-separator
-+ ~tlon-get-separator~ :: Retrieves the appropriate separator string (decimal or thousands) for a given TYPE and optional LANGUAGE.
-
-#+findex: tlon-get-decimal-separator
-+ ~tlon-get-decimal-separator~ :: Retrieves the decimal separator for a LANGUAGE.
-
-#+findex: tlon-get-thousands-separator
-+ ~tlon-get-thousands-separator~ :: Retrieves the thousands separator for a LANGUAGE.
-
-#+findex: tlon-get-number-separator-pattern
-+ ~tlon-get-number-separator-pattern~ :: Generates a regular expression pattern to match numbers formatted with language-specific THOUSANDS and DECIMAL separators. BOUNDED adds word boundaries if non-nil.
-
-#+findex: tlon-string-to-number
-+ ~tlon-string-to-number~ :: Converts a STRING representing a number (potentially with THOUSANDS and DECIMAL separators) into an Emacs Lisp number.
-
-** System Interaction and Checks
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-core-system
+:CUSTOM_ID: h:searching
 :END:
 
 #+findex: tlon-grep
-+ ~tlon-grep~ :: Performs a grep search for STRING within files matching EXTENSION in the current Tlön repository.
+The command ~tlon-grep~ performs a recursive search for a string across files in the current Tlon repository, using the ~elgrep~ package as its backend. When called interactively, it prompts for the search string and a file extension filter (empty string means all files). It then asks whether you want context lines around matches, and if so, how many. This is a convenient alternative to running ~rg~ or ~grep~ manually when you want results presented in an Emacs buffer.
 
-#+findex: tlon-check-branch
-+ ~tlon-check-branch~ :: Checks if the current Git BRANCH in REPO matches expectations (e.g., is the main branch).
+** Sorting Org headings
+:PROPERTIES:
+:CUSTOM_ID: h:sorting-headings
+:END:
 
-#+findex: tlon-check-file
-+ ~tlon-check-file~ :: Performs basic checks on a FILE (e.g., existence), potentially comparing against an ORIGINAL.
+#+findex: tlon-sort-headings
+The command ~tlon-sort-headings~ sorts all sibling headings under the current parent heading in an Org file, first alphabetically and then by TODO keyword order. This is useful for maintaining a consistent ordering of entries in Org-based metadata files. If FILE is provided, it operates on that file; otherwise it uses the current buffer.
 
-#+findex: tlon-check-staged-or-unstaged
-+ ~tlon-check-staged-or-unstaged~ :: Checks if a FILE has staged or unstaged changes in Git.
-
-#+findex: tlon-ensure-no-uncommitted-changes
-+ ~tlon-ensure-no-uncommitted-changes~ :: Checks if FILE has uncommitted changes and signals an error if it does.
-
-#+findex: tlon-check-file-title-match
-+ ~tlon-check-file-title-match~ :: Checks if the filename of FILE matches its title metadata.
-
-#+findex: tlon-check-file-type-match
-+ ~tlon-check-file-type-match~ :: Checks if the file extension of FILE matches its expected type based on context or metadata.
-
-#+findex: tlon-check-image-alt-text
-+ ~tlon-check-image-alt-text~ :: Checks image tags in the current buffer for missing or potentially incorrect alt text.
+** Visiting files at point
+:PROPERTIES:
+:CUSTOM_ID: h:visit-file-at-point
+:END:
 
 #+findex: tlon-visit-file-at-point
-+ ~tlon-visit-file-at-point~ :: Visits the file referenced on the current line and
-  jumps to the position indicated by a "position N" suffix. Respects the user
-  option ~tlon-visit-file-other-window~.
+The command ~tlon-visit-file-at-point~ parses the current line for a file reference in the format =PATH.md:...position N= and opens the file at the specified character position. The file path may begin with =~= and is expanded to an absolute path. If ~tlon-visit-file-other-window~ is non-~nil~, the file opens in another window ([[#h:tlon-visit-file-other-window][the user option]]). This command is designed for navigating from log or validation output buffers where each line references a file and position.
 
-#+vindex: tlon-visit-file-other-window
-+ ~tlon-visit-file-other-window~ :: When non-nil, open files in the other window
-  instead of the current one when using ~tlon-visit-file-at-point~.
+** Pulling all Uqbar repositories
+:PROPERTIES:
+:CUSTOM_ID: h:uqbar-pull-all
+:END:
+
+#+findex: tlon-uqbar-pull-all
+The command ~tlon-uqbar-pull-all~ runs the =pull-all.sh= script located in the root of the =uqbar= repository. This script pulls the latest changes from all Uqbar content repositories in one operation. The command compiles the script output in an Emacs compilation buffer so you can review any errors. It signals a user error if the =uqbar= repository or the script cannot be found.
+
+** Looking up Uqbar front messages
+:PROPERTIES:
+:CUSTOM_ID: h:uqbar-front-messages
+:END:
+
+#+findex: tlon-uqbar-front-get-message
+The command ~tlon-uqbar-front-get-message~ retrieves a value from the Uqbar front-end message JSON files. When called interactively, it prompts for a language code (e.g., ="es"=), an outer key (e.g., ="HomePage"=), and an inner key (e.g., ="title"=), then returns and displays the corresponding string. This is useful for checking localized UI strings without opening the JSON files manually. It can also be called programmatically with three arguments: LANG, OUTER, and INNER.
+
+* Functions
+:PROPERTIES:
+:CUSTOM_ID: h:functions
+:END:
+
+** Repository management
+:PROPERTIES:
+:CUSTOM_ID: h:repo-management
+:END:
+
+#+findex: tlon-set-dir
+The function ~tlon-set-dir~ sets the ~:dir~ property for a REPO entry in ~tlon-repos~ if it is not already set, by concatenating the Tlon repos base directory (~paths-dir-tlon-repos~) with the repository name. This function is called automatically for every repository at load time via ~mapc~.
+
+#+findex: tlon-get-repo
+The function ~tlon-get-repo~ returns the directory path of the Tlon repository associated with the current context. If the current file or directory belongs to a known repository, that repository is returned directly. Otherwise, if NO-PROMPT is ~nil~, the user is prompted to select one. If NO-PROMPT is the symbol ~error~, a user error is signaled instead. When INCLUDE-ALL is non-~nil~, all repository types are considered; by default, only translation repositories are offered for selection.
+
+#+findex: tlon-get-repo-from-file
+The function ~tlon-get-repo-from-file~ determines which Tlon repository FILE belongs to, based on its directory path. If FILE is ~nil~, it falls back to the current buffer's file name or ~default-directory~. When ERROR is non-~nil~, it signals an error if no matching repository is found.
+
+#+findex: tlon-get-repo-from-dir
+The function ~tlon-get-repo-from-dir~ returns the repository directory that DIR belongs to. It handles the special case where a repository's =.git= directory is stored outside the repository itself (via ~paths-dir-split-git~).
+
+** Generic lookup
+:PROPERTIES:
+:CUSTOM_ID: h:generic-lookup
+:END:
+
+The lookup functions form the query engine that underlies most data access in the ~tlon~ package. They search through lists of plists or alists for entries matching key-value criteria and return the value of a target key.
+
+#+findex: tlon-lookup
+The function ~tlon-lookup~ returns the value of KEY in the first entry of LIST that matches all specified key-value PAIRS. PAIRS is an even-length list of alternating keys and values. Matching is case-sensitive.
+
+#+findex: tlon-lookup-case-insensitive
+The function ~tlon-lookup-case-insensitive~ works identically to ~tlon-lookup~ but performs case-insensitive matching on values.
+
+#+findex: tlon-lookup-all
+The function ~tlon-lookup-all~ returns a list of all unique values of KEY across all entries in LIST that match the given PAIRS. This is the multi-result counterpart of ~tlon-lookup~.
+
+#+findex: tlon-lookup-all-case-insensitive
+The function ~tlon-lookup-all-case-insensitive~ is the case-insensitive variant of ~tlon-lookup-all~.
+
+#+findex: tlon-lookup-builder
+The function ~tlon-lookup-builder~ is the underlying implementation for single-result lookups. It accepts an explicit CASE-INSENSITIVE flag. External code should prefer ~tlon-lookup~ or ~tlon-lookup-case-insensitive~.
+
+#+findex: tlon-lookup-all-builder
+The function ~tlon-lookup-all-builder~ is the underlying implementation for multi-result lookups. Like ~tlon-lookup-builder~, it accepts an explicit CASE-INSENSITIVE flag.
+
+#+findex: tlon-all-pairs-in-entry-p
+The function ~tlon-all-pairs-in-entry-p~ returns ~t~ if all key-value PAIRS are present in ENTRY. The CASE-INSENSITIVE flag controls whether value comparison uses ~cl-equalp~ (case-insensitive) or ~equal~ (case-sensitive).
+
+#+findex: tlon-get-value-in-entry
+The function ~tlon-get-value-in-entry~ extracts the value associated with KEY from ENTRY. It handles both alist entries (when KEY is a string, using ~string=~ for comparison) and plist entries (when KEY is a keyword or symbol).
+
+** Specialized lookups
+:PROPERTIES:
+:CUSTOM_ID: h:specialized-lookups
+:END:
+
+These functions are thin wrappers around the generic lookup engine, pre-bound to specific data structures.
+
+#+findex: tlon-metadata-lookup
+The function ~tlon-metadata-lookup~ performs a ~tlon-lookup~ on a METADATA structure (typically the parsed YAML front matter of content files).
+
+#+findex: tlon-metadata-lookup-all
+The function ~tlon-metadata-lookup-all~ returns all matching values from a METADATA structure.
+
+#+findex: tlon-repo-lookup
+The function ~tlon-repo-lookup~ queries the global ~tlon-repos~ registry. For example, ~(tlon-repo-lookup :dir :name "uqbar-es")~ returns the directory of the =uqbar-es= repository.
+
+#+findex: tlon-repo-lookup-all
+The function ~tlon-repo-lookup-all~ returns all matching values from ~tlon-repos~. For example, ~(tlon-repo-lookup-all :name :subtype 'translations)~ returns the names of all translation repositories.
+
+#+findex: tlon-user-lookup
+The function ~tlon-user-lookup~ queries the ~tlon-users~ variable.
+
+#+findex: tlon-user-lookup-all
+The function ~tlon-user-lookup-all~ returns all matching values from ~tlon-users~.
+
+#+findex: tlon-label-lookup
+The function ~tlon-label-lookup~ queries the ~tlon-job-labels~ variable (defined in =tlon-jobs.el=).
+
+#+findex: tlon-label-lookup-all
+The function ~tlon-label-lookup-all~ returns all matching values from ~tlon-job-labels~.
+
+#+findex: tlon-issue-lookup
+The function ~tlon-issue-lookup~ searches the Forge database for the first issue whose title contains STRING in the repository at DIR (or the current directory). It returns a Forge issue object, or ~nil~ if no match is found.
+
+** Directory and bare directory handling
+:PROPERTIES:
+:CUSTOM_ID: h:bare-dirs
+:END:
+
+In the Tlon content structure, a "bare directory" is the first directory component below the repository root, such as =articulos= or =tags=. These directory names vary by language, and the functions below handle translation between them.
+
+#+findex: tlon-get-bare-dir
+The function ~tlon-get-bare-dir~ returns the bare directory of FILE (or the current buffer's file). For example, for a file at =~/repos/uqbar-es/articulos/my-article.md=, it returns ="articulos"=. If IN-ENGLISH is non-~nil~, it returns the English equivalent (="articles"=).
+
+#+findex: tlon-get-bare-dir-translation
+The function ~tlon-get-bare-dir-translation~ translates BARE-DIR from SOURCE-LANG to TARGET-LANG using the ~tlon-core-bare-dirs~ translation table.
+
+#+findex: tlon-select-bare-dir
+The function ~tlon-select-bare-dir~ prompts the user to select a bare directory for language LANG from the available options.
+
+** Language handling
+:PROPERTIES:
+:CUSTOM_ID: h:language-handling
+:END:
+
+#+findex: tlon-get-language-in-file
+The function ~tlon-get-language-in-file~ returns the ISO 639-1 language code for the repository that FILE belongs to. If FILE is ~nil~, it uses the current buffer's file. If ERROR is non-~nil~, it signals an error when the language cannot be determined.
+
+#+findex: tlon-get-language-in-mode
+The function ~tlon-get-language-in-mode~ returns the language of the current buffer in standard format (e.g., ="spanish"=). It dispatches on ~major-mode~: in ~ebib-entry-mode~ or ~bibtex-mode~, it reads the =langid= BibTeX field; in ~markdown-mode~, it looks up the repository language and converts the ISO code to a standard name.
+
+#+findex: tlon-validate-language
+The function ~tlon-validate-language~ checks whether LANGUAGE is a valid identifier and returns it in lowercase if so, or ~nil~ otherwise. If FORMAT is the symbol ~code~, validation is performed against ISO 639-1 codes; otherwise, against full language names.
+
+#+findex: tlon-get-iso-code
+The function ~tlon-get-iso-code~ converts a LANGUAGE name (e.g., ="spanish"=) into its two-letter ISO 639-1 code (e.g., ="es"=). If the input is already a two-letter string, it is returned unchanged.
+
+#+findex: tlon-select-language
+The function ~tlon-select-language~ prompts the user to select a language and returns it in the requested FORMAT (~code~, ~locale~, or the default full name). When BABEL is non-~nil~, only languages in the Babel project are offered. MULTIPLE allows selecting multiple languages. ADDITIONAL-LANGS and EXCLUDED-LANGS modify the candidate list. PROMPT, REQUIRE-MATCH, and INITIAL-INPUT are passed through to ~completing-read~.
+
+#+findex: tlon-read-language
+The function ~tlon-read-language~ is a simpler interface for reading a single language selection. It accepts the same filtering options as ~tlon-select-language~ but always returns a raw language name string.
+
+#+findex: tlon-read-multiple-languages
+The function ~tlon-read-multiple-languages~ prompts the user to select multiple languages using ~completing-read-multiple~, with an additional ="default"= option. When BABEL is non-~nil~, only project languages are offered.
+
+#+findex: tlon-get-language-candidates
+The function ~tlon-get-language-candidates~ returns the list of language candidates for completion. When BABEL is non-~nil~, it returns ~tlon-project-languages~; otherwise, all languages from ~tlon-languages-properties~. ADDITIONAL-LANGS are appended; EXCLUDED-LANGS are removed.
+
+#+findex: tlon-get-formatted-languages
+The function ~tlon-get-formatted-languages~ converts a SELECTION (string or list of strings) into the specified FORMAT (~code~ or ~locale~) by looking up each language in ~tlon-languages-properties~.
+
+** JSON utilities
+:PROPERTIES:
+:CUSTOM_ID: h:json-utilities
+:END:
+
+#+findex: tlon-read-json
+The function ~tlon-read-json~ reads and parses JSON data. When FILE is provided, it reads from that file; otherwise, it searches the current buffer for the first ={= character and parses from there. OBJECT-TYPE (default ~alist~), ARRAY-TYPE (default ~list~), and KEY-TYPE (default ~string~) control the Emacs Lisp representation of the parsed data.
+
+#+findex: tlon-write-data
+The function ~tlon-write-data~ serializes Emacs Lisp DATA as JSON and writes it to FILE, with pretty-printing applied.
+
+#+findex: tlon-get-keys
+The function ~tlon-get-keys~ returns the keys of a hash table DATA as a list. This is used when working with JSON data parsed as hash tables.
+
+#+findex: tlon-edit-json-mapping
+The function ~tlon-edit-json-mapping~ provides an interactive workflow for editing a flat JSON object in FILE. It reads the file as a hash table, prompts for an outer key (using OUTER-KEY-PROMPT) with completion against existing keys, prompts for a new value (using INNER-VALUE-PROMPT, pre-filled with the current value), updates the hash table, and writes the result back.
+
+** JSON file path helpers
+:PROPERTIES:
+:CUSTOM_ID: h:json-file-helpers
+:END:
+
+#+findex: tlon-get-language-code-from-name
+The function ~tlon-get-language-code-from-name~ converts a language name to its ISO 639-1 code, signaling an error if the language is invalid.
+
+#+findex: tlon-url-correspondences-file
+The function ~tlon-url-correspondences-file~ returns the path to the =url-correspondences.json= file for the given LANGUAGE-CODE.
+
+#+findex: tlon-tts-abbreviations-file
+The function ~tlon-tts-abbreviations-file~ returns the path to the =abbreviations.json= file for the given LANGUAGE-CODE.
+
+#+findex: tlon-tts-phonetic-replacements-file
+The function ~tlon-tts-phonetic-replacements-file~ returns the path to the =phonetic-replacements.json= file for the given LANGUAGE-CODE.
+
+#+findex: tlon-tts-phonetic-transcriptions-file
+The function ~tlon-tts-phonetic-transcriptions-file~ returns the path to the =phonetic-transcriptions.json= file for the given LANGUAGE-CODE.
+
+** Org mode integration
+:PROPERTIES:
+:CUSTOM_ID: h:org-integration
+:END:
+
+#+findex: tlon-make-tag-replace-pattern
+The function ~tlon-make-tag-replace-pattern~ constructs a replacement pattern for a PAIR of Org mode tags (a cons cell of old and new tag strings). The optional FORMAT argument controls the pattern template; it defaults to ="%s%%s%s"=, which wraps the tags around a =%s= placeholder.
+
+#+findex: tlon-get-or-set-org-var
+The function ~tlon-get-or-set-org-var~ returns the value of VAR if it is already set; otherwise, it sets VAR to the file containing the Org heading with the given ID and returns that file path. This implements lazy initialization for variables that point to specific Org headings.
+
+#+findex: tlon-get-file-with-org-id
+The function ~tlon-get-file-with-org-id~ returns the file containing the Org heading with the specified ID. It first tries ~org-roam-id-find~ and falls back to ~org-id-find-id-file~.
+
+#+findex: tlon-ensure-org-mode
+The function ~tlon-ensure-org-mode~ signals a user error if the current buffer is not in ~org-mode~ or a derived mode. Use this as a guard at the beginning of functions that require Org mode.
+
+** Transient menu utilities
+:PROPERTIES:
+:CUSTOM_ID: h:transient-utilities
+:END:
+
+These helper functions are used to build transient menu infixes and readers throughout the ~tlon~ package.
+
+#+findex: tlon-transient-read-symbol-choice
+The function ~tlon-transient-read-symbol-choice~ prompts the user with PROMPT to select from CHOICES (a list of symbols) and returns the selected symbol. It is used as a ~:reader~ function in transient infix definitions.
+
+#+findex: tlon-transient-read-number-choice
+The function ~tlon-transient-read-number-choice~ prompts the user to select from CHOICES (a list of numbers) and returns the selected number.
+
+#+findex: tlon-transient-read-string-choice
+The function ~tlon-transient-read-string-choice~ prompts the user to select from CHOICES (a list of strings) and returns the selected string with text properties stripped.
+
+#+findex: tlon-transient-toggle-variable-value
+The function ~tlon-transient-toggle-variable-value~ toggles a boolean variable VAR-NAME between ~nil~ and ~t~. It is used as the ~:reader~ for debug and other toggle infixes.
+
+** String and number formatting
+:PROPERTIES:
+:CUSTOM_ID: h:formatting
+:END:
+
+#+findex: tlon-concatenate-list
+The function ~tlon-concatenate-list~ joins the elements of LIST into a human-readable string. If the list has more than one element, it separates them with commas and adds a language-appropriate conjunction (e.g., "and" in English, "y" in Spanish) before the last element. The conjunction is determined by the language of the current file.
+
+#+findex: tlon-get-delimited-region-pos
+The function ~tlon-get-delimited-region-pos~ returns a cons cell of (BEGIN-POS . END-POS) for the region delimited by BEGIN and END regular expressions. If END is ~nil~, BEGIN is used as both the opening and closing delimiter. When EXCLUDE-DELIMS is non-~nil~, the delimiter lines themselves are excluded from the returned positions.
+
+#+findex: tlon-get-separator
+The function ~tlon-get-separator~ returns the thousands or decimal separator for a LANGUAGE. TYPE must be the symbol ~thousands~ or ~decimal~. If LANGUAGE is ~nil~, the language of the current file is used.
+
+#+findex: tlon-get-decimal-separator
+The function ~tlon-get-decimal-separator~ is a convenience wrapper that returns the decimal separator for LANGUAGE (or the current file's language).
+
+#+findex: tlon-get-thousands-separator
+The function ~tlon-get-thousands-separator~ is a convenience wrapper that returns the thousands separator for LANGUAGE (or the current file's language).
+
+#+findex: tlon-get-number-separator-pattern
+The function ~tlon-get-number-separator-pattern~ returns a regular expression matching numbers formatted with locale-specific THOUSANDS and DECIMAL separators. If these are not provided, they are inferred from the language of the current file (or LANG). When BOUNDED is non-~nil~, word boundary anchors are added.
+
+#+findex: tlon-string-to-number
+The function ~tlon-string-to-number~ converts a STRING containing a formatted number (with locale-specific THOUSANDS and DECIMAL separators) into an Emacs Lisp number. Separators are inferred from the current file's language if not provided.
+
+** Git state checks
+:PROPERTIES:
+:CUSTOM_ID: h:git-checks
+:END:
+
+#+findex: tlon-check-branch
+The function ~tlon-check-branch~ verifies that the current Git branch in REPO is BRANCH. It signals a user error if the check fails.
+
+#+findex: tlon-check-file
+The function ~tlon-check-file~ verifies that the current buffer's file matches the file expected from the currently clocked Org task. If ORIGINAL is non-~nil~, it checks against the original file path; otherwise against the translation file path.
+
+#+findex: tlon-check-staged-or-unstaged
+The function ~tlon-check-staged-or-unstaged~ returns ~t~ if FILE has any staged or unstaged modifications in its Git repository.
+
+#+findex: tlon-ensure-no-uncommitted-changes
+The function ~tlon-ensure-no-uncommitted-changes~ signals a user error if there are uncommitted changes in the repository of FILE, excluding changes to FILE itself. This is used before committing to ensure a clean repository state.
+
+#+findex: tlon-check-file-title-match
+The function ~tlon-check-file-title-match~ verifies that the file name of FILE matches the slugified version of its YAML =title= metadata field. This check is no longer run automatically, as the backend now handles it.
+
+#+findex: tlon-check-file-type-match
+The function ~tlon-check-file-type-match~ verifies that FILE is located in a bare directory that corresponds to its YAML =type= metadata field (e.g., an article should be in the =articles= directory or its translation).
+
+#+findex: tlon-check-image-alt-text
+The function ~tlon-check-image-alt-text~ scans the current buffer for images missing alt text (matched by ~tlon-md-image-sans-alt~) and signals a user error at the first occurrence, suggesting the use of ~tlon-md-insert-alt-text~ to fix them.
+
+* Variables
+:PROPERTIES:
+:CUSTOM_ID: h:variables
+:END:
+
+This section documents the major public variables and constants defined in =tlon-core.el=. Internal data constants (such as ~tlon-core-bare-dirs~, ~tlon-authorship-pattern~, ~tlon-figure-names~, etc.) are used primarily by other functions and are not detailed here individually.
+
+** Package and file paths
+:PROPERTIES:
+:CUSTOM_ID: h:package-paths
+:END:
+
+#+vindex: tlon-package-dir
+The constant ~tlon-package-dir~ holds the directory where the ~tlon~ package is installed (under =elpaca/repos/tlon/= within ~user-emacs-directory~).
+
+#+vindex: tlon-refs-dir
+The variable ~tlon-refs-dir~ holds the directory of the =babel-refs= repository, as obtained from ~paths-dir-babel-refs~.
+
+#+vindex: tlon-bibtex-dir
+The variable ~tlon-bibtex-dir~ holds the =bib/= subdirectory within ~tlon-refs-dir~, where BibTeX files are stored.
+
+#+vindex: tlon-json-dir
+The variable ~tlon-json-dir~ holds the =json/= subdirectory within ~tlon-refs-dir~, where JSON data files are stored.
+
+#+vindex: tlon-file-fluid
+The variable ~tlon-file-fluid~ holds the path to =fluid.bib=, the actively maintained bibliography file.
+
+#+vindex: tlon-file-stable
+The variable ~tlon-file-stable~ holds the path to =stable.bib=, the stable (less frequently changed) bibliography file.
+
+#+vindex: tlon-file-db
+The variable ~tlon-file-db~ holds the path to =db.bib=, the database bibliography file.
+
+#+vindex: tlon-file-db-upstream
+The variable ~tlon-file-db-upstream~ holds the path to =db-upstream.bib=, the upstream database bibliography file.
+
+#+vindex: tlon-bibliography-files
+The variable ~tlon-bibliography-files~ holds a list of the three main Tlon bibliography file paths (~tlon-file-fluid~, ~tlon-file-stable~, and ~tlon-file-db~).
+
+** Repository registry
+:PROPERTIES:
+:CUSTOM_ID: h:repo-registry
+:END:
+
+#+vindex: tlon-repos
+The constant ~tlon-repos~ is the central registry of all Tlon repositories. Each entry is a plist with properties such as ~:name~, ~:abbrev~, ~:project~, ~:subproject~, ~:type~, ~:subtype~, ~:language~, ~:dir~, ~:url~, ~:key~, and ~:help~. The ~:type~ property classifies repositories as ~content~, ~meta~, ~development~, ~docs~, ~misc~, or ~test~. The ~:subtype~ property further distinguishes between ~translations~, ~originals~, ~biblio~, ~audio~, ~meetings~, ~clock~, ~issues~, and ~emacs~.
+
+** User registry
+:PROPERTIES:
+:CUSTOM_ID: h:user-registry
+:END:
+
+#+vindex: tlon-users
+The variable ~tlon-users~ holds a list of plists representing Tlon team members. Each entry has properties ~:name~, ~:git~ (Git author name), ~:github~ (GitHub username), ~:nickname~, and optionally ~:substitute~ (the GitHub username of the user who stands in for this person when needed).
+
+** Language and locale data
+:PROPERTIES:
+:CUSTOM_ID: h:language-data
+:END:
+
+#+vindex: tlon-project-languages
+The constant ~tlon-project-languages~ holds the list of all languages in the Babel project (e.g., ="arabic"=, ="spanish"=, ="english"=, etc.).
+
+#+vindex: tlon-project-target-languages
+The constant ~tlon-project-target-languages~ holds ~tlon-project-languages~ minus ="english"=, representing the languages into which content is translated.
+
+#+vindex: tlon-languages-properties
+The constant ~tlon-languages-properties~ is a comprehensive table of language properties. Each entry is a plist with ~:name~, ~:standard~ (the standardized BibTeX language name), ~:code~ (ISO 639-1), ~:locale~, and optionally ~:iso-639-2~. This table covers over 80 languages and is used by the language selection and validation functions.
+
+#+vindex: tlon-translation-language
+The variable ~tlon-translation-language~ holds the current target translation language as an ISO 639-1 code. The default is ="es"= (Spanish). It is set by ~tlon-set-translation-language~ ([[info:tlon][tlon]]).
+
+#+vindex: tlon-language-separators
+The constant ~tlon-language-separators~ maps language codes to their thousands and decimal separator characters.
+
+** Content metadata constants
+:PROPERTIES:
+:CUSTOM_ID: h:content-constants
+:END:
+
+#+vindex: tlon-yaml-delimiter
+The constant ~tlon-yaml-delimiter~ holds the string ="---\n"=, used to delimit YAML front matter in Markdown files.
+
+#+vindex: tlon-max-abstract-length
+The constant ~tlon-max-abstract-length~ specifies the maximum length (300 words) for an article abstract.
+
+#+vindex: tlon-min-abstract-length
+The constant ~tlon-min-abstract-length~ specifies the minimum length (45 words) for an article abstract.
+
+#+vindex: tlon-synopsis-length
+The constant ~tlon-synopsis-length~ specifies the maximum length (2000 words) for a synopsis.
+
+#+vindex: tlon-site-data
+The constant ~tlon-site-data~ maps language codes to site names and URLs for the Uqbar sites.
+
+* Indices
+:PROPERTIES:
+:CUSTOM_ID: h:indices
+:END:
+
+** Function index
+:PROPERTIES:
+:INDEX: fn
+:CUSTOM_ID: h:function-index
+:END:
+
+** Variable index
+:PROPERTIES:
+:INDEX: vr
+:CUSTOM_ID: h:variable-index
+:END:
