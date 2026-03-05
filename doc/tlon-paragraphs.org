@@ -1,115 +1,273 @@
-#+title: tlon - Paragraph Functionality
+#+title: tlon-paragraphs: Paragraph-related functionality
 #+author: Pablo Stafforini
-#+EXCLUDE_TAGS: noexport
+#+email: pablo@stafforini.com
 #+language: en
-#+options: ':t toc:nil author:t email:t num:t
+#+options: ':t toc:t author:t email:t num:t
 #+startup: content
-#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
-#+texinfo_header: @set MAINTAINER Pablo Stafforini
-#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
-#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
-#+texinfo: @insertcopying
-* Paragraph Functionality (=tlon-paragraphs.el=)
+#+export_file_name: tlon-paragraphs.info
+#+texinfo_filename: tlon-paragraphs.info
+#+texinfo_dir_category: Emacs misc features
+#+texinfo_dir_title: Paragraphs: (tlon-paragraphs)
+#+texinfo_dir_desc: Paragraph-related functionality
+
+This manual describes the features and customization options for the Emacs Lisp file =tlon-paragraphs.el=.
+
+* Overview
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-paragraph
+:CUSTOM_ID: h:overview
 :END:
 
-This module provides paragraph-related functionality, such as aligning the number of paragraphs between a file and its counterpart using an AI agent.
+The =tlon-paragraphs= module provides paragraph-related functionality for
+Tlon content files.  It can count paragraphs, display corresponding
+paragraph pairs between a file and its counterpart (original and
+translation), align paragraph counts using an AI agent, navigate to a
+specific paragraph by number, and show a paragraph indicator in the mode
+line.  The module operates on the main content area of Markdown files,
+automatically excluding YAML front matter and local variables sections.
 
-** Dependencies
+* User options
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-paragraph-dependencies
+:CUSTOM_ID: h:user-options
 :END:
 
-+ =tlon-ai=
-+ =tlon-counterpart=
-+ =transient=
-
-** User options
+** ~tlon-paragraphs-align-with-ai-model~
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-paragraphs-options
+:CUSTOM_ID: h:tlon-paragraphs-align-with-ai-model
 :END:
-
 #+vindex: tlon-paragraphs-align-with-ai-model
-+ =tlon-paragraphs-align-with-ai-model= :: Specifies the model to use for aligning paragraphs. The value is a cons cell where the CAR is the backend (e.g., "ChatGPT") and the CDR is the model name (e.g., =gpt-4.5-preview=). If =nil=, the default model is used.
 
-** Commands
+Model to use for aligning paragraphs.  The value is a cons cell whose car
+is the backend and whose cdr is the model itself.  See
+~gptel-extras-ai-models~ for available options.  If nil, do not use a
+different model for aligning paragraphs.
+
+- Default :: =("Claude" . claude-sonnet-4-20250514)=
+- Type :: =(cons string symbol)=
+
+** ~tlon-paragraphs-mode-line-format~
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-paragraphs-commands
+:CUSTOM_ID: h:tlon-paragraphs-mode-line-format
+:END:
+#+vindex: tlon-paragraphs-mode-line-format
+
+Format for the paragraph indicator in the mode line.  The format receives
+two integers: CURRENT paragraph and TOTAL paragraphs.
+
+- Default :: =" ¶ %d/%d"=
+- Type :: =string=
+
+* Commands
+:PROPERTIES:
+:CUSTOM_ID: h:commands
 :END:
 
-This section details the interactive commands provided by =tlon-paragraph.el=.
-
-*** AI-Powered Paragraph Alignment
+** Counting paragraphs
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-paragraph-ai-commands
+:CUSTOM_ID: h:counting-paragraphs
 :END:
 
-#+findex: tlon-paragraphs-align-with-ai
-+ ~tlon-paragraphs-align-with-ai~ :: (Autoloaded) Checks for paragraph count mismatch between a file and its counterpart and uses an AI agent to fix it. It prompts for a file, finds its counterpart, and compares the number of paragraphs. If they differ, it provides the AI agent with a paragraph-by-paragraph comparison and instructs it to edit the translation file to match the paragraph count of the original. The AI is equipped with the =edit_file= tool to apply changes directly. If the paragraph counts match, it simply reports this to the user.
-
-*** Counting Paragraphs  
+*** ~tlon-count-paragraphs~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-count-paragraphs
+:END:
 #+findex: tlon-count-paragraphs
-+ ~tlon-count-paragraphs~ :: Interactively counts paragraphs in the active region. If no region is active, it prompts for a file and counts the paragraphs in it. Programmatically, it can also count between specified =START= and =END= positions. Uses ~tlon-get-number-of-paragraphs~.
 
-*** Going to a Paragraph
+Count paragraphs in the active region or in a file.  If the region is
+active, count paragraphs in it.  When called with START and END, count
+paragraphs in that range.  If called interactively without an active
+region, prompt for a file and count its paragraphs.
+
+*** ~tlon-get-number-of-paragraphs~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-get-number-of-paragraphs
+:END:
+#+findex: tlon-get-number-of-paragraphs
+
+Return the number of paragraphs between START and END.  START and END are
+buffer positions.  If START is nil, use the beginning of the main content
+(after the YAML front matter).  If END is nil, use the end of the main
+content (before the local variables section).  Exclude front matter and
+local variables sections.
+
+** Displaying corresponding paragraphs
+:PROPERTIES:
+:CUSTOM_ID: h:displaying-corresponding-paragraphs
+:END:
+
+*** ~tlon-display-corresponding-paragraphs~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-display-corresponding-paragraphs
+:END:
+#+findex: tlon-display-corresponding-paragraphs
+
+Display PAIRS-OR-FN of corresponding paragraphs in parallel.
+PAIRS-OR-FN can be either the output of ~tlon-get-corresponding-paragraphs~
+or the function itself (the interactive default).
+
+The command creates a =/Paragraph Pairs/= buffer showing each original
+paragraph paired with its translation counterpart, separated by a
+horizontal rule.  Missing paragraphs are indicated with
+="[Missing paragraph]"=.  If ~tlon-get-corresponding-paragraphs~ signals
+a paragraph mismatch error, the buffer is still displayed so you can
+inspect the discrepancies.
+
+** AI-powered paragraph alignment
+:PROPERTIES:
+:CUSTOM_ID: h:ai-alignment
+:END:
+
+*** ~tlon-paragraphs-align-with-ai~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-paragraphs-align-with-ai
+:END:
+#+findex: tlon-paragraphs-align-with-ai
+
+Use AI to fix paragraph count mismatch between FILE and its counterpart.
+If FILE is nil, prompt for it.
+
+The command finds the counterpart, compares the number of paragraphs, and
+if they differ, provides the AI agent with a paragraph-by-paragraph
+comparison and instructs it to edit the translation file so that its
+paragraph count matches the original.  The AI is equipped with the
+=edit_file=, =apply_diff=, and =replace_file_contents= tools.  The model
+used is determined by ~tlon-paragraphs-align-with-ai-model~
+([[#h:tlon-paragraphs-align-with-ai-model][user option]]).
+
+If the paragraph counts already match, it simply reports this.
+
+** Navigation
+:PROPERTIES:
+:CUSTOM_ID: h:navigation
+:END:
+
+*** ~tlon-goto-paragraph~
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-goto-paragraph
 :END:
 #+findex: tlon-goto-paragraph
-+ ~tlon-goto-paragraph~ :: Prompts for a paragraph number (defaulting to the
-  current one) and moves point to the beginning of that paragraph. Paragraphs
-  are counted within the main content area only.
 
-*** Displaying Corresponding Paragraphs  
-#+findex: tlon-display-corresponding-paragraphs
-+ ~tlon-display-corresponding-paragraphs~ :: Displays pairs of corresponding paragraphs from a file and its counterpart in a dedicated buffer ("/Paragraph Pairs/").
-  1. Takes =PAIRS-OR-FN= as input. If it's a function (interactively defaults to ~tlon-get-corresponding-paragraphs~), calls it to get the pairs. Otherwise, assumes it's already a list of pairs.
-  2. Creates or clears the "/Paragraph Pairs/" buffer.
-  3. Iterates through the pairs, inserting "Original:\n[paragraph]\n\nTranslation:\n[paragraph]\n\n----\n\n". Handles missing paragraphs gracefully.
-  4. Displays the buffer. Catches =user-error= (like paragraph mismatch from ~tlon-get-corresponding-paragraphs~) and still displays the buffer containing the comparison up to the point of error.
-
-*** Transient Menu
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-paragraph-menu-cmd
-:END:
-#+findex: tlon-paragraphs-menu
-The command ~tlon-paragraphs-menu~ (Autoloaded) activates a =transient= menu interface for paragraph-related operations.
-
-It provides the following groups and commands:
-+ *Commands*:
-  + =a= :: Align paragraphs (~tlon-paragraphs-align-with-ai~)
-  + =c= :: Count paragraphs (~tlon-count-paragraphs~)
-  + =g= :: Go to paragraph (~tlon-goto-paragraph~)
-  + =d= :: Display corresponding paragraphs (~tlon-display-corresponding-paragraphs~)
-+ *Options*:
-  + =t= :: Toggle paragraphs in mode line (~tlon-paragraphs-mode-line-mode~)
-  + =m= :: Select the AI model for aligning paragraphs.
+Go to paragraph N in the main content.  If N is nil, prompt for it with
+default as the current paragraph.  N is 1-based.  Signal an error if
+there are no paragraphs.
 
 ** Mode line indicator
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-paragraphs-mode-line
+:CUSTOM_ID: h:mode-line-indicator
 :END:
 
+*** ~tlon-paragraphs-mode-line-mode~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-paragraphs-mode-line-mode
+:END:
 #+findex: tlon-paragraphs-mode-line-mode
-#+vindex: tlon-paragraphs-mode-line-format
-- ~tlon-paragraphs-mode-line-mode~ :: Minor mode that shows “¶ N/M” in the mode
-  line for the current buffer, where N is the paragraph at point and M is the
-  total number of paragraphs in the main content. The count excludes YAML front
-  matter and the local variables section. The indicator is hidden when point is
-  outside the main content. Toggle with ~M-x tlon-paragraphs-mode-line-mode~,
-  or enable automatically, e.g., by adding it to ~markdown-mode-hook~.
-- ~tlon-paragraphs-mode-line-format~ :: Format string for the indicator. It
-  receives two integers: the current paragraph and the total.
 
-If you use =doom-modeline=, enabling ~tlon-paragraphs-mode-line-mode~ will
-automatically add a custom segment with the indicator and switch the current
-buffer to a modeline layout that includes it. No extra setup is required.
-Disabling the mode restores the default =doom-modeline= layout for the buffer.
+Minor mode that shows the paragraph indicator in the mode line for the
+current buffer (e.g., =¶ 3/12=), where the first number is the paragraph
+at point and the second is the total number of paragraphs in the main
+content.  The count excludes YAML front matter and the local variables
+section.  The indicator is hidden when point is outside the main content.
 
-*** Lazy doom-modeline integration
-To include the =tlon-paragraph= segment in your modeline without loading
-=tlon-paragraphs= at startup, define a lightweight shim in your config:
+Toggle with =M-x tlon-paragraphs-mode-line-mode=, or enable automatically
+by adding it to ~markdown-mode-hook~.
+
+The format of the indicator is controlled by
+~tlon-paragraphs-mode-line-format~
+([[#h:tlon-paragraphs-mode-line-format][user option]]).
+
+If you use =doom-modeline=, enabling ~tlon-paragraphs-mode-line-mode~
+automatically adds a custom segment with the indicator and switches the
+current buffer to a modeline layout that includes it.  No extra setup is
+required.  Disabling the mode restores the default =doom-modeline= layout
+for the buffer.
+
+** Transient menu
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-paragraphs-menu
+:END:
+#+findex: tlon-paragraphs-menu
+
+The command ~tlon-paragraphs-menu~ activates a =transient= menu interface
+for paragraph-related operations.  It provides the following groups:
+
+- *Commands*:
+  - =p= :: Toggle paragraphs in mode line (~tlon-paragraphs-mode-line-mode~)
+  - =a= :: Align paragraphs (~tlon-paragraphs-align-with-ai~)
+  - =c= :: Count paragraphs (~tlon-count-paragraphs~)
+  - =g= :: Go to paragraph (~tlon-goto-paragraph~)
+  - =d= :: Display corresponding paragraphs (~tlon-display-corresponding-paragraphs~)
+- *Options*:
+  - =-a= :: Align paragraphs model
+
+* Functions
+:PROPERTIES:
+:CUSTOM_ID: h:functions
+:END:
+
+** Paragraph iteration
+:PROPERTIES:
+:CUSTOM_ID: h:paragraph-iteration
+:END:
+
+*** ~tlon-with-paragraphs~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-with-paragraphs
+:END:
+#+findex: tlon-with-paragraphs
+
+Execute FN for each paragraph in FILE.  If FN is nil, return the
+paragraph contents.  If RETURN-POSITIONS is non-nil, return list of
+=(start . end)= positions.  Otherwise, return list of FN's results for
+each paragraph.  If FILE is nil, use the current buffer.  If
+INCLUDE-METADATA is non-nil, include the YAML front matter (metadata) in
+the paragraph list; otherwise, exclude it.
+
+The function moves past the YAML front matter, iterates through
+paragraphs using =markdown-forward-paragraph=, skips whitespace-only
+regions, and collects results in order.
+
+*** ~tlon-get-corresponding-paragraphs~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-get-corresponding-paragraphs
+:END:
+#+findex: tlon-get-corresponding-paragraphs
+
+Return pairs of paragraphs between TRANSLATION and its ORIGINAL.  Signals
+an error if files have different number of paragraphs, and displays the
+paragraphs in a buffer only in that case.  If ORIGINAL is nil, infer it
+from TRANSLATION.
+
+*** ~tlon-paragraph-files-are-aligned-p~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-paragraph-files-are-aligned-p
+:END:
+#+findex: tlon-paragraph-files-are-aligned-p
+
+Return t iff FILE and COUNTERPART have the same number of paragraphs.
+
+** Mode line helpers
+:PROPERTIES:
+:CUSTOM_ID: h:mode-line-helpers
+:END:
+
+*** ~tlon-paragraphs-mode-line-string~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-paragraphs-mode-line-string
+:END:
+#+findex: tlon-paragraphs-mode-line-string
+
+Return a =mode-line-format= fragment with the paragraph indicator.  The
+string is only produced when point is within the main content boundaries.
+
+** Doom modeline integration
+:PROPERTIES:
+:CUSTOM_ID: h:doom-modeline-integration
+:END:
+
+When =doom-modeline= is loaded, the module registers a custom
+=tlon-paragraph= segment that calls ~tlon-paragraphs-mode-line-string~
+whenever ~tlon-paragraphs-mode-line-mode~ is active.  To include the
+segment in your modeline without loading =tlon-paragraphs= at startup,
+define a lightweight shim in your config:
 
 #+begin_src emacs-lisp
 (with-eval-after-load 'doom-modeline
@@ -118,9 +276,26 @@ To include the =tlon-paragraph= segment in your modeline without loading
       (when (and (featurep 'tlon-paragraphs)
                  (bound-and-true-p tlon-paragraphs-mode-line-mode)
                  (fboundp 'tlon-paragraphs-mode-line-string))
-        (tlon-paragraphs-mode-line-string))))))
+        (tlon-paragraphs-mode-line-string)))))
 #+end_src
 
 Then you can safely add =tlon-paragraph= to your =doom-modeline-def-modeline=
-spec. The segment will remain empty until =tlon-paragraphs= is loaded and the
+spec.  The segment will remain empty until =tlon-paragraphs= is loaded and the
 minor mode is enabled.
+
+* Indices
+:PROPERTIES:
+:CUSTOM_ID: h:indices
+:END:
+
+** Function index
+:PROPERTIES:
+:INDEX: fn
+:CUSTOM_ID: h:function-index
+:END:
+
+** Variable index
+:PROPERTIES:
+:INDEX: vr
+:CUSTOM_ID: h:variable-index
+:END:

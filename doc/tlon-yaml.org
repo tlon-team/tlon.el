@@ -1,288 +1,746 @@
-#+title: tlon - YAML Metadata Handling
+#+title: tlon-yaml: Parse, get, set & edit YAML
 #+author: Pablo Stafforini
-#+EXCLUDE_TAGS: noexport
+#+email: pablo@stafforini.com
 #+language: en
-#+options: ':t toc:nil author:t email:t num:t
+#+options: ':t toc:t author:t email:t num:t
 #+startup: content
-#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
-#+texinfo_header: @set MAINTAINER Pablo Stafforini
-#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
-#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
-#+texinfo: @insertcopying
-* YAML Metadata Handling (=tlon-yaml.el=)
+#+export_file_name: tlon-yaml.info
+#+texinfo_filename: tlon-yaml.info
+#+texinfo_dir_category: Emacs misc features
+#+texinfo_dir_title: YAML metadata: (tlon-yaml)
+#+texinfo_dir_desc: Parse, get, set & edit YAML
+
+This manual describes the features and customization options for the Emacs Lisp file =tlon-yaml.el=.
+
+* Overview
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-yaml
+:CUSTOM_ID: h:overview
 :END:
 
-This module provides functions for reading, writing, and manipulating YAML front matter within the Tlön project, particularly for managing metadata associated with content files and their translations.
+The =tlon-yaml= module handles every aspect of YAML front-matter management
+for content files in the Tlon project.  It can parse YAML into association
+lists, retrieve individual field values, insert or delete fields, reorder
+metadata according to canonical key lists, and perform batch operations
+across entire directories.  The module also integrates with AI backends to
+suggest tags for articles and guess English counterpart filenames for
+translated tag/author files.  Finally, it provides a transient menu
+(~tlon-yaml-menu~) that exposes the most common operations.
 
-** Configuration Constants
+* User options
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-yaml-constants
+:CUSTOM_ID: h:user-options
 :END:
 
-#+vindex: tlon-yaml-delimiter
-+ ~tlon-yaml-delimiter~ :: The string used to delimit YAML front matter blocks (="---\n"=).
-#+vindex: tlon-yaml-core-keys
-+ ~tlon-yaml-core-keys~ :: A list of YAML keys considered essential for initializing translation metadata (e.g., ="original_path"=). The file type is derived from the directory structure and is not stored in YAML.
-#+vindex: tlon-yaml-translation-only-keys
-+ ~tlon-yaml-translation-only-keys~ :: A list of YAML keys that are typically included only in the metadata of translated files, not originals (e.g., ="original_path"=, ="publication_status"=).
-#+vindex: tlon-yaml-article-keys
-+ ~tlon-yaml-article-keys~ :: A list defining the standard YAML keys and their preferred order for "article" type documents.
-#+vindex: tlon-yaml-tag-keys
-+ ~tlon-yaml-tag-keys~ :: A list defining the standard YAML keys and their preferred order for "tag" type documents.
-#+vindex: tlon-yaml-author-keys
-+ ~tlon-yaml-author-keys~ :: A list defining the standard YAML keys and their preferred order for "author" type documents.
-#+vindex: tlon-yaml-collection-keys
-+ ~tlon-yaml-collection-keys~ :: A list defining the standard YAML keys and their preferred order for "collection" type documents.
-#+vindex: tlon-yaml-tag-or-author-keys
-+ ~tlon-yaml-tag-or-author-keys~ :: A list defining YAML keys for "tag" or "author" types in the BAE (presumably Spanish) context.
-#+vindex: tlon-yaml-original-author-keys
-+ ~tlon-yaml-original-author-keys~ :: A list defining YAML keys for original "author" type documents (e.g., in =uqbar-en=).
-#+vindex: tlon-yaml-publication-statuses
-+ ~tlon-yaml-publication-statuses~ :: A list of valid publication status strings (e.g., ="unpublished"=, ="test"=, ="production"=).
-
-** Core Functions
+** ~tlon-yaml-suggest-tags-model~
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-yaml-core
+:CUSTOM_ID: h:tlon-yaml-suggest-tags-model
 :END:
+#+vindex: tlon-yaml-suggest-tags-model
 
-*** Parsing and Formatting YAML
+AI model to use for ~tlon-yaml-suggest-tags~ ([[#h:tlon-yaml-suggest-tags][suggest tags]]).  The
+value is a cons cell =(BACKEND . MODEL)= like the other =tlon-yaml-*model=
+custom variables.  When nil, the current =gptel= default model is used.
+
+- Default :: =nil=
+- Type :: =(cons string symbol)=
+
+** ~tlon-yaml-guess-counterpart-model~
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-yaml-parsing
+:CUSTOM_ID: h:tlon-yaml-guess-counterpart-model
 :END:
-
-#+findex: tlon-yaml-to-alist
-+ ~tlon-yaml-to-alist~ :: Parses a list of YAML strings (representing lines from a YAML block) into an Emacs Lisp association list (alist).
-
-#+findex: tlon-yaml-format-values-of-alist
-+ ~tlon-yaml-format-values-of-alist~ :: Takes an alist (presumably representing YAML data) and formats its values using ~tlon-yaml-format-value~, preparing them for writing back to YAML format.
-
-#+findex: tlon-yaml-format-value
-+ ~tlon-yaml-format-value~ :: Formats a single Emacs Lisp value into a string suitable for YAML representation (e.g., quoting strings, handling lists).
-
-#+findex: tlon-yaml-read-until-match
-+ ~tlon-yaml-read-until-match~ :: Reads lines from the current buffer starting from point until a line matching the specified DELIMITER regexp is found. Used for extracting YAML blocks.
-
-#+findex: tlon-yaml-convert-list
-+ ~tlon-yaml-convert-list~ :: Converts an Emacs Lisp list into a YAML-formatted string representation (e.g., =[item1, item2]=).
-
-*** Retrieving Metadata
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-yaml-retrieving
-:END:
-
-#+findex: tlon-metadata-in-repos
-+ ~tlon-metadata-in-repos~ :: Retrieves metadata matching specific key-value PAIRS from all configured Tlön repositories. It aggregates results from ~tlon-metadata-in-repo~.
-
-#+findex: tlon-metadata-in-repo
-+ ~tlon-metadata-in-repo~ :: Retrieves all metadata from YAML files within a specific Tlön REPO (or the current one if unspecified).
-
-#+findex: tlon-metadata-in-dir
-+ ~tlon-metadata-in-dir~ :: Retrieves all metadata from YAML files within a specified directory DIR.
-
-#+findex: tlon-metadata-in-file
-+ ~tlon-metadata-in-file~ :: Retrieves metadata from a specific FILE-OR-BUFFER. Alias for ~tlon-yaml-get-metadata~.
-
-#+findex: tlon-yaml-get-metadata
-+ ~tlon-yaml-get-metadata~ :: Extracts the YAML front matter from a FILE-OR-BUFFER and returns it as an alist. If RAW is non-nil, returns the raw string content.
-
-#+findex: tlon-yaml-get-metadata2
-+ ~tlon-yaml-get-metadata2~ :: (Purpose unclear from name alone, likely an alternative metadata retrieval function. Needs clarification from docstring or code.)
-
-#+findex: tlon-yaml-get-key
-+ ~tlon-yaml-get-key~ :: Retrieves the value associated with a specific KEY from the YAML metadata of a FILE-OR-BUFFER.
-
-#+findex: tlon-yaml-copy-key
-+ ~tlon-yaml-copy-key~ :: Copies the YAML =key= field value from the current
-+  buffer or, when point is on a Markdown file in Dired, from that file, to the
-+  kill ring. Signals an error when the file is not Markdown or the field is
-+  missing. Returns the copied value.
-
-#+findex: tlon-yaml-get-list
-+ ~tlon-yaml-get-list~ :: Returns the YAML list value of KEY from a FILE-OR-BUFFER
-+  as a list of strings. If the underlying YAML is a single string, returns a
-+  singleton list. Returns nil when the key is absent or empty.
-
-#+findex: tlon-yaml-get-key-values
-+ ~tlon-yaml-get-key-values~ :: Retrieves all possible values associated with a specific KEY across all metadata files (likely within the current repository or context). Used for completion.
-
-#+findex: tlon-yaml-get-valid-keys
-+ ~tlon-yaml-get-valid-keys~ :: Returns a list of valid YAML keys expected for a given FILE, potentially based on its TYPE. If NO-CORE is non-nil, core keys might be excluded.
-
-#+findex: tlon-yaml-get-type
-+ ~tlon-yaml-get-type~ :: Returns the canonical type for a file (="article"=, ="tag"=, ="author"=, or ="collection"=) by inspecting the top-level directory name and mapping via ~tlon-get-bare-dir-translation~.
-
-#+findex: tlon-yaml-get-filenames-in-dir
-+ ~tlon-yaml-get-filenames-in-dir~ :: Returns a list of filenames within a DIR, optionally filtered by EXTENSION.
-
-#+findex: tlon-yaml-get-field-at-point
-+ ~tlon-yaml-get-field-at-point~ :: Determines the YAML key-value pair at the current cursor position within a YAML block.
-
-#+findex: tlon-yaml-get-original-path
-+ ~tlon-yaml-get-original-path~ :: Retrieves the value of the =original_path= key from the current buffer's YAML metadata.
-
-#+findex: tlon-metadata-get-values-of-all-types
-+ ~tlon-metadata-get-values-of-all-types~ :: (Purpose unclear from name alone. Likely aggregates values for specific keys across different metadata types or files. Needs clarification.)
-
-#+findex: tlon-metadata-get-translators
-+ ~tlon-metadata-get-translators~ :: Retrieves a list of translators, presumably from metadata across relevant files.
-
-#+findex: tlon-yaml-list-files-missing-field-in-dir
-+ ~tlon-yaml-list-files-missing-field-in-dir~ :: Lists Markdown files in the
-+  directory at point that are missing a YAML FIELD. Prompts for FIELD, scans the
-+  directory non-recursively, displays the results in a temporary buffer, and
-+  returns the list of file paths.
-
-*** Modifying Metadata
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-yaml-modifying
-:END:
-
-#+findex: tlon-yaml-insert-metadata-section
-+ ~tlon-yaml-insert-metadata-section~ :: Inserts a complete YAML metadata section (delimiters and fields) into the specified FILE or current buffer, usually at the beginning.
-
-#+findex: tlon-yaml-insert-fields
-+ ~tlon-yaml-insert-fields~ :: Inserts a list of YAML FIELDS (key-value pairs) into the current buffer, typically within an existing YAML block.
-
-#+findex: tlon-yaml-insert-field
-+ ~tlon-yaml-insert-field~ :: Interactively prompts for a KEY and VALUE and inserts the corresponding field into the YAML metadata. When KEY is "html_title" and the field is not already present: for articles, the prompt defaults to the BibTeX title of the entry referenced by the article's YAML =key=; for authors and tags, it defaults to the value of the YAML =title= field.
-
-#+findex: tlon-yaml-insert-key-value
-+ ~tlon-yaml-insert-key-value~ :: Inserts a specific VALUE for a given KEY into the YAML metadata. Handles list values appropriately.
-
-#+findex: tlon-yaml-insert-original-path
-+ ~tlon-yaml-insert-original-path~ :: Inserts the =original_path= field into the YAML metadata, likely deriving the path from context.
-
-#+findex: tlon-yaml-insert-list
-+ ~tlon-yaml-insert-list~ :: Inserts a YAML list value for the key at point, prompting the user to select from CANDIDATES.
-
-#+findex: tlon-yaml-insert-string
-+ ~tlon-yaml-insert-string~ :: Inserts a YAML string value for the key at point, prompting the user to select from CANDIDATES.
-
-#+findex: tlon-yaml-set-key
-+ ~tlon-yaml-set-key~ :: Sets or modifies the value for a specific KEY in the YAML metadata, prompting the user for the new value.
-
-#+findex: tlon-yaml-set-key-value
-+ ~tlon-yaml-set-key-value~ :: Similar to ~tlon-yaml-set-key~, likely with specific handling based on the KEY.
-
-#+findex: tlon-yaml-write-field
-+ ~tlon-yaml-write-field~ :: Writes a specific KEY-VALUE pair to the YAML metadata of a FILE, adding or updating the field.
-
-#+findex: tlon-yaml-delete-metadata
-+ ~tlon-yaml-delete-metadata~ :: Deletes the entire YAML metadata section from the current buffer.
-
-#+findex: tlon-yaml-delete-field
-+ ~tlon-yaml-delete-field~ :: Deletes the field associated with KEY from the YAML metadata of a FILE or the current buffer.
-
-#+findex: tlon-yaml-insert-translated-tags
-+ ~tlon-yaml-insert-translated-tags~ :: Inserts translated tag titles into the `tags` field of a Markdown file, based on the tags of its English counterpart. If a target-language tag file does not exist, it falls back to the glossary by looking up the English tag title and inserting the target-language translation; it reports which tags were translated via the glossary.
-
-#+findex: tlon-yaml-insert-translated-tags-in-dir
-+ ~tlon-yaml-insert-translated-tags-in-dir~ :: Walks the current directory
-  (non-recursively) and calls ~tlon-yaml-insert-translated-tags~ for each
-  article file that lacks a ~tags~ field. With a numeric prefix argument, only
-  processes the first N such files.
-
-#+findex: tlon-yaml-reorder-metadata
-+ ~tlon-yaml-reorder-metadata~ :: Reorders the fields within the YAML metadata block according to a predefined or standard order (likely using ~tlon-yaml-sort-fields~).
-
-#+findex: tlon-yaml-sort-fields
-+ ~tlon-yaml-sort-fields~ :: Sorts a list of YAML FIELDS based on a specified list of KEYS. If NO-ERROR is non-nil, it suppresses errors for missing keys.
-
-#+findex: tlon-yaml-set-publication-status
-+ ~tlon-yaml-set-publication-status~ :: Prompts to select the publication status for the Markdown file at point and sets the YAML =publication_status= field. Uses ~tlon-db-publication-statuses~. Errors for non-Markdown files and for article files (use ~tlon-db-set-publication-status~ instead).
-
-*** File and Translation Management
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-yaml-file-management
-:END:
-
-#+findex: tlon-initialize-translation-metadata
-+ ~tlon-initialize-translation-metadata~ :: Sets up the initial YAML metadata for a new translation FILE by inserting the ~original_path~. The file type is inferred from the directory structure.
-
-#+findex: tlon-name-file-from-title
-+ ~tlon-name-file-from-title~ :: Generates a filename based on a given TITLE, likely applying sluggification rules.
-
-#+findex: tlon-set-file-from-title
-+ ~tlon-set-file-from-title~ :: Renames the current file based on its TITLE metadata, potentially moving it to a specified DIR.
-
-*** BibTeX Integration
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-yaml-bibtex
-:END:
-
-#+findex: tlon-get-bibtex-key
-+ ~tlon-get-bibtex-key~ :: Prompts the user for a BibTeX key, potentially offering completion based on available BibTeX databases, using INITIAL-INPUT if provided.
-
-#+findex: tlon-yaml-get-bibtex-key-values
-+ ~tlon-yaml-get-bibtex-key-values~ :: Retrieves BibTeX keys associated with a specific metadata FIELD (e.g., =bibliography=) across relevant files.
-
-#+findex: tlon-yaml-select-key-values
-+ ~tlon-yaml-select-key-values~ :: Prompts the user to select one or more VALUES (likely BibTeX keys) for a given KEY, offering completion.
-
-** AI utilities
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-yaml-ai
-:END:
-
-#+findex: tlon-yaml-guess-english-counterpart
-+ ~tlon-yaml-guess-english-counterpart~ :: Uses an AI model to guess the English
-  counterpart filename for the tag or author at point. It sends the current YAML
-  ~title~ and the list of candidate filenames from the English repository’s tags
-  or authors folder, expects the model to return the exact matching filename,
-  and inserts it into the YAML under ~original_path~. If ~original_path~ already
-  exists, the command asks for confirmation when called interactively and does
-  nothing when called programmatically.
-
 #+vindex: tlon-yaml-guess-counterpart-model
-+ ~tlon-yaml-guess-counterpart-model~ :: AI model to use for
-  ~tlon-yaml-guess-english-counterpart~. When nil, use the default model.
 
-#+findex: tlon-yaml-guess-english-counterpart-in-dir
-+ ~tlon-yaml-guess-english-counterpart-in-dir~ :: Walks the current directory
-  (non-recursively) and calls ~tlon-yaml-guess-english-counterpart~ for each
-  tag or author file. With a numeric argument, only processes the first N files
-  that do not already have an ~original_path~ field.
+AI model to use for ~tlon-yaml-guess-english-counterpart~
+([[#h:tlon-yaml-guess-english-counterpart][guess English counterpart]]).  The value is a cons
+cell =(BACKEND . MODEL)=.  When nil, the current =gptel= default model is
+used.
 
+- Default :: =nil=
+- Type :: =(cons string symbol)=
+
+* Commands
+:PROPERTIES:
+:CUSTOM_ID: h:commands
+:END:
+
+** Field editing
+:PROPERTIES:
+:CUSTOM_ID: h:field-editing
+:END:
+
+*** ~tlon-yaml-insert-field~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-insert-field
+:END:
+#+findex: tlon-yaml-insert-field
+
+Insert a YAML field with KEY and VALUE in the metadata section of the
+current buffer.  If KEY or VALUE are nil, you are prompted to select from
+a list of suitable candidates (the valid keys for the file's type).  When
+KEY is ="html_title"= and the field is not already present, the default
+suggestion depends on the file type: for articles, it is the BibTeX title
+of the entry referenced by the YAML =key= field; for authors and tags, it
+is the value of the YAML =title= field.
+
+If the field already exists, you are asked whether to overwrite it.  When
+OVERWRITE is non-nil, the existing field is replaced without prompting.
+
+The field is inserted in the canonical order defined by the key list for
+the file type.  Special handling applies to the ="meta"= key, which is
+inserted as a YAML block scalar just before the closing delimiter.
+
+*** ~tlon-yaml-insert-original-path~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-insert-original-path
+:END:
+#+findex: tlon-yaml-insert-original-path
+
+Insert the =original_path= YAML field.  This is a convenience wrapper
+around ~tlon-yaml-insert-field~ that passes ="original_path"= as the key,
+prompting you for the value from a list of filenames in the counterpart
+directory.
+
+*** ~tlon-yaml-copy-key~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-copy-key
+:END:
+#+findex: tlon-yaml-copy-key
+
+Copy the YAML =key= field value to the kill ring.  When in a Markdown
+buffer, operate on its file.  When point is on a Markdown file in Dired,
+operate on that file.  Signal an error when the file is not Markdown or
+the =key= field is missing.  Return the copied value.
+
+*** ~tlon-yaml-set-publication-status~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-set-publication-status
+:END:
+#+findex: tlon-yaml-set-publication-status
+
+Set the YAML =publication_status= of the Markdown file at point to
+STATUS.  If STATUS is nil, you are prompted for a status from
+~tlon-db-publication-statuses~, defaulting to the current value.  Signal
+an error for non-Markdown files.  When the file is an article, signal an
+error suggesting you use ~tlon-db-set-publication-status~ instead, because
+article publication status is managed through the database.
+
+*** ~tlon-yaml-normalize-tags-field~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-normalize-tags-field
+:END:
+#+findex: tlon-yaml-normalize-tags-field
+
+Convert a multiline =tags= YAML field (one where the list spans multiple
+lines) into a single-line bracketed format.  When a conversion occurs,
+return non-nil.  This is useful after manual editing that may have
+introduced unwanted line breaks inside the tags list.
+
+** Tag management
+:PROPERTIES:
+:CUSTOM_ID: h:tag-management
+:END:
+
+*** ~tlon-yaml-suggest-tags~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-suggest-tags
+:END:
+#+findex: tlon-yaml-suggest-tags
+
+Suggest tags for an article file using AI.  When called interactively,
+default to the current article or prompt for one inside the
+=uqbar-en/articles= directory.  The command collects all candidate tag
+files (excluding those under an =excluded/= subdirectory), builds a prompt
+containing the full article Markdown and the candidate tag titles with
+their first paragraphs, and sends it to the AI model specified by
+~tlon-yaml-suggest-tags-model~.  The AI returns a JSON array of tag titles
+ordered by relevance (at most six).  The callback normalises casing
+against the canonical tag titles and inserts the result into the =tags=
+YAML field of the article file.
+
+*** ~tlon-yaml-suggest-tags-in-dir~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-suggest-tags-in-dir
+:END:
 #+findex: tlon-yaml-suggest-tags-in-dir
-+ ~tlon-yaml-suggest-tags-in-dir~ :: Walks the current directory
-  (non-recursively) and queues AI requests to suggest tags for each
-  article file that lacks a ~tags~ field. With a numeric prefix argument,
-  only processes the first N such files.
+
+Suggest tags via AI for article files in DIR that lack a =tags= field.
+When N is non-nil (prefix argument), only process the first N articles
+missing tags.  When DIR is nil, use =default-directory=.  Each file is
+processed by calling ~tlon-yaml-suggest-tags~.
+
+*** ~tlon-yaml-insert-translated-tags~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-insert-translated-tags
+:END:
+#+findex: tlon-yaml-insert-translated-tags
+
+Insert translated tag titles into FILE's YAML metadata.  The function
+looks at the English counterpart of FILE, reads its =tags= field, maps
+every tag slug to its tag file in English, locates the tag translation
+into the language of FILE, retrieves the translated tag's =title=, and
+writes the list of titles back to FILE as the value of the =tags= field.
+
+When the target-language tag file cannot be found, the command falls back
+to the glossary: it looks up the English tag title and uses its
+translation into the target language.  It also reports which tags were
+translated via the glossary.
+
+*** ~tlon-yaml-insert-translated-tags-in-dir~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-insert-translated-tags-in-dir
+:END:
+#+findex: tlon-yaml-insert-translated-tags-in-dir
+
+Walk the current directory (non-recursively) and call
+~tlon-yaml-insert-translated-tags~ for each article file that lacks a
+=tags= field.  With a numeric prefix argument, only process the first N
+such files.
+
+** AI counterpart guessing
+:PROPERTIES:
+:CUSTOM_ID: h:ai-counterpart-guessing
+:END:
+
+*** ~tlon-yaml-guess-english-counterpart~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-guess-english-counterpart
+:END:
+#+findex: tlon-yaml-guess-english-counterpart
+
+Use an AI model to guess the English counterpart filename for the tag or
+author at point.  The command sends the current YAML =title= and the list
+of candidate filenames from the English repository's tags or authors
+folder, expects the model to return the exact matching filename, and
+inserts it into the YAML under =original_path=.
+
+If =original_path= already exists, the command asks for confirmation when
+called interactively and does nothing when called programmatically.
+
+*** ~tlon-yaml-guess-english-counterpart-in-dir~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-guess-english-counterpart-in-dir
+:END:
+#+findex: tlon-yaml-guess-english-counterpart-in-dir
+
+Walk the current directory (non-recursively) and call
+~tlon-yaml-guess-english-counterpart~ for each tag or author file.  With a
+numeric argument, only process the first N files that do not already have
+an =original_path= field.
+
+** Batch and directory operations
+:PROPERTIES:
+:CUSTOM_ID: h:batch-operations
+:END:
+
+*** ~tlon-yaml-list-files-missing-field-in-dir~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-list-files-missing-field-in-dir
+:END:
+#+findex: tlon-yaml-list-files-missing-field-in-dir
+
+List Markdown files in the directory at point that are missing a YAML
+FIELD.  You are prompted for FIELD from the union of valid keys found
+among file types present in DIR.  The search is non-recursive (top level
+only).  Results are displayed in a temporary buffer and the list of file
+paths is returned.
+
+*** ~tlon-yaml-delete-field-in-dir~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-delete-field-in-dir
+:END:
+#+findex: tlon-yaml-delete-field-in-dir
+
+Delete a YAML FIELD from all Markdown files in DIR, non-recursively.  You
+are prompted for FIELD and DIR, with DIR defaulting to the current
+directory.  A summary is displayed and the list of modified files is
+returned.
+
+** Metadata retrieval
+:PROPERTIES:
+:CUSTOM_ID: h:metadata-retrieval-commands
+:END:
+
+*** ~tlon-metadata-in-repos~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-metadata-in-repos
+:END:
+#+findex: tlon-metadata-in-repos
+
+Return metadata of all repos matching all PAIRS, where PAIRS is an
+even-sized list of =<key value>= tuples.  This aggregates metadata from
+every matching repository via ~tlon-metadata-in-repo~.
+
+*** ~tlon-metadata-in-repo~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-metadata-in-repo
+:END:
+#+findex: tlon-metadata-in-repo
+
+Return metadata of REPO.  If REPO is nil, return metadata of the current
+repository.  Only operates on repos whose =:type= is =content=.
+
+*** ~tlon-metadata-in-dir~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-metadata-in-dir
+:END:
+#+findex: tlon-metadata-in-dir
+
+Return the metadata in DIR and all its subdirectories as an association
+list.  Each element corresponds to one Markdown file found recursively
+under DIR.
+
+*** ~tlon-yaml-get-key~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-get-key
+:END:
+#+findex: tlon-yaml-get-key
+
+Get the value of KEY in the YAML metadata of FILE-OR-BUFFER.  If
+FILE-OR-BUFFER is nil, use the file visited by the current buffer.
+
+*** ~tlon-yaml-get-key-values~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-get-key-values
+:END:
+#+findex: tlon-yaml-get-key-values
+
+Return the admissible values for a YAML field with KEY.  For ="authors"=
+returns all author titles in the current repo, for ="tags"= all tag
+titles, for ="date"= the current timestamp, for ="original_path"= the
+filenames in the counterpart directory, and for ="publication_status"=
+the list of valid statuses.
 
 ** Maintenance helpers
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-yaml-maintenance
+:CUSTOM_ID: h:maintenance-helpers
 :END:
 
-#+findex: tlon-yaml-lowercase-fr-tag-titles
-+ ~tlon-yaml-lowercase-fr-tag-titles~ :: Temporarily lowercases only the first
-  word of the YAML ~title~ field for every Markdown file under a given
-  directory, defaulting to
-  =/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-fr/sujets=.
-  Operates recursively and only updates files whose title actually changes.
+*** ~tlon-yaml-lowercase-it-tag-titles~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-lowercase-it-tag-titles
+:END:
+#+findex: tlon-yaml-lowercase-it-tag-titles
 
+Lowercase only the first word of the YAML =title= field for every
+Markdown file under a given directory (defaulting to the Italian tags
+directory).  Operates recursively and only updates files whose title
+actually changes.  This is a temporary clean-up helper.
+
+*** ~tlon-yaml-uncapitalize-fr-article-tags~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-uncapitalize-fr-article-tags
+:END:
 #+findex: tlon-yaml-uncapitalize-fr-article-tags
-+ ~tlon-yaml-uncapitalize-fr-article-tags~ :: Temporarily lowercases only the
-  first word of each tag in the YAML ~tags~ field for every Markdown file under
-  =/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-fr/articles=.
-  Operates recursively and only updates files whose tags actually change.
 
-#+findex: tlon-yaml-delete-field-in-dir
-+ ~tlon-yaml-delete-field-in-dir~ :: Deletes a YAML FIELD from all Markdown
-  files in DIR, non-recursively. Prompts for FIELD and DIR, with DIR defaulting
-  to the current directory. Displays a summary and returns the list of files
-  modified.
+Lowercase only the first word of each tag in the YAML =tags= field for
+every Markdown file under the French articles directory.  Operates
+recursively and only updates files whose tags actually change.  This is a
+temporary clean-up helper.
 
+*** ~tlon-yaml-ko-backfill-original-keys~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-ko-backfill-original-keys
+:END:
 #+findex: tlon-yaml-ko-backfill-original-keys
-+ ~tlon-yaml-ko-backfill-original-keys~ :: For a curated list of Korean
-  articles, set ~original_key~ by reading ~original_path~, opening the English
-  counterpart under =/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-en/article/=,
-  retrieving its YAML ~key~, and writing it back. Skips files that already have
-  ~original_key~ and prints a summary.
 
+For a curated list of Korean articles, set =original_key= by reading
+=original_path=, opening the English counterpart, retrieving its YAML
+=key=, and writing it back.  Skips files that already have =original_key=
+and prints a summary.
+
+*** ~tlon-yaml-collect-english-tags-in-dir~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-collect-english-tags-in-dir
+:END:
 #+findex: tlon-yaml-collect-english-tags-in-dir
-+ ~tlon-yaml-collect-english-tags-in-dir~ :: Returns the list of unique English
-  tag titles found in the English counterparts of all Markdown files in the
-  current directory (non-recursive). Intended as a temporary helper.
+
+Return the list of unique English tag titles found in the English
+counterparts of all Markdown files in the current directory
+(non-recursive).  Intended as a temporary helper.
+
+*** ~tlon-yaml-sync-article-tags-to-es~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-sync-article-tags-to-es
+:END:
+#+findex: tlon-yaml-sync-article-tags-to-es
+
+Insert Spanish tag translations for all English articles in DIR.  The
+function iterates over every Markdown file under DIR (defaulting to the
+canonical =uqbar-en= articles directory) and calls
+~tlon-yaml-insert-translated-tags~ on each file that has a Spanish
+counterpart.  With a prefix argument, prompt for DIR.
+
+** Transient menu
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-menu
+:END:
+#+findex: tlon-yaml-menu
+
+The command ~tlon-yaml-menu~ activates a =transient= menu interface for
+YAML operations.  It provides the following groups:
+
+- *General*:
+  - =i= :: Insert or edit field (~tlon-yaml-insert-field~)
+  - =m= :: List files missing field in dir (~tlon-yaml-list-files-missing-field-in-dir~)
+  - =s= :: Set publication status (~tlon-yaml-set-publication-status~)
+  - =k= :: Copy key (~tlon-yaml-copy-key~)
+- *Tags*:
+  - =t s= :: Suggest tags (~tlon-yaml-suggest-tags~)
+  - =t S= :: Suggest tags in dir (~tlon-yaml-suggest-tags-in-dir~)
+  - =t t= :: Insert translated tags (~tlon-yaml-insert-translated-tags~)
+  - =t T= :: Insert translated tags in dir (~tlon-yaml-insert-translated-tags-in-dir~)
+  - =t g= :: Guess English counterpart (~tlon-yaml-guess-english-counterpart~)
+  - =t G= :: Guess counterparts in dir (~tlon-yaml-guess-english-counterpart-in-dir~)
+- *AI models*:
+  - =-t= :: Suggest tags model
+  - =-g= :: Guess counterpart model
+
+* Functions
+:PROPERTIES:
+:CUSTOM_ID: h:functions
+:END:
+
+** Parsing and formatting
+:PROPERTIES:
+:CUSTOM_ID: h:parsing-and-formatting
+:END:
+
+*** ~tlon-yaml-to-alist~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-to-alist
+:END:
+#+findex: tlon-yaml-to-alist
+
+Convert YAML STRINGS to an alist.  Each string is a line from a YAML
+block.  Lines matching =key: value= are parsed into cons cells.
+
+*** ~tlon-yaml-format-values-of-alist~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-format-values-of-alist
+:END:
+#+findex: tlon-yaml-format-values-of-alist
+
+Format the values of ALIST, converting from YAML format to Elisp format.
+Each value is passed through ~tlon-yaml-format-value~.
+
+*** ~tlon-yaml-format-value~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-format-value
+:END:
+#+findex: tlon-yaml-format-value
+
+Format VALUE by converting from the YAML format to an Elisp format.
+Bracketed lists become Elisp lists, quoted strings are unquoted, and other
+values are returned as-is.
+
+*** ~tlon-yaml-read-until-match~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-read-until-match
+:END:
+#+findex: tlon-yaml-read-until-match
+
+Return a list of lines until DELIMITER is matched.  The delimiter is not
+included in the result.  If DELIMITER is not found, signal an error.
+
+*** ~tlon-yaml-convert-list~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-convert-list
+:END:
+#+findex: tlon-yaml-convert-list
+
+Convert an Elisp LIST to a YAML list string of the form =["a", "b"]=.
+
+** Metadata retrieval helpers
+:PROPERTIES:
+:CUSTOM_ID: h:metadata-retrieval-helpers
+:END:
+
+*** ~tlon-metadata-in-file~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-metadata-in-file
+:END:
+#+findex: tlon-metadata-in-file
+
+Return the metadata in FILE-OR-BUFFER as an association list.  This
+includes the YAML metadata at the beginning of the file, as well as
+additional computed metadata such as the file name, database identifier,
+language, and file type.
+
+*** ~tlon-yaml-get-metadata~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-get-metadata
+:END:
+#+findex: tlon-yaml-get-metadata
+
+Return the YAML metadata from FILE-OR-BUFFER as strings in a list.  If
+FILE-OR-BUFFER is nil, use the current buffer.  Return the metadata as an
+alist, unless RAW is non-nil, in which case the raw list of line strings
+is returned.
+
+*** ~tlon-yaml-get-list~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-get-list
+:END:
+#+findex: tlon-yaml-get-list
+
+Return KEY's YAML value from FILE-OR-BUFFER as a list of strings.  If the
+YAML value is a bracketed list string (e.g., ="[a, b]"=), parse it.  If
+it is a non-empty string, return it as a singleton list.  Return nil when
+the key is absent or empty.
+
+*** ~tlon-yaml-get-type~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-get-type
+:END:
+#+findex: tlon-yaml-get-type
+
+Return the canonical type for FILE based on its directory.  The result is
+one of ="article"=, ="tag"=, ="author"=, or ="collection"=.  When FILE is
+nil, use the current buffer's file.
+
+*** ~tlon-yaml-get-valid-keys~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-get-valid-keys
+:END:
+#+findex: tlon-yaml-get-valid-keys
+
+Return the admissible keys for YAML metadata in FILE.  If FILE is nil,
+use the current buffer's file.  If TYPE is nil, derive it from the
+directory name.  If NO-CORE is non-nil, exclude core keys as defined in
+~tlon-yaml-core-keys~.
+
+*** ~tlon-yaml-get-filenames-in-dir~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-get-filenames-in-dir
+:END:
+#+findex: tlon-yaml-get-filenames-in-dir
+
+Return a list of all filenames in DIR.  If DIR is nil, use the current
+directory.  EXTENSION defaults to ="md"=.  If you want to search all
+files, use the empty string.
+
+*** ~tlon-yaml-get-field-at-point~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-get-field-at-point
+:END:
+#+findex: tlon-yaml-get-field-at-point
+
+Return a list with the YAML key and value at point, or nil if there is
+none.  Parses the current line by splitting on =:=.
+
+*** ~tlon-yaml-get-original-path~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-get-original-path
+:END:
+#+findex: tlon-yaml-get-original-path
+
+Get the value of =original_path= YAML field.  Accumulate the list of all
+files of the current type in the English version of the current project.
+
+*** ~tlon-metadata-get-values-of-all-types~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-metadata-get-values-of-all-types
+:END:
+#+findex: tlon-metadata-get-values-of-all-types
+
+Get a list of all =uqbar-en= entities.  Returns the titles of all
+articles, authors, and tags in the current repository.
+
+*** ~tlon-metadata-get-translators~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-metadata-get-translators
+:END:
+#+findex: tlon-metadata-get-translators
+
+Get a list of translators in all =translations= repos.
+
+** Metadata modification helpers
+:PROPERTIES:
+:CUSTOM_ID: h:metadata-modification-helpers
+:END:
+
+*** ~tlon-yaml-insert-metadata-section~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-insert-metadata-section
+:END:
+#+findex: tlon-yaml-insert-metadata-section
+
+Insert a YAML metadata section in FILE, when it does not already contain
+one.  If FILE is nil, use the file visited by the current buffer.  Signal
+an error if the file already has a metadata section.
+
+*** ~tlon-yaml-insert-fields~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-insert-fields
+:END:
+#+findex: tlon-yaml-insert-fields
+
+Insert YAML FIELDS in the buffer at point.  FIELDS is an alist, typically
+generated via ~tlon-yaml-to-alist~.  Inserts the opening delimiter,
+formatted key-value pairs, and the closing delimiter.
+
+*** ~tlon-yaml-delete-metadata~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-delete-metadata
+:END:
+#+findex: tlon-yaml-delete-metadata
+
+Delete the entire YAML metadata section from the current buffer.  Signal
+an error if no metadata section is found.
+
+*** ~tlon-yaml-delete-field~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-delete-field
+:END:
+#+findex: tlon-yaml-delete-field
+
+Delete the YAML field with KEY in FILE.  If KEY is nil, prompt for it.
+Handles multiline fields (e.g., block scalars) by consuming indented
+continuation lines.  Signal errors if the metadata section or key is not
+found.
+
+*** ~tlon-yaml-reorder-metadata~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-reorder-metadata
+:END:
+#+findex: tlon-yaml-reorder-metadata
+
+Reorder the YAML metadata in the buffer at point.  The fields are sorted
+according to the canonical key order for the file type, as returned by
+~tlon-yaml-get-valid-keys~.
+
+*** ~tlon-yaml-sort-fields~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-sort-fields
+:END:
+#+findex: tlon-yaml-sort-fields
+
+Sort alist of YAML FIELDS by order of KEYS.  If one of FIELDS is not
+found, throw an error unless NO-ERROR is non-nil.
+
+*** ~tlon-yaml-write-field~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-write-field
+:END:
+#+findex: tlon-yaml-write-field
+
+Set KEY to VALUE in FILE.  Inserts the field after the opening delimiter
+and then reorders the metadata.
+
+*** ~tlon-yaml-set-key~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-set-key
+:END:
+#+findex: tlon-yaml-set-key
+
+Set the value of the YAML field with KEY.  You are prompted to select
+multiple values via =completing-read-multiple=, and the result is
+formatted as a YAML list.
+
+*** ~tlon-yaml-set-key-value~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-set-key-value
+:END:
+#+findex: tlon-yaml-set-key-value
+
+Set the value of the YAML field with KEY by prompting from the admissible
+values returned by ~tlon-yaml-get-key-values~.
+
+*** ~tlon-yaml-insert-key-value~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-insert-key-value
+:END:
+#+findex: tlon-yaml-insert-key-value
+
+Insert a YAML field with KEY and VALUE.  For list-valued keys (authors,
+translators, tags), delegate to ~tlon-yaml-insert-list~; for scalar keys,
+delegate to ~tlon-yaml-insert-string~.
+
+** File and translation management
+:PROPERTIES:
+:CUSTOM_ID: h:file-and-translation-management
+:END:
+
+*** ~tlon-initialize-translation-metadata~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-initialize-translation-metadata
+:END:
+#+findex: tlon-initialize-translation-metadata
+
+Set the initial metadata section for a FILE that translates ORIGINAL.
+This function creates a new metadata section in FILE, and sets the value
+of =original_path=.  The type is derived from the directory structure.
+
+*** ~tlon-name-file-from-title~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-name-file-from-title
+:END:
+#+findex: tlon-name-file-from-title
+
+Save the current buffer to a file named after TITLE.  Set the name to the
+slugified version of TITLE with the extension =.md=.  If TITLE is nil,
+get it from the file metadata.  If the file doesn't have metadata, prompt
+for a title.  When the buffer is already visiting a file, prompt for
+confirmation before renaming.
+
+*** ~tlon-set-file-from-title~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-set-file-from-title
+:END:
+#+findex: tlon-set-file-from-title
+
+Set the file path based on its title.  The file name is the slugified
+version of TITLE with the extension =.md=.  This is appended to DIR to
+generate the file path.  If DIR is not provided, prompt for one.
+
+** BibTeX integration
+:PROPERTIES:
+:CUSTOM_ID: h:bibtex-integration
+:END:
+
+*** ~tlon-get-bibtex-key~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-get-bibtex-key
+:END:
+#+findex: tlon-get-bibtex-key
+
+Get the BibTeX key of the selected work.  INITIAL-INPUT is used as the
+initial input for the =citar= completion.
+
+*** ~tlon-yaml-get-bibtex-key-values~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-get-bibtex-key-values
+:END:
+#+findex: tlon-yaml-get-bibtex-key-values
+
+Return the BibTeX key of the work at point appropriate for FIELD.  If
+FIELD is =original_key=, return the BibTeX key of the original work.  If
+FIELD is =translation_key=, return the BibTeX key of the translation.
+
+*** ~tlon-yaml-select-key-values~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-select-key-values
+:END:
+#+findex: tlon-yaml-select-key-values
+
+Select a value for a YAML field with KEY from a list of VALUES.  The
+prompt and input method vary depending on the key type (list-valued keys
+use =completing-read=, string-valued keys use =read-string=, BibTeX keys
+use ~tlon-yaml-get-bibtex-key-values~).
+
+* Indices
+:PROPERTIES:
+:CUSTOM_ID: h:indices
+:END:
+
+** Function index
+:PROPERTIES:
+:INDEX: fn
+:CUSTOM_ID: h:function-index
+:END:
+
+** Variable index
+:PROPERTIES:
+:INDEX: vr
+:CUSTOM_ID: h:variable-index
+:END:

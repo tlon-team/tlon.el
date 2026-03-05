@@ -1,169 +1,369 @@
-#+title: tlon - Document Importing
+#+title: tlon-import: Import functions for Tlon
 #+author: Pablo Stafforini
-#+EXCLUDE_TAGS: noexport
+#+email: pablo@stafforini.com
 #+language: en
-#+options: ':t toc:nil author:t email:t num:t
+#+options: ':t toc:t author:t email:t num:t
 #+startup: content
-#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
-#+texinfo_header: @set MAINTAINER Pablo Stafforini
-#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
-#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
-#+texinfo: @insertcopying
-* Document Importing (=tlon-import.el=)
+#+export_file_name: tlon-import.info
+#+texinfo_filename: tlon-import.info
+#+texinfo_dir_category: Emacs misc features
+#+texinfo_dir_title: Import: (tlon-import)
+#+texinfo_dir_desc: Import functions for Tlon
+
+This manual describes the features and customization options for the Emacs Lisp file =tlon-import.el=.
+
+* Overview
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-import
+:CUSTOM_ID: h:overview
 :END:
 
-This module provides functions for importing documents from various sources (web URLs, local PDFs, Effective Altruism Forum articles/tags) into the Tlön content structure, including conversion and metadata setup.
+The =tlon-import= module provides functions for importing documents from
+various sources -- web URLs, local PDFs, and the Effective Altruism Forum
+(EAF) API -- into the Tlon content structure.  It handles fetching or
+reading source content, converting it to Markdown via Pandoc or
+=pdftotext=, running cleanup and autofix passes, setting up YAML
+metadata, and downloading referenced images.  The primary entry point is
+~tlon-import-document~, which dispatches to the appropriate import
+pipeline based on whether the source is a URL or a PDF file path.
 
-** Configuration
+* User options
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-import-config
+:CUSTOM_ID: h:user-options
 :END:
 
-*** API URLs
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-import-api-urls
-:END:
-#+vindex: tlon-import-eaf-api-url
-+ ~tlon-import-eaf-api-url~ :: The URL for the Effective Altruism Forum GraphQL API endpoint.
-#+vindex: tlon-import-lw-api-url
-+ ~tlon-import-lw-api-url~ :: The URL for the LessWrong GraphQL API endpoint.
+This module does not define =defcustom= user options.  The following
+variables can be customized by setting them before loading or via
+=setq=:
 
-*** EAF Objects
+** ~tlon-pdf2md~
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-import-eaf-objects
-:END:
-#+vindex: tlon-import-eaf-objects
-+ ~tlon-import-eaf-objects~ :: A list of entity types supported by the EAF GraphQL API (e.g., =post=, =tag=).
-
-*** Pandoc Commands
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-import-pandoc
-:END:
-#+vindex: tlon-pandoc-to-markdown
-+ ~tlon-pandoc-to-markdown~ :: The core Pandoc command arguments for converting HTML to Tlön-flavored Markdown (raw HTML, native divs/spans, fenced divs/spans, bracketed spans, header attributes, fenced code blocks, no wrapping, strip comments).
-#+vindex: tlon-pandoc-convert-from-file
-+ ~tlon-pandoc-convert-from-file~ :: The full Pandoc command string for converting an HTML file to Markdown.
-#+vindex: tlon-pandoc-convert-from-url
-+ ~tlon-pandoc-convert-from-url~ :: The full Pandoc command string for converting HTML from a URL to Markdown.
-
-*** Executable Paths
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-import-executables
+:CUSTOM_ID: h:tlon-pdf2md
 :END:
 #+vindex: tlon-pdf2md
-+ ~tlon-pdf2md~ :: Path to the `pdf2md-cli.js` executable for PDF to Markdown conversion.
+
+Path to the =pdf2md-cli.js= executable for PDF to Markdown conversion.
+
+** ~tlon-pdftotext~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-pdftotext
+:END:
 #+vindex: tlon-pdftotext
-+ ~tlon-pdftotext~ :: Path to the `pdftotext` executable (from Poppler utilities) for PDF to text conversion.
 
-** Main Import Command
+Path to the =pdftotext= executable (from the Poppler utilities) for PDF
+to text conversion.
+
+- Default :: ="pdftotext"=
+
+* Commands
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-import-main
+:CUSTOM_ID: h:commands
 :END:
 
+** ~tlon-import-document~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-document
+:END:
 #+findex: tlon-import-document
-+ ~tlon-import-document~ :: The primary command to import a document. It likely orchestrates the process by prompting for the source (URL, file path, EAF identifier) and calling the appropriate specific import function (~tlon-import-html~, ~tlon-import-pdf~, ~tlon-import-eaf-html~).
 
-** Source-Specific Import Functions
+Import a new document from a URL or a PDF file.  This is the primary
+interactive entry point for the import workflow.
+
+When called from an =ebib= entry (either =ebib-entry-mode= or
+=ebib-index-mode=), the command reads the identifier (URL or file path),
+title, and BibTeX key from the current entry.  If the entry is a
+translation entry, the command navigates to the original entry and asks
+for confirmation before proceeding.
+
+When called outside of =ebib=, you are prompted for each detail manually.
+
+Depending on whether the identifier is a URL or a file path:
+
+- URLs are dispatched to ~tlon-import-html~, which checks for EAF
+  content first and falls back to generic HTML-to-Markdown conversion.
+- File paths are dispatched to ~tlon-import-pdf~.
+
+After import, the command inserts the BibTeX =key= into the YAML metadata,
+suggests tags via ~tlon-yaml-suggest-tags~, and downloads images from the
+Markdown via ~tlon-images-download-from-markdown~.
+
+* Functions
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-import-specific
+:CUSTOM_ID: h:functions
 :END:
 
-*** Importing HTML
+** HTML import
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-import-html-section
+:CUSTOM_ID: h:html-import
 :END:
 
+*** ~tlon-import-html~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-html
+:END:
 #+findex: tlon-import-html
-+ ~tlon-import-html~ :: Imports content from a given web URL. It fetches the HTML content, optionally saves it locally (~tlon-import-save-html-to-file~), converts it to Markdown (~tlon-import-convert-html-to-markdown~), and sets up the target file structure and metadata (~tlon-import-set-target~). Accepts an optional TITLE override.
 
-#+findex: tlon-import-save-html-to-file
-+ ~tlon-import-save-html-to-file~ :: Saves the fetched HTML content to a temporary file, returning the file path.
+Import the HTML in URL and convert it to Markdown.  TITLE optionally
+specifies the title of the file to be imported.  If the URL corresponds
+to an EAF entity (article or tag), the EAF API pipeline is used instead
+of generic conversion.
 
+*** ~tlon-import-convert-html-to-markdown~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-convert-html-to-markdown
+:END:
 #+findex: tlon-import-convert-html-to-markdown
-+ ~tlon-import-convert-html-to-markdown~ :: Converts an HTML SOURCE (file path or string) to Markdown format, likely using an external tool like Pandoc. Optionally uses a provided TITLE for metadata. When SOURCE is a URL under =https://80000hours.org/=, it automatically applies ~tlon-cleanup-80k~ after the common cleanup to fix 80,000 Hours–specific footnote formatting.
 
-*** Importing PDF
+Convert HTML text in SOURCE to Markdown.  SOURCE can be a URL or a file
+path.  If TITLE is not provided, prompt for one.  The function determines
+the bare directory (e.g., "articles") for the English originals repo, sets
+the target path, and runs the appropriate Pandoc command.  After
+conversion, it applies common cleanup (~tlon-cleanup-common~), autofixes
+(~tlon-autofix-all~), and when the source is a URL under
+=https://80000hours.org/=, it also applies ~tlon-cleanup-80k~ for
+site-specific footnote formatting.
+
+*** ~tlon-import-save-html-to-file~
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-import-pdf-section
+:CUSTOM_ID: h:tlon-import-save-html-to-file
+:END:
+#+findex: tlon-import-save-html-to-file
+
+Save the HTML string HTML to a temporary file and return the file path.
+
+** PDF import
+:PROPERTIES:
+:CUSTOM_ID: h:pdf-import
 :END:
 
+*** ~tlon-import-pdf~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-pdf
+:END:
 #+findex: tlon-import-pdf
-+ ~tlon-import-pdf~ :: Imports a document from a local PDF file specified by PATH. It converts the PDF to Markdown (~tlon-convert-pdf~) and sets up the target file structure and metadata (~tlon-import-set-target~). Accepts an optional TITLE override.
 
+Import the PDF in PATH and convert it to Markdown.  This command requires
+you to supply values for the header and footer elements to be excluded
+from the conversion, which are different for each PDF.  To determine
+these values, measure the distance between the top/bottom of the PDF
+(which will open in the other window) and note the number of pixels until
+the end of the header/footer.  Then enter these values when prompted.
+
+If TITLE is nil, prompt for one.
+
+Requires the =pdftotext= executable (install with =brew install poppler=).
+
+*** ~tlon-convert-pdf~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-convert-pdf
+:END:
 #+findex: tlon-convert-pdf
-+ ~tlon-convert-pdf~ :: Converts a PDF SOURCE file to Markdown, saving it to DESTINATION if provided, otherwise likely returning the Markdown content or saving to a standard location. Uses an external conversion tool.
 
-*** Importing from Effective Altruism Forum (EAF)
+Convert PDF in SOURCE to Markdown in DESTINATION.  If DESTINATION is nil,
+return the Markdown string.
+
+** EAF API integration
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-import-eaf
+:CUSTOM_ID: h:eaf-api-integration
 :END:
 
+*** ~tlon-import-eaf-html~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-eaf-html
+:END:
 #+findex: tlon-import-eaf-html
-+ ~tlon-import-eaf-html~ :: Imports an article or tag page from the Effective Altruism Forum using its API, identified by ID-OR-SLUG. It fetches the EAF data and then delegates to specific internal handlers for processing articles or tags. These handlers extract HTML content, convert it to Markdown, and set up the target file. Accepts an optional TITLE override.
 
-#+findex: tlon-import-eaf-request
-+ ~tlon-import-eaf-request~ :: Sends an API request to the EAF GraphQL endpoint for a specific article ID or tag SLUG. Can operate asynchronously (ASYNC non-nil).
+Import the HTML of an EAF entity with ID-OR-SLUG and convert it to
+Markdown.  TITLE optionally specifies the title.  Delegates to specific
+handlers for articles and tags.
 
-#+findex: tlon-import-eaf-article-query
-+ ~tlon-import-eaf-article-query~ :: Constructs the GraphQL query string for fetching an EAF article by ID.
-
-#+findex: tlon-import-eaf-tag-query
-+ ~tlon-import-eaf-tag-query~ :: Constructs the GraphQL query string for fetching an EAF tag page by SLUG.
-
-#+findex: tlon-import-eaf-get-article-result
-+ ~tlon-import-eaf-get-article-result~ :: Extracts the relevant article data portion from the EAF API RESPONSE.
-
-#+findex: tlon-import-eaf-get-article-html
-+ ~tlon-import-eaf-get-article-html~ :: Extracts the HTML content string from the EAF article API RESPONSE.
-
-#+findex: tlon-import-eaf-get-article-title
-+ ~tlon-import-eaf-get-article-title~ :: Extracts the title string from the EAF article API RESPONSE.
-
-#+findex: tlon-import-eaf-get-tag-result
-+ ~tlon-import-eaf-get-tag-result~ :: Extracts the relevant tag data portion from the EAF API RESPONSE.
-
-#+findex: tlon-import-eaf-get-tag-html
-+ ~tlon-import-eaf-get-tag-html~ :: Extracts the HTML content string from the EAF tag API RESPONSE.
-
-#+findex: tlon-import-eaf-get-tag-url
-+ ~tlon-import-eaf-get-tag-url~ :: Constructs the tag's URL from the EAF API RESPONSE using its slug.
-
-#+findex: tlon-import-eaf-get-tag-title
-+ ~tlon-import-eaf-get-tag-title~ :: Extracts the title string from the EAF tag API RESPONSE.
-
-#+findex: tlon-import-eaf-shorten-title
-+ ~tlon-import-eaf-shorten-title~ :: Shortens a potentially long EAF TITLE for use in filenames or metadata.
-
-#+findex: tlon-eaf-base-regexp
-+ ~tlon-eaf-base-regexp~ :: Returns a regular expression matching the base URL of the Effective Altruism Forum.
-
-#+findex: tlon-import-eaf-article-id-p
-+ ~tlon-import-eaf-article-id-p~ :: Checks if the given IDENTIFIER is likely an EAF article ID.
-
-#+findex: tlon-import-eaf-tag-slug-p
-+ ~tlon-import-eaf-tag-slug-p~ :: Checks if the given IDENTIFIER is likely an EAF tag slug.
-
-#+findex: tlon-import-eaf-get-id-or-slug-from-identifier
-+ ~tlon-import-eaf-get-id-or-slug-from-identifier~ :: Extracts the EAF article ID or tag slug from a Tlön IDENTIFIER (likely a filename or URL).
-
-#+findex: tlon-import-eaf-get-id-from-identifier
-+ ~tlon-import-eaf-get-id-from-identifier~ :: Extracts the EAF article ID specifically from a Tlön IDENTIFIER.
-
-#+findex: tlon-import-eaf-get-slug-from-identifier
-+ ~tlon-import-eaf-get-slug-from-identifier~ :: Extracts the EAF tag slug specifically from a Tlön IDENTIFIER.
-
-#+findex: tlon-import-eaf-get-type
-+ ~tlon-import-eaf-get-type~ :: Determines whether an ID-OR-SLUG refers to an 'article' or a 'tag'.
-
-** Helper Functions
+*** ~tlon-import-eaf-request~
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-import-helpers
+:CUSTOM_ID: h:tlon-import-eaf-request
+:END:
+#+findex: tlon-import-eaf-request
+
+Run an EAF request for ID-OR-SLUG.  If ASYNC is t, run the request
+asynchronously.  Sends a GraphQL query to the EAF API endpoint and
+returns the parsed response data.
+
+*** ~tlon-import-eaf-article-query~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-eaf-article-query
+:END:
+#+findex: tlon-import-eaf-article-query
+
+Return an EA Forum GraphQL query for a post whose ID is ID.  The query
+fetches the post's title, HTML body, URL, author information, coauthors,
+slug, and other metadata.
+
+*** ~tlon-import-eaf-tag-query~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-eaf-tag-query
+:END:
+#+findex: tlon-import-eaf-tag-query
+
+Return an EA Forum GraphQL query for a tag whose slug is SLUG.  The query
+fetches the tag's name, slug, HTML description, and parent tag.
+
+** EAF response parsing
+:PROPERTIES:
+:CUSTOM_ID: h:eaf-response-parsing
 :END:
 
-#+findex: tlon-get-import-details-from-ebib
-+ ~tlon-get-import-details-from-ebib~ :: Retrieves import details (like URL, title, associated files) from the =ebib= database for the entry at point.
+*** ~tlon-import-eaf-get-article-result~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-eaf-get-article-result
+:END:
+#+findex: tlon-import-eaf-get-article-result
 
+Get article details from EA Forum API RESPONSE.
+
+*** ~tlon-import-eaf-get-article-url~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-eaf-get-article-url
+:END:
+#+findex: tlon-import-eaf-get-article-url
+
+Get article URL from EA Forum API RESPONSE.
+
+*** ~tlon-import-eaf-get-article-html~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-eaf-get-article-html
+:END:
+#+findex: tlon-import-eaf-get-article-html
+
+Get article HTML from EA Forum API RESPONSE.
+
+*** ~tlon-import-eaf-get-article-title~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-eaf-get-article-title
+:END:
+#+findex: tlon-import-eaf-get-article-title
+
+Get article title from EA Forum API RESPONSE.
+
+*** ~tlon-import-eaf-get-tag-result~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-eaf-get-tag-result
+:END:
+#+findex: tlon-import-eaf-get-tag-result
+
+Get tag details from EA Forum API RESPONSE.
+
+*** ~tlon-import-eaf-get-tag-url~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-eaf-get-tag-url
+:END:
+#+findex: tlon-import-eaf-get-tag-url
+
+Construct tag URL from EA Forum API RESPONSE.  The URL is constructed
+using the tag's slug.
+
+*** ~tlon-import-eaf-get-tag-html~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-eaf-get-tag-html
+:END:
+#+findex: tlon-import-eaf-get-tag-html
+
+Get tag HTML from EA Forum API RESPONSE.
+
+*** ~tlon-import-eaf-get-tag-title~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-eaf-get-tag-title
+:END:
+#+findex: tlon-import-eaf-get-tag-title
+
+Get tag title from EA Forum API RESPONSE.
+
+*** ~tlon-import-eaf-shorten-title~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-eaf-shorten-title
+:END:
+#+findex: tlon-import-eaf-shorten-title
+
+Return a shortened version of TITLE.  Extracts the leading alphanumeric
+portion of the title (including spaces and common punctuation) for use in
+filenames.
+
+** EAF validation
+:PROPERTIES:
+:CUSTOM_ID: h:eaf-validation
+:END:
+
+*** ~tlon-import-eaf-get-id-or-slug-from-identifier~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-eaf-get-id-or-slug-from-identifier
+:END:
+#+findex: tlon-import-eaf-get-id-or-slug-from-identifier
+
+Return the EAF post ID or tag slug from IDENTIFIER, if found.  IDENTIFIER
+can be a URL, a post ID, or a tag slug.
+
+*** ~tlon-import-eaf-article-id-p~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-eaf-article-id-p
+:END:
+#+findex: tlon-import-eaf-article-id-p
+
+Return t if IDENTIFIER is a post ID, nil otherwise.
+
+*** ~tlon-import-eaf-tag-slug-p~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-eaf-tag-slug-p
+:END:
+#+findex: tlon-import-eaf-tag-slug-p
+
+Return t if IDENTIFIER is a tag slug, nil otherwise.
+
+*** ~tlon-import-eaf-get-type~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-eaf-get-type
+:END:
+#+findex: tlon-import-eaf-get-type
+
+Return the EAF type in ID-OR-SLUG (=article= or =tag=).  Signal an error
+if the identifier is neither.
+
+** Helper functions
+:PROPERTIES:
+:CUSTOM_ID: h:helper-functions
+:END:
+
+*** ~tlon-get-import-details-from-ebib~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-get-import-details-from-ebib
+:END:
+#+findex: tlon-get-import-details-from-ebib
+
+Get the relevant details for importing a document from the current BibTeX
+entry.  Returns a list of (identifier title key) when called from
+=ebib-entry-mode= or =ebib-index-mode=.  Signal an error if the entry is
+missing one of =url= or =file=, =title=, or =key=.
+
+*** ~tlon-import-set-target~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-set-target
+:END:
 #+findex: tlon-import-set-target
-+ ~tlon-import-set-target~ :: Determines the target directory and filename for the imported document, potentially using the provided TITLE and BARE-DIR, and sets up the necessary file structure and initial metadata.
+
+Set the target file path for the imported document.  If TITLE is nil,
+prompt for one.  BARE-DIR specifies the bare directory of the entity
+being imported (e.g., "articles" or "tags").  You are prompted to
+confirm or edit the proposed save path.
+
+* Indices
+:PROPERTIES:
+:CUSTOM_ID: h:indices
+:END:
+
+** Function index
+:PROPERTIES:
+:INDEX: fn
+:CUSTOM_ID: h:function-index
+:END:
+
+** Variable index
+:PROPERTIES:
+:INDEX: vr
+:CUSTOM_ID: h:variable-index
+:END:
