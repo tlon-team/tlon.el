@@ -1,175 +1,328 @@
-#+title: tlon - Dubbing
+#+title: tlon-dub: Dubbing functionality using ElevenLabs
 #+author: Pablo Stafforini
-#+EXCLUDE_TAGS: noexport
+#+email: pablo@stafforini.com
 #+language: en
-#+options: ':t toc:nil author:t email:t num:t
+#+options: ':t toc:t author:t email:t num:t
 #+startup: content
-#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
-#+texinfo_header: @set MAINTAINER Pablo Stafforini
-#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
-#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
-#+texinfo: @insertcopying
-* Dubbing (=tlon-dub.el=)
+#+export_file_name: tlon-dub.info
+#+texinfo_filename: tlon-dub.info
+#+texinfo_dir_category: Emacs misc features
+#+texinfo_dir_title: tlon-dub: (tlon-dub)
+#+texinfo_dir_desc: Dubbing functionality using ElevenLabs
+
+This manual describes the features and customization options for the Emacs Lisp file =tlon-dub.el=.
+
+* Overview
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-dub
+:CUSTOM_ID: h:overview
 :END:
 
-This module provides functionality to interact with the ElevenLabs Dubbing API, allowing users to dub audio or video files into different languages.
+The =tlon-dub= module provides functionality for dubbing audio and video files into different languages.  It integrates with the ElevenLabs Dubbing API for cloud-based dubbing, uses WhisperX for local transcription and diarization, and includes tools for splitting/joining audio and video files, SRT manipulation (cleaning, resegmenting, converting to CSV), and audio extraction/replacement -- all using =ffmpeg=.
 
-** Dependencies
+The module depends on =tlon-core=, =tlon-tts=, =tlon-whisperx=, =json=, =threads=, =transient=, and =cl-lib=.  External tools: =curl= (for API requests), =ffmpeg= and =ffprobe= (for audio/video manipulation), and =whisperx= (for local transcription).
+
+* Commands
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-dub-dependencies
+:CUSTOM_ID: h:commands
 :END:
 
-+ =tlon-core=
-+ =tlon-tts= (for API key retrieval and language selection)
-+ =json= (for parsing API responses)
-+ =threads= (for the =cond->= macro)
-+ =transient= (for the menu system)
-+ External tools: =curl= (for API requests), =whisperx= (for local transcription).
-
-
-** User Options
+** ElevenLabs API
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-dub-options
+:CUSTOM_ID: h:elevenlabs-api
 :END:
 
-
-** Commands
+*** ~tlon-dub-start-project~
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-dub-commands
+:CUSTOM_ID: h:tlon-dub-start-project
 :END:
-
 #+findex: tlon-dub-start-project
-+ ~tlon-dub-start-project~ :: (Autoloaded) Initiates a new dubbing project with ElevenLabs. Prompts for the source *audio/video file*, source language (ISO code), target language (ISO code), a name for the project, and optionally: a specific ElevenLabs voice ID, whether to create in *Dubbing Studio mode* (allows adjustments via the web UI), and the expected *number of speakers*. The function checks if the source file has a supported audio/video extension (e.g., mp3, wav, mp4, webm) before proceeding. It sends the request to the ElevenLabs API and displays the response, which typically includes the =dubbing_id=. *After successful creation, it automatically attempts to share the project with the user associated with the current API key (using the top-level =user_email= field and =tlon-email-shared=) with 'editor' permissions to enable further API interactions.* Signals an error if the file type is not supported or if project creation fails. Logs a warning if sharing fails.
 
+Start a new ElevenLabs dubbing project.  Prompts for the SOURCE-FILE (audio or video), SOURCE-LANG (ISO code), TARGET-LANG (ISO code), and PROJECT-NAME.  Optionally accepts VOICE-ID (an ElevenLabs voice), DUBBING-STUDIO (whether to create in Dubbing Studio mode for web-based adjustments), and NUM-SPEAKERS (expected number of speakers; 0 means auto-detect).
+
+The command validates that the source file has a supported media extension (e.g., mp3, wav, mp4, webm) before proceeding.  After successful creation, it automatically attempts to share the project with the user associated with the current API key (via ~tlon-dub--share-project-with-self~) with ="editor"= permissions.  Returns the parsed JSON response, which typically contains the =dubbing_id=.  Signals an error if the file type is unsupported or creation fails; logs a warning if sharing fails.
+
+*** ~tlon-dub-get-project-metadata~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dub-get-project-metadata
+:END:
 #+findex: tlon-dub-get-project-metadata
-+ ~tlon-dub-get-project-metadata~ :: (Autoloaded) Retrieves metadata for an existing ElevenLabs dubbing project. Prompts for the =dubbing_id= of the project. It sends a GET request to the API and displays the JSON response containing project details like status, languages, etc.
 
+Retrieve metadata for an existing ElevenLabs dubbing project.  Prompts for the DUBBING-ID.  Returns the parsed JSON response containing project details (status, languages, etc.).
+
+*** ~tlon-dub-get-dubbing~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dub-get-dubbing
+:END:
 #+findex: tlon-dub-get-dubbing
-+ ~tlon-dub-get-dubbing~ :: (Autoloaded) Retrieves and parses the dubbing (expected VTT format) for a specific language within an ElevenLabs dubbing project. Prompts for the =dubbing_id= and the desired =language_code= (e.g., "en", "es"). It attempts to parse the VTT file into a list of segments (plists with =:start=, =:end=, =:text=). Displays the parsed segments (pretty-printed) in a new buffer or the raw transcript if parsing fails. Returns the list of segments or the raw transcript string.
 
+Retrieve and parse the dubbing transcript (VTT format) for a specific language within an ElevenLabs dubbing project.  Prompts for the DUBBING-ID and LANGUAGE-CODE (ISO code).  The VTT response is parsed into a list of segment plists (=:start=, =:end=, =:text=) and displayed in a new buffer.  If parsing fails, the raw transcript is displayed instead.  Returns the segment list or the raw transcript string.
+
+*** ~tlon-dub-get-resource-data~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dub-get-resource-data
+:END:
 #+findex: tlon-dub-get-resource-data
-+ ~tlon-dub-get-resource-data~ :: (Autoloaded) Retrieves the detailed resource structure for an ElevenLabs dubbing project. Prompts for the =dubbing_id=. This endpoint is expected to return JSON containing resource, speaker, and segment IDs needed for modification. Displays the parsed JSON response (pretty-printed) in a new buffer or the raw response if parsing fails.
 
+Retrieve the detailed resource structure for an ElevenLabs dubbing project.  Prompts for the DUBBING-ID.  The response typically contains resource, speaker, and segment IDs needed for modifications.  Displays the parsed JSON (or raw response) in a new buffer.
+
+*** ~tlon-dub-add-speaker-segment~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dub-add-speaker-segment
+:END:
 #+findex: tlon-dub-add-speaker-segment
-+ ~tlon-dub-add-speaker-segment~ :: (Autoloaded) Adds a new segment for a specific speaker within an ElevenLabs dubbing project. Prompts for the =dubbing_id=, =speaker_id=, segment =start_time= (float, seconds), =end_time= (float, seconds), and the segment =text=. Sends a POST request to the API and displays the response.
+
+Add a new segment for a specific speaker within an ElevenLabs dubbing project.  Prompts for DUBBING-ID, SPEAKER-ID, START-TIME (seconds, float), END-TIME (seconds, float), and TEXT.
+
+** Transcription and diarization
+:PROPERTIES:
+:CUSTOM_ID: h:transcription
+:END:
+
+*** ~tlon-dub-transcribe-with-whisperx~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dub-transcribe-with-whisperx
+:END:
 #+findex: tlon-dub-transcribe-with-whisperx
-+ ~tlon-dub-transcribe-with-whisperx~ :: (Autoloaded) Wrapper for ~tlon-whisperx-transcribe~. Generates a transcript for AUDIO-FILE asynchronously using whisperx. FORMAT defaults to the value of ~tlon-dub-transcription-format~.
+
+Generate a transcript for AUDIO-FILE asynchronously using WhisperX.  FORMAT overrides ~tlon-dub-transcription-format~ (which can be set via the transient menu).  This is a wrapper around ~tlon-whisperx-transcribe~.
+
+*** ~tlon-dub-diarize-with-whisperx~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dub-diarize-with-whisperx
+:END:
 #+findex: tlon-dub-diarize-with-whisperx
-+ ~tlon-dub-diarize-with-whisperx~ :: (Autoloaded) Wrapper for ~tlon-whisperx-diarize~. Diarizes AUDIO-FILE with whisperx. Optional LANGUAGE defaults to "en". If SPEAKERS > 0, whisperx is instructed to use exactly that many speakers.
+
+Diarize AUDIO-FILE using WhisperX.  Optional LANGUAGE defaults to ="en"=.  If SPEAKERS is greater than 0, WhisperX is instructed to use exactly that many speakers.  This is a wrapper around ~tlon-whisperx-diarize~.
+
+** SRT manipulation
+:PROPERTIES:
+:CUSTOM_ID: h:srt-manipulation
+:END:
+
+*** ~tlon-dub-resegment-srt~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dub-resegment-srt
+:END:
+#+findex: tlon-dub-resegment-srt
+
+Resegment SRT-FILE into larger segments.  A new segment starts whenever the speaker changes, and each segment is at least MIN-DURATION seconds (default 5).  Subject to these constraints, segments are kept as short as possible (closing when a sentence-ending punctuation mark is found).  The resegmented file is written next to the original with the suffix =-resegmented.srt=.  Returns the list of merged segments.
+
+*** ~tlon-dub-clean-diarized-srt~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dub-clean-diarized-srt
+:END:
+#+findex: tlon-dub-clean-diarized-srt
+
+Convert a diarized SRT file (with =[SPEAKER_xx]= prefixes) into a cleaner SRT.  Interactively prompts for a human-readable name for each distinct speaker.  SPEAKER-ALIST may be supplied programmatically as =((\"00\" . \"Alice\") (\"01\" . \"Bob\"))=.  The first subtitle block of each speaker run is prefixed with ="Name: "=; subsequent contiguous blocks by the same speaker omit the prefix.  The cleaned file is written with the suffix =-cleaned.srt=.
+
+*** ~tlon-dub-convert-srt-to-csv~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dub-convert-srt-to-csv
+:END:
 #+findex: tlon-dub-convert-srt-to-csv
-+ ~tlon-dub-convert-srt-to-csv~ :: (Autoloaded) Converts a pair of timestamped English and translated SRT files into a CSV file formatted for ElevenLabs. Prompts for the =english-srt-file=, the =translated-srt-file=, and an =output-csv-file= path. The output CSV has columns: =speaker,start_time,end_time,transcription,translation=. The function validates that both SRT files have the same number of segments and that corresponding segments share identical start and end timestamps; it raises an error if these conditions are not met.
 
+Convert a pair of timestamped English and translated SRT files into a CSV file formatted for ElevenLabs.  Prompts for the ENGLISH-SRT-FILE and TRANSLATED-SRT-FILE.  The output CSV (named after the English SRT file) has columns: =speaker,start_time,end_time,transcription,translation=.  The function validates that both SRT files have the same number of segments and that corresponding segments share identical timestamps; signals an error otherwise.
 
+** Video splitting and joining
+:PROPERTIES:
+:CUSTOM_ID: h:video-splitting-joining
+:END:
 
+*** ~tlon-dub-split-video-at-timestamps~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dub-split-video-at-timestamps
+:END:
 #+findex: tlon-dub-split-video-at-timestamps
-+ ~tlon-dub-split-video-at-timestamps~ :: (Autoloaded) Splits a video into
-  parts based on a list of timestamps. Prompts for the =video-file= and a
-  =timestamps-file= (one timestamp per line, HH:MM:SS.mmm). Each part starts at
-  its timestamp and ends 40 ms before the next one, or at the end of the video
-  for the final part. The parts are saved as =<base>-partN.<ext>= alongside the
-  original file. Internally uses =ffmpeg -i <video> -ss <start> -to <end> -c
-  copy <partN>.<ext>=, omitting =-to= for the final part when the duration cannot
-  be determined.
 
-#+findex: tlon-dub-extract-audio-from-parts
-+ ~tlon-dub-extract-audio-from-parts~ :: (Autoloaded) Extracts audio streams from all video part files produced by ~tlon-dub-split-video-at-timestamps~. Prompts for the master =video-file=, finds all files named =<base>-partN.<ext>= in the same directory, and runs =ffmpeg -i <part> -vn -c:a copy <part>.wav= to create the corresponding =.wav= files. Returns the list of generated WAV files and signals an error if no part files are found.
+Split VIDEO-FILE into parts based on a TIMESTAMPS-FILE (one =HH:MM:SS.mmm= per line).  Each part starts at its timestamp and ends 40 ms before the next timestamp (or at the end of the video for the final part).  Parts are saved as =<base>-partN.<ext>= in OUTPUT-DIR (defaulting to the video's directory).  When QUICK is non-nil, the video stream is copied without re-encoding (faster but cuts only at keyframes).
 
+*** ~tlon-dub-split-video-at-timestamps-quick~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dub-split-video-at-timestamps-quick
+:END:
+#+findex: tlon-dub-split-video-at-timestamps-quick
+
+Convenience wrapper that calls ~tlon-dub-split-video-at-timestamps~ with QUICK set to non-nil.
+
+*** ~tlon-dub-join-video-files~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dub-join-video-files
+:END:
 #+findex: tlon-dub-join-video-files
-+ ~tlon-dub-join-video-files~ :: (Autoloaded) Join video files whose paths are listed line-by-line in LIST-FILE into OUTPUT-FILE. All files must share the same container and extension; the function uses =ffmpeg=’s concat demuxer under the hood. It is meant for recombining segments created by ~tlon-dub-split-video-at-timestamps~.
 
-#+findex: tlon-dub-split-audio-at-timestamps
-+ ~tlon-dub-split-audio-at-timestamps~ :: (Autoloaded) Splits an audio file into parts based on a list of timestamps. Prompts for the =audio-file= and a =timestamps-file= (one timestamp per line, HH:MM:SS.mmm). Each part is saved alongside the original file as =<base>-partN.<ext>=. Uses =ffmpeg= with =-ss= and =-to= options and copies the audio stream without re-encoding.
+Join video files whose paths are listed line-by-line in LIST-FILE into a single OUTPUT-FILE.  This is a convenience wrapper around ~tlon-dub-join-files~ intended for recombining segments created by ~tlon-dub-split-video-at-timestamps~.
 
+** Audio manipulation
+:PROPERTIES:
+:CUSTOM_ID: h:audio-manipulation
+:END:
+
+*** ~tlon-dub-extract-audio~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dub-extract-audio
+:END:
 #+findex: tlon-dub-extract-audio
-+ ~tlon-dub-extract-audio~ :: (Autoloaded) Extracts the audio track from a single video file and saves it as WAV alongside the original. Prompts for a =video-file= and optionally an =output-file=. Internally runs =ffmpeg -i <video> -vn -acodec pcm_s16le <base>.wav=. Returns the path of the created WAV.
 
+Extract the audio track from a single VIDEO-FILE and save it as a WAV file alongside the original.  Uses =ffmpeg= with uncompressed =pcm_s16le= encoding.  Returns the path of the created WAV file.
+
+*** ~tlon-dub-extract-audio-from-parts~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dub-extract-audio-from-parts
+:END:
+#+findex: tlon-dub-extract-audio-from-parts
+
+Extract audio (WAV) from all =<base>-partN= video files derived from VIDEO-FILE.  Prompts for the master video file, finds all matching part files in the same directory, and runs =ffmpeg= to create corresponding =.wav= files.  Returns the list of generated WAV filenames.  Signals an error if no part files are found.
+
+*** ~tlon-dub-replace-audio~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dub-replace-audio
+:END:
 #+findex: tlon-dub-replace-audio
-+ ~tlon-dub-replace-audio~ :: (Autoloaded) Replaces the audio track in a video
-  with an external audio file. Prompts for the =video-file= and the
-  =audio-file=, and optionally an =output-file=. Copies the video stream
-  without re-encoding and encodes the audio as AAC for broad compatibility.
-  Uses =ffmpeg= and returns the path to the created output file.
 
+Replace the audio track in VIDEO-FILE with AUDIO-FILE.  The video stream is copied without re-encoding; the audio is re-encoded as AAC.  If OUTPUT-FILE is =nil=, the result is saved as =<base>-replaced.<ext>=.  Returns the output path.
+
+*** ~tlon-dub-split-audio-at-timestamps~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dub-split-audio-at-timestamps
+:END:
+#+findex: tlon-dub-split-audio-at-timestamps
+
+Split AUDIO-FILE into parts based on a TIMESTAMPS-FILE (one =HH:MM:SS.mmm= per line).  Each part is saved alongside the original as =<base>-partN.<ext>=.  Uses =ffmpeg= with stream copy (no re-encoding).
+
+*** ~tlon-dub-join-audio-files~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dub-join-audio-files
+:END:
 #+findex: tlon-dub-join-audio-files
-+ ~tlon-dub-join-audio-files~ :: (Autoloaded) Convenience wrapper around ~tlon-dub-join-files~ that prompts for a list of audio files and produces a single joined output using =ffmpeg=. Suitable for concatenating audio segments produced by ~tlon-dub-split-audio-at-timestamps~.
 
-** Menu
+Join audio files whose paths are listed in LIST-FILE into a single output.  This is a convenience wrapper around ~tlon-dub-join-files~.
+
+** File joining
+:PROPERTIES:
+:CUSTOM_ID: h:file-joining
+:END:
+
+*** ~tlon-dub-join-files~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dub-join-files
+:END:
+#+findex: tlon-dub-join-files
+
+Join files listed line-by-line in LIST-FILE into OUTPUT-FILE.  If all listed files have a recognized media extension (e.g., mp4, wav, mp3), concatenation is performed with =ffmpeg= using the concat demuxer.  Otherwise, the files are treated as plain text and their contents are concatenated.  Blank lines and lines starting with =#= in LIST-FILE are ignored.  Signals an error if any listed file cannot be read or if =ffmpeg= fails.  Returns the path of OUTPUT-FILE.
+
+** Transient menu
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-dub-menu
 :END:
-
 #+findex: tlon-dub-menu
-+ ~tlon-dub-menu~ :: (Autoloaded) Displays a transient menu for Tlön Dubbing functionalities.
-  + *Transcription & Timestamps (srt)*:
-    + =t= :: Transcribe with WhisperX (Audio -> srt) (~tlon-dub-transcribe-with-whisperx~)
-    + =i= :: Diarize with WhisperX (Audio -> diarized srt/txt) (~tlon-dub-diarize-with-whisperx~)
-    + =x= :: Clean diarized SRT (-> -cleaned.srt) (~tlon-dub-clean-diarized-srt~)
-    + =c= :: Convert SRTs to CSV (en.srt + lang.srt -> .csv) (~tlon-dub-convert-srt-to-csv~)
-    + =r= :: Resegment SRT (speaker/min-30s) (~tlon-dub-resegment-srt~)
-    + =p= :: Split video by timestamps (video + txt -> parts)
-      (~tlon-dub-split-video-at-timestamps~)
-    + =u= :: Extract audio from parts (parts.mp4 -> parts.wav)
-      (~tlon-dub-extract-audio-from-parts~)
-    + =r= :: Replace audio in video (video + audio -> new video)
-      (~tlon-dub-replace-audio~)
-  + *ElevenLabs API*:
-    + =s= :: Start New Dubbing Project (~tlon-dub-start-project~)
-    + =d= :: Get Project Metadata (~tlon-dub-get-project-metadata~)
-    + =g= :: Get Dubbing Transcript (VTT) (~tlon-dub-get-dubbing~)
-    + =R= :: Get Resource Data (~tlon-dub-get-resource-data~)
-    + =A= :: Add Speaker Segment (~tlon-dub-add-speaker-segment~)
-  + *Options*:
-    + =-m= :: Propagation model (~tlon-dub-infix-select-propagation-model~)
-    + =-a= :: Alignment model (~tlon-dub-infix-select-alignment-model~)
-    + =-f= :: Transcription format (~tlon-dub-infix-select-transcription-format~)
 
-** Internal Functions and Variables
+The command ~tlon-dub-menu~ activates a =transient= menu for dubbing functionality.
+
+The menu provides the following groups:
+
+- *Transcription & Timestamps (srt)*:
+  - =t t= :: transcribe with WhisperX (~tlon-dub-transcribe-with-whisperx~)
+  - =t i= :: diarize with WhisperX (~tlon-dub-diarize-with-whisperx~)
+  - =t x= :: clean diarized SRT (~tlon-dub-clean-diarized-srt~)
+  - =t c= :: convert SRTs to CSV (~tlon-dub-convert-srt-to-csv~)
+  - =t r= :: resegment SRT (~tlon-dub-resegment-srt~)
+  - Options: =t -f= for transcription format (~tlon-dub-infix-select-transcription-format~)
+- *Audio & video manipulation*:
+  - Split: =s v= (video, quick), =s V= (video, precise), =s a= (audio)
+  - Join: =j v= (video), =j a= (audio)
+  - Extract: =e a= (audio from video), =e A= (audio from parts)
+  - Replace: =r a= (replace video audio)
+- *ElevenLabs API*:
+  - =a s= :: start new dubbing project (~tlon-dub-start-project~)
+  - =a d= :: get project metadata (~tlon-dub-get-project-metadata~)
+  - =a g= :: get dubbing transcript (~tlon-dub-get-dubbing~)
+  - =a r= :: get resource data (~tlon-dub-get-resource-data~)
+  - =a k= :: add speaker segment (~tlon-dub-add-speaker-segment~)
+
+* Functions
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-dub-internals
+:CUSTOM_ID: h:functions
 :END:
 
-*** Helper Functions
+** API helpers
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-dub-helpers
+:CUSTOM_ID: h:api-helpers
 :END:
-#+findex: tlon-dub--get-content-type
-+ ~tlon-dub--get-content-type~ :: Takes a filename and returns the corresponding MIME content type string (e.g., ="audio/mpeg"=, ="video/webm"=) based on its file extension. Returns =nil= if the extension is not recognized or not suitable for the dubbing API (e.g., text files).
-#+findex: tlon-dub--parse-vtt
-+ ~tlon-dub--parse-vtt~ :: Parses a string containing VTT transcript data. Returns a list of plists, where each plist represents a segment and contains =:start= (string), =:end= (string), and =:text= (string) keys. Returns nil or an incomplete list if parsing fails.
-#+findex: tlon-dub-convert-vtt-to-csv
-+ ~tlon-dub-convert-vtt-to-csv~ :: Converts a VTT file (in the complex format with headers, blank lines, tagged text, and duplicated entries) to a CSV file suitable for ElevenLabs.
-#+findex: tlon-dub--parse-srt
-+ ~tlon-dub--parse-srt~ :: Parses an SRT =file= and returns a list of segments. Each segment is a plist with =:start= (string, "HH:MM:SS,mmm"), =:end= (string, "HH:MM:SS,mmm"), and =:text= (string) keys. Handles optional segment numbers, optional paragraph numbers that may precede the timestamp line, and CR/LF line endings. Returns =nil= if parsing fails or the file is empty.
-#+findex: tlon-dub--csv-escape-string
-+ ~tlon-dub--csv-escape-string~ :: Escapes a =str= for CSV output by doubling any internal double quotes and then enclosing the entire string in double quotes.
+
 #+findex: tlon-dub--share-project-with-self
-+ ~tlon-dub--share-project-with-self~ :: (Internal) Shares a given resource ID (dubbing project ID) with the *user associated with the current API key* (using the top-level =user_email= field in the JSON payload and the email stored in =tlon-email-shared=) granting the "editor" role. Called automatically after project creation. Returns =t= on success, =nil= on failure.
+- ~tlon-dub--share-project-with-self~ :: Share the workspace RESOURCE-ID with the user associated with the current API key, granting the ="editor"= role.  Called automatically after project creation.  Returns =t= on success, =nil= on failure.
 
-*** Constants
+** Parsing helpers
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-dub-constants
+:CUSTOM_ID: h:parsing-helpers
 :END:
+
+#+findex: tlon-dub--parse-vtt
+- ~tlon-dub--parse-vtt~ :: Parse a VTT-STRING and return a list of segment plists with =:start=, =:end=, and =:text= keys.
+
+#+findex: tlon-dub--parse-srt
+- ~tlon-dub--parse-srt~ :: Parse an SRT FILE and return a list of segment plists with =:start=, =:end=, and =:text= keys.  Handles optional segment numbers, optional paragraph numbers preceding the timestamp line, and CR/LF line endings.
+
+#+findex: tlon-dub-convert-vtt-to-csv
+- ~tlon-dub-convert-vtt-to-csv~ :: Convert a VTT file (in the complex format with headers, blank lines, tagged text, and duplicated entries) to a CSV file formatted for ElevenLabs.  Returns the output file path.
+
+#+findex: tlon-dub--csv-escape-string
+- ~tlon-dub--csv-escape-string~ :: Escape STR for CSV output by doubling internal double quotes and enclosing the string in double quotes.
+
+#+findex: tlon-dub--get-content-type
+- ~tlon-dub--get-content-type~ :: Return the MIME content type for FILENAME based on its extension (e.g., ="audio/mpeg"= for =.mp3=, ="video/mp4"= for =.mp4=).  Returns =nil= for unrecognized extensions.
+
+* Constants
+:PROPERTIES:
+:CUSTOM_ID: h:constants
+:END:
+
 #+vindex: tlon-dub-api-base-url
-+ ~tlon-dub-api-base-url~ :: The base URL for the ElevenLabs v1 API ("https://api.elevenlabs.io/v1").
+- ~tlon-dub-api-base-url~ :: Base URL for the ElevenLabs v1 API (=https://api.elevenlabs.io/v1=).
+
 #+vindex: tlon-dub-start-project-endpoint
-+ ~tlon-dub-start-project-endpoint~ :: The specific API endpoint used for creating a new dubbing project ("/dubbing").
+- ~tlon-dub-start-project-endpoint~ :: API endpoint for starting a dubbing project (=/dubbing=).
+
 #+vindex: tlon-dub-get-project-metadata-endpoint
-+ ~tlon-dub-get-project-metadata-endpoint~ :: The API endpoint format string used for retrieving metadata about a specific dubbing project ("/dubbing/%s"). Requires the =dubbing_id= to be formatted into the string.
+- ~tlon-dub-get-project-metadata-endpoint~ :: API endpoint format string for getting project metadata (=/dubbing/%s=).
+
 #+vindex: tlon-dub-get-dubbing-endpoint
-+ ~tlon-dub-get-dubbing-endpoint~ :: The API endpoint format string used for retrieving the dubbing of a project for a specific language ("/dubbing/%s/transcript/%s"). Requires the =dubbing_id= and =language_code= to be formatted into the string.
+- ~tlon-dub-get-dubbing-endpoint~ :: API endpoint format string for getting a dubbing transcript (=/dubbing/%s/transcript/%s=).
+
 #+vindex: tlon-dub-get-resource-data-endpoint
-+ ~tlon-dub-get-resource-data-endpoint~ :: The API endpoint format string used for retrieving the detailed resource structure of a dubbing project ("/dubbing/resource/%s"). Requires the =dubbing_id= to be formatted into the string.
+- ~tlon-dub-get-resource-data-endpoint~ :: API endpoint format string for getting resource data (=/dubbing/resource/%s=).
+
 #+vindex: tlon-dub-share-resource-endpoint
-+ ~tlon-dub-share-resource-endpoint~ :: The API endpoint format string used for sharing a workspace resource ("/workspace/resources/%s/share"). Requires the =resource_id= (which is the =dubbing_id= for dubbing projects) to be formatted into the string.
+- ~tlon-dub-share-resource-endpoint~ :: API endpoint format string for sharing a workspace resource (=/workspace/resources/%s/share=).
+
 #+vindex: tlon-dub-add-speaker-segment-endpoint
-+ ~tlon-dub-add-speaker-segment-endpoint~ :: The API endpoint format string used for adding a segment to a specific speaker within a dubbing project ("/dubbing/resource/%s/speaker/%s/segment"). Requires the =dubbing_id= and =speaker_id= to be formatted into the string.
+- ~tlon-dub-add-speaker-segment-endpoint~ :: API endpoint format string for adding a speaker segment (=/dubbing/resource/%s/speaker/%s/segment=).
+
+#+vindex: tlon-dub-csv-header
+- ~tlon-dub-csv-header~ :: Header line for the ElevenLabs CSV file format (=speaker,start_time,end_time,transcription,translation=).
+
 #+vindex: tlon-dub--vtt-timestamp-line
-+ ~tlon-dub--vtt-timestamp-line~ :: Regexp to match a VTT timestamp line and capture start and end times (e.g., "00:00:00.240 --> 00:00:01.750"). Uses POSIX character classes.
-#+vindex: tlon-dub--vtt-timestamp-marker
-+ ~tlon-dub--vtt-timestamp-marker~ :: Regexp to identify the beginning of a VTT timestamp line (e.g., "00:00:00.240 -->"). Uses POSIX character classes.
+- ~tlon-dub--vtt-timestamp-line~ :: Regexp matching a VTT timestamp line and capturing start and end times.
+
+#+vindex: tlon-dub--srt-timestamp-line
+- ~tlon-dub--srt-timestamp-line~ :: Regexp matching an SRT timestamp line and capturing start and end times.
+
 #+vindex: tlon-dub--blank-line-regex
-+ ~tlon-dub--blank-line-regex~ :: Regexp to match a blank or whitespace-only line.
-#+vindex: tlon-dub--srt-timestamp-regex
-+ ~tlon-dub--srt-timestamp-regex~ :: Regexp to match an SRT timestamp line (e.g., "00:00:00,031 --> 00:00:06,360") and capture start and end times.
+- ~tlon-dub--blank-line-regex~ :: Regexp matching a blank or whitespace-only line.
+
+* Indices
+:PROPERTIES:
+:CUSTOM_ID: h:indices
+:END:
+
+** Function index
+:PROPERTIES:
+:INDEX: fn
+:CUSTOM_ID: h:function-index
+:END:
+
+** Variable index
+:PROPERTIES:
+:INDEX: vr
+:CUSTOM_ID: h:variable-index
+:END:

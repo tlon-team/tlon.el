@@ -1,248 +1,293 @@
-#+title: tlon - Image Processing
+#+title: tlon-images: Image processing functionality
 #+author: Pablo Stafforini
-#+EXCLUDE_TAGS: noexport
+#+email: pablo@stafforini.com
 #+language: en
-#+options: ':t toc:nil author:t email:t num:t
+#+options: ':t toc:t author:t email:t num:t
 #+startup: content
-#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
-#+texinfo_header: @set MAINTAINER Pablo Stafforini
-#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
-#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
-#+texinfo: @insertcopying
+#+export_file_name: tlon-images.info
+#+texinfo_filename: tlon-images.info
+#+texinfo_dir_category: Emacs misc features
+#+texinfo_dir_title: tlon-images: (tlon-images)
+#+texinfo_dir_desc: Image processing functionality
 
-* Image Processing (=tlon-images.el=)
+This manual describes the features and customization options for the Emacs Lisp file =tlon-images.el=.
+
+* Overview
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-images
+:CUSTOM_ID: h:overview
 :END:
 
-This module provides functionality for processing images, primarily using the external =ImageMagick= command-line tool. It allows for operations like reducing brightness, inverting colors, and making images non-transparent. It also integrates with the =invertornot.com= API to determine if an image's colors can be safely inverted.
+The =tlon-images= module provides image processing functionality for the Tlon workflow.  It supports reducing brightness, inverting colors, and removing transparency using ImageMagick; automatically choosing between inversion and darkening via the =invertornot.com= API; generating AI-powered alt text descriptions; and downloading remote images referenced in Markdown files into structured local directories with automatic conversion to =Figure= tags.
 
-** Dependencies
+The module depends on =tlon-core=, =tlon-ai=, =tlon-md=, =transient=, =dired=, and =url-parse=.  ImageMagick must be installed for image processing commands.
+
+* User options
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-images-dependencies
+:CUSTOM_ID: h:user-options
 :END:
 
-+ =ImageMagick= :: Must be installed and accessible in the system's PATH for image processing commands to work.
-+ =transient= :: Required for the menu interface.
-+ =window-extras= :: Used by ~tlon-images-maybe-open-after-processing~ for window management.
-
-** User Options
+** ~tlon-images-default-brightness-reduction~
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-images-options
+:CUSTOM_ID: h:tlon-images-default-brightness-reduction
 :END:
-
 #+vindex: tlon-images-default-brightness-reduction
-+ ~tlon-images-default-brightness-reduction~ :: Default percentage (integer) by which to reduce image brightness when using ~tlon-images-reduce-brightnesss~ without specifying a percentage. Defaults to 20.
 
-#+vindex: tlon-images-open-after-processing
-+ ~tlon-images-open-after-processing~ :: Boolean flag. If non-nil (the default), the original (copied as light theme) and processed (dark theme) images will be opened in separate windows after processing via ~tlon-images-reduce-brightnesss~ or ~tlon-images-invert-colors~. Uses ~tlon-images-maybe-open-after-processing~. Additionally, when using ~tlon-images-download-from-markdown~, the target directory containing the downloaded images will be opened in Dired.
+Default percentage (integer) by which to reduce image brightness when using ~tlon-images-reduce-brightnesss~ without specifying a percentage.  The default is =20=.
 
-#+vindex: tlon-images-read-file-without-asking
-+ ~tlon-images-read-file-without-asking~ :: Boolean flag. If non-nil, commands like ~tlon-images-reduce-brightnesss~ will process the image at point (in Dired) or the current buffer's file without prompting for confirmation via ~tlon-images-read-image~. Defaults to nil.
-
-#+vindex: tlon-images-overwrite-alt-text
-+ ~tlon-images-overwrite-alt-text~ :: Boolean flag. If non-nil, existing alt text will be replaced by the newly generated text when using ~tlon-images-set-image-alt-text-in-buffer~. If nil (the default), existing alt text will be preserved. Note: The command ~tlon-images-set-image-alt-text-in-file~ (operating on a single image tag at point) *always* overwrites existing alt text, regardless of this option's setting.
-
-#+vindex: tlon-images-preserve-markdown-alt-text
-+ ~tlon-images-preserve-markdown-alt-text~ :: Boolean flag. If non-nil, when replacing Markdown images with <Figure> tags (e.g., via ~tlon-images-download-from-markdown~) the Markdown alt text will be preserved and inserted as the =alt= attribute. If nil (the default), the =alt= attribute will be omitted.
-
-** Commands
+** ~tlon-images-open-after-processing~
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-images-commands
+:CUSTOM_ID: h:tlon-images-open-after-processing
+:END:
+#+vindex: tlon-images-open-after-processing
+
+Whether to open the original (light theme copy) and processed (dark theme) images in separate windows after processing.  The default is =t=.  When using ~tlon-images-download-from-markdown~, a non-nil value also opens the target directory in Dired.
+
+** ~tlon-images-read-file-without-asking~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-images-read-file-without-asking
+:END:
+#+vindex: tlon-images-read-file-without-asking
+
+Whether to process the image at point (in Dired or the current buffer) without prompting for confirmation.  The default is =nil=, meaning the user is always prompted.
+
+** ~tlon-images-overwrite-alt-text~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-images-overwrite-alt-text
+:END:
+#+vindex: tlon-images-overwrite-alt-text
+
+Whether to overwrite existing alt text when using ~tlon-images-set-image-alt-text-in-buffer~.  The default is =nil=, preserving existing alt text.  This option does not affect ~tlon-images-set-image-alt-text-in-file~, which always overwrites.
+
+** ~tlon-images-preserve-markdown-alt-text~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-images-preserve-markdown-alt-text
+:END:
+#+vindex: tlon-images-preserve-markdown-alt-text
+
+Whether to preserve Markdown alt text when replacing Markdown images with =Figure= tags (e.g., during ~tlon-images-download-from-markdown~).  If non-nil, the Markdown alt text is copied into the =alt= attribute of the =Figure= tag.  The default is =nil=, meaning the =alt= attribute is omitted.
+
+* Commands
+:PROPERTIES:
+:CUSTOM_ID: h:commands
 :END:
 
-*** Auto Process Image
+** Image processing for dark themes
+:PROPERTIES:
+:CUSTOM_ID: h:dark-theme-processing
+:END:
+
+*** ~tlon-images-auto-process~
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-images-auto-process
 :END:
 #+findex: tlon-images-auto-process
-The command ~tlon-images-auto-process~ attempts to intelligently process an image for a dark theme.
 
-1. It prompts for the =IMAGE= file using ~tlon-images-read-image~.
-2. It determines the output filename using ~tlon-images-get-themed-file-name~ with the =dark= theme.
-3. It checks if the image can be safely inverted using ~tlon-images-can-invert-p~ (which calls the =invertornot.com= API).
-4. If inversion is safe, it calls ~tlon-images-invert-colors~.
-5. Otherwise, it calls ~tlon-images-reduce-brightnesss~ using the default reduction percentage.
+Automatically process an IMAGE for a dark theme.  The command prompts for the image file, checks whether its colors can be safely inverted (via the =invertornot.com= API using ~tlon-images-can-invert-p~), and either inverts the colors or reduces the brightness accordingly.  The output is saved to a dark-themed filename (e.g., =image-dark.png=).
 
-*** Reduce Image Brightness
+*** ~tlon-images-reduce-brightnesss~
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-images-reduce-brightnesss
 :END:
 #+findex: tlon-images-reduce-brightnesss
-The command ~tlon-images-reduce-brightnesss~ reduces the brightness of an image using ImageMagick.
 
-1. It prompts for the =SOURCE= image using ~tlon-images-read-image~ (unless provided).
-2. It determines the =TARGET= filename (defaulting to a dark-themed version via ~tlon-images-get-themed-file-name~) unless provided.
-3. It prompts for the reduction =PERCENT= (defaulting to ~tlon-images-default-brightness-reduction~) unless provided. Note: The percentage passed to ImageMagick's =-modulate= is calculated as =100 - PERCENT=.
-4. It constructs the ImageMagick command using ~tlon-imagemagick-reduce-brightness~.
-5. It calls ~tlon-images-process-image~ to execute the command, copy the original to a light-themed file, handle output, and potentially open the images.
+Reduce the brightness of a SOURCE image by PERCENT (defaulting to ~tlon-images-default-brightness-reduction~) and save the result to TARGET (defaulting to the dark-themed filename).  Uses ImageMagick's =-modulate= flag.  The original is also copied to a light-themed filename.  If ~tlon-images-open-after-processing~ is non-nil, both versions are opened in separate windows.
 
-*** Invert Image Colors
+*** ~tlon-images-invert-colors~
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-images-invert-colors
 :END:
 #+findex: tlon-images-invert-colors
-The command ~tlon-images-invert-colors~ inverts the colors of an image using ImageMagick.
 
-1. It prompts for the =SOURCE= image using ~tlon-images-read-image~ (unless provided).
-2. It determines the =TARGET= filename (defaulting to a dark-themed version via ~tlon-images-get-themed-file-name~) unless provided.
-3. It constructs the ImageMagick command using ~tlon-imagemagick-invert-colors~.
-4. It calls ~tlon-images-process-image~ to execute the command, copy the original to a light-themed file, handle output, and potentially open the images.
+Invert the RGB colors of a SOURCE image and save the result to TARGET (defaulting to the dark-themed filename).  Uses ImageMagick's =-channel RGB -negate= flags.  The original is also copied to a light-themed filename.
 
-*** Make Image Non-Transparent
+*** ~tlon-images-make-nontransparent~
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-images-make-nontransparent
 :END:
 #+findex: tlon-images-make-nontransparent
-The command ~tlon-images-make-nontransparent~ removes transparency from an image, replacing it with a solid background color using ImageMagick.
 
-1. It prompts for the =SOURCE= image using ~tlon-images-read-image~ (unless provided).
-2. It determines the =TARGET= filename (defaulting to the source file itself, thus overwriting it) unless provided.
-3. It prompts for the =BACKGROUND= color (defaulting to "white") unless provided.
-4. It constructs the ImageMagick command using ~tlon-imagemagick-make-nontransparent~.
-5. It executes the command using =shell-command-to-string=.
-6. It calls ~tlon-images-handle-output~ to display success or error messages.
+Remove the transparent background of a SOURCE image and replace it with a solid BACKGROUND color (defaulting to ="white"=).  The result is saved to TARGET, which defaults to the source file itself (overwriting it).  Uses ImageMagick's =-background= and =-flatten= flags.
 
-*** Download Images from Markdown
+** Alt text generation
+:PROPERTIES:
+:CUSTOM_ID: h:alt-text
+:END:
+
+*** ~tlon-images-describe-image~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-images-describe-image
+:END:
+#+findex: tlon-images-describe-image
+
+Generate a concise description of an image FILE using an AI model.  The description language is determined from the file's context, and a language-specific prompt (from ~tlon-images-describe-image-prompt~) requests a one-to-two-sentence summary of at most 50 words.  By default the description is displayed in the minibuffer; if CALLBACK is non-nil, it is called with the response and info instead.
+
+*** ~tlon-images-set-image-alt-text-in-file~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-images-set-image-alt-text-in-file
+:END:
+#+findex: tlon-images-set-image-alt-text-in-file
+
+Generate and insert an alt text description for the =Figure= or =OurWorldInData= tag at point.  Extracts the =src= attribute, resolves it to a local file, calls ~tlon-images-describe-image~, and inserts the result into the =alt= attribute.  Always overwrites existing alt text.  Signals an error if no recognized image tag is found at point.
+
+*** ~tlon-images-set-image-alt-text-in-buffer~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-images-set-image-alt-text-in-buffer
+:END:
+#+findex: tlon-images-set-image-alt-text-in-buffer
+
+Iterate through all =Figure= and =OurWorldInData= tags in the current buffer and set their alt text.  Whether existing alt text is overwritten depends on the value of ~tlon-images-overwrite-alt-text~.
+
+** Image downloading
+:PROPERTIES:
+:CUSTOM_ID: h:image-downloading
+:END:
+
+*** ~tlon-images-download-from-markdown~
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-images-download-from-markdown
 :END:
 #+findex: tlon-images-download-from-markdown
-The command ~tlon-images-download-from-markdown~ scans a Markdown file for all image URLs, downloads them, and stores them in a structured local directory.
 
-1. It prompts for the Markdown =FILE= to process.
-2. It determines the repository root using ~tlon-get-repo~.
-3. It constructs a target directory path inside the repository's =images= directory. The path is based on the relative path of the Markdown file. For example, for a file at =<repo>/articles/my-post.md=, the target directory will be =<repo>/images/articles/my-post/=.
-4. If this directory already exists and contains files, it prompts the user to confirm whether to delete its contents. If the user declines, the operation is aborted.
-5. It creates the target directory if it doesn't exist (or recreates it if deletion was confirmed).
-6. It finds all Markdown image URLs (e.g., =![alt text](URL)=) in the file.
-7. For each URL, it downloads the image.
-8. It saves the images sequentially in the target directory (e.g., =figure-01.png=, =figure-02.png=, etc.). The file extension is determined by first checking the image's file signature ("magic numbers"), including detecting SVG by the presence of an XML prolog or an <svg> tag. If that fails, it inspects the =Content-Type= HTTP header and normalizes subtypes like =image/svg+xml= to =svg= and =image/jpeg= to =jpg=; as a final fallback, it uses the file extension from the URL itself (also normalized). If no extension can be determined, the image is skipped and processing continues.
-9. If ~tlon-images-open-after-processing~ is non-nil, it opens the target directory in Dired to show the downloaded images.
-10. It replaces each Markdown image with a <Figure> tag whose src points to the downloaded local file. Whether the =alt= attribute is populated from the Markdown alt text depends on ~tlon-images-preserve-markdown-alt-text~. Extra blank lines around the inserted tag are avoided.
+Scan a Markdown FILE for all image URLs, download them, and store them in a local directory derived from the file's path relative to the repository root.  For example, for =<repo>/articles/my-post.md=, images are saved in =<repo>/<image-dir>/articles/my-post/=.
 
-*** AI-Powered Image Commands
+The command performs the following steps:
 
-#+findex: tlon-images-describe-image
-+ ~tlon-images-describe-image~ :: Generates a concise description (alt text) for an image file using an AI model. It prompts for an image file, determines the language, and uses a language-specific prompt to request a description. The resulting text is displayed as a message by default but can be handled by a callback.
+1. If the target directory already exists and contains files, prompt you to confirm deletion.
+2. Create the target directory.
+3. Download each image, determining the file extension from magic numbers, then the =Content-Type= header, then the URL.  Skip unrecognized formats.
+4. Save images with sequential names (e.g., =figure-01.png=, =figure-02.jpg=).
+5. Replace each Markdown image (=![alt](url)=) with a =Figure= tag pointing to the local file.  Whether the =alt= attribute is populated depends on ~tlon-images-preserve-markdown-alt-text~.
+6. If ~tlon-images-open-after-processing~ is non-nil, open the target directory in Dired.
 
-#+findex: tlon-images-set-image-alt-text-in-file
-+ ~tlon-images-set-image-alt-text-in-file~ :: Automatically generates and inserts an alt text description for an image tag (=Figure= or =OurWorldInData=) at point. It calls ~tlon-images-describe-image~ and inserts the result into the =alt= attribute. This command *always* overwrites existing alt text.
+** Image directory
+:PROPERTIES:
+:CUSTOM_ID: h:image-directory
+:END:
 
-#+findex: tlon-images-set-image-alt-text-in-buffer
-+ ~tlon-images-set-image-alt-text-in-buffer~ :: Iterates through all =Figure= and =OurWorldInData= tags in the buffer and sets their alt text. Whether it overwrites existing alt text depends on the value of ~tlon-images-overwrite-alt-text~.
+*** ~tlon-images-get-dir~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-images-get-dir
+:END:
+#+findex: tlon-images-get-dir
 
-*** Transient Menu
+Return the images directory for FILE.  The path is constructed as =<repo-root>/<image-dir-name>/<slug>=, where =<image-dir-name>= is language-specific (looked up from ~tlon-image-dirs~) and =<slug>= is the relative path of FILE inside the repository, without extension.
+
+** Transient menu
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-images-menu
 :END:
 #+findex: tlon-images-menu
-The command ~tlon-images-menu~ activates a =transient= menu interface for image processing.
 
-It provides the following groups and commands:
-+ *Processing*:
-  + =a= :: Auto process (~tlon-images-auto-process~)
-  + =r= :: Reduce brightness (~tlon-images-reduce-brightnesss~)
-  + =i= :: Invert colors (~tlon-images-invert-colors~)
-  + =n= :: Make non-transparent (~tlon-images-make-nontransparent~)
-  + =D= :: Describe image (~tlon-images-describe-image~)
-  + =S= :: Set alt text (~tlon-images-set-image-alt-text-in-file~)
-  + =B= :: Set alt text in buffer (~tlon-images-set-image-alt-text-in-buffer~)
-  + =d= :: Download from Markdown (~tlon-images-download-from-markdown~)
-+ *Options*:
-  + =-o= :: Toggle opening images after processing (~tlon-images-toggle-open-after-processing~ infix, modifies ~tlon-images-open-after-processing~)
-  + =-p= :: Toggle processing without asking (~tlon-images-toggle-process-without-asking~ infix, modifies ~tlon-images-read-file-without-asking~)
-  + =-r= :: Set brightness reduction percentage (~tlon-images-brightness-reduction-infix~, modifies ~tlon-images-default-brightness-reduction~)
-  + =-O= :: Toggle overwriting alt text (~tlon-images-toggle-overwrite-alt-text~ infix, modifies ~tlon-images-overwrite-alt-text~)
+The command ~tlon-images-menu~ activates a =transient= menu for image processing.
 
-** Internal Functions and Variables
+The menu provides the following groups:
+
+- *Light/Dark*:
+  - =a= :: auto process (~tlon-images-auto-process~)
+  - =r= :: reduce brightness (~tlon-images-reduce-brightnesss~)
+  - =i= :: invert colors (~tlon-images-invert-colors~)
+  - =n= :: make nontransparent (~tlon-images-make-nontransparent~)
+  - Options: toggle open after processing (=-o=), set brightness reduction percentage (=-r=)
+- *Alt text*:
+  - =d= :: display alt text (~tlon-images-describe-image~)
+  - =t= :: set alt text in tag (~tlon-images-set-image-alt-text-in-file~)
+  - =b= :: set alt text in buffer (~tlon-images-set-image-alt-text-in-buffer~)
+  - Options: toggle overwrite alt text (=-l=)
+- *Other*:
+  - =w= :: download images in file (~tlon-images-download-from-markdown~)
+  - Options: toggle preserve alt text (=-w=)
+- *General options*:
+  - =-f= :: toggle read file without asking
+
+* Functions
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-images-internals
+:CUSTOM_ID: h:functions
 :END:
 
-This section lists non-interactive functions, variables, and constants used internally or potentially useful for advanced customization.
-
-*** ImageMagick Command Constants
+** Image reading and processing helpers
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-images-imagemagick-consts
+:CUSTOM_ID: h:image-helpers
 :END:
 
-#+vindex: tlon-imagemagick-reduce-brightness
-+ ~tlon-imagemagick-reduce-brightness~ :: Format string for the =magick= command to reduce brightness using =-modulate=. Placeholders: %1$s (input), %2$s (output), %3$s (brightness percentage for modulate).
+#+findex: tlon-images-read-image
+- ~tlon-images-read-image~ :: Prompt for an image file path.  In Dired, default to the file at point.  If the current buffer visits an image, default to that.  If ~tlon-images-read-file-without-asking~ is non-nil, skip the prompt and use the default directly.
 
-#+vindex: tlon-imagemagick-invert-colors
-+ ~tlon-imagemagick-invert-colors~ :: Format string for the =magick= command to invert colors using =-channel RGB -negate=. Placeholders: %s (input), %s (output).
+#+findex: tlon-images-process-image
+- ~tlon-images-process-image~ :: Execute the ImageMagick COMMAND for SOURCE and TARGET.  Copy SOURCE to a light-themed filename, optionally open both versions, and display MESSAGE-FMT with the source file name.
 
-#+vindex: tlon-imagemagick-make-nontransparent
-+ ~tlon-imagemagick-make-nontransparent~ :: Format string for the =magick= command to remove transparency using =-background= and =-flatten=. Placeholders: %1$s (input), %2$s (output), %3$s (background color).
+#+findex: tlon-images-handle-output
+- ~tlon-images-handle-output~ :: Check the OUTPUT string from a shell command.  If empty, display the success MESSAGE.  If non-empty, signal a user error with the output content.
 
-*** Configuration Constants
+#+findex: tlon-images-get-themed-file-name
+- ~tlon-images-get-themed-file-name~ :: Return a filename with a theme suffix appended before the extension.  For example, for FILE =image.png= and THEME =dark=, return =image-dark.png=.
+
+#+findex: tlon-images-maybe-open-after-processing
+- ~tlon-images-maybe-open-after-processing~ :: If ~tlon-images-open-after-processing~ is non-nil, open the ORIGINAL and PROCESSED images in separate windows, splitting the frame if necessary.
+
+** invertornot.com integration
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-images-config-consts
+:CUSTOM_ID: h:invertornot
 :END:
 
-#+vindex: tlon-image-dirs
-+ ~tlon-image-dirs~ :: An alist that maps language codes to the name of the directory used to store images for that language. Used by ~tlon-images-get-dir~.
+#+findex: tlon-images-post-file-to-invertornot
+- ~tlon-images-post-file-to-invertornot~ :: Send an image FILE to the =invertornot.com/api/file= endpoint via a multipart POST request.  Return the parsed JSON response.
 
-*** InvertOrNot API Integration
+#+findex: tlon-images-post-url-to-invertornot
+- ~tlon-images-post-url-to-invertornot~ :: Send an IMAGE-URL to the =invertornot.com/api/url= endpoint via a JSON POST request.  Return the parsed JSON response.
+
+#+findex: tlon-images-handle-synchronous-response
+- ~tlon-images-handle-synchronous-response~ :: Process the buffer from a synchronous HTTP request, extract the JSON payload, parse it, and return the result as an alist.
+
+#+findex: tlon-images-can-invert-p
+- ~tlon-images-can-invert-p~ :: Return =t= if the colors of IMAGE can be safely inverted (the API returns =1=), =nil= if they cannot (=0=), and signal an error for any other response.
+
+** Alt text helpers
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-images-invertornot
+:CUSTOM_ID: h:alt-text-helpers
+:END:
+
+#+findex: tlon-images-describe-image-callback
+- ~tlon-images-describe-image-callback~ :: Handle the AI response from ~tlon-images-describe-image~.  If ORIGINAL-CALLBACK is non-nil, call it; otherwise display RESPONSE as a message.  Restore =gptel-context= to PREVIOUS-CONTEXT.
+
+#+findex: tlon-images-read-image-file
+- ~tlon-images-read-image-file~ :: Read an image FILE from multiple sources: the provided FILE argument, the =src= attribute of a =Figure= tag at point, the current buffer (if it is an image), the file at point in Dired, or a user prompt.
+
+#+findex: tlon-images-get-image-file-from-src
+- ~tlon-images-get-image-file-from-src~ :: Resolve SRC to a local image file.  If SRC is an Our World in Data URL, download the thumbnail and return a temporary file path.  Otherwise, construct a local path relative to the repository root.
+
+** Variables and constants
+:PROPERTIES:
+:CUSTOM_ID: h:variables-and-constants
 :END:
 
 #+vindex: tlon-invertornot-generic-endpoint
-+ ~tlon-invertornot-generic-endpoint~ :: Base URL for the =invertornot.com= API.
+- ~tlon-invertornot-generic-endpoint~ :: Base URL for the =invertornot.com= API.
 
-#+findex: tlon-images-post-file-to-invertornot
-+ ~tlon-images-post-file-to-invertornot~ :: Sends an image =FILE= to the =invertornot.com/api/file= endpoint using a multipart/form-data POST request. Returns the parsed JSON response via ~tlon-images-handle-synchronous-response~.
+#+vindex: tlon-imagemagick-reduce-brightness
+- ~tlon-imagemagick-reduce-brightness~ :: Format string for the ImageMagick command to reduce brightness using =-modulate=.
 
-#+findex: tlon-images-post-url-to-invertornot
-+ ~tlon-images-post-url-to-invertornot~ :: Sends an =IMAGE-URL= to the =invertornot.com/api/url= endpoint using a JSON POST request. Returns the parsed JSON response via ~tlon-images-handle-synchronous-response~.
+#+vindex: tlon-imagemagick-invert-colors
+- ~tlon-imagemagick-invert-colors~ :: Format string for the ImageMagick command to invert colors using =-channel RGB -negate=.
 
-#+findex: tlon-images-handle-synchronous-response
-+ ~tlon-images-handle-synchronous-response~ :: Helper function to process the buffer returned by =url-retrieve-synchronously=, extract the JSON payload, and parse it into an alist.
+#+vindex: tlon-imagemagick-make-nontransparent
+- ~tlon-imagemagick-make-nontransparent~ :: Format string for the ImageMagick command to remove transparency using =-background= and =-flatten=.
 
-#+findex: tlon-images-can-invert-p
-+ ~tlon-images-can-invert-p~ :: Takes an =IMAGE= file path, sends it to the =invertornot.com= API using ~tlon-images-post-file-to-invertornot~, and checks the =invert= field in the response. Returns =t= if the value is 1, =nil= if 0, and signals an error otherwise.
+#+vindex: tlon-images-describe-image-prompt
+- ~tlon-images-describe-image-prompt~ :: List of language-specific prompts used by ~tlon-images-describe-image~ to request AI-generated image descriptions.  Each entry is a plist with =:prompt= and =:language= keys.
 
-*** Helper Functions
+* Indices
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-images-helpers
+:CUSTOM_ID: h:indices
 :END:
 
-#+findex: tlon-images-get-dir
-+ ~tlon-images-get-dir~ :: Returns the dedicated image directory for a given =FILE=. The path is constructed by taking the repository root of the =FILE=, appending a language-specific directory name for images (e.g., "images" for English, "imagenes" for Spanish), and then appending the relative path of the =FILE= within its repository (sans extension). For example, for a file at =<repo>/articles/my-post.md=, this function might return =<repo>/images/articles/my-post/=. The language-specific directory names are defined in ~tlon-image-dirs~.
-
-#+findex: tlon-images-read-image
-+ ~tlon-images-read-image~ :: Prompts the user for an image file path. If called within Dired, defaults to the file at point. If the current buffer has a file, defaults to that. If ~tlon-images-read-file-without-asking~ is non-nil, it skips the prompt and uses the default directly.
-
-#+findex: tlon-images-process-image
-+ ~tlon-images-process-image~ :: Core utility for processing images. Takes =SOURCE=, =TARGET=, the ImageMagick =COMMAND= string, and a =MESSAGE-FMT= string.
-  1. Executes the =COMMAND= using =shell-command-to-string=.
-  2. Copies the =SOURCE= file to a light-themed filename (using ~tlon-images-get-themed-file-name~).
-  3. Calls ~tlon-images-maybe-open-after-processing~ with the light and dark themed files.
-  4. Calls ~tlon-images-handle-output~ with the command output and the formatted message.
-
-#+findex: tlon-images-handle-output
-+ ~tlon-images-handle-output~ :: Checks the =OUTPUT= string from a shell command. If empty, displays the success =MESSAGE=. If non-empty, signals a user error with the output content.
-
-#+findex: tlon-images-get-themed-file-name
-+ ~tlon-images-get-themed-file-name~ :: Takes a =FILE= path and a =THEME= symbol (=light= or =dark=). Returns a new filename with =-[theme].ext= appended before the extension (e.g., =image.png= becomes =image-dark.png=).
-
-#+findex: tlon-images-maybe-open-after-processing
-+ ~tlon-images-maybe-open-after-processing~ :: If ~tlon-images-open-after-processing~ is non-nil, it opens the =ORIGINAL= (light theme) and =PROCESSED= (dark theme) files in separate windows, splitting the frame if necessary using =window-extras= functions.
-
-*** Transient Infix Commands
+** Function index
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-images-transient-infixes
+:INDEX: fn
+:CUSTOM_ID: h:function-index
 :END:
 
-These functions define the behavior of the options within the ~tlon-images-menu~.
-
-#+findex: tlon-images-brightness-reduction-infix
-+ ~tlon-images-brightness-reduction-infix~ :: Reads a number from the user to set the local value of ~tlon-images-default-brightness-reduction~ for the current menu invocation.
-
-#+findex: tlon-images-toggle-open-after-processing
-+ ~tlon-images-toggle-open-after-processing~ :: Toggles the boolean value of ~tlon-images-open-after-processing~ for the current menu invocation using ~tlon-transient-toggle-variable-value~.
-
-#+findex: tlon-images-toggle-process-without-asking
-+ ~tlon-images-toggle-process-without-asking~ :: Toggles the boolean value of ~tlon-images-read-file-without-asking~ for the current menu invocation using ~tlon-transient-toggle-variable-value~.
+** Variable index
+:PROPERTIES:
+:INDEX: vr
+:CUSTOM_ID: h:variable-index
+:END:

@@ -1,131 +1,169 @@
-#+title: tlon - Repository Management
+#+title: tlon-repos: Repository management
 #+author: Pablo Stafforini
-#+EXCLUDE_TAGS: noexport
+#+email: pablo@stafforini.com
 #+language: en
-#+options: ':t toc:nil author:t email:t num:t
+#+options: ':t toc:t author:t email:t num:t
 #+startup: content
-#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
-#+texinfo_header: @set MAINTAINER Pablo Stafforini
-#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
-#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
-#+texinfo: @insertcopying
+#+export_file_name: tlon-repos.info
+#+texinfo_filename: tlon-repos.info
+#+texinfo_dir_category: Emacs misc features
+#+texinfo_dir_title: Repository Management: (tlon-repos)
+#+texinfo_dir_desc: Repository management
 
-* Repository Management (=tlon-repos.el=)
+This manual describes the features and customization options for the Emacs Lisp file =tlon-repos.el=.
+
+* Overview
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-repos
+:CUSTOM_ID: h:overview
 :END:
 
-This module provides functions for managing Tlön's Git repositories. It integrates with =vc=, =vc-extras=, =forge=, =forge-extras=, and =pass-extras= to offer commands for creating, cloning, deleting, tracking, searching, and interacting with repositories, both locally and remotely (primarily on GitHub under the =tlon-team= organization).
+The =tlon-repos= module provides functions for managing Tlon's Git repositories. It integrates with =vc=, =vc-extras=, =forge=, =forge-extras=, and =pass-extras= to offer commands for creating, cloning, deleting, tracking, searching, and interacting with repositories, both locally and on GitHub under the =tlon-team= organization.
 
-** Dependencies
+The module also provides a custom Forge dispatch menu that overrides the default =forge-dispatch=, adding Tlon-specific search capabilities alongside standard Forge operations.
+
+* User options
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-repos-dependencies
+:CUSTOM_ID: h:user-options
 :END:
 
-+ =forge-core=, =forge-search=, =forge-extras=
-+ =shut-up=
-+ =tlon-core=
-+ =vc=, =vc-extras=
-+ =pass-extras=
-+ =transient=
+This module does not define ~defcustom~ user options. It defines a customization group ~tlon-repos~ under the parent group ~tlon~.
 
-** Commands
+* Commands
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-repos-commands
+:CUSTOM_ID: h:commands
 :END:
 
-This section details the interactive commands provided by =tlon-repos.el=.
-
-*** Version Control (VC) Operations
+** Version control operations
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-repos-vc-commands
+:CUSTOM_ID: h:vc-operations
 :END:
 
 #+findex: tlon-create-repo
-+ ~tlon-create-repo~ :: Creates a new repository on GitHub under the =tlon-team= organization. Prompts for the repository =NAME=. Delegates to =vc-extras-create-repo=.
+- ~tlon-create-repo~ :: Create a new repository on GitHub under the =tlon-team= organization. Prompts for the repository NAME if not provided. Delegates to ~vc-extras-create-repo~.
 
 #+findex: tlon-clone-repo
-+ ~tlon-clone-repo~ :: Clones an existing Tlön repository from the =tlon-team= organization into the directory specified by =paths-dir-tlon-repos=. Prompts for the repository =NAME= if not provided. Optionally skips adding the repo to the Forge database if =NO-FORGE= is non-nil. Delegates to =vc-extras-clone-repo=.
+- ~tlon-clone-repo~ :: Clone an existing Tlon repository from the =tlon-team= organization into the directory specified by =paths-dir-tlon-repos=. Prompts for the repository NAME if not provided. If NO-FORGE is non-nil, do not prompt to add the repo to the Forge database. Delegates to ~vc-extras-clone-repo~.
 
 #+findex: tlon-clone-missing-repos
-+ ~tlon-clone-missing-repos~ :: Clones all Tlön repositories defined in the configuration (=tlon-repo-lookup-all :dir=) that do not exist locally. Clones are performed asynchronously and do *not* automatically add the repos to the Forge database (use ~tlon-forge-track-missing-repos~ for that).
+- ~tlon-clone-missing-repos~ :: Clone all Tlon repositories defined in the configuration (via ~tlon-repo-lookup-all :dir~) that do not exist locally. Clones are performed asynchronously and do not automatically add the repos to the Forge database. To track these repos in Forge, use ~tlon-forge-track-missing-repos~ afterwards.
 
 #+findex: tlon-delete-local-repo
-+ ~tlon-delete-local-repo~ :: Deletes a local copy of a Tlön repository. Prompts the user to select a repository from the intersection of configured Tlön repos and locally existing ones (using ~tlon-get-litellm.APIConnectionError: Error parsing chunk: Expecting property name enclosed in double quotes: line 1 column 2 (char
-1),
-Received chunk: {
-Traceback (most recent call last):
-  File 
-"/Users/pablostafforini/.local/share/uv/tools/aider-chat/lib/python3.12/site-packages/litellm/llms/vertex_ai/gemini/verte
-x_and_google_ai_studio_gemini.py", line 1570, in __next__
-    return self._common_chunk_parsing_logic(chunk=chunk)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File 
-"/Users/pablostafforini/.local/share/uv/tools/aider-chat/lib/python3.12/site-packages/litellm/llms/vertex_ai/gemini/verte
-x_and_google_ai_studio_gemini.py", line 1544, in _common_chunk_parsing_logic
-    return self.handle_valid_json_chunk(chunk=chunk)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File 
-"/Users/pablostafforini/.local/share/uv/tools/aider-chat/lib/python3.12/site-packages/litellm/llms/vertex_ai/gemini/verte
-x_and_google_ai_studio_gemini.py", line 1504, in handle_valid_json_chunk
-    raise e
-  File 
-"/Users/pablostafforini/.local/share/uv/tools/aider-chat/lib/python3.12/site-packages/litellm/llms/vertex_ai/gemini/verte
-x_and_google_ai_studio_gemini.py", line 1496, in handle_valid_json_chunk
-    json_chunk = json.loads(chunk)
-                 ^^^^^^^^^^^^^^^^^
-  File 
-"/opt/homebrew/Cellar/python@3.12/3.12.10/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/__init__.py", 
-line 346, in loads
-    return _default_decoder.decode(s)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File 
-"/opt/homebrew/Cellar/python@3.12/3.12.10/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/decoder.py", line
-338, in decode
-    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File 
-"/opt/homebrew/Cellar/python@3.12/3.12.10/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/decoder.py", line
-354, in raw_decode
-    obj, end = self.scan_once(s, idx)
-               ^^^^^^^^^^^^^^^^^^^^^^
-json.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)
+- ~tlon-delete-local-repo~ :: Delete a local copy of a Tlon repository. If NAME is nil, prompts you to select from the intersection of configured Tlon repos and locally existing ones. Delegates to ~vc-extras-delete-local-repo~.
 
-During handling of the above exception, another exception occurred:
+** Forge operations
+:PROPERTIES:
+:CUSTOM_ID: h:forge-operations
+:END:
 
-Traceback (most recent call last):
-  File 
-"/Users/pablostafforini/.local/share/uv/tools/aider-chat/lib/python3.12/site-packages/litellm/litellm_core_utils/streamin
-g_handler.py", line 1508, in __next__
-    chunk = next(self.completion_stream)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File 
-"/Users/pablostafforini/.local/share/uv/tools/aider-chat/lib/python3.12/site-packages/litellm/llms/vertex_ai/gemini/verte
-x_and_google_ai_studio_gemini.py", line 1574, in __next__
-    raise RuntimeError(f"Error parsing chunk: {e},\nReceived chunk: {chunk}")
-RuntimeError: Error parsing chunk: Expecting property name enclosed in double quotes: line 1 column 2 (char 1),
-Received chunk: {
+#+findex: tlon-forge-track-repo
+- ~tlon-forge-track-repo~ :: Track a Tlon repository NAME in the Forge database. If NAME is nil, prompts you to select from local Tlon repos. Delegates to ~forge-extras-track-repository~.
 
-Retrying in 0.2 seconds...
-  C-c C-c
+#+findex: tlon-forge-track-missing-repos
+- ~tlon-forge-track-missing-repos~ :: Add all missing Tlon repos to the Forge database. Only processes repos that exist locally; to clone missing repos first, use ~tlon-clone-missing-repos~. For each untracked repo, calls ~forge-extras-track-repo-all-topics~ and waits for the tracking operation to complete.
 
-^C again to exit
+#+findex: tlon-pull-issues-in-repo
+- ~tlon-pull-issues-in-repo~ :: Pull issues in the repository located at DIR. If DIR is nil, use the current directory. Only pulls if the repository is tracked in Forge.
 
+#+findex: tlon-pull-issues-in-all-repos
+- ~tlon-pull-issues-in-all-repos~ :: Pull issues in all Tlon repositories. Iterates through all directories returned by ~tlon-repo-lookup-all :dir~ and calls ~tlon-pull-issues-in-repo~ for each.
 
-conventions.md
-doc/tlon.org
-> /drop tlon.org
+** Search
+:PROPERTIES:
+:CUSTOM_ID: h:search
+:END:
 
-Removed doc/tlon.org from the chat
+#+findex: tlon-forge-search
+- ~tlon-forge-search~ :: Search for STRING across Tlon repositories. If REPOS is nil, search in all tracked repos. For each repository, sets up a Magit status buffer, runs =forge-search=, and collects results. Reports the number of repos with matches and the elapsed time.
 
-conventions.md
-> The process failed. I will do it manually, but could you please create just the blank files? E.g. create tlon-ai.org, tlon-meet.org, etc.
+** Git-crypt
+:PROPERTIES:
+:CUSTOM_ID: h:git-crypt
+:END:
 
-Okay, I can create those blank files for you.
+#+findex: tlon-git-crypt-unlock
+- ~tlon-git-crypt-unlock~ :: Unlock a Tlon repository using =git-crypt=. Prompts you to select a repository from the list derived from entries under =tlon/core/git-crypt/= in the password store. Delegates to ~pass-extras-git-crypt-unlock~.
 
-Here are the *SEARCH/REPLACE* blocks to create the empty `.org` files in the `doc/` directory:
+** Issues-to-projects configuration
+:PROPERTIES:
+:CUSTOM_ID: h:issues-to-projects
+:END:
 
-```org
-doc/tlon-cleanup.org
-<<<<<<< SEARCH
-=======
+#+findex: tlon-repos-configure-issues-to-projects
+- ~tlon-repos-configure-issues-to-projects~ :: Configure the =issues-to-projects= workflow for REPO-NAME. This command performs the equivalent of the manual steps described in the =issues-to-projects= repository README:
+
+  1. Write REPO-NAME into =config.sh= at line 24.
+  2. Run =automate-github-secrets.sh= to set the GitHub secret.
+  3. Run =batch-deploy-add-new-issues-workflow.sh= to deploy the workflow.
+
+  When called interactively, prompts for a local Tlon repository name. The original =config.sh= is backed up and restored after the scripts complete.
+
+** Transient menus
+:PROPERTIES:
+:CUSTOM_ID: h:transient-menus
+:END:
+
+#+findex: tlon-repos-menu
+- ~tlon-repos-menu~ :: Activate the =transient= menu interface for repository management.
+
+  + *Git*:
+    - =l= :: clone repo (~tlon-clone-repo~)
+    - =L= :: clone all missing repos (~tlon-clone-missing-repos~)
+    - =s= :: split local repo (~vc-extras-split-local-repo~)
+    - =d= :: delete local repo (~tlon-delete-local-repo~)
+    - =c= :: create remote repo (~tlon-create-repo~)
+    - =u= :: unlock git-crypt (~tlon-git-crypt-unlock~)
+    - =?= :: check authentication (~vc-extras-check-gh-authenticated~)
+    - =I= :: configure issues-to-projects (~tlon-repos-configure-issues-to-projects~)
+  + *Forge*:
+    - =a= :: track repo (~tlon-forge-track-repo~)
+    - =A= :: track all missing repos (~tlon-forge-track-missing-repos~)
+    - =r= :: untrack repo (~forge-remove-repository~)
+    - =R= :: untrack all repos / db reset (~forge-reset-database~)
+    - =t= :: list tracked repos (~forge-list-repositories~)
+    - =p= :: pull issues in repo (~tlon-pull-issues-in-repo~)
+    - =P= :: pull issues in all repos (~tlon-pull-issues-in-all-repos~)
+    - =U= :: unlock git-crypt (~tlon-git-crypt-unlock~)
+
+#+findex: tlon-forge-menu
+- ~tlon-forge-menu~ :: A custom Forge dispatch menu that overrides the default =forge-dispatch= via =advice-add=. Extends the standard Forge menu with Tlon-specific search (=s a= for searching all repos via ~tlon-forge-search~) alongside the usual Forge create, list, fetch, visit, and browse commands.
+
+* Functions
+:PROPERTIES:
+:CUSTOM_ID: h:functions
+:END:
+
+** Repository helpers
+:PROPERTIES:
+:CUSTOM_ID: h:repo-helpers
+:END:
+
+#+findex: tlon-get-local-repos
+- ~tlon-get-local-repos~ :: Prompt you to select from a list of Tlon repository names that exist locally. Returns the selected name. The candidates are the intersection of all configured Tlon repo names and the locally available repos under =tlon-team=.
+
+#+findex: tlon-repos-pull-babel-refs
+- ~tlon-repos-pull-babel-refs~ :: Asynchronously pull from the =babel-refs= repository. This function is called automatically by an idle timer every 5 minutes.
+
+** Git-crypt helpers
+:PROPERTIES:
+:CUSTOM_ID: h:git-crypt-helpers
+:END:
+
+#+findex: tlon--get-git-crypt-repos
+- ~tlon--get-git-crypt-repos~ :: Return a list of Tlon repository names that use =git-crypt=. The list is derived from entries stored under =tlon/core/git-crypt/= in the password store.
+
+* Indices
+:PROPERTIES:
+:CUSTOM_ID: h:indices
+:END:
+
+** Function index
+:PROPERTIES:
+:INDEX: fn
+:CUSTOM_ID: h:function-index
+:END:
+
+** Variable index
+:PROPERTIES:
+:INDEX: vr
+:CUSTOM_ID: h:variable-index
+:END:
