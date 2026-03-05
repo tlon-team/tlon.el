@@ -328,12 +328,12 @@ Returns a list of (INIT-COMMAND UPLOAD-COMMAND METADATA-FILE)."
       (insert metadata))
     (list init-command upload-command metadata-file)))
 
-;;;###autoload
-(defun tlon-youtube-upload-video ()
-  "Upload a video file to YouTube.
-Prompts for video file, title, description, privacy setting, and optional
-playlist."
-  (interactive)
+(defun tlon-youtube--read-upload-params ()
+  "Read and validate common parameters for YouTube video upload.
+Check that API credentials are configured, prompt for video file, title,
+description, privacy setting, and optional playlist, and validate that the
+video file exists.  Return a plist with keys `:video-file', `:title',
+`:description', `:privacy', and `:playlist-id'."
   (unless (and tlon-youtube-client-id tlon-youtube-client-secret)
     (user-error "YouTube API credentials not configured. Set `tlon-youtube-client-id` and `tlon-youtube-client-secret`"))
   (let* ((video-file (read-file-name "Select video file: " paths-dir-downloads nil t nil
@@ -349,6 +349,24 @@ playlist."
                         (cdr (assoc playlist-choice tlon-youtube-playlists)))))
     (unless (file-exists-p video-file)
       (user-error "Video file does not exist: %s" video-file))
+    (list :video-file video-file
+          :title title
+          :description description
+          :privacy privacy
+          :playlist-id playlist-id)))
+
+;;;###autoload
+(defun tlon-youtube-upload-video ()
+  "Upload a video file to YouTube.
+Prompts for video file, title, description, privacy setting, and optional
+playlist."
+  (interactive)
+  (let* ((params (tlon-youtube--read-upload-params))
+         (video-file (plist-get params :video-file))
+         (title (plist-get params :title))
+         (description (plist-get params :description))
+         (privacy (plist-get params :privacy))
+         (playlist-id (plist-get params :playlist-id)))
     (tlon-youtube--upload-video-file video-file title description privacy playlist-id)))
 
 (defun tlon-youtube--upload-video-file (video-file title description privacy &optional playlist-id)
@@ -458,56 +476,47 @@ PLAYLIST-ID is an optional playlist ID to add the video to after upload."
 This runs the initialization step automatically and then shows you the
 exact curl command to run for the video upload step."
   (interactive)
-  (unless (and tlon-youtube-client-id tlon-youtube-client-secret)
-    (user-error "YouTube API credentials not configured. Set `tlon-youtube-client-id` and `tlon-youtube-client-secret`"))
-  (let* ((video-file (read-file-name "Select video file: " paths-dir-downloads nil t nil
-                                     (lambda (name) (string-match-p "\\.mp4\\'" name))))
-         (title (read-string "Video title: "))
-         (description (read-string "Video description: "))
-         (privacy (completing-read "Privacy setting: "
-                                   '("private" "unlisted" "public")
-                                   nil t nil nil tlon-youtube-default-privacy))
-         (playlist-choices (append '("None") (mapcar #'car tlon-youtube-playlists)))
-         (playlist-choice (completing-read "Add to playlist (optional): " playlist-choices nil t nil nil "None"))
-         (playlist-id (when (not (string= playlist-choice "None"))
-                        (cdr (assoc playlist-choice tlon-youtube-playlists)))))
-    (unless (file-exists-p video-file)
-      (user-error "Video file does not exist: %s" video-file))
-    (let* ((request-data (tlon-youtube--prepare-upload-request
-                          video-file title description privacy))
-           (init-command (nth 0 request-data))
-           (metadata-file (nth 2 request-data)))
-      (message "Running initialization step...")
-      ;; Execute the initialization step synchronously
-      (let* ((init-output (shell-command-to-string (mapconcat #'shell-quote-argument init-command " ")))
-             (upload-url (tlon-youtube--extract-upload-url init-output)))
-        (if upload-url
-            (let ((final-upload-command (format "curl -v -X PUT --data-binary @%s -H \"Content-Type: video/mp4\" \"%s\""
-                                                (shell-quote-argument (expand-file-name video-file))
-                                                upload-url)))
-              (with-current-buffer (get-buffer-create "*YouTube Upload Commands*")
-                (erase-buffer)
-                (insert "YouTube Upload Commands - Ready to run:\n")
-                (insert "==========================================\n\n")
-                (insert "STEP 1: ✓ COMPLETED - Upload URL obtained\n")
-                (insert "-------------------------------------------\n")
-                (insert "Upload URL: " upload-url "\n\n")
-                (insert "STEP 2: Upload video file (copy and run this command)\n")
-                (insert "------------------------------------------------------\n")
-                (insert final-upload-command "\n\n")
-                (when playlist-id
-                  (insert "STEP 3: Add to playlist (manual)\n")
-                  (insert "---------------------------------\n")
-                  (insert (format "Playlist ID: %s\n" playlist-id))
-                  (insert "Note: Playlist addition is not included in manual commands.\n\n"))
-                (insert "Files:\n")
-                (insert "------\n")
-                (insert (format "Metadata file: %s\n" metadata-file))
-                (insert (format "Video file: %s\n" video-file))
-                (goto-char (point-min))
-                (pop-to-buffer (current-buffer)))
-              (message "Ready! Copy the command from the *YouTube Upload Commands* buffer"))
-          (message "Failed to get upload URL. Check initialization output: %s" init-output))))))
+  (let* ((params (tlon-youtube--read-upload-params))
+         (video-file (plist-get params :video-file))
+         (title (plist-get params :title))
+         (description (plist-get params :description))
+         (privacy (plist-get params :privacy))
+         (playlist-id (plist-get params :playlist-id))
+         (request-data (tlon-youtube--prepare-upload-request
+                        video-file title description privacy))
+         (init-command (nth 0 request-data))
+         (metadata-file (nth 2 request-data)))
+    (message "Running initialization step...")
+    ;; Execute the initialization step synchronously
+    (let* ((init-output (shell-command-to-string (mapconcat #'shell-quote-argument init-command " ")))
+           (upload-url (tlon-youtube--extract-upload-url init-output)))
+      (if upload-url
+          (let ((final-upload-command (format "curl -v -X PUT --data-binary @%s -H \"Content-Type: video/mp4\" \"%s\""
+                                              (shell-quote-argument (expand-file-name video-file))
+                                              upload-url)))
+            (with-current-buffer (get-buffer-create "*YouTube Upload Commands*")
+              (erase-buffer)
+              (insert "YouTube Upload Commands - Ready to run:\n")
+              (insert "==========================================\n\n")
+              (insert "STEP 1: ✓ COMPLETED - Upload URL obtained\n")
+              (insert "-------------------------------------------\n")
+              (insert "Upload URL: " upload-url "\n\n")
+              (insert "STEP 2: Upload video file (copy and run this command)\n")
+              (insert "------------------------------------------------------\n")
+              (insert final-upload-command "\n\n")
+              (when playlist-id
+                (insert "STEP 3: Add to playlist (manual)\n")
+                (insert "---------------------------------\n")
+                (insert (format "Playlist ID: %s\n" playlist-id))
+                (insert "Note: Playlist addition is not included in manual commands.\n\n"))
+              (insert "Files:\n")
+              (insert "------\n")
+              (insert (format "Metadata file: %s\n" metadata-file))
+              (insert (format "Video file: %s\n" video-file))
+              (goto-char (point-min))
+              (pop-to-buffer (current-buffer)))
+            (message "Ready! Copy the command from the *YouTube Upload Commands* buffer"))
+        (message "Failed to get upload URL. Check initialization output: %s" init-output)))))
 
 ;;;;;; Upload thumbnail
 
