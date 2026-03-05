@@ -409,6 +409,39 @@ a language from `tlon-project-languages'."
 	 (file (tlon-url-correspondences-file language-code)))
     (tlon-edit-json-mapping file "Source URL: " "Target URL: ")))
 
+(declare-function tlon-read-json "tlon-core")
+(declare-function tlon-write-data "tlon-core")
+;;;###autoload
+(defun tlon-add-url-correspondence (&optional source-url target-url language)
+  "Add a URL correspondence mapping SOURCE-URL to TARGET-URL for LANGUAGE.
+SOURCE-URL is the original URL and TARGET-URL is the corresponding URL for the
+target language. When called interactively, SOURCE-URL defaults to the URL at
+point. LANGUAGE is a natural language string such as \"spanish\"; when nil, it is
+inferred from the current buffer or prompted for."
+  (interactive)
+  (let* ((source-url (or source-url
+			 (read-string "Source URL: " (thing-at-point 'url t))))
+	 (language (or language
+		      (tlon-get-language-in-file)
+		      (completing-read "Language: " tlon-project-target-languages nil t)))
+	 (language-code (if (= (length language) 2)
+			    language
+			  (tlon-get-language-code-from-name language)))
+	 (file (tlon-url-correspondences-file language-code))
+	 (json-data (or (tlon-read-json file 'hash-table)
+			(make-hash-table :test 'equal)))
+	 (existing (gethash source-url json-data)))
+    (when existing
+      (unless (y-or-n-p (format "Source URL already mapped to `%s'. Overwrite? " existing))
+	(user-error "Aborted")))
+    (let ((target-url (or target-url
+			  (read-string (format "Target URL for `%s': " source-url)))))
+      (when (string-blank-p target-url)
+	(user-error "Target URL cannot be empty"))
+      (puthash source-url target-url json-data)
+      (tlon-write-data file json-data)
+      (message "Added correspondence: `%s' -> `%s' in %s" source-url target-url file))))
+
 (defun tlon-highlight-url-correspondences (&optional language)
   "Highlight source URLs in URL correspondences file for LANGUAGE.
 LANGUAGE is a natural language string such as \"spanish\". When nil, prompt for
@@ -449,7 +482,8 @@ a language from `tlon-project-languages'."
     ("5" "translate original document"          tlon-translate-file)]
    ["Add or modify"
     ("a s" "section correspondence"             tlon-section-correspondence-dwim)
-    ("a u" "URL correspondence"                 tlon-edit-url-correspondences)]
+    ("a u" "URL correspondence"                 tlon-edit-url-correspondences)
+    ("a U" "add URL correspondence"             tlon-add-url-correspondence)]
    ["jobs.org"
     ("r" "create record"                        tlon-create-record-for-job)
     ("h" "create heading"                       tlon-create-heading-for-job)

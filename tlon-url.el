@@ -902,7 +902,8 @@ than \"/\" or empty)."
     ("r" "Replace URL across projects"   tlon-replace-url-across-projects)
     ""
     "URL correspondence"
-    ("c" "Edit URL correspondence"           tlon-edit-url-correspondences)]])
+    ("c" "Edit URL correspondence"           tlon-edit-url-correspondences)
+    ("C" "Add URL correspondence"            tlon-add-url-correspondence)]])
 
 (provide 'tlon-url)
 ;;; tlon-url.el ends here
