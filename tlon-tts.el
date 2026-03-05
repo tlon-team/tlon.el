@@ -4028,12 +4028,34 @@ is populated and the current buffer is the staging buffer."
 
 ;;;;; Global
 
-;;;;;; Abbreviations
-
 (declare-function tlon-edit-json-mapping "tlon-core")
 (declare-function tlon-tts-abbreviations-file "tlon-core")
 (declare-function tlon-tts-phonetic-replacements-file "tlon-core")
 (declare-function tlon-tts-phonetic-transcriptions-file "tlon-core")
+
+;;;;;; Helpers
+
+(defun tlon-tts--resolve-language-code (&optional language)
+  "Return a language code for LANGUAGE.
+LANGUAGE is a natural language string such as \"spanish\", or the special value
+\"default\".  When nil, prompt for a language from `tlon-project-languages' plus
+\"default\"."
+  (let ((language (or language
+                      (completing-read "Language: " (cons "default" tlon-project-languages) nil t))))
+    (if (string= language "default")
+        "default"
+      (tlon-get-language-code-from-name language))))
+
+(defun tlon-tts--edit-global-mapping (file-fn prompt1 prompt2 &optional language)
+  "Edit a global TTS mapping in the file returned by FILE-FN.
+FILE-FN is a function that takes a language code and returns a file path.
+PROMPT1 and PROMPT2 are passed to `tlon-edit-json-mapping'.  LANGUAGE is as in
+`tlon-tts--resolve-language-code'."
+  (let* ((language-code (tlon-tts--resolve-language-code language))
+         (file (funcall file-fn language-code)))
+    (tlon-edit-json-mapping file prompt1 prompt2)))
+
+;;;;;; Abbreviations
 
 ;;;###autoload
 (defun tlon-tts-edit-global-abbreviations (&optional language)
@@ -4046,13 +4068,8 @@ it is stored under json/default/abbreviations.json).
 When LANGUAGE is nil, prompt for a language from `tlon-project-languages' plus
 the special candidate \"default\"."
   (interactive)
-  (let* ((language (or language
-                       (completing-read "Language: " (cons "default" tlon-project-languages) nil t)))
-         (language-code (if (string= language "default")
-                            "default"
-                          (tlon-get-language-code-from-name language)))
-         (file (tlon-tts-abbreviations-file language-code)))
-    (tlon-edit-json-mapping file "Abbreviation: " "Spoken form: ")))
+  (tlon-tts--edit-global-mapping #'tlon-tts-abbreviations-file
+                                 "Abbreviation: " "Spoken form: " language))
 
 ;;;;;; Phonetic replacements
 
@@ -4067,18 +4084,12 @@ it is stored under json/default/phonetic-replacements.json).
 When LANGUAGE is nil, prompt for a language from `tlon-project-languages' plus
 the special candidate \"default\"."
   (interactive)
-  (let* ((language (or language
-                       (completing-read "Language: " (cons "default" tlon-project-languages) nil t)))
-         (language-code (if (string= language "default")
-                            "default"
-                          (tlon-get-language-code-from-name language)))
-         (file (tlon-tts-phonetic-replacements-file language-code)))
-    (tlon-edit-json-mapping file "Term to replace: " "Replacement: ")))
+  (tlon-tts--edit-global-mapping #'tlon-tts-phonetic-replacements-file
+                                 "Term to replace: " "Replacement: " language))
 
 ;;;;;; Phonetic transcriptions
 
 ;;;###autoload
-(declare-function tlon-tts-phonetic-transcriptions-file "tlon-core")
 (defun tlon-tts-edit-global-phonetic-transcriptions (&optional language)
   "Add or edit a global phonetic transcription for LANGUAGE.
 When adding a new term, suggest an IPA transcription via AI and pre-fill the
@@ -4092,11 +4103,7 @@ it is stored under json/default/phonetic-transcriptions.json).
 When LANGUAGE is nil, prompt for a language from `tlon-project-languages' plus
 the special candidate \"default\"."
   (interactive)
-  (let* ((language (or language
-                       (completing-read "Language: " (cons "default" tlon-project-languages) nil t)))
-         (language-code (if (string= language "default")
-                            "default"
-                          (tlon-get-language-code-from-name language)))
+  (let* ((language-code (tlon-tts--resolve-language-code language))
          (file (tlon-tts-phonetic-transcriptions-file language-code))
          (data (or (tlon-read-json file 'hash-table) (make-hash-table :test 'equal)))
          (existing-terms (sort (hash-table-keys data) #'string<))
