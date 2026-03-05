@@ -917,8 +917,8 @@ nil, use `tlon-project-target-languages'."
                          tlon-project-target-languages)))
       (dolist (language languages)
         (let ((target-lang (tlon-lookup tlon-languages-properties :code :name language)))
-          (unless (and (string= source-lang-code target-lang)
-                       (tlon-translate--get-existing-abstract-translation key target-lang))
+          (unless (or (string= source-lang-code target-lang)
+                      (tlon-translate--get-existing-abstract-translation key target-lang))
             (let ((mode (tlon-translate--deepl-glossary-mode source-lang-code target-lang)))
               (pcase mode
                 ('require
@@ -1271,9 +1271,11 @@ GLOSSARY-FILE is the glossary file."
                 orig-paras trans-paras restrict glossary-file
                 (lambda ()
                   (setq pending (1- pending))
-                  (when (= pending 0)
-                    ;; Batch finished – launch next one.
-                    (process rest (+ idx (length batch)))))))))))
+                  (condition-case err
+                      (when (= pending 0)
+                        ;; Batch finished – launch next one.
+                        (process rest (+ idx (length batch))))
+                    (error (message "Error in batch callback: %S" err))))))))))
     (process ranges 0)))
 
 (declare-function tlon-ai-extract-relevant-glossary "tlon-glossary")

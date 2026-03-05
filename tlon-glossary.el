@@ -248,7 +248,7 @@ original data. SOURCE-TERMS are the terms sent to the AI."
   (if (not raw-response)
       (tlon-ai-callback-fail info)
     (let* ((num-expected (length source-terms))
-           (target-lang-name (tlon-lookup tlon-languages-properties :name :code tgt-lang-code))
+           (target-lang-name (tlon-lookup tlon-languages-properties :standard :code tgt-lang-code))
            (raw-response-file (file-name-concat paths-dir-downloads
                                                 (format "ai-glossary-%s-%s-raw-temp.txt"
                                                         src-lang-code tgt-lang-code)))
@@ -278,7 +278,7 @@ are the source terms sent to the AI."
                (received-translations (tlon-ai--parse-verified-translations clean-response))
                (validated-translations (tlon-ai--validate-translation-list received-translations source-terms))
                (translation-pairs (tlon-ai--create-translation-pairs validated-translations source-terms))
-               (glossary-copy (copy-sequence full-glossary-data))
+               (glossary-copy (copy-tree full-glossary-data))
                (updated-count (tlon-ai--merge-translations-into-glossary translation-pairs tgt-lang-code glossary-copy src-lang-code)))
           (tlon-ai--handle-verification-success glossary-copy updated-count tgt-lang-code raw-response-file))
       (error

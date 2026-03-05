@@ -51,7 +51,7 @@
 ;;;;; Pandoc
 
 (defconst tlon-pandoc-to-markdown
-  "-t markdown-raw_html-native_divs-native_spans-fenced_divs-bracketed_spans-header_attributes-fenced_code_blocks --wrap=none --strip-comments '%s' -o '%s'"
+  "-t markdown-raw_html-native_divs-native_spans-fenced_divs-bracketed_spans-header_attributes-fenced_code_blocks --wrap=none --strip-comments %s -o %s"
   "Pandoc command to convert HTML to Markdown.")
 
 (defconst tlon-pandoc-convert-from-file
@@ -152,7 +152,7 @@ HTML-CONTENT is the raw HTML string."
   (let* ((target (tlon-import-set-target entity-title bare-dir-name))
          (html-file (tlon-import-save-html-to-file html-content)))
     (shell-command
-     (format tlon-pandoc-convert-from-file html-file target))
+     (format tlon-pandoc-convert-from-file (shell-quote-argument html-file) (shell-quote-argument target)))
     (with-current-buffer (find-file-noselect target)
       (tlon-cleanup-common)
       (tlon-cleanup-eaf)
@@ -201,7 +201,7 @@ for one."
 		     tlon-pandoc-convert-from-url
 		   tlon-pandoc-convert-from-file)))
     (shell-command
-     (format pandoc source target))
+     (format pandoc (shell-quote-argument source) (shell-quote-argument target)))
     (with-current-buffer (find-file-noselect target)
       (tlon-cleanup-common)
       (when (and (simple-extras-string-is-url-p source)
@@ -241,33 +241,40 @@ If TITLE is nil, prompt the user for one."
 	(footer (read-string "Footer: ")))
     (unless (executable-find "pdftotext")
       (user-error "`pdftotext' not found. Please install it (`brew install poppler') and set `tlon-pdftotext' to its path"))
-    (shell-command (format "'%s' -margint %s -marginb %s '%s' '%s'"
-			   tlon-pdftotext header footer path target))
+    (shell-command (format "%s -margint %s -marginb %s %s %s"
+			   (shell-quote-argument tlon-pdftotext)
+			   (shell-quote-argument header)
+			   (shell-quote-argument footer)
+			   (shell-quote-argument path)
+			   (shell-quote-argument target)))
     (find-file target)))
 
 (defun tlon-convert-pdf (source &optional destination)
   "Convert PDF in SOURCE to Markdown in DESTINATION.
 If DESTINATION is nil, return the Markdown string."
-  (shell-command-to-string (format "%s '%s' '%s'"
-				   tlon-pdftotext
-				   (expand-file-name source)
-				   (if destination
-				       (expand-file-name destination)
-				     "-"))))
+  (shell-command-to-string (format "%s %s %s"
+				   (shell-quote-argument tlon-pdftotext)
+				   (shell-quote-argument (expand-file-name source))
+				   (shell-quote-argument
+				    (if destination
+					(expand-file-name destination)
+				      "-")))))
 
 ;;;;; EAF API
 
 (defun tlon-import-eaf-article-query (id)
   "Return an EA Forum GraphQL query for post whose ID is ID."
-  (concat "{\"query\":\"{\\n  post(\\n    input: {\\n      selector: {\\n        _id: \\\""
-	  id
-	  "\\\"\\n      }\\n    }\\n  ) {\\n    result {\\n      _id\\n      postedAt\\n      url\\n      canonicalSource\\n      title\\n      contents {\\n        markdown\\n        ckEditorMarkup\\n      }\\n      slug\\n      commentCount\\n      htmlBody\\n      baseScore\\n      voteCount\\n      pageUrl\\n      legacyId\\n      question\\n      tableOfContents\\n      author\\n      user {\\n        username\\n        displayName\\n        slug\\n        bio\\n      }\\n      coauthors {\\n        _id\\n        username\\n        displayName\\n        slug\\n      }\\n    }\\n  }\\n}\\n\"}"))
+  (let ((id (replace-regexp-in-string "[\"\\\\]" "" id)))
+    (concat "{\"query\":\"{\\n  post(\\n    input: {\\n      selector: {\\n        _id: \\\""
+	    id
+	    "\\\"\\n      }\\n    }\\n  ) {\\n    result {\\n      _id\\n      postedAt\\n      url\\n      canonicalSource\\n      title\\n      contents {\\n        markdown\\n        ckEditorMarkup\\n      }\\n      slug\\n      commentCount\\n      htmlBody\\n      baseScore\\n      voteCount\\n      pageUrl\\n      legacyId\\n      question\\n      tableOfContents\\n      author\\n      user {\\n        username\\n        displayName\\n        slug\\n        bio\\n      }\\n      coauthors {\\n        _id\\n        username\\n        displayName\\n        slug\\n      }\\n    }\\n  }\\n}\\n\"}")))
 
 (defun tlon-import-eaf-tag-query (slug)
   "Return an EA Forum GraphQL query for tag whose slug is SLUG."
-  (concat "{\"query\":\"{\\n  tag(input: { selector: { slug: \\\""
-	  slug
-	  "\\\" } }) {\\n    result {\\n      name\\n      slug\\n      description {\\n        html\\n      }\\n      parentTag {\\n        name\\n      }\\n    }\\n  }\\n}\\n\"}"))
+  (let ((slug (replace-regexp-in-string "[\"\\\\]" "" slug)))
+    (concat "{\"query\":\"{\\n  tag(input: { selector: { slug: \\\""
+	    slug
+	    "\\\" } }) {\\n    result {\\n      name\\n      slug\\n      description {\\n        html\\n      }\\n      parentTag {\\n        name\\n      }\\n    }\\n  }\\n}\\n\"}")))
 
 (defun tlon-import-eaf-request (id-or-slug &optional async)
   "Run an EAF request for ID-OR-SLUG.
@@ -345,9 +352,10 @@ The URL is constructed using the tag's slug."
     (tlon-import-eaf-shorten-title title)))
 
 (defun tlon-import-eaf-shorten-title (title)
-  "Return a shortened version of TITLE."
-  (string-match "\\([[:alnum:] ,'‘’“”@#$%*\\^`~&\"]*\\)" title)
-  (match-string 1 title))
+  “Return a shortened version of TITLE.”
+  (when (stringp title)
+    (string-match “\\([[:alnum:] ,’’’””@#$%*\\^`~&\”]*\\)” title)
+    (match-string 1 title)))
 
 ;;;;; EAF validation
 

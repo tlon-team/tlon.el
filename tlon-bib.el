@@ -90,7 +90,7 @@ This option controls the batch size for
 
 (defconst tlon-locators
   '(("book" . "bk.")
-    ("chapter ". "chap.")
+    ("chapter" . "chap.")
     ("column" . "col.")
     ("figure" . "fig.")
     ("folio" . "fol.")
@@ -106,7 +106,7 @@ This option controls the batch size for
     ("verse" . "v.")
     ("volume" . "vol.")
     ("books" . "bks.")
-    ("chapter ". "chaps.")
+    ("chapters" . "chaps.")
     ("columns" . "cols.")
     ("figures" . "figs.")
     ("folios" . "fols.")
@@ -258,7 +258,7 @@ Give up after five seconds."
     (let* ((doi (when doi (tlon-fetch-url-from-doi doi))))
       (if-let ((abstract
 		(catch 'found
-		  (dolist (field (list url (unless (string= url doi) doi)))
+		  (dolist (field (list url (unless (and url doi (string= url doi)) doi)))
 		    (when (and field
 			       (not (string-match-p "\\.pdf$" field)))
 		      (when-let ((abstract
@@ -284,7 +284,7 @@ Give up after five seconds."
 		;; with multiple redirects, we want to get the final URL
 		(when (search-backward-regexp "Location: \\(.*\\)" nil t)
 		  (match-string 1))))
-      (substring final-url 0 -1))))
+      (string-trim-right final-url "[\r\n]"))))
 
 ;; TODO: refactor two functions below
 (defun tlon-fetch-abstract-from-crossref (doi)
@@ -292,25 +292,25 @@ Give up after five seconds."
   (when doi
     (let ((url (format "https://api.crossref.org/works/%s" doi)))
       (message "Trying to find abstract for %s with Crossref..." doi)
-      (if-let ((buf (shut-up (url-retrieve-synchronously url))))
-	  (with-current-buffer buf
-	    (goto-char (point-min))
-	    (if (search-forward-regexp "HTTP/.* 404" nil t) ; check for 404 not found
-		(progn
-		  (kill-buffer)
-		  nil)
-	      (re-search-forward "^$")
-	      (delete-region (point) (point-min))
-	      (let* ((json-object-type 'plist)
-		     (json-array-type 'list)
-		     (json (json-read))
-		     (message-plist (plist-get json :message)))
-		(kill-buffer)
-		(if-let ((abstract (plist-get message-plist :abstract)))
-		    abstract
-		  (progn (message "No abstract found.") nil)))))
-	(message "Failed to retrieve Crossref data for %s." doi)
-	nil))))
+      (let ((buf (shut-up (url-retrieve-synchronously url))))
+	(unwind-protect
+	    (if buf
+		(with-current-buffer buf
+		  (goto-char (point-min))
+		  (if (search-forward-regexp "HTTP/.* 404" nil t) ; check for 404 not found
+		      nil
+		    (re-search-forward "^$")
+		    (delete-region (point) (point-min))
+		    (let* ((json-object-type 'plist)
+			   (json-array-type 'list)
+			   (json (json-read))
+			   (message-plist (plist-get json :message)))
+		      (if-let ((abstract (plist-get message-plist :abstract)))
+			  abstract
+			(progn (message "No abstract found.") nil)))))
+	      (message "Failed to retrieve Crossref data for %s." doi)
+	      nil)
+	  (when (buffer-live-p buf) (kill-buffer buf)))))))
 
 (defun tlon-fetch-abstract-from-google-books (isbn)
   "Return the abstract of the book with ISBN, timing out after 5 seconds."
@@ -319,22 +319,23 @@ Give up after five seconds."
       (let ((url (format "https://www.googleapis.com/books/v1/volumes?q=isbn:%s" isbn))
 	    (description nil))
 	(message "Trying to find abstract for %s with Google Books..." isbn)
-	(if-let ((buf (url-retrieve-synchronously url)))
-	    (with-current-buffer buf
-	      (set-buffer-multibyte t)
-	      (set-buffer-file-coding-system 'utf-8)
-	      (goto-char (point-min))
-	      (re-search-forward "^$")
-	      (delete-region (point) (point-min))
-	      (let* ((json-object-type 'plist)
-		     (json-array-type 'list)
-		     (json (json-read))
-		     (items (plist-get json :items))
-		     (volume-info (and items (plist-get (car items) :volumeInfo))))
-		(setq description (and volume-info (plist-get volume-info :description)))))
-	  (message "Failed to retrieve Google Books data for %s." isbn))
-	(when (get-buffer url)
-	  (kill-buffer url))
+	(let ((buf (url-retrieve-synchronously url)))
+	  (unwind-protect
+	      (if buf
+		  (with-current-buffer buf
+		    (set-buffer-multibyte t)
+		    (set-buffer-file-coding-system 'utf-8)
+		    (goto-char (point-min))
+		    (re-search-forward "^$")
+		    (delete-region (point) (point-min))
+		    (let* ((json-object-type 'plist)
+			   (json-array-type 'list)
+			   (json (json-read))
+			   (items (plist-get json :items))
+			   (volume-info (and items (plist-get (car items) :volumeInfo))))
+		      (setq description (and volume-info (plist-get volume-info :description)))))
+		(message "Failed to retrieve Google Books data for %s." isbn))
+	    (when (buffer-live-p buf) (kill-buffer buf))))
 	(if description description (progn (message "No abstract found.") nil))))))
 
 (defun tlon-abstract-may-proceed-p ()
@@ -515,13 +516,14 @@ Save citekey to \"kill-ring\". If KEY is nil, use the key of the entry at point.
   (let (entries)
     (with-current-buffer (find-file-noselect tlon-file-fluid)
       (widen)
-      (setq entries (buffer-string))
-      (erase-buffer)
-      (save-buffer))
+      (setq entries (buffer-string)))
     (with-current-buffer (find-file-noselect tlon-file-stable)
       (widen)
       (goto-char (point-max))
       (insert entries)
+      (save-buffer))
+    (with-current-buffer (find-file-noselect tlon-file-fluid)
+      (erase-buffer)
       (save-buffer))
     (message "Moved all entries from `fluid.bib' to `stable.bib'. You may want to commit these changes.")))
 
@@ -587,14 +589,14 @@ save the buffer, and display an appropriate message."
 		(replace-regexp-in-string ":" "꞉" title nil t))
 	       (t
 		(user-error "Title for %s contains neither \":\" nor \"꞉\"" key))))
-	     (message (format (if (eq direction 'colon-to-modified)
-				  "Replaced colon with modified letter colon in title of %s"
-				"Replaced modified letter colon with colon in title of %s")
-			      key)))
+	     (msg (format (if (eq direction 'colon-to-modified)
+			      "Replaced colon with modified letter colon in title of %s"
+			    "Replaced modified letter colon with colon in title of %s")
+			  key)))
 	(bibtex-set-field "title" new-title)
 	(save-buffer)
 	(kill-buffer)
-	(run-with-timer 0.5 nil (lambda () (message message)))))))
+	(run-with-timer 0.5 nil (lambda () (message msg)))))))
 
 ;;;;; Cleanup
 
