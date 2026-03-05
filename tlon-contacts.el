@@ -152,9 +152,11 @@ If PROP is nil, prompt the user to select a property."
   "Get the first and last name contact at point.
 Return a cons cell with the name and email address."
   (with-current-buffer (find-buffer-visiting tlon-contacts-file)
-    (cl-destructuring-bind (last first)
-        (split-string (substring-no-properties (org-get-heading t t t t)) ", ")
-      (cons first last))))
+    (let ((parts (split-string (substring-no-properties (org-get-heading t t t t)) ", ")))
+      (unless (= (length parts) 2)
+	(user-error "Expected \"Last, First\" format but got: %s"
+		    (substring-no-properties (org-get-heading t t t t))))
+      (cons (cadr parts) (car parts)))))
 
 ;;;;; Commands to edit specific properties
 

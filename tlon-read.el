@@ -65,7 +65,7 @@
   "Start or stop reading the target buffer."
   (interactive)
   (let ((buffer (tlon-get-target-buffer))
-	(current-buffer (current-buffer)))
+	(orig-buffer (current-buffer)))
     (pop-to-buffer buffer)
     (when read-aloud--c-bufpos
       (goto-char read-aloud--c-bufpos))
@@ -73,13 +73,13 @@
     ;; we move point to the previous chunk, using the chunk divider
     ;; defined in `read-aloud--grab-text'
     (re-search-backward "[,.:!;]\\|\\(-\\|\n\\|\r\n\\)\\{2,\\}" nil t)
-    (pop-to-buffer current-buffer)))
+    (pop-to-buffer orig-buffer)))
 
 (defun tlon-read-backward-or-forward (direction)
   "Move in DIRECTION in the target buffer."
   (interactive)
   (let ((buffer (tlon-get-target-buffer))
-	(current-buffer (current-buffer))
+	(orig-buffer (current-buffer))
 	(fun (if (eq direction 'backward)
 		 're-search-backward
 	       're-search-forward)))
@@ -87,7 +87,7 @@
       (read-aloud-buf))
     (pop-to-buffer buffer)
     (funcall fun "[,.:!;]\\|\\(-\\|\n\\|\r\n\\)\\{2,\\}" nil t 1)
-    (pop-to-buffer current-buffer)))
+    (pop-to-buffer orig-buffer)))
 
 (defun tlon-read-backward ()
   "Move backward in the target buffer."

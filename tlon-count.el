@@ -73,7 +73,7 @@ If REGEXP is nil, restrict return the number of words in Markdown files."
   (interactive)
   (if-let ((dir (or dir
 		    (let ((file-at-point (thing-at-point 'filename)))
-		      (when (file-directory-p file-at-point)
+		      (when (and file-at-point (file-directory-p file-at-point))
 			file-at-point)))))
       (let* ((regexp (or regexp "\\.md$"))
 	     (files (if recursively
@@ -98,9 +98,7 @@ other value, return a message with the word count and the file count."
       (dolist (file files list)
 	(with-temp-buffer
 	  (insert-file-contents file)
-	  (push (cons (tlon-count-substantive-words) (file-name-nondirectory file)) list))
-	(unless (member (current-buffer) initial-buffers)
-	  (kill-buffer (current-buffer))))
+	  (push (cons (tlon-count-substantive-words) (file-name-nondirectory file)) list)))
       (let ((word-count (apply '+ (mapcar 'car list)))
 	    (file-count (length list)))
 	(kill-new (number-to-string word-count))
@@ -170,7 +168,9 @@ If FILE is nil, export the file visited by the current buffer."
   (interactive)
   (let* ((dir-id (alist-get (tlon-get-language-in-file file 'error)
 			    tlon-count-gdrive-directory-ids nil nil 'string=))
-	 (output (shell-command (format "gdrive files import %s --parent %s" file dir-id)))
+	 (output (shell-command (format "gdrive files import %s --parent %s"
+					(shell-quote-argument file)
+					(shell-quote-argument dir-id))))
 	 (url (format "https://drive.google.com/drive/folders/%s" dir-id)))
     (pcase output
       (0 (message "File exported to Google Drive."))
@@ -285,7 +285,10 @@ computed by dividing the file size by CHARS-PER-WORD."
 	 (buffer (get-buffer-create "*Directory Size*"))
 	 (script (file-name-concat (tlon-repo-lookup :dir :name "babel")
 				   "count/historic-word-count")))
-    (shell-command (format "sh %s %s %s %s" script dir days chars-per-word) buffer)))
+    (shell-command (format "sh %s %s %s %s"
+			  (shell-quote-argument script)
+			  (shell-quote-argument dir)
+			  days chars-per-word) buffer)))
 (provide 'tlon-count)
 
 ;;;;; Menu

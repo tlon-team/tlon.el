@@ -158,7 +158,7 @@ response INFO."
 (defun tlon-newsletter-ensure-repo-dir-exists ()
   "Ensure the newsletter repository directory exists."
   (unless (file-exists-p tlon-newsletter-repo-dir)
-    (user-error "Newsletter repo not found: %s" tlon-newsletter-prompt-file)))
+    (user-error "Newsletter repo not found: %s" tlon-newsletter-repo-dir)))
 
 (defun tlon-newsletter-ensure-numeros-subdir-exists ()
   "Ensure the \"numeros\" subdirectory in the newsletter repository exists."
@@ -239,6 +239,8 @@ Returns a cons cell (YEAR . MONTH) with numeric values, or signals an error."
   (let* ((months '("enero" "febrero" "marzo" "abril" "mayo" "junio"
                    "julio" "agosto" "septiembre" "octubre" "noviembre" "diciembre"))
          (pos (cl-position month-name months :test 'string-equal-ignore-case)))
+    (unless pos
+      (user-error "Unknown month name: %s" month-name))
     (nth (mod (1- pos) 12) months)))
 
 ;;;;; Publish issue

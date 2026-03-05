@@ -200,16 +200,16 @@ THEME is either `light' or `dark'. LANGUAGE is either `css' or `js'."
 	 (while (re-search-forward tlon-color-globals-css-remove-pattern nil t)
 	   (replace-match "")))
 	('js
-	 (erase-buffer))
-	(save-buffer)))))
+	 (erase-buffer)))
+      (save-buffer))))
 
 ;;;###autoload
 (defun tlon-color-save-frontend-files ()
   "Save `globals.css' and propagate its state to `theme-colors.js'."
   (interactive)
   (save-excursion
-    (with-current-buffer (find-file-noselect tlon-color-globals-css-file))
-    (save-buffer))
+    (with-current-buffer (find-file-noselect tlon-color-globals-css-file)
+      (save-buffer)))
   (tlon-color-store-palette "temp-palette" 'overwrite)
   (tlon-color-load-palette "temp-palette" 'js))
 

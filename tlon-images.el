@@ -156,7 +156,10 @@ Percent defaults to `tlon-images-default-brightness-reduction' if nil."
   (let* ((source (tlon-images-read-image source))
          (target (or target (tlon-images-get-themed-file-name source 'dark)))
          (percent (- 100 (or percent tlon-images-default-brightness-reduction)))
-         (command (format tlon-imagemagick-reduce-brightness source target percent)))
+         (command (format tlon-imagemagick-reduce-brightness
+			  (shell-quote-argument source)
+			  (shell-quote-argument target)
+			  percent)))
     (tlon-images-process-image source target command "Reduced brightness of `%s'.")))
 
 ;;;###autoload
@@ -165,7 +168,9 @@ Percent defaults to `tlon-images-default-brightness-reduction' if nil."
   (interactive)
   (let* ((source (tlon-images-read-image source))
          (target (or target (tlon-images-get-themed-file-name source 'dark)))
-         (command (format tlon-imagemagick-invert-colors source target)))
+         (command (format tlon-imagemagick-invert-colors
+			  (shell-quote-argument source)
+			  (shell-quote-argument target))))
     (tlon-images-process-image source target command "Inverted colors of `%s'.")))
 
 ;;;###autoload
@@ -176,7 +181,10 @@ BACKGROUND defaults to \"white\" if nil."
   (let* ((source (tlon-images-read-image source))
          (target (or target source))
          (background (or background "white"))
-         (command (format tlon-imagemagick-make-nontransparent source target background))
+         (command (format tlon-imagemagick-make-nontransparent
+			  (shell-quote-argument source)
+			  (shell-quote-argument target)
+			  background))
 	 (output (shell-command-to-string command)))
     (tlon-images-handle-output output (format "Made `%s' nontransparent." source))))
 
@@ -210,7 +218,7 @@ Display MESSAGE-FMT with the name of the source image."
 (defun tlon-images-handle-output (output message)
   "Handle OUTPUT of `imagemagic' command and display MESSAGE."
   (if (string-empty-p output)
-      (message message)
+      (message "%s" message)
     (user-error "Error: %s" output)))
 
 (defun tlon-images-get-themed-file-name (file theme)
@@ -322,7 +330,7 @@ Finally, restore `gptel-context' to PREVIOUS-CONTEXT."
     (funcall original-callback response info))
   (unless original-callback
     (if response
-	(message response)
+	(message "%s" response)
       (user-error "Error: %s" (plist-get info :status))))
   (setq gptel-context previous-context))
 
@@ -370,7 +378,9 @@ and the file selected by the user."
       (when-let ((name (car (tlon-get-tag-attribute-values "Figure"))))
 	(file-name-concat (file-name-as-directory (tlon-get-repo 'no-prompt))
 			  (replace-regexp-in-string "^\\.\\./" "" name)))
-      (member (buffer-file-name) image-file-name-extensions)
+      (when-let ((ext (file-name-extension (or (buffer-file-name) ""))))
+	(when (member (downcase ext) image-file-name-extensions)
+	  (buffer-file-name)))
       (when (derived-mode-p 'dired-mode)
 	(dired-get-filename))
       (read-file-name "Image file: ")))

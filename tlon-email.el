@@ -47,7 +47,7 @@ it.")
 
 (defun tlon-email-unset-variables ()
   "Unset email variables."
-  (setq tlon-email-language nil
+  (setq tlon-email-name nil
 	tlon-email-language nil))
 
 ;;;; Functions
@@ -79,7 +79,7 @@ it.")
 
 (defun tlon-email-get-templates ()
   "Return a list of available email templates."
-  (directory-files tlon-email-templates-directory nil directory-files-no-dot-files-regexp ".*\\.org"))
+  (directory-files tlon-email-templates-directory nil "\\.org\\'"))
 
 (defun tlon-email-get-template-content (template)
   "Return the subject and body of the email TEMPLATE, as a cons cell."

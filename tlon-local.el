@@ -653,9 +653,10 @@ This only applies when in a logs buffer with follow mode enabled."
            (user-error "HTTP error: %s" err)))
        (goto-char (point-min))
        (re-search-forward "^$" nil 'move)
-       (let ((json (json-parse-buffer :object-type 'alist :array-type 'list)))
-         (kill-buffer)
-         (funcall callback json))))))
+       (unwind-protect
+           (let ((json (json-parse-buffer :object-type 'alist :array-type 'list)))
+             (funcall callback json))
+         (kill-buffer))))))
 
 (defun tlon-local--rfc3339 (time)
   "Return TIME formatted as RFC3339 in UTC."

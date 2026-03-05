@@ -136,11 +136,13 @@ the basename of FILE."
            (let* ((trans-bare (tlon-get-bare-dir-translation target-language-code orig-lang orig-bare))
                   (dir (and trans-bare (file-name-concat repo trans-bare))))
              (when (and dir (file-directory-p dir))
-               (condition-case _err
+               (condition-case err
                    (let* ((meta (tlon-metadata-in-dir dir))
                           (all (tlon-metadata-lookup-all meta "file" "original_path" orig-base)))
                      (dolist (h all) (push h hits)))
-                 (error nil)))))
+                 (error
+		  (message "Warning: error scanning counterpart: %s" (error-message-string err))
+		  nil)))))
          (setq hits (delete-dups hits))
          (pcase (length hits)
            (1 (car hits))
