@@ -138,7 +138,7 @@ the basename of FILE."
              (when (and dir (file-directory-p dir))
                (condition-case err
                    (let* ((meta (tlon-metadata-in-dir dir))
-                          (all (tlon-metadata-lookup-all meta "file" "original_path" orig-base)))
+                          (all (tlon-metadata-lookup-all meta "file" "original_path" orig-base "type" yaml-type)))
                      (dolist (h all) (push h hits)))
                  (error
 		  (message "Warning: error scanning counterpart: %s" (error-message-string err))
