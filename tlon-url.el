@@ -225,7 +225,8 @@ of a visiting buffer if that yields better information:
 - Any other file type defaults to the Markdown extractor, which does a generic
   regexp scan for links."
   (let* ((file (or file (buffer-file-name)))
-         (ext  (when file (downcase (file-name-extension file))))
+         (ext  (when-let ((raw-ext (and file (file-name-extension file))))
+                (downcase raw-ext)))
          (visiting-buffer (and file (find-buffer-visiting file)))
          (mode (and visiting-buffer
                     (buffer-local-value 'major-mode visiting-buffer))))
@@ -474,20 +475,14 @@ and REPO-DIR provides context."
         (if (string-blank-p stdout-content)
             (setq parse-error-reason "stdout was blank")
           (condition-case err
-              (condition-case err
-                  (progn
-                    (setq report (json-read-from-string stdout-content))
-                    (message "Parsed report type: %s" (type-of report))
-                    (message "Parsed report content: %s" report))
+              (progn
+                (setq report (json-read-from-string stdout-content))
                 (unless (listp report)
-                  (error "Expected report to be a list, but got: %s" (type-of report)))
-                (json-error
-                 (setq parse-error-reason (format "JSON parsing failed: %s" err))
-                 (message "Error parsing JSON: %s" err))
-                (error
-                 (setq parse-error-reason (format "Unexpected error: %s" err))
-                 (message "Unexpected error during JSON parsing: %s" err)))
-            (error (setq parse-error-reason (format "JSON parsing failed: %s" err)))))
+                  (error "Expected report to be a list, but got: %s" (type-of report))))
+            (json-error
+             (setq parse-error-reason (format "JSON parsing failed: %s" err)))
+            (error
+             (setq parse-error-reason (format "Unexpected error: %s" err)))))
         (if parse-error-reason
             (error "Lychee%s (exit status %d) but %s.\nStdout (first 500 chars):\n%s\nStderr (first 500 chars):\n%s"
                    (if (zerop (process-exit-status process)) " reported success" " process failed")

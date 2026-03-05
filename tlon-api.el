@@ -118,8 +118,10 @@ CALLBACK is called with the token as its argument."
   "Copy API token to the kill ring."
   (interactive)
   (tlon-api-get-token tlon-api-local-url (lambda (access-token)
-					   (kill-new access-token)
-					   (message "API token copied to the kill ring."))))
+					   (if access-token
+					       (progn (kill-new access-token)
+						      (message "API token copied to the kill ring."))
+					     (message "Failed to obtain access token.")))))
 
 ;;;;;; Logs
 
@@ -261,7 +263,7 @@ If citation is not found, return nil."
 
 (defun tlon-api-get-citation-json (url)
   "Return the JSON response from URL."
-  (let* ((command (format "curl -sS -X 'GET' \ '%s' \ -H 'accept: application/json'" url))
+  (let* ((command (format "curl -sS -X GET %s -H 'accept: application/json'" (shell-quote-argument url)))
          (output (shell-command-to-string command)))
     (if (string-match "could not resolve host" output)
         (user-error "Failed to get citation from URL '%s'. Curl error: could not resolve host. Is your local environment set up correctly?" url)
@@ -289,24 +291,24 @@ If DELETE-AFTER-UPLOAD is non-nil, delete FILE after uploading."
   (let* ((file (or file (files-extras-read-file file)))
 	 (file-sans-fir (file-name-nondirectory file))
 	 (destination (or destination (read-directory-name "Destination: "))))
-    (start-process "scp-upload" "*scp-upload*"
-                   "scp"
-                   (expand-file-name file)
-                   destination)
-    (message "Uploading `%s' to `%s'..." file-sans-fir destination)
-    (set-process-sentinel
-     (get-buffer-process "*scp-upload*")
-     (lambda (_ event)
-       (when (string= event "finished\n")
-	 (when delete-after-upload
-	   (delete-file file))
-	 (message "`%s' successfully uploaded to `%s'." file-sans-fir destination))
-       (unless (string= event "finished\n")
-	 (progn
-           (message "Upload failed: %s" event)
-           (display-buffer "*scp-upload*"))))))
-  (when (derived-mode-p 'dired-mode)
-    (revert-buffer)))
+    (let ((proc (start-process "scp-upload" "*scp-upload*"
+				"scp"
+				(expand-file-name file)
+				destination)))
+      (message "Uploading `%s' to `%s'..." file-sans-fir destination)
+      (set-process-sentinel
+       proc
+       (lambda (_ event)
+	 (if (string= event "finished\n")
+	     (progn
+	       (when delete-after-upload
+		 (delete-file file))
+	       (message "`%s' successfully uploaded to `%s'." file-sans-fir destination)
+	       (when (derived-mode-p 'dired-mode)
+		 (revert-buffer)))
+	   (progn
+	     (message "Upload failed: %s" event)
+	     (display-buffer "*scp-upload*"))))))))
 
 ;;;;; Transient
 

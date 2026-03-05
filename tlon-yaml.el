@@ -183,7 +183,7 @@ an error."
   "Return metadata of all repos matching all PAIRS.
 PAIRS is an even-sized list of <key value> tuples."
   (let (metadata)
-    (dolist (repo (tlon-repo-lookup-all :dir pairs))
+    (dolist (repo (apply #'tlon-repo-lookup-all :dir pairs))
       (setq metadata (append (tlon-metadata-in-repo repo) metadata)))
     metadata))
 
@@ -218,7 +218,7 @@ additional metadata such as the file name and the file type."
 	 (language (tlon-repo-lookup :language :dir repo))
 	 (extras `(("file" . ,file-or-buffer)
 		   ("database" . "Tlön")
-		   ("landid" . ,language)
+		   ("langid" . ,language)
                    ("type" . ,(tlon-yaml-get-type file-or-buffer)))))
     (append metadata extras)))
 

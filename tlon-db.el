@@ -190,7 +190,7 @@ Returns the authentication token or nil if authentication failed."
       (setq tlon-db-auth-token (gethash "access_token" auth-data))
       ;; Set token expiry to 30 minutes from now (typical JWT expiry).
       (setq tlon-db-auth-token-expiry (time-add (current-time) (seconds-to-time (* 30 60))))
-      (message "Authentication successful. Token: %s" tlon-db-auth-token)
+      (message "Authentication successful.")
       tlon-db-auth-token)))
 
 (defun tlon-db-ensure-auth ()
@@ -1373,7 +1373,7 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
     (setq tlon-db--db-watch-descriptor
           (file-notify-add-watch tlon-file-db '(change) #'tlon-db--sync-on-change))
     ;; Ensure cleanup on exit.
-    (add-hook 'kill-emacs-hook #'tlon-db-remove-file-notify-watch nil t)))
+    (add-hook 'kill-emacs-hook #'tlon-db-remove-file-notify-watch)))
 
 (defun tlon-db-remove-file-notify-watch ()
   "Remove file notification watch."

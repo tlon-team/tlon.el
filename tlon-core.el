@@ -1096,12 +1096,14 @@ directory."
 
 (defun tlon-concatenate-list (list)
   "Concatenate LIST into a string with commas and a conjunct, as appropriate."
-  (if (cdr list)
-      (let ((all-but-last (mapconcat #'identity (butlast list) ", "))
-	    (last (car (last list)))
-	    (conjunct (tlon-lookup tlon-tts-conjuncts :conjunct :language (tlon-get-language-in-file))))
-	(format "%s %s %s" all-but-last conjunct last))
-    (car list)))
+  (cond
+   ((null list) "")
+   ((cdr list)
+    (let ((all-but-last (mapconcat #'identity (butlast list) ", "))
+	  (last (car (last list)))
+	  (conjunct (tlon-lookup tlon-tts-conjuncts :conjunct :language (tlon-get-language-in-file))))
+      (format "%s %s %s" all-but-last conjunct last)))
+   (t (car list))))
 
 ;;;;; language
 
@@ -1494,8 +1496,8 @@ repository."
   "Throw an error unless current buffer is in REPO branch BRANCH."
   (let ((default-directory repo))
     (unless (string= (magit-get-current-branch) branch)
-      (user-error "Please switch to the branch `%s' before proceeding" branch)
-      t)))
+      (user-error "Please switch to the branch `%s' before proceeding" branch))
+    t))
 
 (declare-function tlon-get-clock-key "tlon-clock")
 (declare-function tlon-metadata-in-repo "tlon-yaml")

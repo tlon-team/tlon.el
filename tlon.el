@@ -114,9 +114,7 @@ This variable should not be set manually.")
   (file-name-concat (tlon-repo-lookup :dir :name "babel-refs") "section-correspondences.json")
   "File containing the section correspondences.")
 
-(defvar tlon-file-bare-bibliography
-  (file-name-concat (tlon-repo-lookup :dir :name "babel-refs") "bib" "bare-bibliography.json")
-  "File containing the bare bibliography.")
+;; Note: `tlon-file-bare-bibliography' is already defined as a defconst above.
 
 (defmacro tlon-create-file-opening-command (file)
   "Create a command to open FILE."
@@ -226,7 +224,7 @@ If no FILE is provided, use the file visited by the current buffer."
 	 (default-directory (file-name-directory file))
 	 (user (tlon-user-lookup :git :name user-full-name))
 	 ;; get most recent commit in FILE by USER
-	 (output (shell-command-to-string (format "git log --pretty=format:'%%h %%an %%s' --follow -- '%s' | grep -m 1 '%s' | awk '{print $1}'" file user)))
+	 (output (shell-command-to-string (format "git log --pretty=format:'%%h %%an %%s' --follow -- %s | grep -m 1 %s | awk '{print $1}'" (shell-quote-argument file) (shell-quote-argument user))))
 	 (commit (car (split-string output "\n"))))
     commit))
 
@@ -437,7 +435,7 @@ If the key is not found, it is added to the list of missing keys."
 	      (goto-char (point-min))
 	      (if (re-search-forward (format "{%s," bibtex-key) nil t)
 		  (call-interactively 'bibtex-extras-move-entry-to-tlon)
-		(push 'missing-keys bibtex-key))))
+		(push bibtex-key missing-keys))))
 	  (forward-line)))
       (with-output-to-temp-buffer "*Missing BibTeX Keys*"
 	(dolist (key missing-keys)
@@ -453,9 +451,8 @@ Return the path of the temporary file created."
 	 (new-file-name (format "%s_%s" commit-hash file-name))
 	 (new-file (make-temp-file new-file-name nil ".md"))
 	 (git-command
-	  (format "git show %s:\"%s\""
-		  commit-hash
-		  (shell-quote-argument relative-file))))
+	  (format "git show %s"
+		  (shell-quote-argument (concat commit-hash ":" relative-file)))))
     (let ((default-directory repo-root))
       (with-temp-buffer
 	(insert (shell-command-to-string git-command))
