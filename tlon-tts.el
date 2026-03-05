@@ -3810,7 +3810,7 @@ Bizarrely, the TTS engine reads 80000 as \"eight thousand\", at least in Spanish
              (unit-pattern-optional-group
               (if lang-units
                   ;; Use [[:space:]]* to match zero or more whitespace characters
-                  (format "\\(?:[[:space:]]*\\(%s\\)\\)?" ; Group 2 for unit
+                  (format "\\(?:[[:space:]]*\\(%s\\)\\)?" ; Group 4 for unit
                           (mapconcat 'regexp-quote lang-units "\\|"))
                 ""))
              (full-pattern (format "%s%s%s" currency-symbol-re number-pattern-core unit-pattern-optional-group))
@@ -3820,7 +3820,7 @@ Bizarrely, the TTS engine reads 80000 as \"eight thousand\", at least in Spanish
           (goto-char (point-min))
           (while (re-search-forward full-pattern nil t)
             (let* ((amount-str (match-string-no-properties 1))
-                   (unit-str (match-string-no-properties 2))
+                   (unit-str (match-string-no-properties 4))
                    (number (tlon-string-to-number amount-str
                                                   tlon-default-thousands-separator
                                                   (tlon-get-decimal-separator lang)))
