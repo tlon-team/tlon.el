@@ -846,6 +846,14 @@ If FILE is nil, use the file visited by the current buffer."
 
 (declare-function simple-extras-slugify "simple-extras")
 
+(defun tlon-bib--field-accessors ()
+  "Return (GET-FN SET-FN) for the current BibTeX-related mode.
+Signal an error if not in a BibTeX-related mode."
+  (pcase major-mode
+    ('ebib-entry-mode '(ebib-extras-get-field ebib-extras-set-field))
+    ('bibtex-mode '(bibtex-extras-get-field bibtex-set-field))
+    (_ (user-error "Not in a BibTeX-related mode"))))
+
 ;;;###autoload
 (defun tlon-bib-populate-url-field ()
   "Populate the `url' field of the BibTeX entry at point.
@@ -857,11 +865,7 @@ Build the URL as BASE/PATH/SLUG where:
 LANG is the two-letter language code derived from the entry's `langid' field."
   (interactive)
   (tlon-ensure-bib)
-  (cl-destructuring-bind (get-field set-field)
-      (pcase major-mode
-	('ebib-entry-mode '(ebib-extras-get-field ebib-extras-set-field))
-	('bibtex-mode '(bibtex-extras-get-field bibtex-set-field))
-	(_ (user-error "Not in a BibTeX-related mode")))
+  (cl-destructuring-bind (get-field set-field) (tlon-bib--field-accessors)
     (save-restriction
       (when (derived-mode-p 'bibtex-mode)
         (bibtex-narrow-to-entry)
@@ -891,6 +895,47 @@ LANG is the two-letter language code derived from the entry's `langid' field."
 (declare-function tlon-yaml-get-filenames-in-dir "tlon-yaml")
 (declare-function tlon-yaml-get-key "tlon-yaml")
 
+(defun tlon-bib--batch-process-keys-in-language (field-label process-key-fn)
+  "Process all BibTeX keys in the language of the entry at point.
+FIELD-LABEL is used for the summary message (e.g. \"URLs\", \"journaltitle\").
+PROCESS-KEY-FN is called with two arguments, KEY and LANG, and should return
+one of:
+  \\='updated  -- field was set
+  \\='skipped  -- field existed and was not overwritten
+If PROCESS-KEY-FN signals an error, it is caught and counted as missing."
+  (let* ((get-field (car (tlon-bib--field-accessors)))
+	 (lang-name (funcall get-field "langid"))
+	 (_ (unless lang-name (user-error "Entry has no langid field")))
+	 (lang (tlon-lookup tlon-languages-properties :code :name lang-name))
+	 (_ (unless lang (user-error "Could not determine language code for %s" lang-name)))
+	 (repo-dir (tlon-repo-lookup :dir :subproject "uqbar" :language lang))
+	 (_ (unless repo-dir (user-error "Could not determine repository directory for %s" lang)))
+	 (path (tlon-lookup tlon-core-bare-dirs lang "en" "articles"))
+	 (_ (unless path (user-error "Could not determine path for language %s" lang)))
+	 (articles-dir (file-name-concat repo-dir path))
+	 (files (let* ((names (tlon-yaml-get-filenames-in-dir articles-dir "md")))
+		  (mapcar (lambda (name)
+			    (if (file-name-absolute-p name)
+				name
+			      (file-name-concat articles-dir name)))
+			  names)))
+	 (keys (delete-dups (delq nil (mapcar (lambda (f) (tlon-yaml-get-key "key" f)) files))))
+	 (_ (when (null keys)
+	      (user-error "No article keys found in %s" articles-dir)))
+	 (updated 0)
+	 (skipped 0)
+	 (missing 0))
+    (dolist (key keys)
+      (condition-case err
+	  (pcase (funcall process-key-fn key lang)
+	    ('updated (cl-incf updated))
+	    ('skipped (cl-incf skipped)))
+	(error
+	 (cl-incf missing)
+	 (message "Could not process key %s: %s" key (error-message-string err)))))
+    (message "Populate %s (%s): %d updated, %d skipped (had value), %d not found"
+	     field-label lang updated skipped missing)))
+
 ;;;###autoload
 (defun tlon-bib-populate-url-fields-in-language ()
   "Populate the `url' field for all entries in the language at point.
@@ -901,57 +946,28 @@ If the field is present, prompt to confirm overwriting and regenerate it via
 `tlon-bib-populate-url-field'."
   (interactive)
   (tlon-ensure-bib)
-  (cl-destructuring-bind (get-field _set-field)
-      (pcase major-mode
-	('ebib-entry-mode '(ebib-extras-get-field nil))
-	('bibtex-mode '(bibtex-extras-get-field nil))
-	(_ (user-error "Not in a BibTeX-related mode")))
-    (let* ((lang-name (funcall get-field "langid"))
-	   (_ (unless lang-name (user-error "Entry has no langid field")))
-	   (lang (tlon-lookup tlon-languages-properties :code :name lang-name))
-	   (_ (unless lang (user-error "Could not determine language code for %s" lang-name)))
-	   (repo-dir (tlon-repo-lookup :dir :subproject "uqbar" :language lang))
-	   (_ (unless repo-dir (user-error "Could not determine repository directory for %s" lang)))
-	   (path (tlon-lookup tlon-core-bare-dirs lang "en" "articles"))
-	   (_ (unless path (user-error "Could not determine path for language %s" lang)))
-	   (articles-dir (file-name-concat repo-dir path))
-	   (files (let* ((names (tlon-yaml-get-filenames-in-dir articles-dir "md")))
-		    (mapcar (lambda (name)
-			      (if (file-name-absolute-p name)
-				  name
-				(file-name-concat articles-dir name)))
-			    names)))
-	   (keys (delete-dups (delq nil (mapcar (lambda (f) (tlon-yaml-get-key "key" f)) files))))
-	   (_ (when (null keys)
-		(user-error "No article keys found in %s" articles-dir)))
-	   (updated 0)
-	   (skipped 0)
-	   (missing 0))
-      (dolist (key keys)
-	(condition-case err
-	    (progn
-	      (citar-extras-goto-bibtex-entry key)
-	      (bibtex-narrow-to-entry)
-	      (let ((url (bibtex-extras-get-field "url")))
-		(if (and url (not (string-empty-p (string-trim url))))
-		    (if (y-or-n-p (format "Entry %s already has a url. Overwrite? " key))
-			(progn
-			  ;; remove existing url field to avoid double prompt downstream
-			  (when-let ((url-bounds (bibtex-search-forward-field "url" t)))
-			    (goto-char (bibtex-start-of-name-in-field url-bounds))
-			    (bibtex-kill-field nil t))
-			  (tlon-bib-populate-url-field)
-			  (cl-incf updated))
-		      (cl-incf skipped))
-		  (tlon-bib-populate-url-field)
-		  (cl-incf updated)))
-	      (widen)
-	      (when (buffer-modified-p) (save-buffer)))
-	  (error
-	   (cl-incf missing)
-	   (message "Could not process key %s: %s" key (error-message-string err)))))
-      (message "Populate URLs (%s): %d updated, %d skipped (had url), %d not found"
-	       lang updated skipped missing))))
+  (tlon-bib--batch-process-keys-in-language
+   "URLs"
+   (lambda (key _lang)
+     (citar-extras-goto-bibtex-entry key)
+     (bibtex-narrow-to-entry)
+     (let* ((url (bibtex-extras-get-field "url"))
+	    (result
+	     (if (and url (not (string-empty-p (string-trim url))))
+		 (if (y-or-n-p (format "Entry %s already has a url. Overwrite? " key))
+		     (progn
+		       ;; remove existing url field to avoid double prompt downstream
+		       (when-let ((url-bounds (bibtex-search-forward-field "url" t)))
+			 (goto-char (bibtex-start-of-name-in-field url-bounds))
+			 (bibtex-kill-field nil t))
+		       (tlon-bib-populate-url-field)
+		       'updated)
+		   'skipped)
+	       (tlon-bib-populate-url-field)
+	       'updated)))
+       (widen)
+       (when (buffer-modified-p) (save-buffer))
+       result))))
 
 (declare-function ebib--cur-db "ebib-utils")
 ;;;###autoload
@@ -963,74 +979,49 @@ returned by (tlon-uqbar-front-get-message LANG \"HomePage\" \"Title\").
 If the field is already set, prompt before overwriting."
   (interactive)
   (tlon-ensure-bib)
-  (cl-destructuring-bind (get-field _set-field)
-      (pcase major-mode
-	('ebib-entry-mode '(ebib-extras-get-field nil))
-	('bibtex-mode '(bibtex-extras-get-field nil))
-	(_ (user-error "Not in a BibTeX-related mode")))
-    (let* ((lang-name (funcall get-field "langid"))
-	   (_ (unless lang-name (user-error "Entry has no langid field")))
-	   (lang (tlon-lookup tlon-languages-properties :code :name lang-name))
-	   (_ (unless lang (user-error "Could not determine language code for %s" lang-name)))
-	   (jt (tlon-uqbar-front-get-message lang "HomePage" "title"))
-	   (_ (unless (and jt (not (string-empty-p jt)))
-		(user-error "Could not determine journaltitle for language %s" lang)))
-	   (repo-dir (tlon-repo-lookup :dir :subproject "uqbar" :language lang))
-	   (_ (unless repo-dir (user-error "Could not determine repository directory for %s" lang)))
-	   (path (tlon-lookup tlon-core-bare-dirs lang "en" "articles"))
-	   (_ (unless path (user-error "Could not determine path for language %s" lang)))
-	   (articles-dir (file-name-concat repo-dir path))
-	   (files (let* ((names (tlon-yaml-get-filenames-in-dir articles-dir "md")))
-		    (mapcar (lambda (name)
-			      (if (file-name-absolute-p name)
-				  name
-				(file-name-concat articles-dir name)))
-			    names)))
-	   (keys (delete-dups (delq nil (mapcar (lambda (f) (tlon-yaml-get-key "key" f)) files))))
-	   (_ (when (null keys)
-		(user-error "No article keys found in %s" articles-dir)))
-	   (updated 0)
-	   (skipped 0)
-	   (missing 0))
-      (dolist (key keys)
-	(condition-case err
-	    (progn
-	      (citar-extras-goto-bibtex-entry key)
-	      (when (derived-mode-p 'ebib-index-mode)
-		(citar-extras-open-in-ebib key))
-	      (cond
-	       ((derived-mode-p 'bibtex-mode)
-		(bibtex-narrow-to-entry)
-		(let ((existing (bibtex-extras-get-field "journaltitle")))
-		  (if (and existing (not (string-empty-p (string-trim existing))))
-		      (if (y-or-n-p (format "Entry %s already has a journaltitle. Overwrite? " key))
-			  (progn
-			    (bibtex-set-field "journaltitle" jt)
-			    (cl-incf updated))
-			(cl-incf skipped))
-		    (bibtex-set-field "journaltitle" jt)
-		    (cl-incf updated)))
-		(widen)
-		(when (buffer-modified-p) (save-buffer)))
-	       ((derived-mode-p 'ebib-entry-mode 'ebib-index-mode)
-		(let ((existing (ebib-extras-get-field "journaltitle")))
-		  (if (and existing (not (string-empty-p (string-trim existing))))
-		      (if (y-or-n-p (format "Entry %s already has a journaltitle. Overwrite? " key))
-			  (progn
-			    (ebib-extras-set-field "journaltitle" jt)
-			    (cl-incf updated))
-			(cl-incf skipped))
-		    (ebib-extras-set-field "journaltitle" jt)
-		    (cl-incf updated)))
-		(when (fboundp 'ebib-save-current-database)
-		  (ignore-errors (ebib-save-current-database (ebib--cur-db)))))
-	       (t
-		(user-error "Unsupported mode: %s" major-mode))))
-	  (error
-	   (cl-incf missing)
-	   (message "Could not process key %s: %s" key (error-message-string err)))))
-      (message "Populate journaltitle (%s): %d updated, %d skipped (had value), %d not found"
-	       lang updated skipped missing))))
+  (let (jt)
+    (tlon-bib--batch-process-keys-in-language
+     "journaltitle"
+     (lambda (key lang)
+       (unless jt
+	 (setq jt (tlon-uqbar-front-get-message lang "HomePage" "title"))
+	 (unless (and jt (not (string-empty-p jt)))
+	   (user-error "Could not determine journaltitle for language %s" lang)))
+       (citar-extras-goto-bibtex-entry key)
+       (when (derived-mode-p 'ebib-index-mode)
+	 (citar-extras-open-in-ebib key))
+       (cond
+	((derived-mode-p 'bibtex-mode)
+	 (bibtex-narrow-to-entry)
+	 (let* ((existing (bibtex-extras-get-field "journaltitle"))
+		(result
+		 (if (and existing (not (string-empty-p (string-trim existing))))
+		     (if (y-or-n-p (format "Entry %s already has a journaltitle. Overwrite? " key))
+			 (progn
+			   (bibtex-set-field "journaltitle" jt)
+			   'updated)
+		       'skipped)
+		   (bibtex-set-field "journaltitle" jt)
+		   'updated)))
+	   (widen)
+	   (when (buffer-modified-p) (save-buffer))
+	   result))
+	((derived-mode-p 'ebib-entry-mode 'ebib-index-mode)
+	 (let* ((existing (ebib-extras-get-field "journaltitle"))
+		(result
+		(if (and existing (not (string-empty-p (string-trim existing))))
+		    (if (y-or-n-p (format "Entry %s already has a journaltitle. Overwrite? " key))
+			(progn
+			  (ebib-extras-set-field "journaltitle" jt)
+			  'updated)
+		      'skipped)
+		  (ebib-extras-set-field "journaltitle" jt)
+		  'updated)))
+	   (when (fboundp 'ebib-save-current-database)
+	     (ignore-errors (ebib-save-current-database (ebib--cur-db))))
+	   result))
+	(t
+	 (user-error "Unsupported mode: %s" major-mode)))))))
 
 ;;;;; Translation
 
