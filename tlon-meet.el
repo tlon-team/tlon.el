@@ -122,39 +122,42 @@ The %s will be replaced with the transcript text.")
   (when-let ((repo (forge-get-repository :tracked)))
     (tlon-forg--pull-sync repo)))
 
-;; TODO: generate the next three functions with function
+(defconst tlon-meeting-pairs
+  '(("leo-pablo"  . ("Leonardo Picón"      "Pablo Stafforini"))
+    ("fede-pablo" . ("Federico Stafforini"  "Pablo Stafforini"))
+    ("fede-leo"   . ("Federico Stafforini"  "Leonardo Picón")))
+  "Alist of meeting pair identifiers to participant names.")
+
+(defun tlon-create-or-visit-meeting-issue-for-pair (pair-key &optional date)
+  "Create or visit issue for the meeting pair identified by PAIR-KEY on DATE.
+PAIR-KEY must be a key in `tlon-meeting-pairs'."
+  (let* ((pair (or (alist-get pair-key tlon-meeting-pairs nil nil #'string=)
+		   (user-error "Unknown meeting pair: %s" pair-key)))
+	 (date (or date (org-read-date)))
+	 (person (or (car (seq-remove (lambda (name)
+					(string= name user-full-name))
+				      pair))
+		     (user-error "User `%s' is not a member of the `%s' meeting pair"
+				 user-full-name pair-key))))
+    (tlon-create-or-visit-individual-meeting-issue person date)))
+
 ;;;###autoload
 (defun tlon-create-or-visit-meeting-issue-leo-pablo (&optional date)
   "Create or visit issue for a meeting with Leo and Pablo on DATE."
   (interactive)
-  (let ((date (or date (org-read-date)))
-	(person (pcase user-full-name
-		  ("Pablo Stafforini" "Leonardo Picón")
-		  ("Leonardo Picón" "Pablo Stafforini")
-		  (_ (user-error "This command is only for Leo and Pablo meetings")))))
-    (tlon-create-or-visit-individual-meeting-issue person date)))
+  (tlon-create-or-visit-meeting-issue-for-pair "leo-pablo" date))
 
 ;;;###autoload
 (defun tlon-create-or-visit-meeting-issue-fede-pablo (&optional date)
   "Create or visit issue for a meeting with Fede and Pablo on DATE."
   (interactive)
-  (let ((date (or date (org-read-date)))
-	(person (pcase user-full-name
-		  ("Pablo Stafforini" "Federico Stafforini")
-		  ("Federico Stafforini" "Pablo Stafforini")
-		  (_ (user-error "This command is only for Fede and Pablo meetings")))))
-    (tlon-create-or-visit-individual-meeting-issue person date)))
+  (tlon-create-or-visit-meeting-issue-for-pair "fede-pablo" date))
 
 ;;;###autoload
 (defun tlon-create-or-visit-meeting-issue-fede-leo (&optional date)
   "Create or visit issue for a meeting with Fede and Leo on DATE."
   (interactive)
-  (let ((date (or date (org-read-date)))
-	(person (pcase user-full-name
-		  ("Federico Stafforini" "Leonardo Picón")
-		  ("Leonardo Picón" "Federico Stafforini")
-		  (_ (user-error "This command is only for Leo and Fede meetings")))))
-    (tlon-create-or-visit-individual-meeting-issue person date)))
+  (tlon-create-or-visit-meeting-issue-for-pair "fede-leo" date))
 
 (defun tlon-prompt-for-all-other-users (&optional group)
   "Ask the user to select from a list of all users except himself.
