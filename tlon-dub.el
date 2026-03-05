@@ -189,43 +189,63 @@ Returns nil if the extension is not recognized or unsupported for dubbing."
      ;; Add other supported types as needed
      (t nil)))) ; Unsupported type
 
+(defun tlon-dub--api-request (method endpoint description &optional payload extra-args)
+  "Make an ElevenLabs API request and return the parsed response.
+METHOD is the HTTP method (\"GET\" or \"POST\").  ENDPOINT is the
+already-formatted URL path appended to `tlon-dub-api-base-url'.
+DESCRIPTION is logged via `message' before the request runs.
+
+When PAYLOAD is non-nil it should be an alist; it will be
+JSON-encoded and sent as the request body with the appropriate
+Content-Type header.  EXTRA-ARGS is an optional list of additional
+curl arguments (e.g. \\='(\"-L\")).
+
+Returns the parsed JSON response (as an alist) on success, or the
+raw response string when JSON parsing fails."
+  (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
+	 (url (concat tlon-dub-api-base-url endpoint))
+	 (args (append (list "curl" "-s"
+			     "--request" method
+			     "--url" url
+			     "--header" "accept: application/json"
+			     "--header" (format "xi-api-key: %s" api-key))
+		       (when payload
+			 (list "--header" "Content-Type: application/json"
+			       "--data" (json-encode payload)))
+		       extra-args))
+	 (command (mapconcat #'shell-quote-argument args " ")))
+    (message "%s" description)
+    (when tlon-debug (message "Debug: Running command: %s" command))
+    (let ((response (shell-command-to-string command)))
+      (condition-case err
+	  (json-parse-string response :object-type 'alist)
+	(error
+	 (message "Error parsing JSON response: %s" err)
+	 response)))))
+
 (defun tlon-dub--share-project-with-self (resource-id)
   "Share the workspace RESOURCE-ID with the user associated with the API key.
 Shares with \"editor\" role using the top-level \"user_email\" field."
-  (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
-	 (url (format (concat tlon-dub-api-base-url tlon-dub-share-resource-endpoint)
-		      resource-id))
-	 (user-email tlon-email-shared) ; Use the user email associated with the API key
-	 ;; Revert to using user_email at the top level, matching successful curl structure
-	 (payload-alist `(("resource_type" . "dubbing") ; Correct type for dubbing
-			  ("user_email" . ,user-email)    ; Top-level user email
-			  ("role" . "editor")))           ; Desired role
-	 (payload (json-encode payload-alist))
-	 ;; Build the argument list for curl
-	 (args (list "curl" "-s"
-		     "--request" "POST"
-		     "--url" url
-		     "--header" "accept: application/json"
-		     "--header" "Content-Type: application/json"
-		     "--header" (format "xi-api-key: %s" api-key)
-		     "--data" payload))
-	 (command (mapconcat #'shell-quote-argument args " ")))
-    (message "Sharing resource %s with %s (role: editor)..." resource-id user-email) ; Revert message to use user-email
-    (when tlon-debug (message "Debug: Running share command: %s" command))
-    (let ((response (shell-command-to-string command)))
-      ;; Check response - success might be empty or a simple confirmation
-      (if (or (string-empty-p response)
-	      (string-match-p "success" response)) ; Adjust if API returns specific success JSON
-	  (progn
-	    (message "Successfully shared resource %s." resource-id)
-	    t) ; Indicate success
+  (let* ((user-email tlon-email-shared)
+	 (endpoint (format tlon-dub-share-resource-endpoint resource-id))
+	 (payload `(("resource_type" . "dubbing")
+		    ("user_email" . ,user-email)
+		    ("role" . "editor")))
+	 (response (tlon-dub--api-request
+		    "POST" endpoint
+		    (format "Sharing resource %s with %s (role: editor)..." resource-id user-email)
+		    payload)))
+    ;; Check response - success might be empty or a simple confirmation
+    (if (or (and (stringp response)
+		 (or (string-empty-p response)
+		     (string-match-p "success" response)))
+	    (and (listp response) response))
 	(progn
-	  (message "Failed to share resource %s. Response:\n%s" resource-id response)
-	  ;; Try to parse potential error JSON
-	  (condition-case _err
-	      (json-parse-string response :object-type 'alist)
-	    (error response)) ; Return raw response or parsed error
-	  nil))))) ; Indicate failure
+	  (message "Successfully shared resource %s." resource-id)
+	  t)
+      (progn
+	(message "Failed to share resource %s. Response:\n%s" resource-id response)
+	nil))))
 
 (defun tlon-dub--parse-vtt (vtt-string)
   "Parse VTT-STRING and return a list of segments.
@@ -563,26 +583,12 @@ Returns the JSON response from the API, typically containing the `dubbing_id'."
 (defun tlon-dub-get-project-metadata (dubbing-id)
   "Get metadata for the ElevenLabs dubbing project with DUBBING-ID."
   (interactive (list (read-string "Dubbing ID: ")))
-  (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
-	 (url (format (concat tlon-dub-api-base-url tlon-dub-get-project-metadata-endpoint)
-		      dubbing-id))
-	 ;; Build the argument list for curl
-	 (args (list "curl" "-s"
-		     "--request" "GET"
-		     "--url" url
-		     "--header" "accept: application/json"
-		     "--header" (format "xi-api-key: %s" api-key)))
-	 (command (mapconcat #'shell-quote-argument args " ")))
-    (message "Getting metadata for dubbing project %s..." dubbing-id)
-    (when tlon-debug (message "Debug: Running command: %s" command))
-    (let ((response (shell-command-to-string command)))
-      (message "Metadata received. Response:\n%s" response)
-      ;; Optionally parse the JSON response
-      (condition-case err
-	  (json-parse-string response :object-type 'alist)
-	(error (progn
-		 (message "Error parsing JSON response: %s" err)
-		 response))))))
+  (let ((response (tlon-dub--api-request
+		   "GET"
+		   (format tlon-dub-get-project-metadata-endpoint dubbing-id)
+		   (format "Getting metadata for dubbing project %s..." dubbing-id))))
+    (message "Metadata received.")
+    response))
 
 ;;;###autoload
 (defun tlon-dub-get-dubbing (dubbing-id language-code)
@@ -592,44 +598,37 @@ transcript."
   (interactive
    (list (read-string "Dubbing ID: ")
 	 (tlon-get-language-code-from-name (tlon-read-language nil "Language code for transcript: " t nil))))
-  (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
-	 (url (format (concat tlon-dub-api-base-url tlon-dub-get-dubbing-endpoint)
-		      dubbing-id language-code))
-	 ;; Build the argument list for curl
-	 ;; Use -L to follow redirects, as this endpoint might return a temporary URL for the transcript file
-	 (args (list "curl" "-s" "-L"
-		     "--request" "GET"
-		     "--url" url
-		     "--header" "accept: application/json" ; VTT is text-based, JSON accept might be ignored or fine
-		     "--header" (format "xi-api-key: %s" api-key)))
-	 (command (mapconcat #'shell-quote-argument args " ")))
-    (message "Getting transcript for dubbing project %s (language: %s)..." dubbing-id language-code)
-    (when tlon-debug (message "Debug: Running command: %s" command))
-    (let ((response (shell-command-to-string command)))
-      (message "Transcript received.")
-      ;; Parse the VTT response
-      (let ((segments (tlon-dub--parse-vtt response)))
-	(if segments
-	    (progn
-	      (message "Parsed %d segments." (length segments))
-	      ;; Display parsed segments in a new buffer
-	      (with-current-buffer (get-buffer-create (format "*Dub Segments: %s (%s)*" dubbing-id language-code))
-		(erase-buffer)
-		(insert ";; Parsed Segments:\n")
-		(pp segments (current-buffer)) ; Pretty-print the list
-		(goto-char (point-min))
-		(switch-to-buffer (current-buffer)))
-	      segments) ; Return the parsed list
-	  (progn
-	    (message "Could not parse transcript. Displaying raw response.")
-	    ;; Display raw response if parsing failed
-	    (with-current-buffer (get-buffer-create (format "*Dub Transcript (Raw): %s (%s)*" dubbing-id language-code))
-	      (erase-buffer)
-	      (insert response)
-	      (goto-char (point-min))
-	      (switch-to-buffer (current-buffer)))
-	    ;; Return raw response on parsing failure
-	    response))))))
+  ;; The response is VTT text, not JSON; the helper returns it as a raw string.
+  (let* ((response (tlon-dub--api-request
+		    "GET"
+		    (format tlon-dub-get-dubbing-endpoint dubbing-id language-code)
+		    (format "Getting transcript for dubbing project %s (language: %s)..."
+			    dubbing-id language-code)
+		    nil '("-L")))
+	 ;; When the response is an alist the API returned JSON (unexpected);
+	 ;; convert to string so the VTT parser can try its best.
+	 (raw (if (stringp response) response (json-encode response)))
+	 (segments (tlon-dub--parse-vtt raw)))
+    (message "Transcript received.")
+    (if segments
+	(progn
+	  (message "Parsed %d segments." (length segments))
+	  ;; Display parsed segments in a new buffer
+	  (with-current-buffer (get-buffer-create (format "*Dub Segments: %s (%s)*" dubbing-id language-code))
+	    (erase-buffer)
+	    (insert ";; Parsed Segments:\n")
+	    (pp segments (current-buffer))
+	    (goto-char (point-min))
+	    (switch-to-buffer (current-buffer)))
+	  segments)
+      (progn
+	(message "Could not parse transcript. Displaying raw response.")
+	(with-current-buffer (get-buffer-create (format "*Dub Transcript (Raw): %s (%s)*" dubbing-id language-code))
+	  (erase-buffer)
+	  (insert raw)
+	  (goto-char (point-min))
+	  (switch-to-buffer (current-buffer)))
+	raw))))
 
 ;;;###autoload
 (defun tlon-dub-get-resource-data (dubbing-id)
@@ -637,40 +636,26 @@ transcript."
 This endpoint might provide detailed structure including resource, speaker, and
 segment IDs."
   (interactive (list (read-string "Dubbing ID: ")))
-  (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
-	 (url (format (concat tlon-dub-api-base-url tlon-dub-get-resource-data-endpoint)
-		      dubbing-id))
-	 ;; Build the argument list for curl
-	 (args (list "curl" "-s"
-		     "--request" "GET"
-		     "--url" url
-		     "--header" "accept: application/json"
-		     "--header" (format "xi-api-key: %s" api-key)))
-	 (command (mapconcat #'shell-quote-argument args " ")))
-    (message "Getting resource data for dubbing project %s..." dubbing-id)
-    (when tlon-debug (message "Debug: Running command: %s" command))
-    (let ((response (shell-command-to-string command)))
-      (message "Resource data received. Response:\n%s" response)
-      ;; Attempt to parse the JSON response
-      (condition-case err
-	  (let ((parsed-json (json-parse-string response :object-type 'alist)))
-	    ;; Display parsed JSON in a new buffer for inspection
-	    (with-current-buffer (get-buffer-create (format "*Dub Resource Data: %s*" dubbing-id))
-	      (erase-buffer)
-	      (insert ";; Parsed Resource Data:\n")
-	      (pp parsed-json (current-buffer)) ; Pretty-print the list
-	      (goto-char (point-min))
-	      (switch-to-buffer (current-buffer)))
-	    parsed-json) ; Return the parsed alist
-	(error (progn
-		 (message "Error parsing JSON response: %s. Displaying raw." err)
-		 ;; Display raw response if parsing failed
-		 (with-current-buffer (get-buffer-create (format "*Dub Resource Data (Raw): %s*" dubbing-id))
-		   (erase-buffer)
-		   (insert response)
-		   (goto-char (point-min))
-		   (switch-to-buffer (current-buffer)))
-		 response)))))) ; Return raw response on error
+  (let ((response (tlon-dub--api-request
+		   "GET"
+		   (format tlon-dub-get-resource-data-endpoint dubbing-id)
+		   (format "Getting resource data for dubbing project %s..." dubbing-id))))
+    (message "Resource data received.")
+    (if (listp response)
+	;; Display parsed JSON in a new buffer for inspection
+	(with-current-buffer (get-buffer-create (format "*Dub Resource Data: %s*" dubbing-id))
+	  (erase-buffer)
+	  (insert ";; Parsed Resource Data:\n")
+	  (pp response (current-buffer))
+	  (goto-char (point-min))
+	  (switch-to-buffer (current-buffer)))
+      ;; Display raw response if parsing failed
+      (with-current-buffer (get-buffer-create (format "*Dub Resource Data (Raw): %s*" dubbing-id))
+	(erase-buffer)
+	(insert response)
+	(goto-char (point-min))
+	(switch-to-buffer (current-buffer))))
+    response))
 
 ;;;###autoload
 (defun tlon-dub-add-speaker-segment (dubbing-id speaker-id start-time end-time text)
@@ -687,33 +672,15 @@ segment IDs."
 	 (read-number "Start time (seconds): ")
 	 (read-number "End time (seconds): ")
 	 (read-string "Segment text: ")))
-  (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
-	 (url (format (concat tlon-dub-api-base-url tlon-dub-add-speaker-segment-endpoint)
-		      dubbing-id speaker-id))
-	 ;; Construct the JSON payload
-	 (payload-alist `(("start_time" . ,start-time)
-			  ("end_time" . ,end-time)
-			  ("text" . ,text)))
-	 (payload (json-encode payload-alist))
-	 ;; Build the argument list for curl
-	 (args (list "curl" "-s"
-		     "--request" "POST"
-		     "--url" url
-		     "--header" "accept: application/json"
-		     "--header" "Content-Type: application/json"
-		     "--header" (format "xi-api-key: %s" api-key)
-		     "--data" payload))
-	 (command (mapconcat #'shell-quote-argument args " ")))
-    (message "Adding segment for speaker %s in project %s..." speaker-id dubbing-id)
-    (when tlon-debug (message "Debug: Running command: %s" command))
-    (let ((response (shell-command-to-string command)))
-      (message "Segment addition response:\n%s" response)
-      ;; Attempt to parse the JSON response
-      (condition-case err
-	  (json-parse-string response :object-type 'alist)
-	(error (progn
-		 (message "Error parsing JSON response: %s" err)
-		 response))))))
+  (let ((response (tlon-dub--api-request
+		   "POST"
+		   (format tlon-dub-add-speaker-segment-endpoint dubbing-id speaker-id)
+		   (format "Adding segment for speaker %s in project %s..." speaker-id dubbing-id)
+		   `(("start_time" . ,start-time)
+		     ("end_time" . ,end-time)
+		     ("text" . ,text)))))
+    (message "Segment added.")
+    response))
 
 ;;;###autoload
 (defun tlon-dub-transcribe-with-whisperx (audio-file &optional format)
