@@ -1,295 +1,242 @@
-#+title: tlon - Local Environments
+#+title: tlon-local: Manage local environments
 #+author: Pablo Stafforini
-#+EXCLUDE_TAGS: noexport
+#+email: pablo@stafforini.com
 #+language: en
-#+options: ':t toc:nil author:t email:t num:t
+#+options: ':t toc:t author:t email:t num:t
 #+startup: content
-#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
-#+texinfo_header: @set MAINTAINER Pablo Stafforini
-#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
-#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
-#+texinfo: @insertcopying
+#+export_file_name: tlon-local.info
+#+texinfo_filename: tlon-local.info
+#+texinfo_dir_category: Emacs misc features
+#+texinfo_dir_title: Local environments: (tlon-local)
+#+texinfo_dir_desc: Manage local environments
 
-* Local Environments (=tlon-local.el=)
+This manual describes the features and customization options for the Emacs Lisp file =tlon-local.el=.
+
+* Overview
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-local
+:CUSTOM_ID: h:overview
 :END:
 
-This module helps you manage local development environments for the Uqbar
-website and related services. It can start/stop the local stack, open the site,
-and show aggregated logs from Grafana's Loki via the Grafana proxy. It also
-provides a transient menu for quick access to common tasks.
+The =tlon-local= module manages local development environments for the Uqbar website. It handles the full lifecycle of a local stack: ensuring Docker Desktop is running, starting the web server (Traefik) and the Uqbar application for a chosen language, and opening the local site in your browser when the stack is ready.
 
-** User options
+The module also provides a log viewer that queries Grafana's Loki proxy for the latest content build, aggregating errors, warnings, informational messages, and frontend (NextJS) errors into a single navigable buffer. Log entries display expanded file paths that you can visit directly, and a follow mode keeps the corresponding source file visible as you move through the log.
+
+All operations are accessible through a transient menu ([[#h:transient-menu][transient menu]]).
+
+* User options
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-local-options
+:CUSTOM_ID: h:user-options
 :END:
 
-These variables control defaults and behavior of the local environment and logs. Some of them are constants (not customizable).
-
-#+vindex: tlon-local-grafana-base-url
-+ ~tlon-local-grafana-base-url~ :: Base URL for Grafana in local development. This is a constant; not customizable.
-
-#+vindex: tlon-local-grafana-loki-proxy
-+ ~tlon-local-grafana-loki-proxy~ :: Path prefix to the Grafana Loki data
-  source proxy (usually embeds the data source ID or UID). This is a constant; not customizable.
+** Log query parameters
+:PROPERTIES:
+:CUSTOM_ID: h:log-query-parameters
+:END:
 
 #+vindex: tlon-local-logs-minutes
-+ ~tlon-local-logs-minutes~ :: Default lookback window, in minutes, used when
-  querying logs.
+The user option ~tlon-local-logs-minutes~ controls the lookback window (in minutes) used when querying logs from Loki. Increase this value if you need to inspect logs from builds that ran further in the past. The default is =43200= (30 days).
 
 #+vindex: tlon-local-logs-limit
-+ ~tlon-local-logs-limit~ :: Maximum number of log entries to retrieve for each
-  query.
+The user option ~tlon-local-logs-limit~ sets the maximum number of log entries retrieved per query. If you see truncated results, increase this value. The default is =1000=.
+
+** Log display
+:PROPERTIES:
+:CUSTOM_ID: h:log-display
+:END:
 
 #+vindex: tlon-local-logs-show-filename
-+ ~tlon-local-logs-show-filename~ :: When non-nil, append the source filename to
-  each log line in the logs buffer.
+The user option ~tlon-local-logs-show-filename~ controls whether the source filename is appended to each log line in the logs buffer. When non-nil (the default), each line includes a clickable path suffix of the form =PATH: position 1= that works with ~tlon-visit-file-at-point~.
 
 #+vindex: tlon-local-logs-follow-mode
-+ ~tlon-local-logs-follow-mode~ :: When non-nil, moving the point in the logs
-  buffer automatically visits the file at point in the other window and keeps it
-  scrolled in sync.
+The user option ~tlon-local-logs-follow-mode~ controls whether navigating lines in a logs buffer automatically visits the file at point in the other window. When non-nil (the default), moving up or down in the log keeps the corresponding source file visible and scrolled in sync. You can toggle this interactively with ~tlon-local-logs-toggle-follow-mode~ ([[#h:logs-toggle-follow][toggling follow mode]]).
 
-#+vindex: tlon-local-logs-informational-filter
-+ ~tlon-local-logs-informational-filter~ :: LogQL pipeline appended after the
-  selector to select informational logs for the current build label.
+** Log filters
+:PROPERTIES:
+:CUSTOM_ID: h:log-filters
+:END:
+
+The following options define the LogQL pipeline fragments appended to the Loki selector when querying different log categories. You can customize these to match your Loki label and field conventions.
 
 #+vindex: tlon-local-logs-errors-filter
-+ ~tlon-local-logs-errors-filter~ :: LogQL pipeline appended after the selector
-  to select error logs for the current build label.
+The user option ~tlon-local-logs-errors-filter~ selects error and critical log entries. The default is =| json | level =~ "(ERROR|CRITICAL)"=.
 
 #+vindex: tlon-local-logs-warnings-filter
-+ ~tlon-local-logs-warnings-filter~ :: LogQL pipeline appended after the selector
-  to select warning logs for the current build label.
+The user option ~tlon-local-logs-warnings-filter~ selects warning log entries. The default is =| json | level = "WARNING"=.
+
+#+vindex: tlon-local-logs-informational-filter
+The user option ~tlon-local-logs-informational-filter~ selects informational log entries. The default is =| json | level = "INFO"=.
 
 #+vindex: tlon-local-logs-frontend-errors-filter
-+ ~tlon-local-logs-frontend-errors-filter~ :: LogQL pipeline appended after the
-  selector to select Frontend (NextJS) error logs for the current build label.
-  This must match the dashboard's query (e.g., some front-end logs use
-  ~level = "error"~).
+The user option ~tlon-local-logs-frontend-errors-filter~ selects frontend (NextJS) error entries. Some frontend containers use lowercase level values, so the default is =| json | level = "error"=.
 
-#+vindex: tlon-local-rebuild-content-database
-+ ~tlon-local-rebuild-content-database~ :: When non-nil, pass
-  ~--rebuild-content-database~ to ~launch.py start~. This is a constant; not customizable.
-
-#+vindex: tlon-local-content-branch-production
-+ ~tlon-local-content-branch-production~ :: When non-nil, pass
-  ~--content-branch=production~ to ~launch.py start~. This is a constant; not customizable.
-
-#+vindex: tlon-local-no-include-testing
-+ ~tlon-local-no-include-testing~ :: When non-nil, pass ~--no-include-testing~
-  to ~launch.py start~. This is a constant; not customizable.
+** Environment management
+:PROPERTIES:
+:CUSTOM_ID: h:environment-management-options
+:END:
 
 #+vindex: tlon-local-enforce-single-env
-+ ~tlon-local-enforce-single-env~ :: When non-nil, starting a local environment
-  first stops all other running language environments.
+The user option ~tlon-local-enforce-single-env~ controls whether starting a local environment automatically stops all other running language environments first. When non-nil (the default), only one Uqbar environment runs at a time, which conserves resources. Set to =nil= if you need multiple environments running simultaneously.
+
+* Commands
+:PROPERTIES:
+:CUSTOM_ID: h:commands
+:END:
 
 ** Running environments
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-local-run
+:CUSTOM_ID: h:running-environments
+:END:
+
+*** Starting the Uqbar environment
+:PROPERTIES:
+:CUSTOM_ID: h:run-uqbar
 :END:
 
 #+findex: tlon-local-run-uqbar
-+ ~tlon-local-run-uqbar~ :: Run the local web server and the Uqbar environment
-  for a selected LANG (ISO 639-1 code). Ensures Docker Desktop is running,
-  starts the web-server (~./up-dev.sh~) if needed, and runs
-  ~./launch.py start LANG~ in the ~uqbar~ repo. When the stack is ready, it will
-  open the local site in a browser.
+The command ~tlon-local-run-uqbar~ is the primary entry point for launching a local Uqbar environment. When invoked interactively, it prompts you to select a language (ISO 639-1 code). It then performs the following steps:
 
-*** Language shortcuts
+1. Ensures Docker Desktop is running. On macOS, it starts Docker Desktop automatically and waits up to 90 seconds for the daemon to respond.
+2. Starts the web server (=./up-dev.sh= in the =web-server= repository) if it is not already running.
+3. If ~tlon-local-enforce-single-env~ is non-nil, stops any other running Uqbar environments.
+4. Launches the Uqbar application for the chosen language (=./launch.py start LANG= in the =uqbar= repository). If the environment is already running, you are asked whether to relaunch it.
+5. After the process finishes, opens the local site in your browser (with a one-minute delay to allow the stack to initialize).
+
+The launch command respects three toggle constants that append flags to =launch.py start=: ~tlon-local-rebuild-content-database~ (=--rebuild-content-database=), ~tlon-local-content-branch-production~ (=--content-branch=production=), and ~tlon-local-no-include-testing~ (=--no-include-testing=). These can be toggled from the transient menu ([[#h:transient-menu][transient menu]]).
+
+*** Language-specific shortcuts
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-local-run-shortcuts
+:CUSTOM_ID: h:language-shortcuts
 :END:
 
-These commands call ~tlon-local-run-uqbar~ with a fixed language.
+For convenience, the module generates a dedicated command for each language in ~tlon-project-languages~. Each command calls ~tlon-local-run-uqbar~ with the language code pre-filled, so you can bind them directly to keys.
 
 #+findex: tlon-local-run-uqbar-ar
-+ ~tlon-local-run-uqbar-ar~ :: Run Arabic environment.
-
 #+findex: tlon-local-run-uqbar-en
-+ ~tlon-local-run-uqbar-en~ :: Run English environment.
-
 #+findex: tlon-local-run-uqbar-es
-+ ~tlon-local-run-uqbar-es~ :: Run Spanish environment.
-
 #+findex: tlon-local-run-uqbar-fr
-+ ~tlon-local-run-uqbar-fr~ :: Run French environment.
-
 #+findex: tlon-local-run-uqbar-it
-+ ~tlon-local-run-uqbar-it~ :: Run Italian environment.
-
 #+findex: tlon-local-run-uqbar-ja
-+ ~tlon-local-run-uqbar-ja~ :: Run Japanese environment.
-
 #+findex: tlon-local-run-uqbar-ko
-+ ~tlon-local-run-uqbar-ko~ :: Run Korean environment.
-
+#+findex: tlon-local-run-uqbar-sr
 #+findex: tlon-local-run-uqbar-tr
-+ ~tlon-local-run-uqbar-tr~ :: Run Turkish environment.
+- ~tlon-local-run-uqbar-ar~ -- Arabic
+- ~tlon-local-run-uqbar-en~ -- English
+- ~tlon-local-run-uqbar-es~ -- Spanish
+- ~tlon-local-run-uqbar-fr~ -- French
+- ~tlon-local-run-uqbar-it~ -- Italian
+- ~tlon-local-run-uqbar-ja~ -- Japanese
+- ~tlon-local-run-uqbar-ko~ -- Korean
+- ~tlon-local-run-uqbar-sr~ -- Serbian
+- ~tlon-local-run-uqbar-tr~ -- Turkish
 
-** Logs
+** Viewing logs
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-local-logs
+:CUSTOM_ID: h:viewing-logs
+:END:
+
+*** Showing all logs
+:PROPERTIES:
+:CUSTOM_ID: h:logs-all
 :END:
 
 #+findex: tlon-local-logs
-+ ~tlon-local-logs~ :: Show recent Uqbar logs for a selected language,
-  combining ERROR/CRITICAL, WARNING, INFORMATIONAL, and Frontend (NextJS)
-  error entries from the latest content build label.
+The command ~tlon-local-logs~ is the primary entry point for inspecting logs. It prompts for a language, then queries Loki for the latest content build label and retrieves four categories of log entries (errors, warnings, informational, and frontend errors) from that build. The results are displayed in a =*tlon: logs LANG*= buffer using ~tlon-local-logs-mode~, organized under clearly labeled headings.
+
+If the =check-pages= container is still running for the selected language, the command waits (polling every 2 seconds, up to a 10-minute timeout) until it finishes before querying logs.
+
+*** Refreshing logs
+:PROPERTIES:
+:CUSTOM_ID: h:logs-refresh
+:END:
 
 #+findex: tlon-local-logs-refresh
-+ ~tlon-local-logs-refresh~ :: Refresh the logs in the current logs buffer using
-  the same language, label and kind.
+The command ~tlon-local-logs-refresh~ re-fetches logs for the language and kind shown in the current logs buffer. Press =g= in the logs buffer to invoke it.
+
+*** Opening logs in Grafana
+:PROPERTIES:
+:CUSTOM_ID: h:logs-open-grafana
+:END:
 
 #+findex: tlon-local-logs-open-in-grafana
-+ ~tlon-local-logs-open-in-grafana~ :: Open the Grafana dashboard view for the
-  build label shown in the current logs buffer.
+The command ~tlon-local-logs-open-in-grafana~ opens the Grafana dashboard for the content build label shown in the current logs buffer. Press =o= in the logs buffer to invoke it.
+
+*** Toggling follow mode
+:PROPERTIES:
+:CUSTOM_ID: h:logs-toggle-follow
+:END:
 
 #+findex: tlon-local-logs-toggle-follow-mode
-+ ~tlon-local-logs-toggle-follow-mode~ :: Toggle following the selection in the
-  logs buffer to the other window.
+The command ~tlon-local-logs-toggle-follow-mode~ toggles whether navigating lines in a logs buffer automatically visits the file at point in the other window. Press =f= in the logs buffer to toggle it.
+
+*** Navigating log lines
+:PROPERTIES:
+:CUSTOM_ID: h:logs-navigation
+:END:
 
 #+findex: tlon-local-next-line
-+ ~tlon-local-next-line~ :: Move to next line in a logs buffer, following the
-  file at point when follow mode is enabled.
-
 #+findex: tlon-local-previous-line
-+ ~tlon-local-previous-line~ :: Move to previous line in a logs buffer, following
-  the file at point when follow mode is enabled.
+The commands ~tlon-local-next-line~ and ~tlon-local-previous-line~ move point forward or backward by one line in a logs buffer. When follow mode is enabled ([[#h:logs-toggle-follow][toggling follow mode]]), they also visit the file referenced on the current line in the other window. These commands are bound to the standard up/down navigation keys (as well as =k= and =l=) in ~tlon-local-logs-mode~.
+
+** Logs major mode
+:PROPERTIES:
+:CUSTOM_ID: h:logs-mode
+:END:
 
 #+findex: tlon-local-logs-mode
-+ ~tlon-local-logs-mode~ :: Major mode for viewing Uqbar logs retrieved via the
-  Grafana Loki proxy. Binds keys for navigation, refreshing, opening in Grafana
-  and toggling follow mode. It also integrates with ~tlon-visit-file-at-point~,
-  honoring the user option ~tlon-visit-file-other-window~.
+The major mode ~tlon-local-logs-mode~ (derived from ~special-mode~) provides a read-only, line-oriented interface for viewing Uqbar logs. It highlights the current line with ~hl-line-mode~ and defines the following key bindings:
+
+| Key     | Command                                  |
+|---------+------------------------------------------|
+| =g=     | ~tlon-local-logs-refresh~                |
+| =o=     | ~tlon-local-logs-open-in-grafana~        |
+| =f=     | ~tlon-local-logs-toggle-follow-mode~     |
+| =i=     | ~simple-extras-visual-line-mode-enhanced~ |
+| =k=     | ~tlon-local-previous-line~               |
+| =l=     | ~tlon-local-next-line~                   |
+| =RET=   | ~tlon-visit-file-at-point~               |
+| up/down | ~tlon-local-previous-line~ / ~tlon-local-next-line~ |
 
 ** Transient menu
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-local-menu
+:CUSTOM_ID: h:transient-menu
 :END:
 
 #+findex: tlon-local-menu
-+ ~tlon-local-menu~ :: Transient menu for running environments and inspecting
-  logs. It exposes language-specific launchers and options.
+The command ~tlon-local-menu~ opens a transient menu organized into two columns:
 
-The menu also defines infix toggles wired to variables:
+- *Run environment*: language-specific launchers (=q a= through =q u=) and toggle options for =--rebuild-content-database=, =--content-branch=production=, =--no-include-testing=, and single-environment enforcement.
+- *Show logs*: the ~tlon-local-logs~ command, plus toggles for follow mode and the "open in other window" option used by ~tlon-visit-file-at-point~.
+
+The menu also defines transient infix toggles for the following constants and variables:
 
 #+findex: tlon-local-infix-rebuild-content-database
-+ ~tlon-local-infix-rebuild-content-database~ :: Toggle
-  ~tlon-local-rebuild-content-database~.
+- ~tlon-local-infix-rebuild-content-database~ toggles ~tlon-local-rebuild-content-database~.
 
 #+findex: tlon-local-infix-content-branch-production
-+ ~tlon-local-infix-content-branch-production~ :: Toggle
-  ~tlon-local-content-branch-production~.
+- ~tlon-local-infix-content-branch-production~ toggles ~tlon-local-content-branch-production~.
 
 #+findex: tlon-local-infix-no-include-testing
-+ ~tlon-local-infix-no-include-testing~ :: Toggle
-  ~tlon-local-no-include-testing~.
+- ~tlon-local-infix-no-include-testing~ toggles ~tlon-local-no-include-testing~.
 
 #+findex: tlon-local-infix-enforce-single-env
-+ ~tlon-local-infix-enforce-single-env~ :: Toggle
-  ~tlon-local-enforce-single-env~.
+- ~tlon-local-infix-enforce-single-env~ toggles ~tlon-local-enforce-single-env~.
 
 #+findex: tlon-local-infix-logs-follow-mode
-+ ~tlon-local-infix-logs-follow-mode~ :: Toggle
-  ~tlon-local-logs-follow-mode~.
+- ~tlon-local-infix-logs-follow-mode~ toggles ~tlon-local-logs-follow-mode~.
 
-The menu also exposes ~tlon-infix-visit-file-other-window~ to control whether
-~tlon-visit-file-at-point~ opens files in the other window.
-
-** Internals (for reference)
+* Indices
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-local-internals
+:CUSTOM_ID: h:indices
 :END:
 
-The following helper functions are internal (names use a double dash) but are
-listed here for convenience.
+** Function index
+:PROPERTIES:
+:INDEX: fn
+:CUSTOM_ID: h:function-index
+:END:
 
-#+findex: tlon-local--append-stop-other-envs
-+ ~tlon-local--append-stop-other-envs~ :: When enforcing a single environment,
-  append stop commands for other languages that appear to be running.
-
-#+findex: tlon-local--uqbar-local-url
-+ ~tlon-local--uqbar-local-url~ :: Compute the local development URL for the
-  given language based on the production URL.
-
-#+findex: tlon-local--get-latest-build-label
-+ ~tlon-local--get-latest-build-label~ :: Resolve the newest ~content_build~
-  label for a language within the configured time window.
-
-#+findex: tlon-local--logs-time-range
-+ ~tlon-local--logs-time-range~ :: Return the RFC3339 time window used for log
-  queries, based on ~tlon-local-logs-minutes~.
-
-#+findex: tlon-local--loki-base-url
-+ ~tlon-local--loki-base-url~ :: Build the full ~query_range~ endpoint URL for
-  Loki through Grafana's proxy.
-
-#+findex: tlon-local--loki-query-range
-+ ~tlon-local--loki-query-range~ :: Execute a ~query_range~ request against the
-  Loki API via Grafana's proxy and pass parsed JSON to a callback.
-
-#+findex: tlon-local--render-logs-buffer-all
-+ ~tlon-local--render-logs-buffer-all~ :: Render errors, warnings, informational
-  and Frontend (NextJS) logs in a single buffer.
-
-#+findex: tlon-local--render-logs-buffer
-+ ~tlon-local--render-logs-buffer~ :: Render one kind of logs (errors or
-  warnings) in a buffer.
-
-#+findex: tlon-local--insert-logs-rows
-+ ~tlon-local--insert-logs-rows~ :: Insert multiple log rows for a Loki result
-  set.
-
-#+findex: tlon-local--insert-log-row
-+ ~tlon-local--insert-log-row~ :: Insert one formatted log row, optionally
-  showing the expanded source filename.
-
-#+findex: tlon-local--parse-log-line
-+ ~tlon-local--parse-log-line~ :: Parse a raw log line as JSON when possible,
-  returning a cons of message and source filename.
-
-#+findex: tlon-local--expand-article-ids
-+ ~tlon-local--expand-article-ids~ :: Expand ~article_id=SLUG~ occurrences in a
-  log message into absolute paths with a ~: position 1~ suffix to integrate with
-  ~tlon-visit-file-at-point~.
-
-#+findex: tlon-local--article-id-to-path
-+ ~tlon-local--article-id-to-path~ :: Compute the absolute markdown file path
-  for a given article slug and language.
-
-#+findex: tlon-local--expand-source-filename
-+ ~tlon-local--expand-source-filename~ :: Turn a relative source filename found
-  in logs into an abbreviated absolute path with ~: position 1~.
-
-#+findex: tlon-local--maybe-follow
-+ ~tlon-local--maybe-follow~ :: When follow mode is enabled, visit the file at
-  point in the other window after moving in a logs buffer.
-
-#+findex: tlon-local--http-json
-+ ~tlon-local--http-json~ :: Perform an HTTP GET with query params and parse the
-  JSON response, then invoke a callback.
-
-#+findex: tlon-local--rfc3339
-+ ~tlon-local--rfc3339~ :: Format a time value in RFC3339 (UTC).
-
-#+findex: tlon-local--docker-running-p
-+ ~tlon-local--docker-running-p~ :: Check whether the Docker daemon responds to
-  ~docker info~.
-
-#+findex: tlon-local--ensure-docker-running
-+ ~tlon-local--ensure-docker-running~ :: On macOS, start Docker Desktop if
-  needed and wait until the daemon responds.
-
-#+findex: tlon-local--web-server-running-p
-+ ~tlon-local--web-server-running-p~ :: Detect whether the Traefik container of
-  the local web server is running.
-
-#+findex: tlon-local--tcp-open-p
-+ ~tlon-local--tcp-open-p~ :: Probe whether a TCP connection to a host:port
-  succeeds.
-
-#+findex: tlon-local--uqbar-running-p
-+ ~tlon-local--uqbar-running-p~ :: Probe whether the computed local URL is
-  reachable via TCP.
+** Variable index
+:PROPERTIES:
+:INDEX: vr
+:CUSTOM_ID: h:variable-index
+:END:
