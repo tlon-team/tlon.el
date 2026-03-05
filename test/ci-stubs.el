@@ -56,6 +56,12 @@
 (defvar ebib--databases nil)
 (provide 'ebib)
 
+;;;; org-element-ast (Emacs 30+ only; Emacs 29 has these in org-element)
+
+(unless (featurep 'org-element-ast)
+  (require 'org-element nil t)
+  (provide 'org-element-ast))
+
 ;;;; magit / forge
 
 (provide 'magit)
