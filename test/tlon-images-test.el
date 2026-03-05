@@ -58,24 +58,5 @@
   "Handle MIME type with + separator."
   (should (equal "svg" (tlon-images--normalize-image-extension "svg+xml"))))
 
-;;;; tlon-images--trim-leading-trailing-newlines
-
-(ert-deftest tlon-images-trim-newlines-leading ()
-  "Remove leading newlines."
-  (should (equal "hello" (tlon-images--trim-leading-trailing-newlines "\n\nhello"))))
-
-(ert-deftest tlon-images-trim-newlines-trailing ()
-  "Remove trailing newlines."
-  (should (equal "hello" (tlon-images--trim-leading-trailing-newlines "hello\n\n"))))
-
-(ert-deftest tlon-images-trim-newlines-both ()
-  "Remove both leading and trailing newlines."
-  (should (equal "hello" (tlon-images--trim-leading-trailing-newlines "\nhello\n"))))
-
-(ert-deftest tlon-images-trim-newlines-internal-preserved ()
-  "Preserve internal newlines."
-  (should (equal "hello\nworld"
-                 (tlon-images--trim-leading-trailing-newlines "\nhello\nworld\n"))))
-
 (provide 'tlon-images-test)
 ;;; tlon-images-test.el ends here

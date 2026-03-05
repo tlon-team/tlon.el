@@ -496,13 +496,8 @@ Trim leading and trailing newlines from replacement tags before insertion."
                (values (list relative-src alt-val nil))
                (figure-tag (tlon-md-get-tag-filled "Figure" values "")))
           (when relative-src
-            (replace-match (tlon-images--trim-leading-trailing-newlines figure-tag) t t))))
+            (replace-match (string-trim figure-tag "[ \t]*\n+" "\n+[ \t]*") t t))))
       (save-buffer))))
-
-(defun tlon-images--trim-leading-trailing-newlines (s)
-  "Return S without leading or trailing newlines and surrounding spaces."
-  (let ((s1 (replace-regexp-in-string "\\`[ \t]*\n+" "" s)))
-    (replace-regexp-in-string "\n+[ \t]*\\'" "" s1)))
 
 ;;;;; Menu
 

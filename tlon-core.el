@@ -1420,9 +1420,7 @@ INNER is a nested key inside OUTER like \"title\"."
 
 (defun tlon-transient-toggle-variable-value (var-name)
   "Toggle the value of the VAR-NAME."
-  (set var-name (if (symbol-value var-name)
-		    nil
-		  t)))
+  (set var-name (not (symbol-value var-name))))
 
 (transient-define-infix tlon-infix-visit-file-other-window ()
   "Toggle the `'tlon-visit-file-other-window' user option."

@@ -124,9 +124,6 @@ use the default `gptel-model'."
 (defvar tlon-ai-retries 0
   "Number of retries for AI requests.")
 
-(defvar tlon-file-bare-bibliography (file-name-concat (tlon-repo-lookup :dir :name "babel-refs") "bare-bibliography.json")
-  "Path to the JSON file containing the bare bibliography.")
-
 (defconst tlon-ai-string-wrapper
   ":\n\n```\n%s\n```\n\n"
   "Wrapper for strings to be passed in prompts.")
