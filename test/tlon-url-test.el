@@ -138,5 +138,70 @@
   "Return nil for nil input."
   (should (null (tlon--extract-urls-from-string nil))))
 
+;;;; tlon--url-replacement-string
+
+(ert-deftest tlon-url-replacement-string-angle ()
+  "Wrap in angle brackets for autolink pattern."
+  (should (equal "<https://new.com>"
+                 (tlon--url-replacement-string "<https://old.com" "https://new.com"))))
+
+(ert-deftest tlon-url-replacement-string-parens ()
+  "Wrap in parentheses for markdown link pattern."
+  (should (equal "(https://new.com)"
+                 (tlon--url-replacement-string "(https://old.com" "https://new.com"))))
+
+;;;; tlon--url-in-markdown-parens-regexp
+
+(ert-deftest tlon-url-markdown-parens-regexp-matches ()
+  "Regexp matches URL inside parentheses."
+  (let ((re (tlon--url-in-markdown-parens-regexp "https://example\\.com")))
+    (should (string-match-p re "(https://example.com)"))))
+
+(ert-deftest tlon-url-markdown-parens-regexp-no-angle ()
+  "Regexp does not match URL inside angle brackets."
+  (let ((re (tlon--url-in-markdown-parens-regexp "https://example\\.com")))
+    (should-not (string-match-p re "<https://example.com>"))))
+
+;;;; tlon--url-in-markdown-autolink-regexp
+
+(ert-deftest tlon-url-markdown-autolink-regexp-matches ()
+  "Regexp matches URL inside angle brackets."
+  (let ((re (tlon--url-in-markdown-autolink-regexp "https://example\\.com")))
+    (should (string-match-p re "<https://example.com>"))))
+
+(ert-deftest tlon-url-markdown-autolink-regexp-no-parens ()
+  "Regexp does not match URL inside parentheses."
+  (let ((re (tlon--url-in-markdown-autolink-regexp "https://example\\.com")))
+    (should-not (string-match-p re "(https://example.com)"))))
+
+;;;; tlon--url-pairs-from-diff
+
+(ert-deftest tlon-url-pairs-from-diff-basic ()
+  "Extract URL pair from unified diff."
+  (let* ((diff "@@ -1,1 +1,1 @@\n-See (https://old.com) for info\n+See (https://new.com) for info\n")
+         (result (tlon--url-pairs-from-diff diff)))
+    (should (= 1 (length result)))
+    (should (equal "https://old.com" (caar result)))
+    (should (equal "https://new.com" (cdar result)))))
+
+(ert-deftest tlon-url-pairs-from-diff-no-urls ()
+  "Return nil when diff has no URLs."
+  (let ((diff "@@ -1,1 +1,1 @@\n-hello\n+world\n"))
+    (should (null (tlon--url-pairs-from-diff diff)))))
+
+(ert-deftest tlon-url-pairs-from-diff-multiple ()
+  "Extract multiple URL pairs from diff."
+  (let* ((diff "@@ -1,2 +1,2 @@\n-Visit https://a.com and https://b.com\n+Visit https://c.com and https://d.com\n")
+         (result (tlon--url-pairs-from-diff diff)))
+    (should (= 2 (length result)))))
+
+;;;; tlon--url-replacement-patterns
+
+(ert-deftest tlon-url-replacement-patterns-returns-two ()
+  "Return exactly two patterns (parens + autolink)."
+  (let ((patterns (tlon--url-replacement-patterns "https://example.com")))
+    (should (= 2 (length patterns)))
+    (should (cl-every #'stringp patterns))))
+
 (provide 'tlon-url-test)
 ;;; tlon-url-test.el ends here

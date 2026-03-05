@@ -162,5 +162,29 @@
                  (tlon-ai--create-translation-pairs
                   '("gato" "[TRANSLATION_UNAVAILABLE]") '("cat" "dog")))))
 
+;;;; tlon--glossary-detect-languages
+
+(ert-deftest tlon-glossary-detect-languages-basic ()
+  "Detect languages from JSON glossary entries."
+  (let ((tlon-project-target-languages '("es" "fr"))
+        (json '(((en . "hello") (es . "hola")))))
+    (let ((result (tlon--glossary-detect-languages json)))
+      (should (memq 'en result))
+      (should (memq 'es result)))))
+
+(ert-deftest tlon-glossary-detect-languages-excludes-type ()
+  "Exclude 'type' key from detected languages."
+  (let ((tlon-project-target-languages '("es"))
+        (json '(((en . "hello") (es . "hola") (type . "variable")))))
+    (let ((result (tlon--glossary-detect-languages json)))
+      (should-not (memq 'type result)))))
+
+(ert-deftest tlon-glossary-detect-languages-en-first ()
+  "English appears first in result."
+  (let ((tlon-project-target-languages '("es" "fr"))
+        (json '(((en . "a") (fr . "b") (es . "c")))))
+    (let ((result (tlon--glossary-detect-languages json)))
+      (should (eq 'en (car result))))))
+
 (provide 'tlon-glossary-test)
 ;;; tlon-glossary-test.el ends here

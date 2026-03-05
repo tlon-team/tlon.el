@@ -107,5 +107,37 @@
     (tlon-cleanup-format-heading)
     (should (equal "## Normal Heading\n" (buffer-string)))))
 
+;;;; tlon-cleanup--80k-strip-backrefs
+
+(ert-deftest tlon-cleanup-80k-strip-backrefs-basic ()
+  "Remove backreference links from footnote text."
+  (should (equal "Footnote text"
+                 (string-trim (tlon-cleanup--80k-strip-backrefs
+                               "Footnote text [↩](#fn-ref-1)")))))
+
+(ert-deftest tlon-cleanup-80k-strip-backrefs-no-match ()
+  "Leave text unchanged when no backreference."
+  (should (equal "Normal text" (tlon-cleanup--80k-strip-backrefs "Normal text"))))
+
+(ert-deftest tlon-cleanup-80k-strip-backrefs-variant ()
+  "Strip variant with ︎ character."
+  (let ((result (tlon-cleanup--80k-strip-backrefs "Text [↩︎](#fn-42)")))
+    (should (equal "Text" (string-trim result)))))
+
+;;;; tlon-cleanup--80k-strip-indentation
+
+(ert-deftest tlon-cleanup-80k-strip-indentation-basic ()
+  "Remove 4-space indentation from start of text."
+  (should (equal "First line" (tlon-cleanup--80k-strip-indentation "    First line"))))
+
+(ert-deftest tlon-cleanup-80k-strip-indentation-multiline ()
+  "Remove 4-space indentation from multiple lines."
+  (should (equal "First\nSecond"
+                 (tlon-cleanup--80k-strip-indentation "    First\n    Second"))))
+
+(ert-deftest tlon-cleanup-80k-strip-indentation-no-indent ()
+  "Leave unindented text unchanged."
+  (should (equal "No indent" (tlon-cleanup--80k-strip-indentation "No indent"))))
+
 (provide 'tlon-cleanup-test)
 ;;; tlon-cleanup-test.el ends here

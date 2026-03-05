@@ -47,6 +47,7 @@
 (defvar citar-bibliography nil)
 (defun citar-get-entry (&rest _) nil)
 (defun citar-select-refs (&rest _) nil)
+(defun citar-extras-refresh-bibliography (&rest _) nil)
 (provide 'citar)
 (provide 'citar-cache)
 

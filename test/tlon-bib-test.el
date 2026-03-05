@@ -188,5 +188,55 @@
   (let ((bibtex-autokey-year-length 4))
     (should (equal "" (tlon-autokey-get-year "")))))
 
+;;;; tlon-autokey-get-names
+
+(ert-deftest tlon-autokey-get-names-single ()
+  "Format a single author name."
+  (let ((result (tlon-autokey-get-names "John Doe")))
+    (should (stringp result))
+    (should (> (length result) 0))))
+
+(ert-deftest tlon-autokey-get-names-empty ()
+  "Return empty string for empty input."
+  (should (equal "" (tlon-autokey-get-names ""))))
+
+(ert-deftest tlon-autokey-get-names-multiple ()
+  "Format multiple authors separated by 'and'."
+  (let ((result (tlon-autokey-get-names "John Doe and Jane Smith")))
+    (should (stringp result))
+    (should (> (length result) 0))))
+
+;;;; tlon-autokey-get-title
+
+(ert-deftest tlon-autokey-get-title-basic ()
+  "Format a simple title."
+  (let ((result (tlon-autokey-get-title "The Meaning of Life")))
+    (should (stringp result))))
+
+(ert-deftest tlon-autokey-get-title-empty ()
+  "Return empty string for empty title."
+  (should (equal "" (tlon-autokey-get-title ""))))
+
+;;;; tlon-generate-autokey
+
+(ert-deftest tlon-generate-autokey-basic ()
+  "Generate a BibTeX key from author, year, title."
+  (let ((key (tlon-generate-autokey "John Doe" "2024" "The Meaning of Life")))
+    (should (stringp key))
+    (should (> (length key) 0))
+    ;; bibtex-autokey-year-length defaults to 2, so "2024" -> "24"
+    (should (string-match-p "24" key))))
+
+(ert-deftest tlon-generate-autokey-empty-author ()
+  "Generate a key with empty author."
+  (let ((key (tlon-generate-autokey "" "2024" "Title")))
+    (should (stringp key))
+    (should (string-match-p "24" key))))
+
+(ert-deftest tlon-generate-autokey-empty-all ()
+  "Generate an empty key when all fields are empty."
+  (let ((key (tlon-generate-autokey "" "" "")))
+    (should (stringp key))))
+
 (provide 'tlon-bib-test)
 ;;; tlon-bib-test.el ends here

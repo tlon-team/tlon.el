@@ -172,5 +172,23 @@
     (should (equal "***hello***\n"
                    (tlon-tts-enclose-in-cue-delimiter "hello")))))
 
+;;;; tlon-tts-get-verbal-exponent
+
+(ert-deftest tlon-tts-get-verbal-exponent-irregular ()
+  "Return irregular form for exponent 2 in English."
+  (should (equal "squared" (tlon-tts-get-verbal-exponent 2 "en"))))
+
+(ert-deftest tlon-tts-get-verbal-exponent-irregular-es ()
+  "Return irregular form for exponent 3 in Spanish."
+  (should (equal "al cubo" (tlon-tts-get-verbal-exponent 3 "es"))))
+
+(ert-deftest tlon-tts-get-verbal-exponent-regular ()
+  "Return regular form for exponent 20 in English."
+  (should (equal "to the power of 20" (tlon-tts-get-verbal-exponent 20 "en"))))
+
+(ert-deftest tlon-tts-get-verbal-exponent-regular-es ()
+  "Return regular form for exponent 20 in Spanish."
+  (should (equal "a la 20" (tlon-tts-get-verbal-exponent 20 "es"))))
+
 (provide 'tlon-tts-test)
 ;;; tlon-tts-test.el ends here

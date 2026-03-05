@@ -138,5 +138,35 @@
       (when result
         (should (stringp result))))))
 
+;;;; tlon-note-automatic-type (boundary cases)
+
+(ert-deftest tlon-note-automatic-type-citation-plus-four-words ()
+  "A note with citation and exactly 4 words is classified as footnote."
+  (let ((cite-tag (tlon-md-get-tag-filled "Cite" '("K"))))
+    (should (eq 'footnote
+                (tlon-note-automatic-type (concat cite-tag " one two three four"))))))
+
+(ert-deftest tlon-note-automatic-type-citation-plus-five-words ()
+  "A note with citation and 5 words is classified as sidenote."
+  (let ((cite-tag (tlon-md-get-tag-filled "Cite" '("K"))))
+    (should (eq 'sidenote
+                (tlon-note-automatic-type (concat cite-tag " one two three four five"))))))
+
+(ert-deftest tlon-note-automatic-type-no-citation ()
+  "A note without citation is always sidenote."
+  (should (eq 'sidenote (tlon-note-automatic-type "Short"))))
+
+;;;; tlon-md-get-tag-pattern (additional match tests)
+
+(ert-deftest tlon-md-get-tag-pattern-footnote ()
+  "Footnote pattern matches a self-closing Footnote tag."
+  (let ((pattern (tlon-md-get-tag-pattern "Footnote")))
+    (should (string-match-p pattern "<Footnote />"))))
+
+(ert-deftest tlon-md-get-tag-pattern-sidenote ()
+  "Sidenote pattern matches a self-closing Sidenote tag."
+  (let ((pattern (tlon-md-get-tag-pattern "Sidenote")))
+    (should (string-match-p pattern "<Sidenote />"))))
+
 (provide 'tlon-md-test)
 ;;; tlon-md-test.el ends here
