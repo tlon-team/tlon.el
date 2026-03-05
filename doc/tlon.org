@@ -1,0 +1,306 @@
+#+title: tlon: A companion package for Tlon
+#+author: Pablo Stafforini
+#+email: pablo@stafforini.com
+#+language: en
+#+options: ':t toc:t author:t email:t num:t
+#+startup: content
+#+export_file_name: tlon.info
+#+texinfo_filename: tlon.info
+#+texinfo_dir_category: Emacs misc features
+#+texinfo_dir_title: Tlon: (tlon)
+#+texinfo_dir_desc: A companion package for Tlon
+
+This manual describes the features and customization options for the Emacs Lisp file =tlon.el=.
+
+* Overview
+:PROPERTIES:
+:CUSTOM_ID: h:overview
+:END:
+
+The file =tlon.el= is the main entry point for the ~tlon~ package, a comprehensive set of Emacs Lisp tools supporting the workflows of the Tlon organization. It provides initialization routines, package metadata, key file-opening commands, and various utility functions for working with Tlon repositories, Git history, BibTeX data, and URL-to-file conversions.
+
+This module depends on =tlon-core.el= for fundamental lookup functions, repository data structures, and language handling ([[info:tlon-core][tlon-core]]). It also relies on several external packages, including ~magit~ for Git operations, ~forge~ for GitHub issue integration, ~elpaca~ for package management, and ~citar~/~ebib~ for bibliography management.
+
+The main capabilities provided by this file include:
+
+- *Package initialization*: setting up bibliography paths, org-capture templates, and running post-init hooks.
+- *File navigation*: opening files within and across Tlon repositories, converting between URLs and local file paths, and browsing files in the browser.
+- *Git history inspection*: viewing diffs and running Ediff sessions against the last commit made by the current user.
+- *BibTeX integration*: retrieving BibTeX keys from files and buffers, collecting keys across a buffer, and migrating entries between bibliography files.
+- *Package management*: updating, reloading, and inspecting the ~tlon~ package itself.
+
+* User options
+:PROPERTIES:
+:CUSTOM_ID: h:user-options
+:END:
+
+** ~tlon-github-dashboard-url~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-github-dashboard-url
+:END:
+
+#+vindex: tlon-github-dashboard-url
+The URL of the Tlon GitHub project dashboard. The command ~tlon-browse-dashboard~ opens this URL in the default external browser ([[#h:browse-dashboard][Browsing the dashboard]]). You may want to change this if the team moves to a different GitHub project board or if you need to point to a different view.
+
+The default value is ="https://github.com/orgs/tlon-team/projects/9/views/15"=. The type is a string.
+
+* Commands
+:PROPERTIES:
+:CUSTOM_ID: h:commands
+:END:
+
+** Initialization
+:PROPERTIES:
+:CUSTOM_ID: h:initialization
+:END:
+
+#+findex: tlon-initialize
+The command ~tlon-initialize~ bootstraps the ~tlon~ package for use in the current Emacs session. It checks that certain required variables from the ~paths~ package (specifically ~paths-tlon-todos-jobs-id~ and ~paths-tlon-todos-generic-id~) are bound, sets up the combined bibliography file list (~paths-files-bibliography-all~) to include both personal and Tlon bibliography files, and runs the ~tlon-post-init-hook~. Call this command once after Emacs starts to ensure all Tlon subsystems have the data they need.
+
+** File navigation
+:PROPERTIES:
+:CUSTOM_ID: h:file-navigation
+:END:
+
+*** Opening files within a repository
+:PROPERTIES:
+:CUSTOM_ID: h:find-file-in-repo
+:END:
+
+#+findex: tlon-find-file-in-repo
+The command ~tlon-find-file-in-repo~ presents a completing-read interface listing all files in a Tlon repository. If called with no argument, it defaults to the repository associated with the current buffer. This is useful when you want to jump to any file within a specific content or meta repository without leaving Emacs.
+
+#+findex: tlon-open-file-across-repos
+The command ~tlon-open-file-across-repos~ works like ~tlon-find-file-in-repo~ but spans all configured Tlon repositories at once. File names are displayed relative to the top-level Tlon repos directory, so you can tell which repository each file belongs to. Use this when you are unsure which repository contains the file you need.
+
+*** Opening a file from a URL
+:PROPERTIES:
+:CUSTOM_ID: h:find-file-of-url
+:END:
+
+#+findex: tlon-find-file-of-url
+The command ~tlon-find-file-of-url~ converts a web URL into its corresponding local file path and opens that file. When called interactively, it prompts for a URL, defaulting to the URL at point, the current EWW URL, or a URL on the kill ring. This is the inverse of ~tlon-browse-file~ ([[#h:browse-file][Browsing a file's URL]]).
+
+*** Browsing a file's URL
+:PROPERTIES:
+:CUSTOM_ID: h:browse-file
+:END:
+
+#+findex: tlon-browse-file
+The command ~tlon-browse-file~ converts the current Tlon file (or a file you select) into its published URL and opens it in an external browser. This is useful for quickly checking the live version of a page you are editing locally.
+
+*** Opening Tlon package files
+:PROPERTIES:
+:CUSTOM_ID: h:open-package-files
+:END:
+
+#+findex: tlon-open-package-files
+The command ~tlon-open-package-files~ presents a completing-read list of all =.el= files in the ~tlon~ package directory and opens the one you select. This provides a convenient way to navigate the package source code without manually browsing the file system.
+
+*** Macro-generated file-opening commands
+:PROPERTIES:
+:CUSTOM_ID: h:macro-generated-file-commands
+:END:
+
+#+findex: tlon-open-manual
+#+findex: tlon-open-readme
+#+findex: tlon-open-jobs
+#+findex: tlon-open-fluid
+#+findex: tlon-open-stable
+#+findex: tlon-open-url-correspondences
+#+findex: tlon-open-section-correspondences
+#+findex: tlon-open-bibtex-correspondences
+The macro ~tlon-create-file-opening-command~ generates interactive commands for opening specific Tlon files. The following commands are created at load time:
+
+- ~tlon-open-manual~ opens the Babel manual (=manual.org= in the =babel-core= repository).
+- ~tlon-open-jobs~ opens the jobs file.
+- ~tlon-open-fluid~ opens the fluid bibliography file (=fluid.bib=).
+- ~tlon-open-stable~ opens the stable bibliography file (=stable.bib=).
+- ~tlon-open-url-correspondences~ opens the URL correspondences file.
+- ~tlon-open-section-correspondences~ opens the section correspondences file.
+- ~tlon-open-bibtex-correspondences~ opens the BibTeX correspondences file.
+- ~tlon-open-readme~ opens the readme file.
+
+Each of these commands simply visits the file whose path is stored in the corresponding ~tlon-file-*~ variable.
+
+** Git history and diffs
+:PROPERTIES:
+:CUSTOM_ID: h:git-history
+:END:
+
+#+findex: tlon-log-buffer-latest-user-commit
+The command ~tlon-log-buffer-latest-user-commit~ shows a Magit diff of all changes made to the current file since the last commit by the current user. This is particularly useful during collaborative translation workflows, where you want to review what others have changed since you last worked on a file. If FILE is not provided, it uses the file visited by the current buffer.
+
+#+findex: tlon-log-buffer-latest-user-commit-ediff
+The command ~tlon-log-buffer-latest-user-commit-ediff~ starts an Ediff session comparing the current state of the file with its state at the time of the last commit by the current user. This gives you a side-by-side, interactive comparison that is more convenient than a plain diff for reviewing detailed changes. Internally, it creates a temporary file from the old commit using ~tlon-create-file-from-commit~.
+
+** Translation language
+:PROPERTIES:
+:CUSTOM_ID: h:translation-language
+:END:
+
+#+findex: tlon-set-translation-language
+The command ~tlon-set-translation-language~ sets the value of ~tlon-translation-language~ to a language you select from the Babel project languages. This variable is used by various translation-related commands throughout the ~tlon~ package to determine which language pair is active.
+
+** Magit integration
+:PROPERTIES:
+:CUSTOM_ID: h:magit-integration
+:END:
+
+#+findex: tlon-magit-status
+The command ~tlon-magit-status~ opens a Magit status buffer for the Tlon repository associated with the current buffer. Unlike the standard ~magit-status~, this command determines the repository directory using ~tlon-get-repo~ (with the ~include-all~ flag), so it works even when the current buffer is not directly inside a Git working tree.
+
+#+findex: tlon-magit-prompt
+The command ~tlon-magit-prompt~ prompts you to select a Tlon repository by name and then opens its Magit status buffer. Use this when you want to check the Git status of a repository you are not currently visiting.
+
+** BibTeX key collection and migration
+:PROPERTIES:
+:CUSTOM_ID: h:bibtex-operations
+:END:
+
+#+findex: tlon-collect-bibtex-keys-in-buffer
+The command ~tlon-collect-bibtex-keys-in-buffer~ scans the current buffer for all BibTeX citation keys (matched by ~tlon-mdx-cite-pattern~) and displays them, deduplicated, in a temporary =*Bibtex keys*= buffer. This is useful for auditing which references a document uses.
+
+#+findex: tlon-move-bibtex-entries-to-babel
+The command ~tlon-move-bibtex-entries-to-babel~ reads a list of BibTeX keys (one per line) from the current buffer and attempts to move each corresponding entry from the old personal bibliography file to the Tlon fluid bibliography. Keys that are not found in the old file are collected and displayed in a =*Missing BibTeX Keys*= buffer. This is a batch migration tool for transitioning references into the shared Tlon bibliography.
+
+** Package management
+:PROPERTIES:
+:CUSTOM_ID: h:package-management
+:END:
+
+#+findex: tlon-update-package-and-reload
+The command ~tlon-update-package-and-reload~ updates the ~tlon~ package from its remote repository and reloads it in the current Emacs session. It delegates to ~elpaca-extras-update-and-reload~. Use this to pull the latest version of the package without restarting Emacs.
+
+#+findex: tlon-copy-package-info
+The command ~tlon-copy-package-info~ copies a summary of the current ~tlon~ package version and latest Git commit hash to the kill ring. This is useful when reporting bugs or verifying which version you are running.
+
+** Browsing the dashboard
+:PROPERTIES:
+:CUSTOM_ID: h:browse-dashboard
+:END:
+
+#+findex: tlon-browse-dashboard
+The command ~tlon-browse-dashboard~ opens the Tlon GitHub project dashboard (configured via ~tlon-github-dashboard-url~, [[#h:tlon-github-dashboard-url][the user option]]) in your default external web browser. It forces the use of the system browser rather than any Emacs-internal browser.
+
+* Functions
+:PROPERTIES:
+:CUSTOM_ID: h:functions
+:END:
+
+** Key and file lookup
+:PROPERTIES:
+:CUSTOM_ID: h:key-file-lookup
+:END:
+
+#+findex: tlon-get-file-from-key
+The function ~tlon-get-file-from-key~ takes a BibTeX KEY and returns the file path of the corresponding translation document by looking it up in the repository metadata. It signals a user error if no file is found for the given key.
+
+#+findex: tlon-get-key-from-file
+The function ~tlon-get-key-from-file~ returns the BibTeX key stored in the YAML front matter of FILE. It delegates to ~tlon-yaml-get-key~.
+
+#+findex: tlon-get-key-in-buffer
+The function ~tlon-get-key-in-buffer~ retrieves the BibTeX key from the YAML metadata of the current Markdown buffer. It first saves the buffer to ensure the metadata is up to date, then signals an error if no key is found.
+
+#+findex: tlon-get-commit-key
+The function ~tlon-get-commit-key~ extracts the BibTeX key from a file referenced in a Magit commit buffer. It is useful in contexts where you are reviewing commits and want to identify the associated translation key.
+
+** Path and URL conversion
+:PROPERTIES:
+:CUSTOM_ID: h:path-url-conversion
+:END:
+
+#+findex: tlon-path-to-url
+The function ~tlon-path-to-url~ converts a local file PATH within a Tlon repository into its published web URL. It strips the repository directory prefix and file extension, then prepends the repository's configured ~:url~ property.
+
+#+findex: tlon-url-to-path
+The function ~tlon-url-to-path~ converts a published web URL back into the corresponding local file path. It determines the repository from the URL root, appends a =.md= extension to the path component, and returns the full local path.
+
+#+findex: tlon-get-url-root
+The function ~tlon-get-url-root~ extracts the scheme and host portion of a URL (e.g., ="https://altruismoeficaz.net/"=). This is used internally by ~tlon-url-to-path~ to determine which repository a URL belongs to.
+
+** Git utility functions
+:PROPERTIES:
+:CUSTOM_ID: h:git-utilities
+:END:
+
+#+findex: tlon-get-latest-commit
+The function ~tlon-get-latest-commit~ returns the short hash of the latest commit in directory DIR. It is used by ~tlon-copy-package-info~ and the transient dispatch menu to display version information.
+
+#+findex: tlon-latest-user-commit-in-file
+The function ~tlon-latest-user-commit-in-file~ returns the short hash of the most recent commit by the current user in FILE. It determines the current user via ~tlon-user-lookup~ and uses a combination of ~git log~, ~grep~, and ~awk~ to find the matching commit.
+
+#+findex: tlon-create-file-from-commit
+The function ~tlon-create-file-from-commit~ creates a temporary file containing the contents of FILE at a specific COMMIT-HASH. It returns the path of the temporary file. This is used by ~tlon-log-buffer-latest-user-commit-ediff~ to produce the historical version for Ediff comparison.
+
+#+findex: tlon-commit-and-push
+The function ~tlon-commit-and-push~ stages, commits, and pushes changes to FILE in a single operation. The commit message is formed from ACTION followed by the file's BibTeX key (for translation repos) or file name (for bibliography repos). Before committing, it verifies there are no other uncommitted changes and, if on the =main= branch, pulls from upstream first.
+
+#+findex: tlon-create-commit
+The function ~tlon-create-commit~ creates a Git commit for modifications to FILE, using ACTION as the commit message prefix. The remainder of the message is the file's BibTeX key (for translation repos) or the file name (for bibliography repos). It only commits when there are actual staged or unstaged changes to the file.
+
+#+findex: tlon-warn-if-unbound
+The function ~tlon-warn-if-unbound~ checks whether the value of the symbol VAR is set and signals a user error if it is not. This is used during initialization to ensure required configuration variables are present.
+
+** File listing helpers
+:PROPERTIES:
+:CUSTOM_ID: h:file-listing-helpers
+:END:
+
+#+findex: tlon-files-and-display-names-alist
+The function ~tlon-files-and-display-names-alist~ builds an alist of all files in DIRS, where each car is the file path relative to RELATIVE-PATH (for display) and each cdr is the absolute file path. This alist is consumed by the file-opening commands.
+
+#+findex: tlon-open-file-in-alist
+The function ~tlon-open-file-in-alist~ presents a completing-read prompt from ALIST (as produced by ~tlon-files-and-display-names-alist~) and opens the selected file. It is the shared implementation behind ~tlon-find-file-in-repo~ and ~tlon-open-file-across-repos~.
+
+* Variables
+:PROPERTIES:
+:CUSTOM_ID: h:variables
+:END:
+
+#+vindex: tlon-version
+The constant ~tlon-version~ holds the current version string of the ~tlon~ package (e.g., ="1.6.7"=). It is displayed in the transient dispatch menu and copied by ~tlon-copy-package-info~.
+
+#+vindex: tlon-github-url
+The constant ~tlon-github-url~ holds the base URL for the Tlon GitHub organization (="https://github.com/tlon-team/"=).
+
+#+vindex: tlon-file-bare-bibliography
+The constant ~tlon-file-bare-bibliography~ holds the path to the JSON file containing the bare bibliography (author, date, title, and key) in the =babel-refs= repository.
+
+#+vindex: tlon-post-init-hook
+The variable ~tlon-post-init-hook~ is a hook run at the end of ~tlon-initialize~. You can add functions to this hook to perform additional setup after the package is initialized.
+
+#+vindex: tlon-todos-jobs-file
+The variable ~tlon-todos-jobs-file~ holds the path to the Org file containing the heading identified by ~paths-tlon-todos-jobs-id~. This variable is set automatically and should not be modified manually.
+
+#+vindex: tlon-todos-generic-file
+The variable ~tlon-todos-generic-file~ holds the path to the Org file containing the heading identified by ~paths-tlon-todos-generic-id~. Like ~tlon-todos-jobs-file~, it is set automatically.
+
+#+vindex: tlon-dir-dict
+The variable ~tlon-dir-dict~ holds the path to the directory where dictionary files are stored, inside the Spanish (=es=) repository.
+
+#+vindex: tlon-file-babel-manual
+The variable ~tlon-file-babel-manual~ holds the path to =manual.org= in the =babel-core= repository.
+
+#+vindex: tlon-file-bibtex-correspondences
+The variable ~tlon-file-bibtex-correspondences~ holds the path to the =bibtex-correspondences.json= file in the =babel-refs= repository.
+
+#+vindex: tlon-file-section-correspondences
+The variable ~tlon-file-section-correspondences~ holds the path to the =section-correspondences.json= file in the =babel-refs= repository. Note that section correspondences are not yet fully implemented.
+
+* Indices
+:PROPERTIES:
+:CUSTOM_ID: h:indices
+:END:
+
+** Function index
+:PROPERTIES:
+:INDEX: fn
+:CUSTOM_ID: h:function-index
+:END:
+
+** Variable index
+:PROPERTIES:
+:INDEX: vr
+:CUSTOM_ID: h:variable-index
+:END:
