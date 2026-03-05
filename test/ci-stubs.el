@@ -62,6 +62,10 @@
   (require 'org-element nil t)
   (provide 'org-element-ast))
 
+;;;; tlon-dispatch (transient menus — requires bleeding-edge transient for :info*)
+
+(provide 'tlon-dispatch)
+
 ;;;; magit / forge
 
 (provide 'magit)
