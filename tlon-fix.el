@@ -266,9 +266,11 @@ match certain words that should not be altered, such as \"80,000 Hours\"."
   (tlon-autofix-replace-thousands-separators)
   (tlon-autofix-thin-spaces)
   (tlon-autofix-superscripts)
-  (let ((after-save-hook (remove #'tlon-autofix-all after-save-hook)))
+  (let ((was-in-hook (memq #'tlon-autofix-all after-save-hook))
+	(after-save-hook (remove #'tlon-autofix-all after-save-hook)))
     (save-buffer)
-    (add-hook 'after-save-hook #'tlon-autofix-all nil t)))
+    (when was-in-hook
+      (add-hook 'after-save-hook #'tlon-autofix-all nil t))))
 
 ;;;;; manual-fix
 
@@ -277,7 +279,7 @@ match certain words that should not be altered, such as \"80,000 Hours\"."
 If KEEP-CASE is non-nil, keep the case of the matched text."
   (widen)
   (save-excursion
-    (point-min)
+    (goto-char (point-min))
     (dolist (regexp regexp-list)
       (goto-char (point-min))
       (let ((case-replace keep-case))
@@ -409,7 +411,7 @@ dedicated function."
   (save-excursion
     (goto-char (point-min))
     (let ((cnt 0))
-      (while (re-search-forward "https://web\.archive\.org/web/[[:digit:]]*?/" nil t)
+      (while (re-search-forward "https://web\.archive\.org/web/[[:digit:]]+/" nil t)
 	(replace-match "")
 	(setq cnt (1+ cnt)))
       (message "Done. %d URLs were fixed." cnt))))
@@ -425,18 +427,22 @@ Moves point to the first offending heading, or reports success."
   (save-excursion
     (goto-char (point-min))
     (let ((prev-level 1)
-	  (found nil))
+	  (found nil)
+	  (found-level nil)
+	  (found-prev-level nil))
       (while (and (not found)
 		  (re-search-forward "^\\(#{2,6}\\) " nil t))
 	(let ((level (length (match-string 1))))
 	  (when (> level (1+ prev-level))
-	    (setq found (match-beginning 0)))
+	    (setq found (match-beginning 0)
+		  found-level level
+		  found-prev-level prev-level))
 	  (setq prev-level level)))
       (if found
 	  (progn
 	    (goto-char found)
 	    (message "Heading hierarchy violation: level %d after level %d"
-		     (length (match-string 1)) (1- (length (match-string 1)))))
+		     found-level found-prev-level))
 	(message "Heading hierarchy OK")))))
 
 ;;;;;; unbalanced chars
@@ -548,7 +554,8 @@ Return cons of the form (missing-open . POS) or (missing-close . POS), or nil."
 (declare-function dired-get-marked-files "dired")
 (defun tlon-fix-translation (lang)
   "Fix common issues in translations in LANG."
-  (if-let ((files (or (dired-get-marked-files) (list (buffer-file-name)))))
+  (if-let ((files (or (and (derived-mode-p 'dired-mode) (dired-get-marked-files))
+		      (when (buffer-file-name) (list (buffer-file-name))))))
       (dolist (file files)
 	(with-current-buffer (find-file-noselect file)
 	  (tlon-fix-translation-in-file lang)

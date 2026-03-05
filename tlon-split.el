@@ -30,7 +30,7 @@
 
 ;;;; Main variables
 
-(defvar tlon-split-last-screen-line-pos nil
+(defvar-local tlon-split-last-screen-line-pos nil
   "Most recent point position.")
 
 (defvar tlon-split-screen-line-threshold 60
@@ -41,7 +41,10 @@
 ;;;###autoload (autoload 'tlon-split-mode "tlon-split" nil t)
 (define-minor-mode tlon-split-mode
   "Enable `tlon-split-mode' locally."
-  :init-value nil)
+  :init-value nil
+  (if tlon-split-mode
+      (add-hook 'post-command-hook #'tlon-split-autoalign-paragraphs nil t)
+    (remove-hook 'post-command-hook #'tlon-split-autoalign-paragraphs t)))
 
 (defun tlon-split-screen-line-changed-p ()
   "Return t iff the cursor in on a different screen line."
@@ -126,8 +129,6 @@ assumed that the paragraphs are already aligned."
   (interactive)
   (remove-hook 'post-command-hook #'tlon-split-autoalign-paragraphs)
   (add-hook 'post-command-hook #'tlon-split-autoalign-paragraphs))
-
-(tlon-split-mode-reset)
 
 ;;;;; Sentence highlighting
 ;; TODO: the functionality in this section isn’t currently used; decide what to do with it

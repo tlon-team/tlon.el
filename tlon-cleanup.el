@@ -53,7 +53,7 @@ non-EAF."
   (tlon-cleanup-remove-nonbreaking-spaces)
   (tlon-cleanup-remove-span-elements)
   (let ((fill-column (point-max)))
-    (fill-region (point) (point-max))))
+    (fill-region (point-min) (point-max))))
 
 (defun tlon-cleanup-unescape-chars ()
   "Unescape relevant characters in the current buffer."
@@ -62,13 +62,13 @@ non-EAF."
     (let ((regexp (concat "\\\\\\" char)))
       (goto-char (point-min))
       (while (re-search-forward regexp nil t)
-	(replace-match char))))
+	(replace-match char t t))))
   ;; characters that do not need to be escaped
   (dolist (char '("@" "\"" "'" "|" ">" "<" "~"))
     (let ((regexp (concat (regexp-quote "\\") char)))
       (goto-char (point-min))
       (while (re-search-forward regexp nil t)
-	(replace-match char)))))
+	(replace-match char t t)))))
 
 (defun tlon-cleanup-unescape-lines ()
   "Unescape consecutive empty lines."
@@ -110,8 +110,13 @@ are no level 2 headings and some headings level 3 or higher."
       (when (re-search-forward "^# " nil t)
 	(substitute-target-in-buffer "^#" "##"))
       (goto-char (point-min))
-      (while (not (re-search-forward "^## " nil t))
-	(substitute-target-in-buffer "^###" "##")))))
+      (let ((changed t))
+	(while (and changed (not (save-excursion
+				   (goto-char (point-min))
+				   (re-search-forward "^## " nil t))))
+	  (let ((before (buffer-chars-modified-tick)))
+	    (substitute-target-in-buffer "^###" "##")
+	    (setq changed (/= before (buffer-chars-modified-tick)))))))))
 
 ;; Not sure what the cause of these double brackets is; for now, just remove them
 (defun tlon-cleanup-remove-double-brackets ()
@@ -144,7 +149,7 @@ The function normalises three patterns:
 (defun tlon-cleanup-remove-span-elements ()
   "Remove span elements spaces."
   (goto-char (point-min))
-  (while (re-search-forward "{.*?}" nil t)
+  (while (re-search-forward "{\\.[^}]*}" nil t)
     (replace-match "")))
 
 ;;;;; EA Forum
@@ -435,7 +440,7 @@ not alter it unless you know what you are doing."
 (defun tlon-cleanup-consolidate-all-footnotes (dir)
   "Consolidate all footnotes in DIR."
   (interactive "D")
-  (dolist (file (directory-files dir nil "\\.md$"))
+  (dolist (file (directory-files dir t "\\.md$"))
     (with-current-buffer (find-file-noselect file)
       (message "Consolidating footnotes in %s" (buffer-name))
       (tlon-cleanup-consolidate-footnotes)

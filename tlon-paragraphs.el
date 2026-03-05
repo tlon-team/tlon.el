@@ -209,7 +209,7 @@ region, prompt for a file and count its paragraphs."
 If FILE is nil, prompt for it."
   (let ((file (or file
 		  (read-file-name "File to count paragraphs in: " nil nil t
-				  (file-relative-name (buffer-file-name) default-directory)))))
+				  (file-relative-name (or (buffer-file-name) "") default-directory)))))
     (with-current-buffer (find-file-noselect file)
       (message "There are %s paragraphs in the file `%s'."
                (tlon-get-number-of-paragraphs-in-file file) (file-name-nondirectory file)))))

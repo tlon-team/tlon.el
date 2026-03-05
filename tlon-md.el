@@ -752,7 +752,7 @@ prompting the user until a non-empty string is entered."
 (defvar tlon-locators)
 (defun tlon-md-cite-locator-reader ()
   "Prompt the user to select the `locator' attribute value of the `Cite' tag."
-  (let* ((selection (completing-read "Locator: " (push "" tlon-locators) nil t)))
+  (let* ((selection (completing-read "Locator: " (cons "" tlon-locators) nil t)))
     (alist-get selection tlon-locators nil nil 'string=)))
 
 (defun tlon-md-cite-length-reader ()
@@ -1004,7 +1004,6 @@ If OVERWRITE is non-nil, or called interactively, replace the existing marker
 when present."
   (interactive)
   (let ((overwrite (or overwrite (called-interactively-p 'any))))
-    transient-current-command
     (tlon-insert-note-marker (car (tlon-md-format-tag "Footnote" nil 'insert-prompt)) overwrite)))
 
 ;;;###autoload
@@ -1146,9 +1145,8 @@ If CONTENT-ONLY is non-nil, return the beginning of the note content. The note
 content is the note minus the marker that precedes it."
   (save-excursion
     (when n
-      (if-let ((id (concat "^" (number-to-string n))))
-	  (goto-char (markdown-footnote-find-text id))
-	(user-error "Note %d not found" n)))
+      (let ((id (concat "^" (number-to-string n))))
+	(goto-char (markdown-footnote-find-text id))))
     (when-let* ((begin (tlon-md-get-note-beginning content-only))
 		(end (tlon-md-get-note-end)))
       (cons begin end))))
@@ -1276,8 +1274,10 @@ If OVERWRITE is non, replace the existing marker when present."
   (interactive "sEnter time offset (MM:SS): ")
   (save-excursion
     (goto-char (point-min))
-    (let ((minutes (string-to-number (substring offset 0 2)))
-	  (seconds (string-to-number (substring offset 3 5))))
+    (unless (string-match "\\`\\([0-9]+\\):\\([0-9]+\\)\\'" offset)
+      (user-error "Invalid time offset format; expected MM:SS"))
+    (let ((minutes (string-to-number (match-string 1 offset)))
+	  (seconds (string-to-number (match-string 2 offset))))
       (while (re-search-forward "\\[\\([0-9]+\\):\\([0-9]+\\)\\]" nil t)
 	(let* ((original-minutes (string-to-number (match-string 1)))
 	       (original-seconds (string-to-number (match-string 2)))
@@ -1365,12 +1365,12 @@ end of the buffer unconditionally."
   "Read the substantive content of FILE.
 The substantive content of a file is the file minus the metadata and the local
 variables section. If FILE is nil, read the file visited by the current buffer."
-  (let ((file (or file (buffer-file-name)))
-	(begin (tlon-md-beginning-of-content))
-	(end (tlon-md-end-of-content)))
+  (let ((file (or file (buffer-file-name))))
     (with-temp-buffer
       (insert-file-contents file)
-      (buffer-substring-no-properties begin end))))
+      (let ((begin (tlon-md-beginning-of-content))
+	    (end (tlon-md-end-of-content)))
+	(buffer-substring-no-properties begin end)))))
 
 ;;;;; Menu
 
