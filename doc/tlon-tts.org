@@ -1,396 +1,383 @@
-#+title: tlon - Text-to-Speech
+#+title: tlon-tts: Text-to-speech functionality
 #+author: Pablo Stafforini
-#+EXCLUDE_TAGS: noexport
+#+email: pablo@stafforini.com
 #+language: en
-#+options: ':t toc:nil author:t email:t num:t
+#+options: ':t toc:t author:t email:t num:t
 #+startup: content
-#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
-#+texinfo_header: @set MAINTAINER Pablo Stafforini
-#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
-#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
-#+texinfo: @insertcopying
-* Text-to-Speech (=tlon-tts.el=)
+#+export_file_name: tlon-tts.info
+#+texinfo_filename: tlon-tts.info
+#+texinfo_dir_category: Emacs misc features
+#+texinfo_dir_title: Text-to-Speech: (tlon-tts)
+#+texinfo_dir_desc: Text-to-speech functionality
+
+This manual describes the features and customization options for the Emacs Lisp file =tlon-tts.el=.
+
+* Overview
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tts
+:CUSTOM_ID: h:overview
 :END:
 
-This module provides comprehensive text-to-speech (TTS) functionality, integrating with multiple cloud-based TTS engines (Microsoft Azure, Google Cloud, Amazon Polly, OpenAI, ElevenLabs). It handles text preparation (including SSML generation and listener cues), API requests, audio chunking and merging, and file management.
+The =tlon-tts= module provides comprehensive text-to-speech (TTS) functionality, integrating with five cloud-based TTS engines: Microsoft Azure, Google Cloud, Amazon Polly, OpenAI, and ElevenLabs.  Its core workflow consists of three stages: staging content (preparing Markdown text for narration by applying SSML tags, listener cues, abbreviation expansions, and other transformations), generating audio (sending prepared text chunks to a TTS engine via its API), and finalizing the output (optionally normalizing, appending silence between paragraphs, and joining all chunks into a single audio file).
 
-** Dependencies
+The module also ships a transient menu ([[#h:transient-menu][~tlon-tts-menu~]]) that surfaces every command and option, a quality report generator that flags potential issues before narration, and editing facilities for global and local abbreviation, replacement, and phonetic transcription dictionaries.
+
+External tools required: =ffmpeg= (audio processing), =curl= (API requests), =aws= CLI (Amazon Polly), =gcloud= CLI (Google Cloud token), =jq= (Google Cloud response parsing), =mp3splt= (audio truncation).
+
+* User options
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tts-dependencies
+:CUSTOM_ID: h:user-options
 :END:
 
-+ =tlon-core=
-+ =tlon-md=
-+ =eieio=
-+ =transient=
-+ =flycheck= (optional, for staging buffer)
-+ =markdown-mode= (optional, for staging buffer)
-+ =json-mode= (optional, for ElevenLabs voice listing)
-+ External tools: =ffmpeg= (for audio conversion/joining), =curl= (for API requests), =aws= CLI (for Polly), =gcloud= CLI (for Google Cloud token), =jq= (for Google Cloud response parsing).
-
-** User Options
+** General TTS settings
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tts-options
-:END:
-
-*** General TTS Settings
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-tts-general-options
+:CUSTOM_ID: h:general-tts-settings
 :END:
 
 #+vindex: tlon-tts-global-engine
-+ ~tlon-tts-global-engine~ :: Specifies the default TTS engine to use (e.g., "Microsoft Azure", "Google Cloud", "Amazon Polly", "OpenAI", "ElevenLabs").
+~tlon-tts-global-engine~ controls which TTS engine is selected when you create a new staging buffer.  Accepted values are ="Microsoft Azure"=, ="Google Cloud"=, ="Amazon Polly"=, ="OpenAI"=, and ="ElevenLabs"= (the default).  You can override this per session from the transient menu ([[#h:transient-menu][~tlon-tts-menu~]]).
 
 #+vindex: tlon-tts-use-alternate-voice
-+ ~tlon-tts-use-alternate-voice~ :: Boolean. If non-nil, uses a designated alternate voice (per engine configuration) for reading elements like notes, asides, blockquotes, etc., marked with listener cues.
+~tlon-tts-use-alternate-voice~ determines whether elements such as notes, asides, blockquotes, and other listener-cued sections are read with an alternate voice.  When non-nil, the alternate voice configured for the current engine is used for those sections.  When nil (the default), all text is read with the main voice.
 
 #+vindex: tlon-tts-delete-file-chunks
-+ ~tlon-tts-delete-file-chunks~ :: Boolean. If non-nil, automatically deletes the individual audio chunk files after they have been successfully merged into the final output file. This option is primarily used by the finalization process after narrating a full buffer. The command `tlon-tts-move-file-to-audio-server` will prompt separately whether to delete chunks.
-
-#+vindex: tlon-tts-paragraph-break-duration
-+ ~tlon-tts-paragraph-break-duration~ :: String specifying the duration of the pause (SSML =<break time="...">=) inserted after each paragraph (e.g., "0.8s").
-
-#+vindex: tlon-tts-listener-cue-break-duration
-+ ~tlon-tts-listener-cue-break-duration~ :: String specifying the duration of the pause inserted before and after listener cues (e.g., "0.5s").
+~tlon-tts-delete-file-chunks~ controls whether individual audio chunk files are automatically deleted after they have been joined into the final output file during finalization.  When nil (the default), chunk files are preserved so you can re-finalize or inspect them.
 
 #+vindex: tlon-tts-narrate-sidenotes
-+ ~tlon-tts-narrate-sidenotes~ :: Boolean. If non-nil, the content of sidenotes will be read aloud. If nil (the default), sidenotes are removed like footnotes.
+~tlon-tts-narrate-sidenotes~ controls whether sidenotes are read aloud.  When non-nil, the content of sidenotes is repositioned to the end of the sentence containing the reference and narrated with a listener cue.  When nil (the default), sidenotes are removed along with footnotes.
 
 #+vindex: tlon-tts-generate-missing-chunks-only
-+ ~tlon-tts-generate-missing-chunks-only~ :: Boolean. If non-nil (the default), `tlon-tts-narrate-staged-buffer` will only generate audio for chunks whose corresponding audio file does not already exist. This allows resuming an interrupted process. If nil, all chunks implicated by the full buffer narration will be regenerated. This option does *not* affect `tlon-tts-narrate-staged-chunks`, which always attempts to generate the chunks explicitly selected by the user.
+~tlon-tts-generate-missing-chunks-only~ controls whether ~tlon-tts-narrate-staged-buffer~ ([[#h:narrate-staged-buffer][described below]]) skips chunks whose audio files already exist on disk.  When non-nil (the default), narration resumes from the first missing chunk, which is useful for continuing an interrupted run.  When nil, all chunks are regenerated.  This option does not affect ~tlon-tts-narrate-staged-chunks~, which always regenerates the selected chunks.
+
 #+vindex: tlon-tts-normalize-audio
-+ ~tlon-tts-normalize-audio~ :: Boolean. If non-nil, audio chunks will be normalized using an =ffmpeg= loudness filter before being joined during the final processing stage. If nil (the default), this normalization step is skipped.
+~tlon-tts-normalize-audio~ controls whether an =ffmpeg= loudness normalization filter is applied to each chunk during finalization.  When nil (the default), the normalization step is skipped.
 
-*** Engine-Specific Settings
+#+vindex: tlon-tts-loudness-target
+~tlon-tts-loudness-target~ sets the target integrated loudness in LUFS for the normalization filter.  Common values are =-16= (loud, the default), =-18= (moderate), =-20= (quiet), and =-23= (broadcast standard).  To determine a suitable value, analyze a reference clip with =ffmpeg -i reference.mp3 -af loudnorm=print_format=summary -f null -= and use the "Input Integrated" LUFS value.
+
+#+vindex: tlon-tts-paragraph-break-duration
+~tlon-tts-paragraph-break-duration~ is a string specifying the duration of the SSML =<break>= tag inserted after each paragraph (e.g., ="0.8s"=, the default).  Note that ElevenLabs replaces the narrator's natural pause with the specified duration, whereas other engines add the specified duration on top of the natural pause.
+
+#+vindex: tlon-tts-listener-cue-break-duration
+~tlon-tts-listener-cue-break-duration~ is a string specifying the duration of the pause inserted before and after listener cues (e.g., ="0.5s"=, the default).
+
+#+vindex: tlon-tts-prompt
+~tlon-tts-prompt~ is a generic prompt string to include in TTS requests.  Selection candidates for each language are listed in the constant ~tlon-tts-prompts~.  This option is currently unused.
+
+** Engine-specific audio settings
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tts-engine-options
-:END:
-Each supported TTS engine has specific configuration options:
-
-+ *Audio Settings*: Variables like ~tlon-microsoft-azure-audio-settings~, ~tlon-google-cloud-audio-settings~, ~tlon-amazon-polly-audio-settings~, ~tlon-openai-audio-settings~, ~tlon-elevenlabs-audio-settings~ define the default audio output format (e.g., MP3 bitrate, PCM sample rate) and the corresponding file extension for each engine. These are cons cells =("FORMAT_NAME" . "extension")=.
-+ *Model Selection* (where applicable):
-  #+vindex: tlon-openai-model
-  + ~tlon-openai-model~ :: Specifies the OpenAI TTS model to use (e.g., "gpt-4o-mini-tts", "tts-1", "tts-1-hd").
-  #+vindex: tlon-elevenlabs-model
-  + ~tlon-elevenlabs-model~ :: Specifies the ElevenLabs model (e.g., "eleven_multilingual_v2", "eleven_turbo_v2_5"). Voice-specific parameters like =stability=, =similarity_boost=, =style=, =use_speaker_boost=, and =speed= defined in ~tlon-elevenlabs-voices~ are automatically included in the API request.
-+ *Region* (Amazon Polly):
-  #+vindex: tlon-amazon-polly-region
-  + ~tlon-amazon-polly-region~ :: Specifies the AWS region for Amazon Polly requests (e.g., "us-east-1").
-
-+ Pronunciation dictionaries (ElevenLabs):
-  #+vindex: tlon-elevenlabs-attach-dictionaries
-  + ~tlon-elevenlabs-attach-dictionaries~ :: Boolean. If non-nil, includes
-    =pronunciation_dictionary_locators= in ElevenLabs requests based on
-    ~tlon-file-elevenlabs-dictionary-locators~ for the current language. IPA
-    rules require a compatible model (e.g., "eleven_turbo_v2").
-  #+vindex: tlon-file-elevenlabs-dictionary-locators
-  + ~tlon-file-elevenlabs-dictionary-locators~ :: JSON file mapping language
-    codes to arrays of objects with =pronunciation_dictionary_id= and
-    =version_id= used to attach up to three dictionaries per request.
-
-** Commands
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-tts-commands
+:CUSTOM_ID: h:engine-audio-settings
 :END:
 
-This section details the interactive commands provided by =tlon-tts.el=.
+Each engine has a =defcustom= that selects the default output audio format as a cons cell =("FORMAT_NAME" . "extension")=.
 
-*** Core Workflow
+#+vindex: tlon-microsoft-azure-audio-settings
+~tlon-microsoft-azure-audio-settings~ defaults to =("audio-24khz-160kbitrate-mono-mp3" . "mp3")=.  The docstring of this variable lists the main format options and links to the full Microsoft documentation.
+
+#+vindex: tlon-google-cloud-audio-settings
+~tlon-google-cloud-audio-settings~ defaults to =("MP3" . "mp3")=.  Other choices include ="FLAC"=, ="OGG_OPUS"=, ="WEBM_OPUS"=, and more.
+
+#+vindex: tlon-amazon-polly-audio-settings
+~tlon-amazon-polly-audio-settings~ defaults to =("mp3" . "mp3")=.  Admissible values are ="ogg_vorbis"=, ="pcm"=, and ="mp3"=.
+
+#+vindex: tlon-openai-audio-settings
+~tlon-openai-audio-settings~ defaults to =("wav" . "wav")=.  Other choices are ="mp3"= and ="opus"=.
+
+#+vindex: tlon-elevenlabs-audio-settings
+~tlon-elevenlabs-audio-settings~ defaults to =("mp3_44100_192" . "mp3")=.  The 192 kbps option requires at least a Creator tier subscription.  Several PCM and mu-law formats are also available.
+
+** Engine-specific model settings
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tts-core-workflow-cmds
+:CUSTOM_ID: h:engine-model-settings
 :END:
 
+#+vindex: tlon-openai-model
+~tlon-openai-model~ selects the OpenAI TTS model.  Options include ="gpt-4o-mini-tts"= (the default, latest model), ="tts-1"= (lowest latency), and ="tts-1-hd"= (higher quality).
+
+#+vindex: tlon-elevenlabs-model
+~tlon-elevenlabs-model~ selects the ElevenLabs model.  The default is ="eleven_multilingual_v2"=, the most life-like and emotionally rich model.  Other options include ="eleven_v3"= (latest, 74 languages), ="eleven_flash_v2_5"= (ultra-low latency, 32 languages), and several older models.  The docstring lists all models with their characteristics.
+
+** ElevenLabs pronunciation dictionaries
+:PROPERTIES:
+:CUSTOM_ID: h:elevenlabs-pronunciation-dictionaries
+:END:
+
+#+vindex: tlon-elevenlabs-attach-dictionaries
+~tlon-elevenlabs-attach-dictionaries~ controls whether =pronunciation_dictionary_locators= are included in ElevenLabs requests.  When non-nil, up to three dictionary locators for the current language are read from the JSON file specified by ~tlon-file-elevenlabs-dictionary-locators~ and sent with each API request.  IPA rules require a compatible model such as ="eleven_turbo_v2"=.
+
+** Quick TTS settings
+:PROPERTIES:
+:CUSTOM_ID: h:quick-tts-settings
+:END:
+
+#+vindex: tlon-tts-quick-voice
+~tlon-tts-quick-voice~ specifies the voice to use with ~tlon-tts-quick~ ([[#h:quick-tts][described below]]).  It defaults to ="sage"=.  Consult ~tlon-openai-voices~ for available options.
+
+* Commands
+:PROPERTIES:
+:CUSTOM_ID: h:commands
+:END:
+
+** Core workflow
+:PROPERTIES:
+:CUSTOM_ID: h:core-workflow
+:END:
+
+*** Stage content
+:PROPERTIES:
+:CUSTOM_ID: h:stage-content
+:END:
 #+findex: tlon-tts-stage-content
-+ ~tlon-tts-stage-content~ :: (Autoloaded) Prepares content for narration. Reads the content (from region, specified file, or current buffer), creates a dedicated staging buffer (e.g., =*TTS: filename*=), copies the content, sets up necessary file-local variables (source, language, engine, voice, etc.), runs the preparation pipeline (~tlon-tts-prepare-staging-buffer~), and attempts to place the cursor in the staging buffer at the paragraph corresponding to the cursor's position in the original buffer.
 
+You call ~tlon-tts-stage-content~ to prepare content for narration.  It reads the active region, a specified file, or the file visited by the current buffer; creates a dedicated staging buffer (named like =*TTS: filename*=); inserts the content; sets file-local variables (source, language, engine, voice, audio format, locale); runs the full preparation pipeline (abbreviation expansion, SSML tagging, listener cue insertion, formatting removal, numeral processing, and more); calculates chunk boundaries; inserts chunk comments; and positions the cursor at the paragraph corresponding to your position in the source buffer.
+
+*** Narrate staged buffer
+:PROPERTIES:
+:CUSTOM_ID: h:narrate-staged-buffer
+:END:
 #+findex: tlon-tts-narrate-staged-buffer
-+ ~tlon-tts-narrate-staged-buffer~ :: (Autoloaded) Narrates the content currently prepared in the staging buffer.
-  1. Ensures the current buffer is a staging buffer.
-  2. Breaks the prepared text into chunks based on engine character limits and voice changes (~tlon-tts-calculate-chunks~). This populates the internal `tlon-tts-chunks` list.
-  3. Inserts `<!-- Chunk N -->` comments into the staging buffer based on the prepared chunks (~tlon-tts-insert-chunk-comments~).
-  4. Iterates through the chunks, calling the appropriate engine's request function (~tlon-tts-generate-audio~) for each chunk, saving the audio to files named by chunk number (e.g., =filename-chunk-001.mp3=).
-  5. Monitors the asynchronous audio generation processes.
-  6. Once all chunks are generated, no automatic finalization is performed. Use ~tlon-tts-finalize-audio-processing~ to normalize (if ~tlon-tts-normalize-audio~ is non-nil), then append silence (if needed), and join the chunks into the final output file.
 
+You call ~tlon-tts-narrate-staged-buffer~ from a staging buffer to narrate the entire prepared text.  It ensures chunks are calculated and comments are present, then iterates through chunks asynchronously, sending each to the selected TTS engine's API.  If ~tlon-tts-generate-missing-chunks-only~ ([[#h:general-tts-settings][described above]]) is non-nil, it skips chunks whose audio files already exist.  After all chunks finish, you must call ~tlon-tts-finalize-audio-processing~ ([[#h:finalize-audio][described below]]) to normalize (if enabled), append silence, and join the chunks into the final output file.
+
+*** Narrate staged chunks
+:PROPERTIES:
+:CUSTOM_ID: h:narrate-staged-chunks
+:END:
 #+findex: tlon-tts-narrate-staged-chunks
-+ ~tlon-tts-narrate-staged-chunks~ :: Asynchronously generates audio for specific chunk(s) in the TTS staging buffer. If a region is active, it generates audio for all chunks starting within that region. Otherwise, it generates audio for the chunk at the current cursor position. This command *always attempts* to generate the selected chunks, overwriting existing audio files if necessary. It identifies chunks by reading the number =N= from the =<!-- Chunk N -->= comment. *Important:* This command only generates the individual chunk audio files; it does *not* perform the final silence appending, normalization, or joining steps. Use ~tlon-tts-finalize-audio-processing~ for that.
 
-*** Audio File Management
+You call ~tlon-tts-narrate-staged-chunks~ from a staging buffer to regenerate specific chunks.  If a region is active, it generates audio for all chunks starting within that region.  Otherwise, it generates audio for the chunk at point.  This command always overwrites existing audio files for the selected chunks, regardless of the ~tlon-tts-generate-missing-chunks-only~ setting.  It does not perform finalization; use ~tlon-tts-finalize-audio-processing~ afterwards.
+
+*** Go to chunk
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tts-audio-mgmt-cmds
+:CUSTOM_ID: h:goto-chunk
+:END:
+#+findex: tlon-tts-goto-chunk
+
+You call ~tlon-tts-goto-chunk~ (interactively prompted for a 1-based chunk number) to jump to the beginning of that chunk in the staging buffer.
+
+** Audio file management
+:PROPERTIES:
+:CUSTOM_ID: h:audio-file-management
 :END:
 
+*** Finalize audio processing
+:PROPERTIES:
+:CUSTOM_ID: h:finalize-audio
+:END:
 #+findex: tlon-tts-finalize-audio-processing
-+ ~tlon-tts-finalize-audio-processing~ :: (Autoloaded) Manually triggers the final audio processing steps for a given base audio file. This includes normalizing chunk audio files first (if ~tlon-tts-normalize-audio~ is non-nil), then appending silence (if applicable for the engine), and joining them into the final output file (e.g., =filename.mp3=). It also handles deleting original chunk files if ~tlon-tts-delete-file-chunks~ is set, and opens Dired and the final audio file. This command is useful after selectively regenerating chunks with ~tlon-tts-narrate-staged-chunks~.
 
-#+findex: tlon-tts-delete-chunks-of-file
-+ ~tlon-tts-delete-chunks-of-file~ :: Deletes all audio chunk files associated with a base filename (e.g., =file-chunk-*.mp3=). Also kills the corresponding staging buffer if it exists. Operates on the file at point in Dired or prompts for a file.
+You call ~tlon-tts-finalize-audio-processing~ to trigger the final audio processing steps for a given base audio file.  It normalizes chunks asynchronously if ~tlon-tts-normalize-audio~ is non-nil, appends silence between paragraphs if the engine requires it (currently ElevenLabs), and joins all chunks into the final output file using =ffmpeg= concatenation.  It deletes original chunk files if ~tlon-tts-delete-file-chunks~ is set, opens a Dired buffer at the output directory, and plays the final file.
 
-#+findex: tlon-tts-truncate-audio-file
-+ ~tlon-tts-truncate-audio-file~ :: Removes a specified number of milliseconds from the *end* of an audio file using =mp3splt=. Prompts for the file and the duration to remove.
-
-#+findex: tlon-tts-move-file-to-audio-server
-+ ~tlon-tts-move-file-to-audio-server~ :: (Autoloaded) Moves a generated audio file to the designated audio repository directory, under a path like =uqbar-audio/lang/bare-dir/filename.ext=. The language and `bare-dir` (e.g., "articulos", "temas") are inferred from the source audio file's path. It then prompts the user whether to stage, commit (with a message like "Add lang/bare-dir/filename.ext"), and push the change. If audio chunks for the moved file exist, it will also prompt whether to delete them. Prompts for the file to move.
-
-#+findex: tlon-tts-open-audio-directory
-+ ~tlon-tts-open-audio-directory~ :: (Autoloaded) Opens the audio repository directory for the current language (or prompts for one) in Dired.
-
-*** Reporting and Data Editing
+*** Delete chunks of file
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tts-report-edit-cmds
+:CUSTOM_ID: h:delete-chunks
+:END:
+#+findex: tlon-tts-delete-chunks-of-file
+
+You call ~tlon-tts-delete-chunks-of-file~ to delete all audio chunk files associated with a base filename (matching the pattern =basename-chunk-*.ext=).  It also kills the corresponding staging buffer if it exists.  When invoked in Dired, it operates on the file at point; otherwise it prompts for a file.
+
+*** Truncate audio file
+:PROPERTIES:
+:CUSTOM_ID: h:truncate-audio
+:END:
+#+findex: tlon-tts-truncate-audio-file
+
+You call ~tlon-tts-truncate-audio-file~ to remove a specified number of milliseconds from the end of an audio file using =mp3splt=.  It prompts for the file and the duration to remove.
+
+*** Normalize audio files
+:PROPERTIES:
+:CUSTOM_ID: h:normalize-audio-files
+:END:
+#+findex: tlon-tts-normalize-audio-files
+
+You call ~tlon-tts-normalize-audio-files~ to normalize one or more audio files in place using the =ffmpeg= loudnorm filter.  When invoked from Dired with marked files, those files are used; otherwise you are prompted for a single file.  Each file is normalized to a temporary file and then replaced.
+
+*** Move file to audio server
+:PROPERTIES:
+:CUSTOM_ID: h:move-to-server
+:END:
+#+findex: tlon-tts-move-file-to-audio-server
+
+You call ~tlon-tts-move-file-to-audio-server~ to move a generated audio file to the =uqbar-audio= repository, under a path like =uqbar-audio/lang/bare-dir/filename.ext=.  The language and bare directory (e.g., "articulos", "temas") are inferred from the source file's path.  It then prompts whether to stage, commit, and push the change via Magit.  If chunk files exist for the moved file, it also prompts whether to delete them.
+
+*** Open audio directory
+:PROPERTIES:
+:CUSTOM_ID: h:open-audio-dir
+:END:
+#+findex: tlon-tts-open-audio-directory
+
+You call ~tlon-tts-open-audio-directory~ to open the audio repository directory for the current language (or a prompted one) in Dired.
+
+** Reporting and data editing
+:PROPERTIES:
+:CUSTOM_ID: h:reporting-and-editing
 :END:
 
-#+findex: tlon-tts-generate-report
-+ ~tlon-tts-generate-report~ :: Generates a report buffer ("*TTS Report*") highlighting potential issues in the *current staging buffer* that might affect TTS quality. It checks for:
-  - Missing acronym definitions (acronyms present in the staging buffer but not defined globally or locally).
-  - Potential chemical symbols.
-  - Unprocessed emphasis markers.
-  - Unprocessed en dashes.
-  - Numbers lacking thousands separators.
-
-#+findex: tlon-tts-edit-global-abbreviations
-+ ~tlon-tts-edit-global-abbreviations~ :: (Autoloaded) Interactively edits the global abbreviations list stored in =tlon-file-global-abbreviations=.
-
-#+findex: tlon-tts-edit-global-phonetic-replacements
-+ ~tlon-tts-edit-global-phonetic-replacements~ :: (Autoloaded) Interactively edits the global phonetic replacements list stored in =tlon-file-global-phonetic-replacements=.
-
-#+findex: tlon-tts-edit-global-phonetic-transcriptions
-+ ~tlon-tts-edit-global-phonetic-transcriptions~ :: (Autoloaded) Interactively edits the global phonetic transcriptions list stored in =tlon-file-global-phonetic-transcriptions=.
-
-
-#+findex: tlon-add-local-abbreviation
-+ ~tlon-add-local-abbreviation~ :: (Autoloaded) Adds a file-local abbreviation to the =tlon-local-abbreviations= variable in the current buffer's local variables section.
-
-#+findex: tlon-add-local-replacement
-+ ~tlon-add-local-replacement~ :: (Autoloaded) Adds a file-local phonetic replacement to the =tlon-local-replacements= variable in the current buffer's local variables section.
-
-*** Transient Menu
+*** Generate report
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tts-menu-cmd
+:CUSTOM_ID: h:generate-report
+:END:
+#+findex: tlon-tts-generate-report
+
+You call ~tlon-tts-generate-report~ from a staging buffer to generate a =*TTS Report*= buffer highlighting potential issues that might affect narration quality.  It checks for missing acronym definitions (acronyms present in the buffer but not defined in any abbreviation list), potential chemical symbols, unprocessed emphasis markers, unprocessed en dashes, and numbers lacking thousands separators.
+
+*** Edit global abbreviations
+:PROPERTIES:
+:CUSTOM_ID: h:edit-global-abbreviations
+:END:
+#+findex: tlon-tts-edit-global-abbreviations
+
+You call ~tlon-tts-edit-global-abbreviations~ to add or edit a global abbreviation.  You are prompted for a language (including the special value ="default"=, which applies to all languages), an abbreviation, and its spoken form.  The mapping is stored in the JSON file for the selected language under the =babel-core= repository.
+
+*** Edit global phonetic replacements
+:PROPERTIES:
+:CUSTOM_ID: h:edit-global-phonetic-replacements
+:END:
+#+findex: tlon-tts-edit-global-phonetic-replacements
+
+You call ~tlon-tts-edit-global-phonetic-replacements~ to add or edit a global phonetic replacement.  Like abbreviations, you are prompted for a language, a term to replace, and its replacement text.
+
+*** Edit global phonetic transcriptions
+:PROPERTIES:
+:CUSTOM_ID: h:edit-global-phonetic-transcriptions
+:END:
+#+findex: tlon-tts-edit-global-phonetic-transcriptions
+
+You call ~tlon-tts-edit-global-phonetic-transcriptions~ to add or edit a global phonetic (IPA) transcription.  When adding a new term, the command asks an AI model for a suggested IPA transcription and pre-fills the prompt with it.  The transcription is stored in the corresponding JSON file.
+
+*** Add local abbreviation
+:PROPERTIES:
+:CUSTOM_ID: h:add-local-abbreviation
+:END:
+#+findex: tlon-add-local-abbreviation
+
+You call ~tlon-add-local-abbreviation~ to add a file-local abbreviation to the =tlon-local-abbreviations= variable in the current buffer's local variables section.  You are prompted for the abbreviation and its expanded form.
+
+*** Add local replacement
+:PROPERTIES:
+:CUSTOM_ID: h:add-local-replacement
+:END:
+#+findex: tlon-add-local-replacement
+
+You call ~tlon-add-local-replacement~ to add a file-local phonetic replacement to the =tlon-local-replacements= variable in the current buffer's local variables section.  You are prompted for the text to replace and its replacement.
+
+** Quick TTS
+:PROPERTIES:
+:CUSTOM_ID: h:quick-tts
+:END:
+#+findex: tlon-tts-quick
+
+You call ~tlon-tts-quick~ to quickly generate an audio file from text using the OpenAI TTS engine.  When called interactively, it uses the active region or prompts for text, then prompts for the output file path.  The voice used is specified by ~tlon-tts-quick-voice~ ([[#h:quick-tts-settings][described above]]).  The JSON payload is written to a temporary file to avoid shell quoting issues.
+
+** ElevenLabs voice listing
+:PROPERTIES:
+:CUSTOM_ID: h:elevenlabs-voices
+:END:
+#+findex: tlon-tts-elevenlabs-get-voices
+
+You call ~tlon-tts-elevenlabs-get-voices~ to retrieve a JSON listing of all available ElevenLabs voices and display them in a formatted buffer.
+
+** Transient menu
+:PROPERTIES:
+:CUSTOM_ID: h:transient-menu
 :END:
 #+findex: tlon-tts-menu
-The command ~tlon-tts-menu~ (Autoloaded) activates a =transient= menu interface for TTS operations.
 
-It provides the following groups and commands:
-+ *Narration*:
-  + =s= :: Stage content (~tlon-tts-stage-content~)
-  + =b= :: Narrate buffer (~tlon-tts-narrate-staged-buffer~)
-  + =c= :: Narrate chunks (~tlon-tts-narrate-staged-chunks~)
-  + =e= :: Generate report (~tlon-tts-generate-report~)
-  + *Narration options*: (These set the corresponding user options temporarily for the menu session)
-    + =-b= :: Paragraph break duration (~tlon-tts-paragraph-break-duration-infix~)
-    + =-p= :: Prompt (Currently unused) (~tlon-tts-menu-infix-set-prompt~)
-    + =-s= :: Narrate sidenotes (~tlon-tts-menu-infix-toggle-narrate-sidenotes~)
-    + =-v= :: Use alternate voice (~tlon-tts-menu-infix-toggle-alternate-voice~)
-    + ""
-    + =-e= :: Engine (~tlon-tts-menu-infix-set-engine~)
-    + =-t= :: Engine settings (~tlon-tts-menu-infix-set-engine-settings~)
-    + ""
-    + =-D= :: Debug mode (~tlon-menu-infix-toggle-debug~)
-+ *File processing*:
-  + =F= :: Finalize audio processing (~tlon-tts-finalize-audio-processing~)
-  + =d= :: Delete file chunks (~tlon-tts-delete-chunks-of-file~)
-  + =x= :: Truncate audio file (~tlon-tts-truncate-audio-file~)
-  + *Audio repo*:
-    + =o= :: Open audio directory (~tlon-tts-open-audio-directory~)
-    + =m= :: Move file to audio server (~tlon-tts-move-file-to-audio-server~)
-  + *File processing options*:
-    + =-m= :: Generate missing chunks only (for narrate buffer) (~tlon-tts-menu-infix-toggle-generate-missing-chunks-only~)
-    + =-n= :: Normalize audio during finalization (~tlon-tts-menu-infix-toggle-normalize-audio~)
-    + =-d= :: Delete chunks after finalizing (~tlon-tts-menu-infix-toggle-delete-file-chunks-after-finalizing~)
-+ *Edit*:
-  + *global*:
-    + =a= :: Abbreviation (~tlon-tts-edit-global-abbreviations~)
-    + =r= :: Replacement (~tlon-tts-edit-global-phonetic-replacements~)
-    + =t= :: Transcription (~tlon-tts-edit-global-phonetic-transcriptions~)
-  + *local*:
-    + =A= :: Abbreviation (~tlon-add-local-abbreviation~)
-    + =R= :: Replacement (~tlon-add-local-replacement~)
+The command ~tlon-tts-menu~ activates a =transient= menu interface that surfaces all TTS operations and options in three columns:
 
-** Internal Functions and Variables
+- *Narration*: stage content (=s=), narrate buffer (=b=), narrate chunks (=c=), generate report (=e=), plus infixes for paragraph break duration (=-b=), prompt (=-p=), narrate sidenotes (=-s=), alternate voice (=-v=), engine (=-e=), and engine settings (=-t=).
+
+- *File processing*: finalize audio (=f=), move to audio dir (=m=), delete chunks (=d=), normalize files (=n=), truncate file (=x=), open audio dir (=o=), plus infixes for normalize audio (=-n=), loudness target (=-l=), delete chunks after finalizing (=-d=), and generate missing chunks only (=-k=).
+
+- *Edit*: global abbreviation (=a=), replacement (=r=), transcription (=t=); local abbreviation (=A=), replacement (=R=).
+
+* Functions
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tts-internals
+:CUSTOM_ID: h:functions
 :END:
 
-This section lists key non-interactive functions, variables, and constants used internally.
+This section documents noteworthy public functions that are not interactive commands.
 
-*** Configuration and Constants
+** Staging and preparation
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tts-config-internals
+:CUSTOM_ID: h:staging-functions
 :END:
-#+vindex: tlon-tts-engines
-+ ~tlon-tts-engines~ :: Central alist defining properties for each supported TTS engine (name, voice variable, audio settings variable, request function, character limit, internal property key).
-#+vindex: tlon-microsoft-azure-voices
-#+vindex: tlon-google-cloud-voices
-#+vindex: tlon-amazon-polly-voices
-#+vindex: tlon-openai-voices
-#+vindex: tlon-elevenlabs-voices
-+ Voice Lists (e.g., ~tlon-microsoft-azure-voices~) :: Alists defining preferred voices for each engine, including ID, language, gender, and optional role (main/alternate).
-#+vindex: tlon-microsoft-azure-audio-choices
-#+vindex: tlon-google-cloud-audio-choices
-#+vindex: tlon-amazon-polly-audio-choices
-#+vindex: tlon-openai-audio-choices
-#+vindex: tlon-elevenlabs-audio-choices
-+ Audio Choices (e.g., ~tlon-microsoft-azure-audio-choices~) :: Alists defining available audio formats and extensions for each engine, used for completion in the transient menu.
-#+vindex: tlon-microsoft-azure-request
-#+vindex: tlon-google-cloud-request
-#+vindex: tlon-amazon-polly-request
-#+vindex: tlon-openai-tts-request
-#+vindex: tlon-elevenlabs-tts-url
-+ Request Formats (e.g., ~tlon-microsoft-azure-request~) :: Format strings for the =curl= or =aws= commands used to make API requests for each engine.
-#+vindex: tlon-microsoft-azure-char-limit
-#+vindex: tlon-google-cloud-char-limit
-#+vindex: tlon-amazon-polly-char-limit
-#+vindex: tlon-openai-char-limit
-#+vindex: tlon-elevenlabs-char-limit
-+ Character Limits (e.g., ~tlon-microsoft-azure-char-limit~) :: Maximum number of characters allowed per request for each engine. Used for chunking.
-#+vindex: tlon-microsoft-azure-key
-#+vindex: tlon-google-cloud-key
-#+vindex: tlon-openai-key
-#+vindex: tlon-elevenlabs-key
-+ API Keys (e.g., ~tlon-microsoft-azure-key~) :: Variables holding the API keys for each service, typically retrieved from =auth-source=.
-#+vindex: tlon-tts-supported-tags
-+ ~tlon-tts-supported-tags~ :: Alist defining SSML tags, their support status across engines, and how to handle them if unsupported (remove, chunkify).
-#+vindex: tlon-tts-listener-cues
-+ ~tlon-tts-listener-cues~ :: Alist defining the start and end cue text for different content types (aside, blockquote, etc.) in various languages.
-#+vindex: tlon-tts-listener-cue-patterns
-+ ~tlon-tts-listener-cue-patterns~ :: Alist mapping content types to the regex patterns used to identify them in the text.
 
-*** Staging Buffer and Preparation
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-tts-staging-internals
-:END:
 #+findex: tlon-tts-get-staging-buffer-name
-+ ~tlon-tts-get-staging-buffer-name~ :: Generates the name for the staging buffer based on the source filename.
+~tlon-tts-get-staging-buffer-name~ returns the name of the staging buffer for a given file (e.g., =*TTS: filename*=).
+
 #+findex: tlon-tts-set-file-local-vars
-+ ~tlon-tts-set-file-local-vars~ :: Sets file-local variables in the staging buffer (source, language, engine, audio format, voice, locale).
+~tlon-tts-set-file-local-vars~ sets all file-local variables in the staging buffer: source, language, engine, audio format, voice, and locale.  Each argument defaults to an auto-detected value if not provided.
+
 #+findex: tlon-tts-prepare-staging-buffer
-+ ~tlon-tts-prepare-staging-buffer~ :: The main function that orchestrates the text preparation pipeline within the staging buffer. It calls numerous helper functions to:
-  - Generate the initial report.
-  - Ensure images/tables have alt text.
-  - Process notes (footnotes/sidenotes).
-  - Remove unwanted sections (e.g., "Further reading").
-  - Remove horizontal lines.
-  - Replace BibTeX keys with citations.
-  - Add listener cues.
-  - Process links.
-  - Remove formatting (bold, italics, etc.).
-  - Add paragraph breaks.
-  - Process currencies and numerals.
-  - Process abbreviations (local and global).
-  - Process phonetic replacements and transcriptions.
-  - Handle unsupported SSML tags.
-  - Clean up extra newlines.
-  - (Potentially) Escape XML special characters.
+~tlon-tts-prepare-staging-buffer~ orchestrates the full text preparation pipeline in the staging buffer.  It processes notes, removes unwanted sections, replaces BibTeX keys with citations, adds listener cues, processes links, removes formatting, adds paragraph breaks, processes currencies and numerals, expands abbreviations, handles phonetic replacements and transcriptions, removes unsupported SSML tags, cleans up newlines, and generates the quality report.
 
-*** Chunking and Processing
+#+findex: tlon-tts-staging-buffer-p
+~tlon-tts-staging-buffer-p~ returns non-nil if the current buffer is a TTS staging buffer (i.e., the buffer-local variable ~tlon-tts-staging-buffer-p~ is bound and true).
+
+** Chunking
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tts-chunking-internals
+:CUSTOM_ID: h:chunking-functions
 :END:
+
 #+findex: tlon-tts-calculate-chunks
-+ ~tlon-tts-calculate-chunks~ :: Calculates chunk boundaries and populates the `tlon-tts-chunks` data structure. It analyzes the current buffer content and determines how to split it into chunks based on engine limits and voice changes. For any engine, if its `*-char-limit` (e.g., ~tlon-elevenlabs-char-limit~) is nil, it will chunk by paragraph regardless of size to work around voice degradation issues for longer texts. This function ensures that chunking logic operates on text free of pre-existing `<!-- Chunk N -->` comments by temporarily removing them before analysis.
-#+findex: tlon-tts-ensure-chunks-calculated
-+ ~tlon-tts-ensure-chunks-calculated~ :: Ensures ~tlon-tts-chunks~ is populated, calling ~tlon-tts-calculate-chunks~ if necessary.
-#+findex: tlon-tts-ensure-chunks-ready
-+ ~tlon-tts-ensure-chunks-ready~ :: Ensures chunks are calculated and chunk comments are inserted in the buffer.
-#+findex: tlon-tts-ensure-chunk-comments-inserted
-+ ~tlon-tts-ensure-chunk-comments-inserted~ :: Ensures chunk comments are present in the buffer, inserting them if missing.
-#+findex: tlon-tts-read-into-chunks
-+ ~tlon-tts-read-into-chunks~ :: Reads the staging buffer content (excluding local variables section) and splits it into chunks using ~tlon-tts-break-into-chunks~.
+~tlon-tts-calculate-chunks~ analyzes the staging buffer content and determines how to split it into chunks based on the engine's character limit and voice changes.  When the character limit is nil (the case for ElevenLabs by default), each paragraph becomes its own chunk, which helps mitigate voice degradation on longer texts.  Voice changes specified in ~tlon-tts-voice-chunks~ always force a chunk break.  The function populates the buffer-local ~tlon-tts-chunks~ list.
+
 #+findex: tlon-tts-break-into-chunks
-+ ~tlon-tts-break-into-chunks~ :: Core logic for splitting text into chunks based on paragraph boundaries, engine character limits, and voice changes specified by =tlon-tts-voice-chunks=. It assigns a 1-based chunk number to each generated chunk and stores this in the chunk data. This chunk number is then used for filenames.
+~tlon-tts-break-into-chunks~ is the core function that splits text in the current buffer into chunks.  It respects paragraph boundaries, engine character limits, and voice change markers.  Each chunk stores a 1-based chunk number, the text, voice parameters, the output filename, processing status, markers, and other metadata.
+
 #+findex: tlon-tts-insert-chunk-comments
-+ ~tlon-tts-insert-chunk-comments~ :: After chunks are calculated by ~tlon-tts-calculate-chunks~ (which calls ~tlon-tts-break-into-chunks~), this function is called by ~tlon-tts-narrate-staged-buffer~. It first removes any pre-existing `<!-- Chunk N -->` comments, then iterates through the `tlon-tts-chunks` list and inserts new `<!-- Chunk N -->` comments at the beginning of each chunk's text in the staging buffer, using the `begin-marker` and `chunk-number` stored in each chunk's data.
-#+findex: tlon-tts-process-chunks
-+ ~tlon-tts-process-chunks~ :: Iterates through the generated ~tlon-tts-chunks~, calling ~tlon-tts-generate-audio~ for each, potentially skipping existing files based on ~tlon-tts-generate-missing-chunks-only~.
-#+findex: tlon-tts-generate-audio
-+ ~tlon-tts-generate-audio~ :: Constructs the API request command using the appropriate engine-specific function (e.g., ~tlon-tts-microsoft-azure-make-request~) and starts the asynchronous process for a specific chunk index. Sets up the process sentinel (~tlon-tts-process-chunk-sentinel~) to handle completion.
-#+findex: tlon-tts-process-chunk-sentinel
-+ ~tlon-tts-process-chunk-sentinel~ :: The sentinel function called when an audio generation process for a chunk finishes. It parses the response (including the request ID for ElevenLabs), updates the chunk status, stores the request ID, and triggers the next chunk's generation or finalizes processing (normalization, joining, cleanup) if all chunks are done.
-#+findex: tlon-tts--generate-single-chunk-by-number
-+ ~tlon-tts--generate-single-chunk-by-number~ :: Internal function called by ~tlon-tts-narrate-staged-chunks~. Takes a 1-based chunk number (read from the `<!-- Chunk N -->` comment), retrieves the corresponding chunk data from `tlon-tts-chunks` (using `chunk-number - 1` as the list index), and calls ~tlon-tts-execute-generation-request~ to generate the audio for that specific chunk's text.
+~tlon-tts-insert-chunk-comments~ inserts =<!-- Chunk N -->= comments before each chunk in the staging buffer, using the markers and chunk numbers stored in ~tlon-tts-chunks~.
 
-*** Engine Request Functions
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-tts-engine-request-internals
-:END:
-#+findex: tlon-tts-microsoft-azure-make-request
-#+findex: tlon-tts-google-cloud-make-request
-#+findex: tlon-tts-amazon-polly-make-request
-#+findex: tlon-tts-openai-make-request
-#+findex: tlon-tts-elevenlabs-make-request
-+ Engine Request Functions (e.g., ~tlon-tts-microsoft-azure-make-request~) :: Functions responsible for constructing the specific =curl=, =aws=, or other command-line request for each TTS engine, incorporating the text (wrapped in SSML), API key, selected voice, locale, audio format, and output destination.
-
-*** SSML and Text Processing Helpers
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-tts-ssml-text-internals
-:END:
-#+findex: tlon-tts-process-unsupported-ssml-tags
-+ ~tlon-tts-process-unsupported-ssml-tags~ :: Determines which SSML tags are unsupported by the current engine and either removes them (~tlon-tts-remove-unsupported-ssml-tags~) or prepares for chunking based on them (~tlon-tts-chunkify-unsupported-ssml-tags~).
-#+findex: tlon-tts-process-listener-cues
-+ ~tlon-tts-process-listener-cues~ :: Iterates through defined content types (tables, quotes, asides, etc.) and calls ~tlon-tts-add-listener-cues~ for each.
-#+findex: tlon-tts-add-listener-cues
-+ ~tlon-tts-add-listener-cues~ :: Finds occurrences of a specific content type using regex patterns and replaces the matched text with the content wrapped in appropriate listener cues and potentially alternate voice tags (~tlon-tts-listener-cue-full-enclose~).
-#+findex: tlon-tts-process-notes
-+ ~tlon-tts-process-notes~ :: Handles footnotes, replacing references with content (for sidenotes) or removing them, adding listener cues.
-#+findex: tlon-tts-process-formatting
-+ ~tlon-tts-process-formatting~ :: Calls individual functions to remove various formatting tags (bold, italics, sup, sub, etc.).
-#+findex: tlon-tts-process-numerals
-+ ~tlon-tts-process-numerals~ :: Calls functions to handle number formatting (powers, Roman numerals, thousands separators).
-#+findex: tlon-tts-process-abbreviations
-+ ~tlon-tts-process-abbreviations~ :: Core logic for replacing abbreviations (local or global) with their expansions.
-#+findex: tlon-tts-process-terms
-+ ~tlon-tts-process-terms~ :: Generic function for replacing terms based on a list (used for phonetic replacements and transcriptions).
-
-*** Audio File Helpers
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-tts-audio-internals
-:END:
-#+findex: tlon-tts-finish-processing
-+ ~tlon-tts-finish-processing~ :: Finalizes the TTS process after all API chunks are generated. It normalizes chunks asynchronously (if enabled), then (for engines that need it) appends silence and joins the chunks. Handles cleanup of temporary files and opens the final audio file.
 #+findex: tlon-tts-get-chunk-name
-+ ~tlon-tts-get-chunk-name~ :: Generates the filename for an audio chunk based on the original filename and the 1-based chunk number (e.g., =basename-chunk-XXX.ext=). This number is assigned sequentially as chunks are created.
-#+findex: tlon-tts-get-list-of-chunks
-+ ~tlon-tts-get-list-of-chunks~ :: Finds all chunk files matching a base filename pattern (e.g., =basename-chunk-*.ext=) and sorts them numerically by chunk number.
-#+findex: tlon-tts-get-base-audio-file-interactive
-+ ~tlon-tts-get-base-audio-file-interactive~ :: Prompts for or determines the base audio file path for operations like finalization or chunk deletion. If a chunk filename is provided, it derives the base name.
-#+findex: tlon-tts-create-list-of-chunks
-+ ~tlon-tts-create-list-of-chunks~ :: Creates a temporary text file listing chunk filenames (typically normalized temporary files), required by =ffmpeg= for concatenation. This is used internally by the asynchronous joining process.
-#+findex: tlon-tts-append-silence-to-chunks
-+ ~tlon-tts-append-silence-to-chunks~ :: Appends silence to each chunk file using =ffmpeg=, necessary for some engines like ElevenLabs. This is called synchronously by ~tlon-tts-finish-processing~ before the asynchronous normalization and joining steps. Returns a list of paths to the new temporary files with silence appended.
-#+findex: tlon-tts-append-silence-to-chunks-p
-+ ~tlon-tts-append-silence-to-chunks-p~ :: Determines if silence should be appended based on the TTS engine used for the file.
-#+findex: tlon-tts-async-start-normalization
-+ ~tlon-tts-async-start-normalization~ :: Asynchronously normalizes a list of audio files to temporary output files using =ffmpeg=. Chains commands with `&&`.
-#+findex: tlon-tts-normalization-sentinel
-+ ~tlon-tts-normalization-sentinel~ :: Sentinel function for the asynchronous normalization process. Triggers joining after successful normalization or handles errors, including cleanup of temporary normalized files.
-#+findex: tlon-tts-async-start-joining
-+ ~tlon-tts-async-start-joining~ :: Asynchronously joins a list of audio files into a final output file using =ffmpeg= concatenation.
-#+findex: tlon-tts-joining-sentinel
-+ ~tlon-tts-joining-sentinel~ :: Sentinel function for the asynchronous joining process. Handles cleanup of temporary files (including the ffmpeg list file and potentially the input files if they were temporary) and opens the final audio file on success.
+~tlon-tts-get-chunk-name~ returns the filename for a chunk, formatted as =basename-chunk-NNN.ext= where NNN is the zero-padded 1-based chunk number.
 
-** Testing
+#+findex: tlon-tts-get-list-of-chunks
+~tlon-tts-get-list-of-chunks~ returns a sorted list of all existing chunk files matching a base filename pattern.
+
+** Audio processing
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tts-testing
-:INDEX: test @tlon-tts-break-into-chunks-paragraph-mode @tlon-tts-break-into-chunks-char-limit @tlon-tts-break-into-chunks-with-voice-change @tlon-tts-break-into-chunks-voice-change-at-start @tlon-tts-break-into-chunks-ssml-break-boundary @tlon-tts-break-into-chunks-empty-input @tlon-tts-break-into-chunks-single-large-paragraph
+:CUSTOM_ID: h:audio-processing-functions
 :END:
 
-The file =tlon-tts-tests.el= contains unit tests for the TTS functionality, particularly focusing on the text chunking logic in ~tlon-tts-break-into-chunks~. These tests use the Emacs Lisp Regression Testing framework (=ert=).
+#+findex: tlon-tts-finish-processing
+~tlon-tts-finish-processing~ is the internal function that finalizes the TTS process.  It normalizes asynchronously (if enabled), appends silence (if the engine requires it), and joins chunks into the final output file.
 
-To run the tests:
+#+findex: tlon-tts-append-silence-to-chunks
+~tlon-tts-append-silence-to-chunks~ appends silence of the duration specified by ~tlon-tts-paragraph-break-duration~ to each chunk file, creating temporary files.  It returns the list of temporary file paths.
 
-+ *Interactively*:
-  1. Ensure =tlon-tts-tests.el= is loaded (e.g., =M-x load-file RET tlon-tts-tests.el RET=). *Make sure all dependencies of =tlon.el= and =tlon-tts.el= are also loaded or available in the `load-path`.*
-  2. Run the command =M-x ert-run-tests-interactively RET=.
-  3. At the "Run tests matching selector:" prompt, type =t= and press =RET= to run all loaded tests. Alternatively, type =tlon-tts= and =RET= to run only the tests defined in this specific suite.
+#+findex: tlon-tts-append-silence-to-chunks-p
+~tlon-tts-append-silence-to-chunks-p~ returns non-nil if silence should be appended to chunks for the given file, which is currently the case only when the engine is ElevenLabs.
 
-+ *From the Command Line (Batch Mode)*: This is suitable for automated checks (e.g., in scripts or CI pipelines). Use a single =--eval= argument containing a =progn= block to set up the `load-path`, load the necessary files (`tlon.el` first, then the test file), and finally run the tests. Use full paths for loaded files. Run the command as a single line to avoid shell interpretation issues. *Ensure all dependencies are correctly specified in the `load-path`.*
-  #+begin_src shell
-  emacs --batch --eval '(progn (add-to-list (quote load-path) "/path/to/tlon/directory/") (add-to-list (quote load-path) "/path/to/parent/repos/directory/") (load-file "/path/to/tlon/directory/tlon.el") (load-file "/path/to/tlon/directory/tlon-tts-tests.el") (ert-run-tests-batch-and-exit))'
-  #+end_src
-  Replace =/path/to/tlon/directory/= with the full path to the specific `tlon` package checkout (e.g., =/Users/user/.emacs.d/elpaca/repos/tlon/=). Replace =/path/to/parent/repos/directory/= with the full path to the directory containing *all* package checkouts (e.g., =/Users/user/.emacs.d/elpaca/repos/=). Emacs will exit with status 0 if all tests pass, and non-zero otherwise.
+#+findex: tlon-tts-get-original-filename
+~tlon-tts-get-original-filename~ returns the base filename from which a chunk file derives by removing the =-chunk-NNN= suffix.
 
-These tests help verify that chunking behaves correctly under various conditions, including different engine character limits, paragraph-based chunking (for ElevenLabs), the presence of voice change markers, and handling of SSML break tags. Adding more tests, especially for edge cases encountered during development, is encouraged to improve robustness.
+** Voice selection
+:PROPERTIES:
+:CUSTOM_ID: h:voice-functions
+:END:
 
+#+findex: tlon-tts-select-voice
+~tlon-tts-select-voice~ prompts you to select from available voices in the current language for the current engine, displaying the voice name, gender, and role.
+
+#+findex: tlon-tts-get-voice-at-point
+~tlon-tts-get-voice-at-point~ returns the voice ID of the =voice= SSML tag enclosing point, or the default voice (~tlon-tts-voice~) if point is not inside a =voice= tag.
+
+#+findex: tlon-tts-get-voice-of-role
+~tlon-tts-get-voice-of-role~ returns the voice ID associated with a given role (="main"=, ="alternate"=, ="male"=, ="female"=, ="alternate-gender"=, or ="inherit"=) for the current engine and language.
+
+* Indices
+:PROPERTIES:
+:CUSTOM_ID: h:indices
+:END:
+
+** Function index
+:PROPERTIES:
+:INDEX: fn
+:CUSTOM_ID: h:function-index
+:END:
+
+** Variable index
+:PROPERTIES:
+:INDEX: vr
+:CUSTOM_ID: h:variable-index
+:END:

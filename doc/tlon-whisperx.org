@@ -1,0 +1,70 @@
+#+title: tlon-whisperx: Shared WhisperX helpers
+#+author: Pablo Stafforini
+#+email: pablo@stafforini.com
+#+language: en
+#+options: ':t toc:t author:t email:t num:t
+#+startup: content
+#+export_file_name: tlon-whisperx.info
+#+texinfo_filename: tlon-whisperx.info
+#+texinfo_dir_category: Emacs misc features
+#+texinfo_dir_title: WhisperX Helpers: (tlon-whisperx)
+#+texinfo_dir_desc: Shared WhisperX helpers
+
+This manual describes the features and customization options for the Emacs Lisp file =tlon-whisperx.el=.
+
+* Overview
+:PROPERTIES:
+:CUSTOM_ID: h:overview
+:END:
+
+The =tlon-whisperx= module provides shared helpers for running the WhisperX tool from within Emacs.  WhisperX is a speech recognition system that supports both transcription (converting audio to text) and diarization (identifying who spoke when).  This module wraps the =whisperx= command-line tool with asynchronous process management: each invocation spawns a background process, logs its output to a dedicated buffer, and calls a user-supplied callback when the process finishes.
+
+The two main entry points are ~tlon-whisperx-transcribe~ ([[#h:transcribe][described below]]) for plain transcription and ~tlon-whisperx-diarize~ ([[#h:diarize][described below]]) for speaker-attributed transcription.
+
+External tools required: =whisperx= (must be on your =PATH=).
+
+* User options
+:PROPERTIES:
+:CUSTOM_ID: h:user-options
+:END:
+
+#+vindex: tlon-dub-transcription-format
+~tlon-dub-transcription-format~ controls the output format produced by WhisperX transcription.  The default is ="all"=, which writes every supported format.  Other allowed values are ="srt"=, ="vtt"=, ="txt"=, ="tsv"=, ="json"=, and ="aud"=.  This option is used by callers that feed the value into the =--output_format= argument; ~tlon-whisperx-transcribe~ itself defaults to ="json"= unless you pass a different format.
+
+* Functions
+:PROPERTIES:
+:CUSTOM_ID: h:functions
+:END:
+
+** Transcribe
+:PROPERTIES:
+:CUSTOM_ID: h:transcribe
+:END:
+#+findex: tlon-whisperx-transcribe
+
+~tlon-whisperx-transcribe~ transcribes an audio file with WhisperX.  You pass the path to the audio file and, optionally, the output format (defaults to ="json"=) and a callback.  The function builds the =whisperx= command with =--compute_type float32= and =--output_dir= set to the directory of the audio file, then delegates to the internal process runner.  On success, the callback receives the path to the generated transcript file and =t=; on failure, it receives =nil= for both arguments.
+
+** Diarize
+:PROPERTIES:
+:CUSTOM_ID: h:diarize
+:END:
+#+findex: tlon-whisperx-diarize
+
+~tlon-whisperx-diarize~ runs WhisperX with diarization enabled on an audio file.  You pass the path to the audio file and, optionally, the language (defaults to ="es"=), the number of speakers (when a positive integer, the tool is constrained to exactly that many speakers; when nil or 0 it auto-detects), a Hugging Face token (defaults to looking up the token from =auth-source-pass=), and a callback.  The function builds the =whisperx= command with =--diarize=, =--language=, =--hf_token=, =--compute_type float32=, and =--output_dir .=, plus optional =--min_speakers= and =--max_speakers= flags.  The callback signature is the same as for ~tlon-whisperx-transcribe~.
+
+* Indices
+:PROPERTIES:
+:CUSTOM_ID: h:indices
+:END:
+
+** Function index
+:PROPERTIES:
+:INDEX: fn
+:CUSTOM_ID: h:function-index
+:END:
+
+** Variable index
+:PROPERTIES:
+:INDEX: vr
+:CUSTOM_ID: h:variable-index
+:END:

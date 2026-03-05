@@ -1,73 +1,107 @@
-#+title: tlon - Text-to-Speech Control
+#+title: tlon-read: Read the current buffer aloud
 #+author: Pablo Stafforini
-#+EXCLUDE_TAGS: noexport
+#+email: pablo@stafforini.com
 #+language: en
-#+options: ':t toc:nil author:t email:t num:t
+#+options: ':t toc:t author:t email:t num:t
 #+startup: content
-#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
-#+texinfo_header: @set MAINTAINER Pablo Stafforini
-#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
-#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
-#+texinfo: @insertcopying
-* Text-to-Speech Control (=tlon-read.el=)
+#+export_file_name: tlon-read.info
+#+texinfo_filename: tlon-read.info
+#+texinfo_dir_category: Emacs misc features
+#+texinfo_dir_title: Read Aloud: (tlon-read)
+#+texinfo_dir_desc: Read the current buffer aloud
+
+This manual describes the features and customization options for the Emacs Lisp file =tlon-read.el=.
+
+* Overview
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-read
+:CUSTOM_ID: h:overview
 :END:
 
-This module provides integration with the `read-aloud` package to control text-to-speech (TTS) playback, specifically targeting a designated output buffer (typically an EWW buffer displaying a Markdown preview). It defines a minor mode with keybindings for common TTS actions.
+The =tlon-read= module provides integration with the =read-aloud= package to control real-time text-to-speech playback, specifically targeting a designated output buffer (typically an EWW buffer displaying a Markdown preview whose name matches =**markdown-output* # eww*=).  It defines a minor mode, ~tlon-read-mode~, with keybindings for starting and stopping playback and for navigating forward or backward by "chunks" (sentence or paragraph boundaries) in the target buffer, all without leaving your source buffer.
 
-** Minor Mode
+This module is distinct from =tlon-tts.el=, which generates audio files via cloud TTS engines.  =tlon-read.el= controls live, local TTS playback through =read-aloud=.
+
+* Commands
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-read-mode-section
+:CUSTOM_ID: h:commands
 :END:
 
+** Minor mode
+:PROPERTIES:
+:CUSTOM_ID: h:minor-mode
+:END:
 #+findex: tlon-read-mode
-+ ~tlon-read-mode~ :: A buffer-local minor mode that enables key bindings for controlling TTS playback via the functions in this module. It is intended to be activated in buffers from which TTS control is desired (e.g., the source Markdown buffer).
-  - *Keymap* (~tlon-read-mode-map~):
-    - =H-,= (`tlon-read-backward`): Moves the playback position backward by one chunk in the target TTS buffer.
-    - =H-.= (`tlon-read-forward`): Moves the playback position forward by one chunk in the target TTS buffer.
-    - =H-;= (`tlon-read-target-start-or-stop`): Starts or stops TTS playback in the target buffer.
-    - =H-k= (`read-aloud-extras-increase-rate`): Increases the speech rate (requires `read-aloud-extras`).
-    - =H-l= (`read-aloud-extras-decrease-rate`): Decreases the speech rate (requires `read-aloud-extras`).
 
-** Commands
+~tlon-read-mode~ is a buffer-local minor mode that activates key bindings for controlling TTS playback.  You enable it in any buffer from which you want to control playback in the target buffer (identified by ~tlon-get-target-buffer~).  The keymap provides the following bindings:
+
+| Key   | Command                              | Description                       |
+|-------+--------------------------------------+-----------------------------------|
+| =H-;= | ~tlon-read-target-start-or-stop~    | Start or stop playback            |
+| =H-,= | ~tlon-read-backward~                | Move playback position backward   |
+| =H-.= | ~tlon-read-forward~                 | Move playback position forward    |
+| =H-k= | =read-aloud-extras-increase-rate=   | Increase the speech rate          |
+| =H-l= | =read-aloud-extras-decrease-rate=   | Decrease the speech rate          |
+
+The last two bindings require the =read-aloud-extras= package.
+
+** Start or stop playback
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-read-commands
+:CUSTOM_ID: h:start-or-stop
 :END:
-
-These commands are intended to be called interactively, typically via the keybindings provided by ~tlon-read-mode~.
-
 #+findex: tlon-read-target-start-or-stop
-+ ~tlon-read-target-start-or-stop~ :: Starts or stops the `read-aloud` playback in the designated target buffer (identified by ~tlon-get-target-buffer~).
-  - Switches focus to the target buffer.
-  - If playback was previously active (`read-aloud--c-bufpos` is set), moves the cursor to the last known playback position.
-  - Toggles playback using `read-aloud-buf`.
-  - Moves the cursor back one "chunk" (sentence or paragraph boundary) using `re-search-backward` to potentially restart from a slightly earlier point if playback was stopped mid-chunk.
-  - Switches focus back to the original buffer.
 
-#+findex: tlon-read-backward
-+ ~tlon-read-backward~ :: Moves the playback position backward by one chunk in the target buffer. It calls ~tlon-read-backward-or-forward~ with the 'backward direction.
+You call ~tlon-read-target-start-or-stop~ to toggle TTS playback in the target buffer.  The command switches focus to the target buffer, moves the cursor to the last known playback position (if any), toggles playback with =read-aloud-buf=, repositions the cursor one chunk boundary backward (so that restarting picks up from a natural point), and then switches focus back to your original buffer.  A "chunk boundary" is defined by common punctuation marks (=,=, =.=, =:=, =!=, =;=) or two or more consecutive hyphens or newlines.
 
-#+findex: tlon-read-forward
-+ ~tlon-read-forward~ :: Moves the playback position forward by one chunk in the target buffer. It calls ~tlon-read-backward-or-forward~ with the 'forward direction.
-
-** Helper Functions
+** Move backward
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-read-helpers
+:CUSTOM_ID: h:move-backward
+:END:
+#+findex: tlon-read-backward
+
+You call ~tlon-read-backward~ to move the playback position backward by one chunk in the target buffer.  If playback is active, it is stopped first.  The command searches backward for the nearest chunk boundary, then returns focus to your original buffer.
+
+** Move forward
+:PROPERTIES:
+:CUSTOM_ID: h:move-forward
+:END:
+#+findex: tlon-read-forward
+
+You call ~tlon-read-forward~ to move the playback position forward by one chunk in the target buffer.  If playback is active, it is stopped first.  The command searches forward for the nearest chunk boundary, then returns focus to your original buffer.
+
+* Functions
+:PROPERTIES:
+:CUSTOM_ID: h:functions
 :END:
 
-These functions support the interactive commands.
-
+** Target buffer identification
+:PROPERTIES:
+:CUSTOM_ID: h:target-buffer
+:END:
 #+findex: tlon-get-target-buffer
-+ ~tlon-get-target-buffer~ :: Identifies the buffer that should be used for TTS playback.
-  - Searches the buffer list for buffers whose names match the pattern `**markdown-output* # eww*` (likely an EWW buffer rendering a Markdown preview).
-  - Signals a user error if zero matching buffers or more than one matching buffer is found.
-  - Returns the single matching buffer object.
 
+~tlon-get-target-buffer~ identifies the buffer that =read-aloud= should read.  It searches the buffer list for buffers whose names match the pattern =**markdown-output* # eww*= (an EWW buffer rendering a Markdown preview).  It signals a user error if zero or more than one matching buffer is found, ensuring an unambiguous target.
+
+** Directional navigation
+:PROPERTIES:
+:CUSTOM_ID: h:directional-navigation
+:END:
 #+findex: tlon-read-backward-or-forward
-+ ~tlon-read-backward-or-forward~ :: The core logic for moving the playback position within the target buffer.
-  - Takes a DIRECTION argument (`'backward` or `'forward`).
-  - Switches focus to the target buffer (obtained via ~tlon-get-target-buffer~).
-  - Stops any current playback using `read-aloud-buf` if necessary (`read-aloud--c-bufpos` is set).
-  - Uses `re-search-backward` or `re-search-forward` based on DIRECTION to find the next chunk boundary. The boundary is defined by common punctuation marks (`,`, `.`, `:`, `;`, `!`, `?`) or two or more consecutive hyphens or newlines.
-  - Switches focus back to the original buffer.
+
+~tlon-read-backward-or-forward~ is the shared implementation for ~tlon-read-backward~ and ~tlon-read-forward~.  It takes a direction argument (='backward= or ='forward=), switches to the target buffer, stops playback if active, uses =re-search-backward= or =re-search-forward= to find the next chunk boundary, and returns to the original buffer.
+
+* Indices
+:PROPERTIES:
+:CUSTOM_ID: h:indices
+:END:
+
+** Function index
+:PROPERTIES:
+:INDEX: fn
+:CUSTOM_ID: h:function-index
+:END:
+
+** Variable index
+:PROPERTIES:
+:INDEX: vr
+:CUSTOM_ID: h:variable-index
+:END:
