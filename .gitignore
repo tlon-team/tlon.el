@@ -3,6 +3,9 @@
 !.aider.conf.yml
 repo-map.md
 
+## test deps (CI)
+.deps/
+
 ## doc
 doc/tlon.org
 doc/tlon.info
