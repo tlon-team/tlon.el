@@ -579,7 +579,8 @@ Interactively, NO-CONFIRM is set with a prefix argument, and LOCALLY is t."
 (defun tlon-db--handle-entry-request (method endpoint data headers &optional json-on-success)
   "Handle a request to an entry endpoint and process the response.
 METHOD, ENDPOINT, DATA, and HEADERS are for `tlon-db--make-request`.
-If JSON-ON-SUCCESS is non-nil, parse JSON on 200 status.
+If JSON-ON-SUCCESS is non-nil, always attempt to parse the JSON body.
+Otherwise, parse JSON only on 422 responses.
 Returns a plist with :status, :data, and :raw-text."
   (let (response-buffer response-data raw-response-text status-code)
     (setq response-buffer (tlon-db--make-request method endpoint data headers t))
@@ -592,53 +593,70 @@ Returns a plist with :status, :data, and :raw-text."
 		(setq status-code (tlon-db--get-response-status-code response-buffer))
 	      (error
 	       (setq status-code nil)))
-	    (cond
-	     ((and status-code (= status-code 422))
-	      (setq response-data (tlon-db--parse-json-response response-buffer)))
-	     ((and json-on-success status-code (= status-code 200))
-	      (setq response-data (tlon-db--parse-json-response response-buffer)))))
+	    (when (or json-on-success (and status-code (= status-code 422)))
+	      (setq response-data (tlon-db--parse-json-response response-buffer))))
 	(when response-buffer (kill-buffer response-buffer))))
     (list :status status-code :data response-data :raw-text raw-response-text)))
+
+(defun tlon-db--format-api-result (result &optional success-fn conflict-fn)
+  "Format an API RESULT plist for display.
+RESULT is a plist (:status CODE :data DATA :raw-text RAW).
+SUCCESS-FN, if provided, is called with DATA and RAW for 200 responses.
+If nil, a default handler is used that displays hash-table data or raw text.
+CONFLICT-FN, if provided, is called with DATA and RAW for 409 responses."
+  (let ((status (plist-get result :status))
+        (data   (plist-get result :data))
+        (raw    (plist-get result :raw-text)))
+    (cond
+     ((null status)
+      (insert "Status: Request Failed\n")
+      (insert (or raw "No specific error message.")))
+     ((= status 200)
+      (insert "Status: Success (200)\n")
+      (if success-fn
+          (funcall success-fn data raw)
+        (cond
+         ((hash-table-p data)
+          (maphash (lambda (k v)
+                     (insert (format "%s: %s\n" k v)))
+                   data))
+         (data
+          (insert (format "%s\n" data)))
+         (t
+          (insert (or raw "No content returned."))))))
+     ((and (= status 409) conflict-fn)
+      (insert "Status: Conflict (409)\n")
+      (funcall conflict-fn data raw))
+     ((= status 422)
+      (insert "Status: Validation Error (422)\n")
+      (when data
+        (let ((detail (and (hash-table-p data) (gethash "detail" data))))
+          (cond
+           ((listp detail)
+            (dolist (item detail)
+              (if (hash-table-p item)
+                  (insert (format "  - Field: %s, Error: %s\n"
+                                  (mapconcat #'identity (gethash "loc" item) ".")
+                                  (gethash "msg" item "")))
+                (insert (format "  - %s\n" item)))))
+           (t
+            (insert (format "%s\n" data))))))
+      (when raw
+        (insert "\nRaw server response:\n" raw)))
+     (t
+      (insert (format "Status: Error (HTTP %d)\n" status))
+      (insert (or raw "No content."))))))
 
 (defun tlon-db--format-delete-entry-result (result)
   "Format the RESULT from `tlon-db-delete-entry' for display.
 RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
-  (let ((status-code (plist-get result :status))
-	(response-data (plist-get result :data))  ; Parsed JSON for 200 or 422
-	(raw-response-text (plist-get result :raw-text))) ; Raw text for other errors
-    (cond
-     ((null status-code) ; Error before or during request
-      (insert "Status: Request Failed\n")
-      (insert (or raw-response-text "No specific error message.")))
-     ((= status-code 200)
-      (insert "Status: Success (200)\n")
-      (insert "Response from server:\n")
-      (if (stringp response-data)
-	  (insert response-data)
-	(insert (or raw-response-text "No content returned."))))
-     ((= status-code 422)
-      (insert "Status: Validation Error (422)\n")
-      (if response-data
-	  (progn
-	    (insert "Details (from JSON response):\n")
-	    (let ((detail (gethash "detail" response-data)))
-	      (if (listp detail) ; Standard FastAPI validation error structure
-		  (dolist (item detail)
-		    (if (hash-table-p item)
-			(insert (format "  - Location: %s, Message: %s, Type: %s\n"
-					(mapconcat #'identity (gethash "loc" item) " -> ")
-					(gethash "msg" item "")
-					(gethash "type" item "")))
-		      (insert (format "  - %s\n" item)))) ; Non-standard detail item
-		(insert (format "  Unexpected detail format in JSON: %S\n" detail))))) ; Detail is not a list
-	(insert "No specific validation error details found in parsed JSON response.\n"))
-      (when raw-response-text
-	(insert "\nRaw server response (text/plain or other):\n")
-	(insert raw-response-text)))
-     (t
-      (insert (format "Status: Error (HTTP %d)\n" status-code))
-      (insert "Response from server:\n")
-      (insert (or raw-response-text "No content or error message returned."))))))
+  (tlon-db--format-api-result
+   result
+   (lambda (data raw)
+     (insert "Response from server:\n")
+     (if (stringp data)
+         (insert data)
+       (insert (or raw "No content returned."))))))
 
 ;;;;;; Get entry
 
@@ -676,15 +694,11 @@ If called interactively, prompt for ENTRY-ID."
   (tlon-db-ensure-auth)
   (let* ((endpoint (format "/api/names/%s" (url-hexify-string name)))
 	 (headers '(("accept" . "application/json")))
-	 (response-buffer (tlon-db--make-request "GET" endpoint nil headers t))
-	 response-data
-	 status-code)
-    (when response-buffer
-      (setq status-code (tlon-db--get-response-status-code response-buffer))
-      (setq response-data (tlon-db--parse-json-response response-buffer))
-      (unless (= status-code 200)
-        (message "Name lookup returned HTTP status %d" status-code)) ; Informative but non-blocking
-      (kill-buffer response-buffer))
+	 (result (tlon-db--handle-entry-request "GET" endpoint nil headers t))
+	 (status-code (plist-get result :status))
+	 (response-data (plist-get result :data)))
+    (when (and status-code (not (= status-code 200)))
+      (message "Name lookup returned HTTP status %d" status-code))
     (if (or tlon-debug (not (and status-code (= status-code 200))))
 	(tlon-db--display-result-buffer (format "Name check result for: %s" name)
 					  #'tlon-db--format-check-name-result
@@ -703,20 +717,14 @@ similar to existing names."
   (let* ((data (json-encode `(("name" . ,name))))
 	 (headers '(("Content-Type" . "application/json")
 		    ("accept" . "application/json")))
-	 (response-buffer (tlon-db--make-request "POST" "/api/names/check-insert" data headers t))
-	 response-data
-	 status-code)
-    (when response-buffer
-      (setq status-code (tlon-db--get-response-status-code response-buffer))
-      ;; Parse response even on error, as it might contain details
-      (setq response-data (tlon-db--parse-json-response response-buffer))
-      (kill-buffer response-buffer))
+	 (result (tlon-db--handle-entry-request "POST" "/api/names/check-insert" data headers t))
+	 (status-code (plist-get result :status)))
     (if (or tlon-debug (not (and status-code (= status-code 200))))
 	(tlon-db--display-result-buffer (format "Name check/insert result for: %s" name)
 					  #'tlon-db--format-check-insert-name-result
-					  (list :status status-code :data response-data))
+					  (list :status status-code :data (plist-get result :data)))
       (message "Name check/insert for '%s': OK." name))
-    (list :status status-code :data response-data)))
+    (list :status status-code :data (plist-get result :data))))
 
 (defun tlon-db--format-check-name-result (data)
   "Format DATA returned by the name lookup endpoint for display.
@@ -731,17 +739,15 @@ DATA can be:
     (insert "No data returned from API or an error occurred parsing the response.\n"))
    ;; List of names with their translations
    ((listp data)
-    (if (null data)
-        (insert "No matching names found.\n")
-      (dolist (item data)
-        (when (hash-table-p item)
-          (insert (format "Name: %s\n" (gethash "name" item)))
-          (when-let ((translations (gethash "translations" item)))
-            (insert "Translations:\n")
-            (maphash (lambda (lang trans)
-                       (insert (format "  %s: %s\n" lang trans)))
-                     translations))
-          (insert "\n")))))
+    (dolist (item data)
+      (when (hash-table-p item)
+        (insert (format "Name: %s\n" (gethash "name" item)))
+        (when-let ((translations (gethash "translations" item)))
+          (insert "Translations:\n")
+          (maphash (lambda (lang trans)
+                     (insert (format "  %s: %s\n" lang trans)))
+                   translations))
+        (insert "\n"))))
    ;; Hash table with a message (e.g. 404)
    ((and (hash-table-p data) (gethash "message" data))
     (insert (gethash "message" data) "\n"))
@@ -757,46 +763,22 @@ DATA can be:
 (defun tlon-db--format-check-insert-name-result (result)
   "Format the RESULT from `tlon-db-check-or-insert-name` for display.
 RESULT is a plist like (:status CODE :data DATA)."
-  (let ((status-code (plist-get result :status))
-	(response-data (plist-get result :data)))
-    (cond
-     ;; Success - name was inserted or matched exactly
-     ((= status-code 200)
-      (insert "Status: Success\n")
-      (when response-data
-	(when (gethash "name" response-data)
-	  (insert "Name: " (gethash "name" response-data) "\n"))
-	(when (gethash "message" response-data)
-	  (insert "Message: " (gethash "message" response-data) "\n"))))
-     ;; Conflict - name is similar to existing names
-     ((= status-code 409)
-      (insert "Status: Conflict - Name not inserted\n")
-      (when response-data
-	(when (gethash "message" response-data)
-	  (insert "Message: " (gethash "message" response-data) "\n"))
-	(when (gethash "similar_names" response-data)
-	  (insert "Similar names:\n")
-	  (dolist (similar-name (gethash "similar_names" response-data))
-	    (insert "  - " similar-name "\n")))))
-     ;; Validation error
-     ((= status-code 422)
-      (insert "Status: Validation Error\n")
-      (when (and response-data (gethash "detail" response-data))
-	(insert "Details:\n")
-	(dolist (detail (gethash "detail" response-data))
-	  (if (hash-table-p detail) ; Handle FastAPI validation error structure
-	      (insert (format "  - Field: %s, Error: %s\n"
-			      (mapconcat #'identity (gethash "loc" detail) ".")
-			      (gethash "msg" detail "")))
-	    (insert (format "  - %s\n" detail)))))) ; Handle simpler error messages
-     ;; Other error
-     (t
-      (insert "Status: Error (HTTP " (number-to-string (or status-code 0)) ")\n")
-      (when response-data ; Display any message if available
-	(when (gethash "message" response-data)
-	  (insert "Message: " (gethash "message" response-data) "\n"))
-	(when (gethash "detail" response-data) ; Handle FastAPI detail string
-	  (insert "Detail: " (gethash "detail" response-data) "\n")))))))
+  (tlon-db--format-api-result
+   result
+   (lambda (data _raw)
+     (when data
+       (when (gethash "name" data)
+         (insert "Name: " (gethash "name" data) "\n"))
+       (when (gethash "message" data)
+         (insert "Message: " (gethash "message" data) "\n"))))
+   (lambda (data _raw)
+     (when data
+       (when (gethash "message" data)
+         (insert "Message: " (gethash "message" data) "\n"))
+       (when (gethash "similar_names" data)
+         (insert "Similar names:\n")
+         (dolist (similar-name (gethash "similar_names" data))
+           (insert "  - " similar-name "\n")))))))
 
 ;;;;;; Set name
 
@@ -818,62 +800,40 @@ Returns a plist with :status, :data, and :raw-text."
   (setq name (tlon-db--normalize-name name))
   (when new-name
     (setq new-name (tlon-db--normalize-name new-name)))
-  (let* ((payload `(("name" . ,name)))
-         (payload (if new-name (append payload `(("new_name" . ,new-name))) payload))
-         (payload (if force (append payload '(("force" . t))) payload))
+  (let* ((payload `((“name” . ,name)))
+         (payload (if new-name (append payload `((“new_name” . ,new-name))) payload))
+         (payload (if force (append payload '((“force” . t))) payload))
          (data (json-encode payload))
-         (headers '(("Content-Type" . "application/json")
-                    ("accept" . "application/json")))
-         (response-buffer (tlon-db--make-request "POST" "/api/names/" data headers t))
-         status-code response-data raw-response-text)
-    (when response-buffer
-      (setq raw-response-text (with-current-buffer response-buffer (buffer-string)))
-      (setq status-code (tlon-db--get-response-status-code response-buffer))
-      (setq response-data (tlon-db--parse-json-response response-buffer))
-      (kill-buffer response-buffer))
-    (let ((result (list :status status-code
-                        :data response-data
-                        :raw-text raw-response-text)))
-      (if (or tlon-debug (not (and status-code (= status-code 200))))
-          (tlon-db--display-result-buffer
-           (format "Set name result (Status: %s)"
-                   (if status-code (number-to-string status-code) "N/A"))
-           #'tlon-db--format-set-name-result
-           result)
-        (message "Name “%s” inserted/updated successfully." name))
-      result)))
+         (headers '((“Content-Type” . “application/json”)
+                    (“accept” . “application/json”)))
+         (result (tlon-db--handle-entry-request “POST” “/api/names/” data headers t))
+         (status-code (plist-get result :status)))
+    (if (or tlon-debug (not (and status-code (= status-code 200))))
+        (tlon-db--display-result-buffer
+         (format “Set name result (Status: %s)”
+                 (if status-code (number-to-string status-code) “N/A”))
+         #'tlon-db--format-set-name-result
+         result)
+      (message “Name \u201c%s\u201d inserted/updated successfully.” name))
+    result))
 
 (defun tlon-db--format-set-name-result (result)
   "Format RESULT from `tlon-db-set-name` for display.
 RESULT is a plist with :status, :data, and :raw-text."
-  (let ((status (plist-get result :status))
-        (data (plist-get result :data))
-        (raw  (plist-get result :raw-text)))
-    (cond
-     ((null status)
-      (insert "Status: Request Failed\n")
-      (insert (or raw "No specific error message.")))
-     ((= status 200)
-      (insert "Status: Success (200)\n")
-      (when data
-        (insert "Response:\n")
-        (insert (format "%s\n" data))))
-     ((= status 409)
-      (insert "Status: Conflict (409)\n")
-      (when data
-        (when (gethash "message" data)
-          (insert "Message: " (gethash "message" data) "\n"))
-        (when (gethash "similar_names" data)
-          (insert "Similar names:\n")
-          (dolist (n (gethash "similar_names" data))
-            (insert "  - " n "\n")))))
-     ((= status 422)
-      (insert "Status: Validation Error (422)\n")
-      (when data
-        (insert (format "%s\n" data))))
-     (t
-      (insert (format "Status: Error (HTTP %d)\n" status))
-      (insert (or raw "No content."))))))
+  (tlon-db--format-api-result
+   result
+   (lambda (data _raw)
+     (when data
+       (insert "Response:\n")
+       (insert (format "%s\n" data))))
+   (lambda (data _raw)
+     (when data
+       (when (gethash "message" data)
+         (insert "Message: " (gethash "message" data) "\n"))
+       (when (gethash "similar_names" data)
+         (insert "Similar names:\n")
+         (dolist (n (gethash "similar_names" data))
+           (insert "  - " n "\n")))))))
 
 ;;;;;; Set publication status
 
@@ -901,24 +861,16 @@ when known.  On success, show a concise message; on error or when
          (headers '(("Content-Type" . "application/json")
                     ("accept" . "application/json")))
          (endpoint (format "/api/publication_status/set/%s" (url-hexify-string id)))
-         status-code response-data raw-response-text response-buffer)
-    (setq response-buffer (tlon-db--make-request "POST" endpoint data headers t))
-    (when response-buffer
-      (setq raw-response-text (with-current-buffer response-buffer (buffer-string)))
-      (setq status-code (tlon-db--get-response-status-code response-buffer))
-      (setq response-data (tlon-db--parse-json-response response-buffer))
-      (kill-buffer response-buffer))
-    (let ((result (list :status status-code
-                        :data response-data
-                        :raw-text raw-response-text)))
-      (if (or tlon-debug (not (and status-code (= status-code 200))))
-          (tlon-db--display-result-buffer
-           (format "Set publication status (Status: %s)"
-                   (if status-code (number-to-string status-code) "N/A"))
-           #'tlon-db--format-set-publication-status-result
-           result)
-        (message "Publication status for ‘%s’ set to ‘%s’." id pub-status))
-      result)))
+         (result (tlon-db--handle-entry-request "POST" endpoint data headers t))
+         (status-code (plist-get result :status)))
+    (if (or tlon-debug (not (and status-code (= status-code 200))))
+        (tlon-db--display-result-buffer
+         (format "Set publication status (Status: %s)"
+                 (if status-code (number-to-string status-code) "N/A"))
+         #'tlon-db--format-set-publication-status-result
+         result)
+      (message "Publication status for ‘%s’ set to ‘%s’." id pub-status))
+    result))
 
 (defun tlon-db--get-publication-status (entry-id)
   "Return publication status for ENTRY-ID, or nil on failure."
@@ -950,43 +902,7 @@ when known.  On success, show a concise message; on error or when
 
 (defun tlon-db--format-set-publication-status-result (result)
   "Format RESULT from `tlon-db-set-publication-status' for display."
-  (let ((status (plist-get result :status))
-        (data   (plist-get result :data))
-        (raw    (plist-get result :raw-text)))
-    (cond
-     ((null status)
-      (insert "Status: Request Failed\n")
-      (insert (or raw "No specific error message.")))
-     ((= status 200)
-      (insert "Status: Success (200)\n")
-      (cond
-       ((hash-table-p data)
-        (maphash (lambda (k v)
-                   (insert (format "%s: %s\n" k v)))
-                 data))
-       (data
-        (insert (format "%s\n" data)))
-       (t
-        (insert (or raw "No content returned.")))))
-     ((= status 422)
-      (insert "Status: Validation Error (422)\n")
-      (when data
-        (let ((detail (and (hash-table-p data) (gethash "detail" data))))
-          (cond
-           ((listp detail)
-            (dolist (item detail)
-              (if (hash-table-p item)
-                  (insert (format "  - Field: %s, Error: %s\n"
-                                  (mapconcat #'identity (gethash "loc" item) ".")
-                                  (gethash "msg" item "")))
-                (insert (format "  - %s\n" item)))))
-           (t
-            (insert (format "%s\n" data))))))
-      (when raw
-        (insert "\nRaw server response:\n" raw)))
-     (t
-      (insert (format "Status: Error (HTTP %d)\n" status))
-      (insert (or raw "No content."))))))
+  (tlon-db--format-api-result result))
 
 ;;;###autoload
 (defun tlon-db-set-publication-status-in-current-directory (&optional status)
@@ -1048,58 +964,20 @@ when `tlon-debug' is non-nil, display details in *Db API Result*."
          (headers '(("Content-Type" . "application/json")
                     ("accept" . "application/json")))
          (endpoint (format "/api/cite_full_title/%s" (url-hexify-string id)))
-         status-code response-data raw-response-text response-buffer)
-    (setq response-buffer (tlon-db--make-request "POST" endpoint data headers t))
-    (when response-buffer
-      (setq raw-response-text (with-current-buffer response-buffer (buffer-string)))
-      (setq status-code (tlon-db--get-response-status-code response-buffer))
-      (setq response-data (tlon-db--parse-json-response response-buffer))
-      (kill-buffer response-buffer))
-    (let ((result (list :status status-code
-                        :data response-data
-                        :raw-text raw-response-text)))
-      (if (or tlon-debug (not (and status-code (= status-code 200))))
-          (tlon-db--display-result-buffer
-           (format "Set cite_full_title (Status: %s)"
-                   (if status-code (number-to-string status-code) "N/A"))
-           #'tlon-db--format-set-cite-full-title-result
-           result)
-        (message "cite_full_title for ‘%s’ set to true." id))
-      result)))
+         (result (tlon-db--handle-entry-request "POST" endpoint data headers t))
+         (status-code (plist-get result :status)))
+    (if (or tlon-debug (not (and status-code (= status-code 200))))
+        (tlon-db--display-result-buffer
+         (format "Set cite_full_title (Status: %s)"
+                 (if status-code (number-to-string status-code) "N/A"))
+         #'tlon-db--format-set-cite-full-title-result
+         result)
+      (message "cite_full_title for ‘%s’ set to true." id))
+    result))
 
 (defun tlon-db--format-set-cite-full-title-result (result)
   "Format RESULT from `tlon-db-set-cite-full-title' for display."
-  (let ((status (plist-get result :status))
-        (data   (plist-get result :data))
-        (raw    (plist-get result :raw-text)))
-    (cond
-     ((null status)
-      (insert "Status: Request Failed\n")
-      (insert (or raw "No specific error message.")))
-     ((= status 200)
-      (insert "Status: Success (200)\n")
-      (cond
-       ((hash-table-p data)
-        (maphash (lambda (k v) (insert (format "%s: %s\n" k v))) data))
-       (data (insert (format "%s\n" data)))
-       (t (insert (or raw "No content returned.")))))
-     ((= status 422)
-      (insert "Status: Validation Error (422)\n")
-      (when data
-        (let ((detail (and (hash-table-p data) (gethash "detail" data))))
-          (cond
-           ((listp detail)
-            (dolist (item detail)
-              (if (hash-table-p item)
-                  (insert (format "  - Field: %s, Error: %s\n"
-                                  (mapconcat #'identity (gethash "loc" item) ".")
-                                  (gethash "msg" item "")))
-                (insert (format "  - %s\n" item)))))
-           (t (insert (format "%s\n" data))))))
-      (when raw (insert "\nRaw server response:\n" raw)))
-     (t
-      (insert (format "Status: Error (HTTP %d)\n" status))
-      (insert (or raw "No content."))))))
+  (tlon-db--format-api-result result))
 
 ;;;;;; Get translation key
 
@@ -1310,53 +1188,22 @@ FORMATTER-FN is a function that takes DATA and inserts formatted content
 into the current buffer."
   (let ((result-buffer (get-buffer-create tlon-db--result-buffer-name)))
     (with-current-buffer result-buffer
-      (let ((was-read-only buffer-read-only)) ; Store original read-only state
-	(when was-read-only
-	  (setq buffer-read-only nil)) ; Make writable if it was read-only
+      (let ((inhibit-read-only t))
 	(erase-buffer)
 	(insert title "\n\n")
 	(funcall formatter-fn data)
-	(fundamental-mode) ; Or any other simple mode
-	(setq buffer-read-only t))) ; Set back to read-only
+	(fundamental-mode)
+	(setq buffer-read-only t)))
     (display-buffer result-buffer)))
 
 (defun tlon-db--format-post-entry-result (result)
   "Format the RESULT from `tlon-db-post-entry` for display.
 RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
-  (let ((status-code (plist-get result :status))
-	(response-data (plist-get result :data))  ; Parsed JSON for 422
-	(raw-response-text (plist-get result :raw-text))) ; Raw text for 200 or other errors
-    (cond
-     ((null status-code) ; Error before or during request
-      (insert "Status: Request Failed\n")
-      (insert (or raw-response-text "No specific error message.")))
-     ((= status-code 200)
-      (insert "Status: Success (200)\n")
-      (insert "Response from server:\n")
-      (insert (or raw-response-text "No content returned.")))
-     ((= status-code 422)
-      (insert "Status: Validation Error (422)\n")
-      (if response-data
-	  (progn
-	    (insert "Details (from JSON response):\n")
-	    (let ((detail (gethash "detail" response-data)))
-	      (if (listp detail) ; Standard FastAPI validation error structure
-		  (dolist (item detail)
-		    (if (hash-table-p item)
-			(insert (format "  - Location: %s, Message: %s, Type: %s\n"
-					(mapconcat #'identity (gethash "loc" item) " -> ")
-					(gethash "msg" item "")
-					(gethash "type" item "")))
-		      (insert (format "  - %s\n" item)))) ; Non-standard detail item
-		(insert (format "  Unexpected detail format in JSON: %S\n" detail))))) ; Detail is not a list
-	(insert "No specific validation error details found in parsed JSON response.\n"))
-      (when raw-response-text
-	(insert "\nRaw server response (text/plain or other):\n")
-	(insert raw-response-text)))
-     (t
-      (insert (format "Status: Error (HTTP %d)\n" status-code))
-      (insert "Response from server:\n")
-      (insert (or raw-response-text "No content or error message returned."))))))
+  (tlon-db--format-api-result
+   result
+   (lambda (_data raw)
+     (insert "Response from server:\n")
+     (insert (or raw "No content returned.")))))
 
 (defun tlon-db-ensure-key-is-unique (key)
   "Return an error if KEY exists in a file other than \"db.bib\"."
