@@ -300,56 +300,76 @@ If ASYNC is t, run the request asynchronously."
 		(message "Error: %S" error-thrown))))
     response))
 
+(defconst tlon-import-eaf-entity-properties
+  `((article
+     (response-key . post)
+     (url . ,(lambda (result) (cdr (assoc 'pageUrl result))))
+     (html . ,(lambda (result) (cdr (assoc 'htmlBody result))))
+     (title . ,(lambda (result) (cdr (assoc 'title result)))))
+    (tag
+     (response-key . tag)
+     (url . ,(lambda (result)
+	       (when-let ((slug (cdr (assoc 'slug result))))
+		 (format "https://forum.effectivealtruism.org/topics/%s" slug))))
+     (html . ,(lambda (result)
+	       (let ((description (cdr (assoc 'description result))))
+		 (cdr (assoc 'html description)))))
+     (title . ,(lambda (result)
+		 (tlon-import-eaf-shorten-title (cdr (assoc 'name result)))))))
+  "Property extraction rules for each EAF entity type.
+Each entry maps an entity type (article, tag) to an alist of:
+- `response-key': the top-level key in the API response.
+- `url', `html', `title': lambdas that extract the property from the result alist.")
+
+(defun tlon-import-eaf-get-entity-result (entity-type response)
+  "Get ENTITY-TYPE details from EA Forum API RESPONSE.
+ENTITY-TYPE is a symbol, either `article' or `tag'."
+  (let* ((props (alist-get entity-type tlon-import-eaf-entity-properties))
+	 (response-key (alist-get 'response-key props)))
+    (alist-get 'result (alist-get response-key response))))
+
+(defun tlon-import-eaf-get-entity-property (entity-type property response)
+  "Get PROPERTY of ENTITY-TYPE from EA Forum API RESPONSE.
+ENTITY-TYPE is a symbol (`article' or `tag'). PROPERTY is a symbol (`url',
+`html', or `title')."
+  (let* ((props (alist-get entity-type tlon-import-eaf-entity-properties))
+	 (extractor (alist-get property props))
+	 (result (tlon-import-eaf-get-entity-result entity-type response)))
+    (when (and extractor result)
+      (funcall extractor result))))
+
 (defun tlon-import-eaf-get-article-result (response)
   "Get article details from EA Forum API RESPONSE."
-  (let* ((article (cdr (assoc 'post response)))
-	 (result (cdr (assoc 'result article))))
-    result))
+  (tlon-import-eaf-get-entity-result 'article response))
 
 (defun tlon-import-eaf-get-article-url (response)
   "Get article URL from EA Forum API RESPONSE."
-  (let* ((result-data (tlon-import-eaf-get-article-result response)))
-    (cdr (assoc 'pageUrl result-data))))
+  (tlon-import-eaf-get-entity-property 'article 'url response))
 
 (defun tlon-import-eaf-get-article-html (response)
   "Get article HTML from EA Forum API RESPONSE."
-  (let* ((result (tlon-import-eaf-get-article-result response))
-	 (html (cdr (assoc 'htmlBody result))))
-    html))
+  (tlon-import-eaf-get-entity-property 'article 'html response))
 
 (defun tlon-import-eaf-get-article-title (response)
   "Get article title from EA Forum API RESPONSE."
-  (let* ((result (tlon-import-eaf-get-article-result response))
-	 (title (cdr (assoc 'title result))))
-    title))
+  (tlon-import-eaf-get-entity-property 'article 'title response))
 
 (defun tlon-import-eaf-get-tag-result (response)
   "Get tag details from EA Forum API RESPONSE."
-  (let* ((tag (cdr (assoc 'tag response)))
-	 (result (cdr (assoc 'result tag))))
-    result))
+  (tlon-import-eaf-get-entity-result 'tag response))
 
 (defun tlon-import-eaf-get-tag-url (response)
   "Construct tag URL from EA Forum API RESPONSE.
 The URL is constructed using the tag's slug."
-  (let* ((result (tlon-import-eaf-get-tag-result response))
-         (slug (cdr (assoc 'slug result))))
-    (if slug
-        (format "https://forum.effectivealtruism.org/topics/%s" slug)
-      nil)))
+  (tlon-import-eaf-get-entity-property 'tag 'url response))
 
 (defun tlon-import-eaf-get-tag-html (response)
   "Get tag HTML from EA Forum API RESPONSE."
-  (let* ((result (tlon-import-eaf-get-tag-result response))
-	 (description (cdr (assoc 'description result)))
-	 (html (cdr (assoc 'html description))))
-    html))
+  (tlon-import-eaf-get-entity-property 'tag 'html response))
 
 (defun tlon-import-eaf-get-tag-title (response)
   "Get tag title from EA Forum API RESPONSE."
-  (let* ((result (tlon-import-eaf-get-tag-result response))
-	 (title (cdr (assoc 'name result))))
-    (tlon-import-eaf-shorten-title title)))
+  (tlon-import-eaf-get-entity-property 'tag 'title response))
 
 (defun tlon-import-eaf-shorten-title (title)
   "Return a shortened version of TITLE."
