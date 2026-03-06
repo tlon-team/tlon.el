@@ -104,11 +104,23 @@ timer so the new value takes effect immediately."
   :set #'tlon-db--set-get-entries-interval
   :group 'tlon-db)
 
-(defvar tlon-db-api-username
-  (tlon-user-lookup :github :name user-full-name))
+(defvar tlon-db-api-username nil
+  "Cached API username.  Use `tlon-db-get-api-username' to access.")
 
-(defvar tlon-db-api-password
-  (auth-source-pass-get 'secret (concat "tlon/core/ea.international/" tlon-db-api-username)))
+(defun tlon-db-get-api-username ()
+  "Return the API username, initializing lazily if needed."
+  (or tlon-db-api-username
+      (setq tlon-db-api-username
+	    (tlon-user-lookup :github :name user-full-name))))
+
+(defvar tlon-db-api-password nil
+  "Cached API password.  Use `tlon-db-get-api-password' to access.")
+
+(defun tlon-db-get-api-password ()
+  "Return the API password, initializing lazily if needed."
+  (or tlon-db-api-password
+      (setq tlon-db-api-password
+	    (auth-source-pass-get 'secret (concat "tlon/core/ea.international/" (tlon-db-get-api-username))))))
 
 ;;;;; External Special Variables (from url.el)
 
@@ -144,6 +156,8 @@ Set to t to enable verbose logging from url.el.")
 (defun tlon-db-initialize ()
   "Initialize the `tlon-db' package."
   (tlon-db--initialize-sync)
+  (tlon-db--set-get-entries-interval 'tlon-db-get-entries-interval
+				     tlon-db-get-entries-interval)
   (setq paths-files-bibliography-all
         (delete-dups (append paths-files-bibliography-all (list tlon-file-db))))
   (if (file-exists-p tlon-file-db)
@@ -167,8 +181,8 @@ Set to t to enable verbose logging from url.el.")
 Returns the authentication token or nil if authentication failed."
   (interactive)
   (let* ((data (concat "grant_type=password"
-		       "&username=" (url-hexify-string tlon-db-api-username)
-		       "&password=" (url-hexify-string tlon-db-api-password)))
+		       "&username=" (url-hexify-string (tlon-db-get-api-username))
+		       "&password=" (url-hexify-string (tlon-db-get-api-password))))
 	 (headers '(("Content-Type" . "application/x-www-form-urlencoded")))
 	 (response-buffer (tlon-db--make-request "POST" "/api/auth/token" data headers nil))
 	 auth-data status-code raw-response-text)
@@ -1485,9 +1499,8 @@ If there are no differences, return nil."
 
 ;;;;;; Periodic data update
 
-;; Start (or restart) the periodic refresh timer with the current interval.
-(tlon-db--set-get-entries-interval 'tlon-db-get-entries-interval
-                                   tlon-db-get-entries-interval)
+;; NOTE: The periodic refresh timer is now started by `tlon-db-initialize'
+;; rather than at load time, to avoid side effects during file loading.
 
 ;;;;; Menu
 
@@ -1541,6 +1554,10 @@ If there are no differences, return nil."
     ("-s" "Auto sync" tlon-db-infix-toggle-auto-sync)
     ("-i" "Refresh interval" tlon-db-infix-set-get-entries-interval)]])
 
+;; NOTE: `tlon-db-initialize' is called at load time for backward
+;; compatibility.  Ideally it should be invoked explicitly (e.g. from
+;; an `after-init-hook' or a mode hook) to avoid side effects during
+;; file loading.
 (tlon-db-initialize)
 
 (provide 'tlon-db)
