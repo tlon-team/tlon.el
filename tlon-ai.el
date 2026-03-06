@@ -485,9 +485,12 @@ Otherwise emit a message with the status provided by INFO. The RESPONSE is
 inserted at the point the request was sent."
   (if (not response)
       (tlon-ai-callback-fail info)
-    (let ((pos (marker-position (plist-get info :position))))
-      (goto-char pos)
-      (insert response))))
+    (let* ((marker (plist-get info :position))
+	   (buf (marker-buffer marker)))
+      (when (buffer-live-p buf)
+	(with-current-buffer buf
+	  (goto-char marker)
+	  (insert response))))))
 
 (defun tlon-ai-callback-fail (info)
   "Callback message when `gptel' fails.
@@ -1011,7 +1014,7 @@ Messages refer to paragraphs with one-based numbering."
 	 ;; PROCESS-SINGLE-PARAGRAPH: Process one paragraph (i is zero-based, but messages show i+1).
 	 (process-single-paragraph (i)
 	   (while (>= active-requests max-concurrent)
-	     (sleep-for 0.1))
+	     (accept-process-output nil 0.1))
 	   (let* ((pair (nth i pairs))
 		  (formatted-prompt
 		   (format prompt
@@ -1985,13 +1988,16 @@ commit hash."
 		     (< (length response) (/ (length original-content) 4))))
 	(user-error "AI response for %s is empty or suspiciously short; refusing to overwrite"
 		    target-file)))
-    ;; Overwrite the target file with the AI's response
+    ;; Overwrite the target file with the AI's response (write to temp first for safety)
     (condition-case err
-	(let ((buf (find-file-noselect target-file)))
-	  (with-current-buffer buf
-	    (erase-buffer)
-	    (insert response)
-	    (save-buffer)))
+	(let ((temp-file (make-temp-file "tlon-ai-propagate-")))
+	  (with-temp-file temp-file
+	    (insert response))
+	  (rename-file temp-file target-file t)
+	  ;; Revert the buffer if it was already visiting this file
+	  (when-let ((buf (find-buffer-visiting target-file)))
+	    (with-current-buffer buf
+	      (revert-buffer nil t))))
       (error (message "Error writing AI changes to %s: %s" target-file err)
 	     nil)) ; Prevent commit if write fails
     ;; If write succeeded, commit the changes

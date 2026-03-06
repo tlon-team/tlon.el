@@ -188,10 +188,12 @@ entry is added."
   (interactive)
   (let ((repo (tlon-get-repo)))
     (dolist (file (directory-files-recursively repo "\\.md"))
-      (with-current-buffer (find-file-noselect file)
-	(message "Cleaning up `%s'" file)
-	(tlon-cleanup-eaf-replace-urls)
-	(save-buffer)))))
+      (let ((was-open (find-buffer-visiting file)))
+	(with-current-buffer (find-file-noselect file)
+	  (message "Cleaning up `%s'" file)
+	  (tlon-cleanup-eaf-replace-urls)
+	  (save-buffer)
+	  (unless was-open (kill-buffer)))))))
 
 ;; If problems arise, test against documents imported from these URLs:
 ;; https://forum.effectivealtruism.org/s/vSAFjmWsfbMrTonpq/p/u5JesqQ3jdLENXBtB
@@ -441,10 +443,12 @@ not alter it unless you know what you are doing."
   "Consolidate all footnotes in DIR."
   (interactive "D")
   (dolist (file (directory-files dir t "\\.md$"))
-    (with-current-buffer (find-file-noselect file)
-      (message "Consolidating footnotes in %s" (buffer-name))
-      (tlon-cleanup-consolidate-footnotes)
-      (save-buffer))))
+    (let ((was-open (find-buffer-visiting file)))
+      (with-current-buffer (find-file-noselect file)
+	(message "Consolidating footnotes in %s" (buffer-name))
+	(tlon-cleanup-consolidate-footnotes)
+	(save-buffer)
+	(unless was-open (kill-buffer))))))
 
 (declare-function markdown-insert-footnote "markdown-mode")
 (defun tlon-cleanup-consolidate-footnotes ()

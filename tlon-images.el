@@ -281,12 +281,13 @@ The images are opened conditional on the value of
 (defun tlon-images-handle-synchronous-response ()
   "Handle the HTTP response from a synchronous request and return JSON."
   (goto-char (point-min))
-  (when (search-forward-regexp "^$" nil t)
-    (delete-region (point-min) (point))
-    (forward-char)
-    (let ((json-response (tlon-read-json)))
-      (kill-buffer)
-      json-response)))
+  (let ((json-response nil))
+    (when (search-forward-regexp "^$" nil t)
+      (delete-region (point-min) (point))
+      (forward-char)
+      (setq json-response (tlon-read-json)))
+    (kill-buffer)
+    json-response))
 
 (defun tlon-images-can-invert-p (image)
   "Return t iff the colors of IMAGE can be safely inverted and nil otherwise."

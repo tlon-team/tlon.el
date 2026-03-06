@@ -489,22 +489,27 @@ Prompts for CHAR when called interactively. Scans each regular file in
 			(car pair) (cdr pair) default-directory))))
     (dolist (file files)
       (when (file-regular-p file)
-	(with-current-buffer (find-file-noselect file)
-	  (save-excursion
-	    (save-restriction
-	      (widen)
-	      (let ((res (tlon--check-unbalanced--scan (car pair) (cdr pair))))
-		(when res
-		  (setq issues (1+ issues))
-		  (with-current-buffer report
-		    (let ((inhibit-read-only t))
+	(let ((was-open (find-buffer-visiting file)))
+	  (with-current-buffer (find-file-noselect file)
+	    (save-excursion
+	      (save-restriction
+		(widen)
+		(let ((res (tlon--check-unbalanced--scan (car pair) (cdr pair))))
+		  (when res
+		    (setq issues (1+ issues))
+		    (with-current-buffer report
 		      (pcase res
 			(`(missing-open . ,pos)
-			 (insert (format "%s: missing opening %s before position %d\n"
-					 file (car pair) pos)))
+			 (let ((inhibit-read-only t))
+			   (insert (format "%s: missing opening %s before position %d\n"
+					   file (car pair) pos))))
 			(`(missing-close . ,pos)
-			 (insert (format "%s: missing closing %s after position %d\n"
-					 file (cdr pair) pos)))))))))))))
+			 (let ((inhibit-read-only t))
+			   (insert (format "%s: missing closing %s after position %d\n"
+					   file (cdr pair) pos))))))))))
+	  (unless was-open
+	    (when-let ((buf (find-buffer-visiting file)))
+	      (kill-buffer buf)))))))
     (if (= issues 0)
 	(progn
 	  (with-current-buffer report (let ((inhibit-read-only t)) (insert "All files balanced\n")))
@@ -557,9 +562,12 @@ Return cons of the form (missing-open . POS) or (missing-close . POS), or nil."
   (if-let ((files (or (and (derived-mode-p 'dired-mode) (dired-get-marked-files))
 		      (when (buffer-file-name) (list (buffer-file-name))))))
       (dolist (file files)
-	(with-current-buffer (find-file-noselect file)
-	  (tlon-fix-translation-in-file lang)
-	  (message "Fixed translation in %s" file)))
+	(let ((was-open (find-buffer-visiting file)))
+	  (with-current-buffer (find-file-noselect file)
+	    (tlon-fix-translation-in-file lang)
+	    (save-buffer)
+	    (message "Fixed translation in %s" file)
+	    (unless was-open (kill-buffer)))))
     (user-error "Buffer is not visiting a file")))
 
 (defun tlon-fix-translation-in-file (lang)

@@ -62,7 +62,12 @@ nil) on failure. The transcript extension is determined from the
                        "txt")))
     (with-current-buffer buffer
       (goto-char (point-max))
-      (insert (format "Running: %s\n\n" (string-join cmd " "))))
+      (let ((display-cmd (copy-sequence cmd))
+	    (pos (cl-position "--hf_token" cmd :test #'string=)))
+	(when (and pos (< (1+ pos) (length display-cmd)))
+	  (setf (nth (1+ pos) display-cmd) "[REDACTED]"))
+	(insert (format "Running: %s\n\n" (string-join display-cmd " "))))
+)
     (make-process
      :name process-name
      :buffer buffer

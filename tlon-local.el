@@ -654,8 +654,10 @@ This only applies when in a logs buffer with follow mode enabled."
        (goto-char (point-min))
        (re-search-forward "^$" nil 'move)
        (unwind-protect
-           (let ((json (json-parse-buffer :object-type 'alist :array-type 'list)))
-             (funcall callback json))
+           (condition-case err
+	       (let ((json (json-parse-buffer :object-type 'alist :array-type 'list)))
+		 (funcall callback json))
+	     (error (message "Failed to parse Loki response: %s" (error-message-string err))))
          (kill-buffer))))))
 
 (defun tlon-local--rfc3339 (time)

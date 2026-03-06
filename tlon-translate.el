@@ -1418,6 +1418,11 @@ call after the revision is complete."
                                    (tlon-get-number-of-paragraphs-in-file translation-file)))
 			 (file-name-nondirectory translation-file))
     (setq revert-without-query '(".*")) ; avoid annoying prompt to confirm revert
+    ;; Safety net: restore after 10 minutes in case callbacks never fire
+    (run-with-timer 600 nil
+		    (lambda ()
+		      (when (equal revert-without-query '(".*"))
+			(setq revert-without-query tlon-translate-revert-without-query-original))))
     (let* ((req-buf (get-buffer-create (format "*tlon-revise:%s:%s*"
                                                (file-name-nondirectory translation-file)
                                                chunk-desc))))

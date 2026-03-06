@@ -177,7 +177,7 @@ Example: \"00:00:00,240 --> 00:00:01,750\"")
 (defun tlon-dub--get-content-type (filename)
   "Return the MIME content type based on FILENAME's extension.
 Returns nil if the extension is not recognized or unsupported for dubbing."
-  (let ((extension (downcase (file-name-extension filename))))
+  (let ((extension (downcase (or (file-name-extension filename) ""))))
     (cond
      ((string= extension "mp3") "audio/mpeg")
      ((string= extension "wav") "audio/wav")
@@ -215,8 +215,11 @@ raw response string when JSON parsing fails."
 		       extra-args))
 	 (command (mapconcat #'shell-quote-argument args " ")))
     (message "%s" description)
-    (when tlon-debug (message "Debug: Running command: %s" command))
-    (let ((response (shell-command-to-string command)))
+    (when tlon-debug (message "Debug: Running command: curl %s"
+			      (mapconcat #'shell-quote-argument (cdr args) " ")))
+    (let ((response (with-temp-buffer
+		      (apply #'call-process "curl" nil (current-buffer) nil (cdr args))
+		      (buffer-string))))
       (condition-case err
 	  (json-parse-string response :object-type 'alist)
 	(error
@@ -848,7 +851,7 @@ file is empty."
 				  segments)))
 		      (warn "Could not parse SRT block in %s: %s" file block))))))
 	    (nreverse segments))))
-    (user-error (progn (message "Error parsing SRT file %s: %s" file err) nil))))
+    (error (progn (message "Error parsing SRT file %s: %s" file err) nil))))
 
 (defun tlon-dub--clean-segment-text (text)
   "Remove speaker prefix and line-breaks from TEXT, then collapse spaces."

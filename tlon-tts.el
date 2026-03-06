@@ -2724,7 +2724,7 @@ CHUNK-INDEX is ignored for Amazon Polly but included for API consistency."
 		       "--text" (format "<speak>%s</speak>" string)
 		       "--region" tlon-amazon-polly-region
 		       destination)
-		 " ")))))
+		 " "))))
 
 ;;;;;;; OpenAI
 
