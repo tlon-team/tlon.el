@@ -473,7 +473,7 @@ user to insert VALUES."
          (pattern (tlon-md-get-tag-pattern tag)))
     ;; Re-scan to get fresh match data
     (goto-char (line-beginning-position))
-    (when (re-search-forward pattern (line-end-position) t)
+    (when (re-search-forward pattern nil t)
       (let* ((existing-values (or values (tlon-get-tag-attribute-values tag)))
              (content (or content (match-string-no-properties 2)))
              (beg (match-beginning 0))
@@ -487,6 +487,8 @@ user to insert VALUES."
   "Set the VALUE of ATTRIBUTE for TAG."
   (let ((values (tlon-get-tag-attribute-values tag))
 	(pos (cl-position attribute (tlon-get-tag-attribute-names tag) :test #'string=)))
+    (unless pos
+      (user-error "Attribute `%s' not found in tag `%s'" attribute tag))
     (setcar (nthcdr pos values) value)
     values))
 

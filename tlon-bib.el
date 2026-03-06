@@ -591,8 +591,8 @@ save the buffer, and display an appropriate message."
 ;;;###autoload
 (defun tlon-auto-clean-entry ()
   "Clean up bibtex entry at point upon saving."
-  (when (or (derived-mode-p 'bibtex-mode)
-	    (< (point-min) (point-max)))
+  (when (and (derived-mode-p 'bibtex-mode)
+	     (< (point-min) (point-max)))
     (let ((after-save-hook nil))
       (tlon-remove-empty-spaces)
       (bibtex-extras-escape-special-characters)

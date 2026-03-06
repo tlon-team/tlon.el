@@ -260,8 +260,8 @@ argument to enable this check bypass."
               (let ((coding-system-for-write 'utf-8-unix))
 		(insert entries-text)
 		(bibtex-extras-escape-special-characters)
-		(write-file tlon-file-db-upstream)
-		(write-file tlon-file-db)
+		(write-region (point-min) (point-max) tlon-file-db-upstream nil 'quiet)
+		(write-region (point-min) (point-max) tlon-file-db nil 'quiet)
 		(message "Updated %s and %s." tlon-file-db tlon-file-db-upstream)
 		(bibtex-count-entries))))
 	(user-error "Failed to retrieve entries")))))
@@ -352,7 +352,7 @@ ATTEMPT is used to track retries in case of missing author names."
 	      (message "Entry “%s” posted and mirrored locally." entry-key)))
 	  ;; TODO: fix this; currently it always throws an error
 	  ;; (tlon-db-ensure-key-is-unique entry-key)
-	  (= status-code 200)))
+	  (eql status-code 200)))
     (user-error "No BibTeX key found at point")))
 
 (defun tlon-db--author-value-from-entry (entry-text)
@@ -412,7 +412,9 @@ Return the modified entry string."
         (bibtex-mode)
         (goto-char (point-min))
         (if (bibtex-search-entry key)
-            (progn (bibtex-kill-entry)
+            (progn (let ((kill-ring kill-ring)
+                         (kill-ring-yank-pointer kill-ring-yank-pointer))
+                     (bibtex-kill-entry))
                    (insert (tlon-db--normalize-entry-text entry)))
           (tlon-db--insert-entry-with-newlines (tlon-db--normalize-entry-text entry)))
         (let ((before-save-hook nil)
@@ -452,6 +454,7 @@ If KEY is nil, use the key of the entry at point."
   (interactive)
   (tlon-ensure-bib)
   (let* ((key (or key (tlon-get-key-at-point)))
+         (open-buffers (buffer-list))
          current-file
          filename)
     (citar-extras-goto-bibtex-entry key)
@@ -465,9 +468,12 @@ If KEY is nil, use the key of the entry at point."
         (message "Entry \"%s\" is already in db; no action taken." key)
       (if (tlon-db-post-entry key)
           (progn
-            (bibtex-kill-entry)
+            (let ((kill-ring kill-ring)
+                  (kill-ring-yank-pointer kill-ring-yank-pointer))
+              (bibtex-kill-entry))
             (save-buffer)
-            (kill-buffer)
+            (unless (memq (current-buffer) open-buffers)
+              (kill-buffer))
             (let* ((db-index (ebib-extras-get-db-number tlon-file-db))
                    (db (tlon-db--get-ebib-database db-index)))
               (if db
@@ -576,7 +582,9 @@ Interactively, NO-CONFIRM is set with a prefix argument, and LOCALLY is t."
         (bibtex-mode)
         (when (bibtex-search-entry key)
           (setq deleted t)
-          (bibtex-kill-entry)
+          (let ((kill-ring kill-ring)
+                (kill-ring-yank-pointer kill-ring-yank-pointer))
+            (bibtex-kill-entry))
           (unless tlon-db--sync-in-progress
             (save-buffer))))
       ;; db-upstream.bib
@@ -584,7 +592,9 @@ Interactively, NO-CONFIRM is set with a prefix argument, and LOCALLY is t."
         (bibtex-mode)
         (when (bibtex-search-entry key)
           (setq deleted t)
-          (bibtex-kill-entry)
+          (let ((kill-ring kill-ring)
+                (kill-ring-yank-pointer kill-ring-yank-pointer))
+            (bibtex-kill-entry))
           (save-buffer))))
     (if deleted
         (message "Entry “%s” deleted locally." key)
