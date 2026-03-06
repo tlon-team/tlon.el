@@ -369,10 +369,7 @@ The entity can be a tag or an author."
       (setq current-element-title
 	    (tlon-md-get-title-in-link-target
 	     current-target)))
-    (let* ((candidates (append
-			(tlon-metadata-lookup-all (tlon-metadata-in-repo) "title" "type" "article")
-			(tlon-metadata-lookup-all (tlon-metadata-in-repo) "title" "type" "author")
-			(tlon-metadata-lookup-all (tlon-metadata-in-repo) "title" "type" "tag")))
+    (let* ((candidates (tlon-metadata-get-values-of-all-types))
 	   (new-element-title (completing-read "Selection: " candidates nil t
 					       (or current-element-title selection)))
 	   (new-target-file (tlon-metadata-lookup (tlon-metadata-in-repo) "file" "title" new-element-title))

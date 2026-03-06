@@ -1,6 +1,6 @@
 ;;; tlon-split.el --- Minor mode for working with split windows -*- lexical-binding: t -*-
 
-;; Copyright (C) 22024
+;; Copyright (C) 2024
 
 ;; Author: Pablo Stafforini
 
@@ -52,41 +52,6 @@
 	 (moved-p (not (eq tlon-split-last-screen-line-pos current-screen-line))))
     (setq tlon-split-last-screen-line-pos current-screen-line)
     moved-p))
-
-;; Currently this function is not used; we use
-;; `tlon-split-screen-line-threshold' instead, as an imperfect approximatiion.
-(defun tlon-split-top-of-buffer-visible-p ()
-  "Return t iff the top of the buffer is visible in the current window.
-The function considers the top of the buffer to be visible if the first screen
-line of the buffer, or the first screen line after the metadata if any, is
-visible in the current window."
-  (save-restriction
-    (widen)
-    (save-excursion
-      (let ((first-visible-line (count-screen-lines (point-min) (window-start)))
-	    (first-line
-	     (progn
-	       (goto-char (point-max))
-	       (tlon-md-beginning-of-buffer-dwim)
-	       (count-screen-lines (window-start) (point)))))
-	(<= first-visible-line first-line)))))
-
-(defun tlon-split-screen-line-offset ()
-  "Return the difference between the screen lines in the current and other windows."
-  (let* ((current-screen-line (count-screen-lines (window-start) (point)))
-         (other-screen-line (save-selected-window
-                              (other-window 1)
-                              (count-screen-lines (window-start) (point)))))
-    (- other-screen-line current-screen-line)))
-
-(defun tlon-split-align-screen-lines ()
-  "Align the screen lines in the current and other windows.
-The alignment is performed by scrolling up or down the other window."
-  (let* ((offset (tlon-split-screen-line-offset)))
-    (other-window 1)
-    (unless (= offset 0)
-      (scroll-up offset))
-    (other-window -1)))
 
 (defun tlon-split-align-paragraphs ()
   "Align the paragraphs in the current and other windows.

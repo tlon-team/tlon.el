@@ -878,9 +878,7 @@ INVOKED-FROM-ORG-FILE is the path to the org file from which the overall
 capture operation was initiated, if any.
 If any issues are captured, returns the path to the target Org file for
 non-job issues if it's valid, otherwise nil."
-  (let* ((default-directory (oref repo worktree)) ; Set context
-	 (_repo-name (oref repo name)) ; unused variable, kept for context
-	 (_owner (oref repo owner)) ; unused variable, kept for context
+  (let* ((default-directory (oref repo worktree))
 	 (repo-fullname (format "%s/%s" (oref repo owner) (oref repo name)))
 	 (remote-open-set (tlon-forg--remote-open-issue-set repo))
 	 (captured-anything-p nil) ; Flag to track if any issue was captured
@@ -898,29 +896,26 @@ non-job issues if it's valid, otherwise nil."
 	      potential-repo-specific-file
 	    (tlon-get-todos-generic-file))))
 
-    (if project-items
-	;; Only process issues that are in the project
-	(dolist (item project-items)
-	  (when (and (eq (plist-get item :type) 'issue)
-		     (string= (plist-get item :repo) repo-fullname))
-	    (let* ((issue-number (plist-get item :number))
-		   (issue-id (caar (forge-sql [:select [id] :from issue
-						       :where (and (= repository $s1)
-								   (= number $s2))]
-					      (oref repo id)
-					      issue-number))))
-	      (when issue-id
-		(let ((issue (forge-get-topic issue-id)))
-		  (when (and (gethash (oref issue number) remote-open-set)
-		             (not (tlon-get-todo-position-from-issue issue))) ; Capture only if issue is open remotely
-		    (tlon-capture-issue issue invoked-from-org-file)
-		    (setq captured-anything-p t))))))) ; Mark that we captured something
-      ;; Fallback to all issues in repo (original behavior)
-      (dolist (issue (tlon-get-issues repo))
+    (let ((issues
+	   (if project-items
+	       ;; Only process issues that are in the project
+	       (cl-loop for item in project-items
+			when (and (eq (plist-get item :type) 'issue)
+				  (string= (plist-get item :repo) repo-fullname))
+			for issue-id = (caar (forge-sql [:select [id] :from issue
+								 :where (and (= repository $s1)
+									     (= number $s2))]
+						    (oref repo id)
+						    (plist-get item :number)))
+			when issue-id
+			collect (forge-get-topic issue-id))
+	     ;; Fallback to all issues in repo
+	     (tlon-get-issues repo))))
+      (dolist (issue issues)
 	(when (and (gethash (oref issue number) remote-open-set)
-	           (not (tlon-get-todo-position-from-issue issue))) ; Capture only if issue is open remotely
+		   (not (tlon-get-todo-position-from-issue issue)))
 	  (tlon-capture-issue issue invoked-from-org-file)
-	  (setq captured-anything-p t)))) ; Mark that we captured something
+	  (setq captured-anything-p t))))
 
     (org-refile-cache-clear)
     (org-refile-cache-clear)

@@ -1744,6 +1744,52 @@ Here is the text: %s"
 (defvar tlon-bib--bibkey-state nil
   "Internal state variable for asynchronous bibkey lookup.")
 
+(defun tlon-bib--parse-batch-keys (response info num-references state-var)
+  "Parse RESPONSE into a list of keys, validating the count.
+INFO is the response metadata. NUM-REFERENCES is the expected number of keys.
+STATE-VAR is the symbol of the state variable to clean up on failure.
+Returns the list of keys on success, or nil on failure."
+  (unless response
+    (message "AI batch request failed. Status: %s" (plist-get info :status))
+    (set state-var nil)
+    (cl-return-from tlon-bib--parse-batch-keys nil))
+  (let ((returned-keys (split-string (string-trim response) "\n" t)))
+    (unless (= (length returned-keys) num-references)
+      (message "Error: AI returned %d keys, but %d references were sent. Aborting replacements."
+	       (length returned-keys) num-references)
+      (message "AI Response:\n%s" response)
+      (set state-var nil)
+      (cl-return-from tlon-bib--parse-batch-keys nil))
+    returned-keys))
+
+(defun tlon-bib--apply-replacements-in-buffer (source-buffer replacements state-var)
+  "Apply REPLACEMENTS in SOURCE-BUFFER, cleaning up STATE-VAR when done.
+REPLACEMENTS is a list of (START END TEXT) triples. They are sorted in reverse
+position order before applying to preserve positions. Returns a cons
+\(REPLACEMENTS-MADE . ERRORS-OCCURRED)."
+  (unless (buffer-live-p source-buffer)
+    (message "Source buffer is no longer live. Aborting replacements.")
+    (set state-var nil)
+    (cl-return-from tlon-bib--apply-replacements-in-buffer nil))
+  (setq replacements (sort replacements (lambda (a b) (> (car a) (car b)))))
+  (let ((replacements-made 0)
+	(errors-occurred 0))
+    (with-current-buffer source-buffer
+      (dolist (replacement replacements)
+	(let ((start (nth 0 replacement))
+	      (end (nth 1 replacement))
+	      (text (nth 2 replacement)))
+	  (if (or (string= text "NOT_FOUND") (string= text "ERROR_AI"))
+	      (progn
+		(message "No valid key for text at %d-%d (Result: %s). Skipping." start end text)
+		(cl-incf errors-occurred))
+	    (goto-char start)
+	    (delete-region start end)
+	    (insert (format "<Cite bibKey=\"%s\" />" text))
+	    (cl-incf replacements-made)))))
+    (set state-var nil)
+    (cons replacements-made errors-occurred)))
+
 (defun tlon-bib--batch-bibkey-result-handler (response info)
   "Callback function to handle the result of a batch bibkey lookup.
 Parses the newline-separated keys, associates them with original references, and
@@ -1751,75 +1797,35 @@ triggers replacements. RESPONSE is the AI's response, INFO is the response info.
   (cl-block tlon-bib--batch-bibkey-result-handler
     (let* ((state tlon-bib--bibkey-state)
 	   (references-with-pos (plist-get state :references-with-pos))
-	   (num-references (length references-with-pos))
-	   (results '())) ; Build the results list here
+	   (num-references (length references-with-pos)))
 
-      (unless response
-	(message "AI batch request failed. Status: %s" (plist-get info :status))
-	(setq tlon-bib--bibkey-state nil) ; Clean up state
-	(cl-return-from tlon-bib--batch-bibkey-result-handler))
-
-      (let ((returned-keys (split-string (string-trim response) "\n" t)))
-	(unless (= (length returned-keys) num-references)
-	  (message "Error: AI returned %d keys, but %d references were sent. Aborting replacements."
-		   (length returned-keys) num-references)
-	  (message "AI Response:\n%s" response) ; Log response for debugging
-	  (setq tlon-bib--bibkey-state nil) ; Clean up state
-	  (cl-return-from tlon-bib--batch-bibkey-result-handler))
-
+      (when-let ((returned-keys (tlon-bib--parse-batch-keys
+				 response info num-references
+				 'tlon-bib--bibkey-state)))
 	;; Associate keys with positions
-	(dotimes (i num-references)
-	  (let* ((entry (nth i references-with-pos))
-		 (start-pos (nth 1 entry))
-		 (end-pos (nth 2 entry))
-		 (key (nth i returned-keys)))
-	    (push (list start-pos end-pos key) results)))
-
-	;; Store the final results (reversed to match original order implicitly)
-	(setf (plist-get state :results) (nreverse results))
-	(setq tlon-bib--bibkey-state state) ; Update state with results
-
-	;; All references processed, apply replacements
-	(tlon-bib--apply-bibkey-replacements)))))
+	(let ((results '()))
+	  (dotimes (i num-references)
+	    (let* ((entry (nth i references-with-pos))
+		   (start-pos (nth 1 entry))
+		   (end-pos (nth 2 entry))
+		   (key (nth i returned-keys)))
+	      (push (list start-pos end-pos key) results)))
+	  (setf (plist-get state :results) (nreverse results))
+	  (setq tlon-bib--bibkey-state state)
+	  (tlon-bib--apply-bibkey-replacements))))))
 
 (defun tlon-bib--apply-bibkey-replacements ()
   "Apply the BibTeX key replacements in the source buffer."
   (cl-block tlon-bib--apply-bibkey-replacements
     (let* ((state tlon-bib--bibkey-state)
-	   (results (plist-get state :results)) ; List of (start end key)
-	   (source-buffer (plist-get state :source-buffer))
-	   (replacements-made 0)
-	   (errors-occurred 0))
-
-      (unless (buffer-live-p source-buffer)
-	(message "Source buffer is no longer live. Aborting replacements.")
-	(setq tlon-bib--bibkey-state nil)
-	(cl-return-from tlon-bib--apply-bibkey-replacements))
-
-      ;; Sort results by start position in REVERSE order to avoid messing up positions
-      (setq results (sort results (lambda (a b) (> (car a) (car b)))))
-
-      (with-current-buffer source-buffer
-	(dolist (result results)
-	  (let ((start (nth 0 result))
-		(end (nth 1 result))
-		(key (nth 2 result)))
-	    ;; Check if key is valid (not an error marker)
-	    (if (or (string= key "NOT_FOUND") (string= key "ERROR_AI"))
-		(progn
-		  (message "No valid key found for text at %d-%d (Result: %s). Skipping." start end key)
-		  (cl-incf errors-occurred))
-	      ;; Perform replacement
-	      (let ((replacement-text (format "<Cite bibKey=\"%s\" />" key)))
-		(goto-char start) ; Go to start before deleting
-		(delete-region start end)
-		(insert replacement-text)
-		(cl-incf replacements-made))))))
-
-      (message "BibTeX key replacement complete. Replaced %d reference(s). Skipped %d due to errors or no match."
-	       replacements-made errors-occurred)
-      ;; Clean up state variable
-      (setq tlon-bib--bibkey-state nil))))
+	   (results (plist-get state :results))
+	   (source-buffer (plist-get state :source-buffer)))
+      (pcase-let ((`(,made . ,errors)
+		   (tlon-bib--apply-replacements-in-buffer
+		    source-buffer results 'tlon-bib--bibkey-state)))
+	(when made
+	  (message "BibTeX key replacement complete. Replaced %d reference(s). Skipped %d due to errors or no match."
+		   made errors))))))
 
 ;;;;;; Extract and Replace Command
 
@@ -1901,78 +1907,43 @@ Parses the newline-separated keys, populates the key-map, and triggers
 replacements. RESPONSE is the AI's response, INFO is the response info."
   (let* ((state tlon-bib--extract-replace-state)
 	 (unique-refs (plist-get state :unique-references))
-	 (key-map (plist-get state :key-map)) ; Hash table: ref-string -> key
+	 (key-map (plist-get state :key-map))
 	 (num-references (length unique-refs)))
-
-    (if response
-	;; Process valid response
-	(let ((returned-keys (split-string (string-trim response) "\n" t)))
-	  (if (= (length returned-keys) num-references)
-	      ;; Correct number of keys returned
-	      (progn
-		;; Populate the key-map hash table
-		(dotimes (i num-references)
-		  (let ((ref-string (nth i unique-refs))
-			(key (nth i returned-keys)))
-		    (puthash ref-string key key-map)))
-		(message "All keys fetched via batch request. Applying replacements...")
-		(tlon-bib--apply-extracted-reference-replacements)) ; Proceed to replacements
-	    ;; Incorrect number of keys returned
-	    (message "Error: AI returned %d keys, but %d unique references were sent. Aborting replacements."
-		     (length returned-keys) num-references)
-	    (message "AI Response:\n%s" response) ; Log response for debugging
-	    (setq tlon-bib--extract-replace-state nil))) ; Clean up state
-      ;; Handle failed AI request
-      (message "AI batch key lookup request failed. Status: %s" (plist-get info :status))
-      (setq tlon-bib--extract-replace-state nil)))) ; Clean up state
+    (when-let ((returned-keys (tlon-bib--parse-batch-keys
+			       response info num-references
+			       'tlon-bib--extract-replace-state)))
+      (dotimes (i num-references)
+	(puthash (nth i unique-refs) (nth i returned-keys) key-map))
+      (message "All keys fetched via batch request. Applying replacements...")
+      (tlon-bib--apply-extracted-reference-replacements))))
 
 (defun tlon-bib--apply-extracted-reference-replacements ()
   "Apply the BibTeX key replacements in the source buffer for extracted references."
-  (cl-block tlon-bib--apply-extracted-reference-replacements
-    (let* ((state tlon-bib--extract-replace-state)
-	   ;; Check if state is nil (might have been cleaned up due to error)
-	   (_ (unless state (user-error "State lost, likely due to previous error. Aborting")))
-	   (source-buffer (plist-get state :source-buffer))
-	   (ref-positions (plist-get state :reference-positions)) ; (ref-string . list-of-(start . end))
-	   (key-map (plist-get state :key-map))
-	   (replacements '()) ; List of (start end replacement-text)
-	   (replacements-made 0)
-	   (errors-occurred 0)
-	   (not-found-count 0))
-      (unless (buffer-live-p source-buffer)
-	(message "Source buffer is no longer live. Aborting replacements.")
-	(setq tlon-bib--extract-replace-state nil)
-	(cl-return-from tlon-bib--apply-extracted-reference-replacements))
-      ;; Build the list of replacements
-      (dolist (pos-entry ref-positions)
-	(let* ((ref-string (car pos-entry))
-	       (positions (cdr pos-entry))
-	       (key (gethash ref-string key-map "ERROR_AI"))) ; Default to error if somehow missing
-	  (if (or (string= key "NOT_FOUND") (string= key "ERROR_AI"))
-	      (progn
-		(when (string= key "NOT_FOUND") (cl-incf not-found-count))
-		(when (string= key "ERROR_AI") (cl-incf errors-occurred)))
-	    ;; Valid key found, create replacement entries for all found positions
-	    (let ((replacement-text (format "<Cite bibKey=\"%s\" />" key)))
-	      (dolist (pos positions)
-		(push (list (car pos) (cdr pos) replacement-text) replacements))))))
-      ;; Sort replacements by start position in REVERSE order
-      (setq replacements (sort replacements (lambda (a b) (> (car a) (car b)))))
-      ;; Apply replacements
-      (with-current-buffer source-buffer
-	(dolist (replacement replacements)
-	  (let ((start (nth 0 replacement))
-		(end (nth 1 replacement))
-		(text (nth 2 replacement)))
-	    ;; Check if the region still contains the expected text? (Might be too complex/slow)
-	    (goto-char start)
-	    (delete-region start end)
-	    (insert text)
-	    (cl-incf replacements-made))))
-      (message "Reference replacement complete. Replaced %d instance(s). Skipped %d (key not found), %d (AI error)."
-	       replacements-made not-found-count errors-occurred)
-      ;; Clean up state variable
-      (setq tlon-bib--extract-replace-state nil))))
+  (unless tlon-bib--extract-replace-state
+    (user-error "State lost, likely due to previous error. Aborting"))
+  (let* ((state tlon-bib--extract-replace-state)
+	 (source-buffer (plist-get state :source-buffer))
+	 (ref-positions (plist-get state :reference-positions))
+	 (key-map (plist-get state :key-map))
+	 (replacements '())
+	 (not-found-count 0)
+	 (errors-count 0))
+    ;; Build replacement triples, filtering out errors
+    (dolist (pos-entry ref-positions)
+      (let* ((ref-string (car pos-entry))
+	     (positions (cdr pos-entry))
+	     (key (gethash ref-string key-map "ERROR_AI")))
+	(cond
+	 ((string= key "NOT_FOUND") (cl-incf not-found-count))
+	 ((string= key "ERROR_AI") (cl-incf errors-count))
+	 (t (dolist (pos positions)
+	      (push (list (car pos) (cdr pos) key) replacements))))))
+    (pcase-let ((`(,made . ,_)
+		 (tlon-bib--apply-replacements-in-buffer
+		  source-buffer replacements 'tlon-bib--extract-replace-state)))
+      (when made
+	(message "Reference replacement complete. Replaced %d instance(s). Skipped %d (key not found), %d (AI error)."
+		 made not-found-count errors-count)))))
 
 ;;;;;; Citation Replacement (AI Agent)
 

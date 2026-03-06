@@ -138,12 +138,9 @@ TITLE optionally specifies the title of the entity to be imported.
 Delegates to specific handlers for articles and tags."
   (if-let* ((response (tlon-import-eaf-request id-or-slug)))
       (let ((type (tlon-import-eaf-get-type id-or-slug)))
-        (pcase-exhaustive type
-	  ('article (tlon-import-eaf--process-article response title))
-	  ('tag (tlon-import-eaf--process-tag response title))))
+        (tlon-import-eaf--process-entity type response title))
     (user-error "EAF API returned no response")))
 
-;; (declare-function delete-tlon-yaml-insert-field "tlon-yaml")
 (defun tlon-import-eaf--common-processing (entity-title bare-dir-name html-content)
   "Common logic to process EAF entity HTML content.
 ENTITY-TITLE is the title for the document.
@@ -157,29 +154,20 @@ HTML-CONTENT is the raw HTML string."
       (tlon-cleanup-common)
       (tlon-cleanup-eaf)
       (tlon-autofix-all)
-      ;; (delete-tlon-yaml-insert-field "type" (substring bare-dir-name 0 -1)) ;; Use bare-dir-name if type is needed
       (save-buffer))
     (find-file target)))
 
-(defun tlon-import-eaf--process-article (response &optional title)
-  "Process an EAF article from API RESPONSE. Optional TITLE override."
-  (let ((article-title (or title (tlon-import-eaf-get-article-title response))))
-    (if-let ((html (tlon-import-eaf-get-article-html response))) ; Directly use HTML
-        (tlon-import-eaf--common-processing article-title "articles" html)
-      (if (y-or-n-p "EAF API returned no contents for article. Import as normal URL?")
-          (let ((url (tlon-import-eaf-get-article-url response)))
-            (tlon-import-convert-html-to-markdown url article-title))
-        (message "Aborted.")))))
-
-(defun tlon-import-eaf--process-tag (response &optional title)
-  "Process an EAF tag from API RESPONSE. Optional TITLE override."
-  (let ((tag-title (or title (tlon-import-eaf-get-tag-title response))))
-    (if-let ((html (tlon-import-eaf-get-tag-html response)))
-	(tlon-import-eaf--common-processing tag-title "tags" html)
-      (if (y-or-n-p "EAF API returned no HTML description for tag. Import as normal URL?")
-          (let ((url (tlon-import-eaf-get-tag-url response)))
-            (tlon-import-convert-html-to-markdown url tag-title))
-        (message "Aborted.")))))
+(defun tlon-import-eaf--process-entity (type response &optional title)
+  "Process an EAF entity of TYPE from API RESPONSE.
+TYPE is a symbol, either `article' or `tag'. Optional TITLE override."
+  (let* ((bare-dir (format "%ss" type))
+	 (entity-title (or title (tlon-import-eaf-get-entity-property type 'title response))))
+    (if-let ((html (tlon-import-eaf-get-entity-property type 'html response)))
+	(tlon-import-eaf--common-processing entity-title bare-dir html)
+      (if (y-or-n-p (format "EAF API returned no HTML for %s. Import as normal URL?" type))
+	  (let ((url (tlon-import-eaf-get-entity-property type 'url response)))
+	    (tlon-import-convert-html-to-markdown url entity-title))
+	(message "Aborted.")))))
 
 ;;;;;;; non-EAF
 
