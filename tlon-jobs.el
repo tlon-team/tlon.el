@@ -128,7 +128,20 @@ for the process that is being initialized."
 	(tlon-copy-buffer original-path)
 	(funcall fun)))))
 
-(autoload 'tlon-check-file "tlon")
+(defun tlon-check-file (&optional original)
+  "Throw an error unless current file matches file in clock.
+If ORIGINAL is non-nil, check that current file matches original; otherwise,
+check that current file matches translation."
+  (let* ((key (tlon-get-clock-key))
+	 (field (if original "original_path" "file"))
+	 (expected-file (file-name-nondirectory
+			 (tlon-metadata-lookup (tlon-metadata-in-repo) field "original_key" key)))
+	 (actual-file (file-name-nondirectory
+		       (buffer-file-name))))
+    (if (string= expected-file actual-file)
+	t
+      (user-error "Current file does not match file in clock"))))
+
 (autoload 'tlon-commit-and-push "tlon")
 (autoload 'tlon-split-mode "tlon")
 (defun tlon-jobs-finalize ()

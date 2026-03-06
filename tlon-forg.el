@@ -2601,6 +2601,21 @@ If ISSUE is nil, use the issue at point or in current buffer."
 
 ;;;;; misc
 
+;;;###autoload
+(defun tlon-issue-lookup (string &optional dir)
+  "Return the first issue in DIR whose title includes STRING.
+If DIR is nil, use the current repository."
+  (when-let* ((string (concat "%" string "%"))
+	      (default-directory (or dir default-directory))
+	      (repo (forge-get-repository :tracked))
+	      (repo-id (eieio-oref repo 'id))
+	      (issue-number (caar (forge-sql [:select [number] :from issue
+						      :where (and (= repository $s1)
+								  (like title $s2))]
+					     repo-id
+					     string))))
+    (forge-get-issue repo issue-number)))
+
 (declare-function org-roam-extras-node-find-special "org-roam-extras")
 ;;;###autoload
 (defun tlon-node-find ()

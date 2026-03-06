@@ -1288,6 +1288,17 @@ If OVERWRITE is non, replace the existing marker when present."
 	       (new-timestamp (format "[%02d:%02d]" final-minutes final-seconds)))
 	  (replace-match new-timestamp t nil))))))
 
+(defun tlon-check-image-alt-text ()
+  "Check if all images have alt text, else signal an error."
+  (let (pos)
+    (save-excursion
+      (goto-char (point-min))
+      (when (re-search-forward tlon-md-image-sans-alt nil t)
+	(setq pos (match-beginning 0))))
+    (when pos
+      (goto-char pos)
+      (user-error "There are images without alt text. Use `tlon-md-insert-alt-text' to fix them"))))
+
 ;;;;; Misc
 
 ;;;###autoload

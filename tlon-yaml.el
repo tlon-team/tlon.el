@@ -1316,6 +1316,43 @@ list of files modified."
              field (length deleted) (if (= (length deleted) 1) "" "s") dir)
     deleted))
 
+;;;;; checks
+
+(defun tlon-check-file-title-match  (&optional file)
+  "Check that FILE matches its title.
+If FILE is nil, check the current buffer.
+
+NOTE: This function is no longer run automatically, since its functionality is
+now performed by the backend, which provides more comprehensive and robust
+logging."
+  (when-let* ((file (or file (buffer-file-name)))
+	      (base (file-name-base file))
+	      (title (tlon-yaml-get-key "title" file))
+	      (slugified-title (simple-extras-slugify title)))
+    (unless (or
+	     (string= base slugified-title)
+	     ;; for articles with duplicate titles
+	     (string-match-p (concat "^" (regexp-quote slugified-title) "-[0-9]+$") base))
+      (error "The file `%s' does not match its title" title))))
+
+(defun tlon-check-file-type-match (&optional file)
+  "Check that FILE matches its tile.
+Return an error if the file is not in a subdirectory of the repository whose
+name, or its translation, is the value of the file's `type' metadata field. For
+example, if the FILE is of type `article', the function will throw an error if
+FILE is located in `uqbar-es/temas/FILE' or `uqbar-es/imagenes/articulos/FILE',
+but will not throw an error if it is located in `uqbar-en/articles/FILE' or
+`uqbar-es/articulos/FILE'."
+  (let* ((file (or file (buffer-file-name)))
+	 (repo (tlon-get-repo-from-file file))
+	 (lang (tlon-repo-lookup :language :dir repo))
+	 (dir-raw (file-name-directory (file-relative-name file repo)))
+	 (dir-lang (tlon-get-bare-dir-translation
+		    "en" lang (directory-file-name dir-raw)))
+	 (type (tlon-yaml-get-key "type" file)))
+    (unless (string-match type dir-lang) ; we use `string-match' instead of `string=' to handle plurals
+      (user-error "The file `%s' does not match its type" file))))
+
 ;;;;; menu
 
 (transient-define-infix tlon-yaml-infix-suggest-tags-model ()

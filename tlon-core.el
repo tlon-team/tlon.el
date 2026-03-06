@@ -1001,24 +1001,6 @@ PAIRS is expected to be an even-sized list of <key value> tuples."
   "Return all values of KEY in labels matching all KEY-VALUE pairs."
   (apply #'tlon-lookup-all tlon-job-labels key key-value))
 
-(declare-function forge-get-repository "forge-core")
-(declare-function forge-get-issue "forge-core")
-(autoload 'forge-sql "forge-db")
-;;;###autoload
-(defun tlon-issue-lookup (string &optional dir)
-  "Return the first issue in DIR whose title includes STRING.
-If DIR is nil, use the current repository."
-  (when-let* ((string (concat "%" string "%"))
-	      (default-directory (or dir default-directory))
-	      (repo (forge-get-repository :tracked))
-	      (repo-id (eieio-oref repo 'id))
-	      (issue-number (caar (forge-sql [:select [number] :from issue
-						      :where (and (= repository $s1)
-								  (like title $s2))]
-					     repo-id
-					     string))))
-    (forge-get-issue repo issue-number)))
-
 ;;;;; Get region pos
 
 (defun tlon-get-delimited-region-pos (begin &optional end exclude-delims)
@@ -1482,22 +1464,6 @@ repository."
       (user-error "Please switch to the branch `%s' before proceeding" branch))
     t))
 
-(declare-function tlon-get-clock-key "tlon-clock")
-(declare-function tlon-metadata-in-repo "tlon-yaml")
-(defun tlon-check-file (&optional original)
-  "Throw an error unless current file matches file in clock.
-If ORIGINAL is non-nil, check that current file matches original; otherwise,
-check that current file matches translation."
-  (let* ((key (tlon-get-clock-key))
-	 (field (if original "original_path" "file"))
-	 (expected-file (file-name-nondirectory
-			 (tlon-metadata-lookup (tlon-metadata-in-repo) field "original_key" key)))
-	 (actual-file (file-name-nondirectory
-		       (buffer-file-name))))
-    (if (string= expected-file actual-file)
-	t
-      (user-error "Current file does not match file in clock"))))
-
 ;; TODO: the two functions below appear to check for the same thing, except that
 ;; one ignores changes to the file itself. They should be merged into a single
 ;; function.
@@ -1519,55 +1485,6 @@ FILE is excluded from the check."
     (unless (string= all-changes filtered-changes)
       (let ((repo-name (tlon-repo-lookup :name :dir (tlon-get-repo-from-file file))))
 	(user-error "There are uncommitted changes in repo `%s'" repo-name)))))
-
-(declare-function tlon-yaml-get-key "tlon-yaml")
-(declare-function simple-extras-slugify "simple-extras")
-(defun tlon-check-file-title-match  (&optional file)
-  "Check that FILE matches its title.
-If FILE is nil, check the current buffer.
-
-NOTE: This function is no longer run automatically, since its functionality is
-now performed by the backend, which provides more comprehensive and robust
-logging."
-  (when-let* ((file (or file (buffer-file-name)))
-	      (base (file-name-base file))
-	      (title (tlon-yaml-get-key "title" file))
-	      (slugified-title (simple-extras-slugify title)))
-    (unless (or
-	     (string= base slugified-title)
-	     ;; for articles with duplicate titles
-	     (string-match-p (concat "^" (regexp-quote slugified-title) "-[0-9]+$") base))
-      (error "The file `%s' does not match its title" title))))
-
-(defun tlon-check-file-type-match (&optional file)
-  "Check that FILE matches its tile.
-Return an error if the file is not in a subdirectory of the repository whose
-name, or its translation, is the value of the file’s `type' metadata field. For
-example, if the FILE is of type `article', the function will throw an error if
-FILE is located in `uqbar-es/temas/FILE' or `uqbar-es/imagenes/articulos/FILE',
-but will not throw an error if it is located in `uqbar-en/articles/FILE' or
-`uqbar-es/articulos/FILE'."
-  (let* ((file (or file (buffer-file-name)))
-	 (repo (tlon-get-repo-from-file file))
-	 (lang (tlon-repo-lookup :language :dir repo))
-	 (dir-raw (file-name-directory (file-relative-name file repo)))
-	 (dir-lang (tlon-get-bare-dir-translation
-		    "en" lang (directory-file-name dir-raw)))
-	 (type (tlon-yaml-get-key "type" file)))
-    (unless (string-match type dir-lang) ; we use `string-match' instead of `string=' to handle plurals
-      (user-error "The file `%s' does not match its type" file))))
-
-(defvar tlon-md-image-sans-alt)
-(defun tlon-check-image-alt-text ()
-  "Check if all images have alt text, else signal an error."
-  (let (pos)
-    (save-excursion
-      (goto-char (point-min))
-      (when (re-search-forward tlon-md-image-sans-alt nil t)
-	(setq pos (match-beginning 0))))
-    (when pos
-      (goto-char pos)
-      (user-error "There are images without alt text. Use `tlon-md-insert-alt-text' to fix them"))))
 
 ;;;;; visit file at point
 
