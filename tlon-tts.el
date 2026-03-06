@@ -1018,6 +1018,8 @@ former in group 1.")
 	  ("tr" . "dokuzuncu kuvvet"))))
   "List of exponents and their irregular verbal equivalents.")
 
+;; TTS engines mispronounce "80,000" in the name "80,000 Hours"; this table
+;; provides correct spoken forms for each language.
 (defconst tlon-tts-80000
   '(("ar" . "ثمانون ألف")
     ("de" . "Achtzigtausend")
@@ -1045,6 +1047,8 @@ former in group 1.")
 The specified separator will replace existing thousands separators, so that the
 TTS engine pronounces the numbers correctly.")
 
+;; All separators are currently empty strings: the decimal point is removed so
+;; that the TTS engine reads the integer and fractional parts separately.
 (defconst tlon-tts-decimals-separator
   '((:language "ar" :separator "")
     (:language "de" :separator "")
@@ -1056,8 +1060,9 @@ TTS engine pronounces the numbers correctly.")
     (:language "ko" :separator "")
     (:language "tr" :separator ""))
   "List of language-specific decimals separators.
-The specified separator will replace existing thousands separators, so that the
-TTS engine pronounces the numbers correctly.")
+The specified separator will replace existing decimals separators, so that the
+TTS engine pronounces the numbers correctly. Empty strings indicate no
+replacement is needed.")
 
 ;;;;; Currencies
 
@@ -1104,7 +1109,7 @@ is the preposition string (often including leading/trailing spaces as needed).")
 (defconst tlon-tts-tag-section-names
   '(("ar" . "\\(?:مزيد من المعلومات\\|مقالات ذات صلة\\|روابط خارجية\\)")
     ("de" . "\\(?:weitere Informationen\\|verwandte Einträge\\|externe Links\\)")
-    ("en" . "\\(?:further readong\\|related entries\\|external links\\)")
+    ("en" . "\\(?:further reading\\|related entries\\|external links\\)")
     ("es" . "\\(?:más información\\|entradas relacionadas\\|enlaces externos\\)")
     ("fr" . "\\(?:plus d'informations\\|entrées connexes\\|liens externes\\)")
     ("it" . "\\(?:ulteriori informazioni\\|voci correlate\\|collegamenti esterni\\)")
@@ -3626,7 +3631,7 @@ The report checks the content of the current staging buffer."
     (user-error "Not in a TTS staging buffer"))
   (let ((staging-buffer (current-buffer))
 	(abbreviations (tlon-tts-get-missing-abbreviations)) ; Called within staging buffer context
-	(chemical-symbols-p (tlon-tts-check-chemical-symols))
+	(chemical-symbols-p (tlon-tts-check-chemical-symbols))
 	(emphasis-p (tlon-tts-check-emphasis))
 	(en-dashes-p (tlon-tts-check-en-dashes))
 	(numerals-sans-separator-p (tlon-tts-get-numerals-sans-separator))
@@ -3644,7 +3649,7 @@ The report checks the content of the current staging buffer."
 	(insert (format "\n** Chemical symbols\n\nSearch for ‘%s’\n"
 			tlon-tts-maybe-chemical-symbol)))
       (when emphasis-p
-	(insert (format "\n** Emphasis\n\nRun =M-x tlon-manual-fixe-emphasis=\n")))
+	(insert (format "\n** Emphasis\n\nRun =M-x tlon-manual-fix-emphasis=\n")))
       (when en-dashes-p
 	(insert (format "\n** En dashes\n\nSearch for ‘–’\n")))
       (when numerals-sans-separator-p
@@ -3713,7 +3718,7 @@ pronounce the numbers correctly. This requires manual processing since some
 numbers, such as years, should not be separated."
   (tlon-tts-check-unprocessed tlon-numerals-sans-separator))
 
-(defun tlon-tts-check-chemical-symols ()
+(defun tlon-tts-check-chemical-symbols ()
   "Return t iff the current buffer appears to have unprocessed chemical symbols."
   (tlon-tts-check-unprocessed tlon-tts-maybe-chemical-symbol))
 

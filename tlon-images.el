@@ -77,8 +77,7 @@ Markdown alt into the alt attribute. If nil, we omit the alt attribute."
   "magick %1$s -modulate %3$s %2$s"
   "Command to reduce the brightness of an image using `imagemagic'.
 The first placeholder is the input image, the second placeholder is the
-percentage by which to reduce the brightness, and the third placeholder is the
-output image.")
+output image, and the third placeholder is the brightness percentage.")
 
 (defconst tlon-imagemagick-invert-colors
   "magick %s -channel RGB -negate %s"
@@ -132,7 +131,7 @@ inside the repo, without extension."
 	 (output (tlon-images-get-themed-file-name image 'dark)))
     (if (tlon-images-can-invert-p image)
 	(tlon-images-invert-colors image output)
-      (tlon-images-reduce-brightnesss image output))))
+      (tlon-images-reduce-brightness image output))))
 
 (defun tlon-images-read-image (&optional image)
   "Prompt the user for an IMAGE."
@@ -149,7 +148,7 @@ inside the repo, without extension."
 ;;;;; Process images
 
 ;;;###autoload
-(defun tlon-images-reduce-brightnesss (&optional source target percent)
+(defun tlon-images-reduce-brightness (&optional source target percent)
   "Reduce the brightness of SOURCE image by PERCENT and save it to TARGET.
 Percent defaults to `tlon-images-default-brightness-reduction' if nil."
   (interactive)
@@ -505,7 +504,7 @@ variable."
   :class 'transient-lisp-variable
   :variable 'tlon-images-default-brightness-reduction
   :reader (lambda (_ _ _) (read-number "Brightness reduction: " tlon-images-default-brightness-reduction))
-  :prompt "Disconnect after: ")
+  :prompt "Brightness %: ")
 
 (transient-define-infix tlon-images-toggle-open-after-processing ()
   "Toggle the value of `tlon-images-open-after-processing' in `images' menu."
@@ -536,7 +535,7 @@ variable."
   "Images menu."
   [["Light/Dark"
     ("a" "auto"                                  tlon-images-auto-process)
-    ("r" "reduce brightness"                     tlon-images-reduce-brightnesss)
+    ("r" "reduce brightness"                     tlon-images-reduce-brightness)
     ("i" "invert colors"                         tlon-images-invert-colors)
     ("n" "make nontransparent"                   tlon-images-make-nontransparent)
     ""

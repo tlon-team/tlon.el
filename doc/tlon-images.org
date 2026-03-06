@@ -32,7 +32,7 @@ The module depends on =tlon-core=, =tlon-ai=, =tlon-md=, =transient=, =dired=, a
 :END:
 #+vindex: tlon-images-default-brightness-reduction
 
-Default percentage (integer) by which to reduce image brightness when using ~tlon-images-reduce-brightnesss~ without specifying a percentage.  The default is =20=.
+Default percentage (integer) by which to reduce image brightness when using ~tlon-images-reduce-brightness~ without specifying a percentage.  The default is =20=.
 
 ** ~tlon-images-open-after-processing~
 :PROPERTIES:
@@ -84,11 +84,11 @@ Whether to preserve Markdown alt text when replacing Markdown images with =Figur
 
 Automatically process an IMAGE for a dark theme.  The command prompts for the image file, checks whether its colors can be safely inverted (via the =invertornot.com= API using ~tlon-images-can-invert-p~), and either inverts the colors or reduces the brightness accordingly.  The output is saved to a dark-themed filename (e.g., =image-dark.png=).
 
-*** ~tlon-images-reduce-brightnesss~
+*** ~tlon-images-reduce-brightness~
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-images-reduce-brightnesss
+:CUSTOM_ID: h:tlon-images-reduce-brightness
 :END:
-#+findex: tlon-images-reduce-brightnesss
+#+findex: tlon-images-reduce-brightness
 
 Reduce the brightness of a SOURCE image by PERCENT (defaulting to ~tlon-images-default-brightness-reduction~) and save the result to TARGET (defaulting to the dark-themed filename).  Uses ImageMagick's =-modulate= flag.  The original is also copied to a light-themed filename.  If ~tlon-images-open-after-processing~ is non-nil, both versions are opened in separate windows.
 
@@ -184,7 +184,7 @@ The menu provides the following groups:
 
 - *Light/Dark*:
   - =a= :: auto process (~tlon-images-auto-process~)
-  - =r= :: reduce brightness (~tlon-images-reduce-brightnesss~)
+  - =r= :: reduce brightness (~tlon-images-reduce-brightness~)
   - =i= :: invert colors (~tlon-images-invert-colors~)
   - =n= :: make nontransparent (~tlon-images-make-nontransparent~)
   - Options: toggle open after processing (=-o=), set brightness reduction percentage (=-r=)

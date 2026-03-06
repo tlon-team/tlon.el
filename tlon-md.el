@@ -425,6 +425,7 @@ If no section is found, do nothing."
   (interactive)
   (save-excursion
     (goto-char (point-min))
+    ;; Spanish heading "Related entries" — this function only operates on Spanish-language files
     (when (re-search-forward "^## Entradas relacionadas" nil t)
       (forward-paragraph)
       (tlon-md-sort-elements-in-paragraph " • "))))
@@ -927,7 +928,7 @@ Available roles:
 		   nil nil)) ; Allow empty input (require-match is nil)
 
 ;;;###autoload
-(defun tlon-mdx-insert-romantlon-insert-mdx-roman ()
+(defun tlon-mdx-insert-roman ()
   "Insert an MDX `Roman' tag pair at point or around the selected region.
 Text enclosed by an `Roman' tag pair will be displayed in small caps."
   (interactive)
@@ -938,7 +939,7 @@ Text enclosed by an `Roman' tag pair will be displayed in small caps."
   "Insert an MDX `SmallCaps' tag pair at point or around the selected region.
 Text enclosed by an `SmallCaps' tag pair will be displayed in small caps.
 
-Note: for Roman numerals, use `tlon-mdx-insert-romantlon-insert-mdx-roman':
+Note: for Roman numerals, use `tlon-mdx-insert-roman':
 `Roman' has exactly the same visual effects as `SmallCaps', but it also makes
 the TTS engine read the numbers correctly."
   (interactive)
@@ -1252,6 +1253,7 @@ it is classified as a footnote; otherwise, it is classified as a sidenote."
 	(setq has-citation-p t))
       (when has-citation-p
 	(let ((words (count-words-region (point-min) (point-max))))
+	  ;; notes with 4 or fewer words (after stripping Cite tags) are treated as footnotes, not sidenotes
 	  (when (<= words 4)
 	    (setq is-footnote-p t))))
       (if is-footnote-p 'footnote 'sidenote))))
@@ -1436,7 +1438,7 @@ variables section. If FILE is nil, read the file visited by the current buffer."
     ""
     "Caps"
     ("p" "small caps"           tlon-mdx-insert-small-caps)
-    ("r" "roman"                tlon-mdx-insert-romantlon-insert-mdx-roman)
+    ("r" "roman"                tlon-mdx-insert-roman)
     ""
     "Table"
     ("A" "table"                tlon-mdx-insert-table)

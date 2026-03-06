@@ -33,6 +33,8 @@
 
 ;;;; Variables
 
+;; The ordering of labels reflects the translation workflow pipeline:
+;; processing -> translation -> revision -> check -> review -> published.
 (defconst tlon-job-labels
   '((:label "Awaiting processing"
 	    :action "Process"
@@ -116,7 +118,7 @@ for the process that is being initialized."
     (tlon-check-label-and-assignee repo)
     (tlon-check-branch "main" repo)
     (call-interactively #'magit-pull-from-upstream nil)
-    (sleep-for 2)
+    (sleep-for 2) ; wait for the async pull to finish before proceeding
     (cl-multiple-value-bind
 	(original-path translation-path)
 	(tlon-set-paths-from-clock)
@@ -276,7 +278,7 @@ substitute assignee."
       (tlon-set-paths-from-clock)
     (tlon-log-buffer-latest-user-commit-ediff translation-path)
     (winum-select-window-1)
-    (setq-local jinx-languages "es")
+    (setq-local jinx-languages "es") ; translations are currently only into Spanish
     (add-file-local-variable 'jinx-languages jinx-languages)
     (setf (alist-get 'jinx-languages file-local-variables-alist) jinx-languages)
     (jinx--load-dicts)

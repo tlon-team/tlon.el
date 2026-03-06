@@ -70,11 +70,13 @@ The order of the keys determines the sort order by
 The order of the keys determines the sort order by
 `tlon-yaml-sort-fields', unless overridden.")
 
+;; Keys are in Spanish because this constant is used for the BAE
+;; (Biblioteca de Altruismo Eficaz) Spanish-language repository.
 (defconst tlon-yaml-tag-or-author-keys
   '("titulo" "estado_de_publicacion")
   "List of YAML keys of fields to include in BAE tags or authors.
 The order of the keys determines the sort order by
-`tlon--yaml-sort-fields', unless overridden.")
+`tlon-yaml-sort-fields', unless overridden.")
 
 (defconst tlon-yaml-original-author-keys
   '("title")
@@ -1438,6 +1440,7 @@ For each file it:
 		(tlon-yaml-insert-field "key" trans-key))
               (tlon-message-debug "Inserted key %s in %s" trans-key trans-file))))))))))
 
+;; NOTE: contains hardcoded paths specific to one developer's machine; should be refactored to use tlon-repos registry
 ;;;###autoload
 (defun tlon-yaml-sync-article-tags-to-es (&optional dir)
   "Insert Spanish tag translations for all English articles in DIR.
@@ -1470,6 +1473,7 @@ With a prefix argument, prompt for DIR."
              (if (= processed 1) "" "s")
              dir)))
 
+;; NOTE: contains hardcoded paths specific to one developer's machine; should be refactored to use tlon-repos registry
 ;;;###autoload
 (defun tlon-yaml-lowercase-it-tag-titles (&optional dir)
   "Lowercase only the first word of the YAML title field for al files in DIR.
@@ -1511,6 +1515,7 @@ a temporary clean-up helper."
       (message "Lowercased first word of titles in %d file%s under %s"
                updated (if (= updated 1) "" "s") dir))))
 
+;; NOTE: contains hardcoded paths specific to one developer's machine; should be refactored to use tlon-repos registry
 ;;;###autoload
 (defun tlon-yaml-uncapitalize-fr-article-tags (&optional dir)
   "Lowercase the first word of each tag in the tags field for all files in DIR.
@@ -1547,6 +1552,7 @@ temporary clean-up helper."
     (message "Lowercased first word of tags in %d file%s under %s"
              updated (if (= updated 1) "" "s") dir)))
 
+;; NOTE: contains hardcoded paths specific to one developer's machine; should be refactored to use tlon-repos registry
 ;;;###autoload
 (defun tlon-yaml-ko-backfill-original-keys ()
   "Backfill original_key for a curated list of Korean articles.

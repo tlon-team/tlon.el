@@ -541,6 +541,7 @@ Stop when there are no more entries."
 			   (with-current-buffer buf
 			     (tlon-ai-batch-continue))))))))))))
 
+;; Retry wrapper: calls ORIGINAL-FUN up to 3 times if it returns nil.
 (defun tlon-ai-try-try-try-again (original-fun)
   "Call ORIGINAL-FUN up to three times if its response is nil, then give up."
   (setq tlon-ai-retries 0)
@@ -940,7 +941,10 @@ KEY is the key of the entry containing the PDF files."
 
 ;;;###autoload
 (defun tlon-ai-rewrite ()
-  "Docstring."
+  "Rewrite the selected region or prompted text using the AI.
+If the region is active, send the selected text to the AI for rewriting;
+otherwise, prompt the user for text to rewrite.  The AI generates multiple
+variants of the input text, which are then presented to the user for selection."
   (interactive)
   (let* ((string (if (region-active-p)
 		     (buffer-substring-no-properties (region-beginning) (region-end))
@@ -1979,6 +1983,7 @@ commit hash."
 				(buffer-string)))))
       (when (or (string-empty-p (string-trim response))
 		(and original-content
+		     ;; reject responses shorter than 25% of the original — likely a truncated or failed AI response
 		     (< (length response) (/ (length original-content) 4))))
 	(user-error "AI response for %s is empty or suspiciously short; refusing to overwrite"
 		    target-file)))

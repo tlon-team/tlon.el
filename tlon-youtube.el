@@ -241,13 +241,16 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (scale-factor (/ dpi 72.0))
          (scaled-width (round (* width scale-factor)))
          (scaled-height (round (* height scale-factor)))
-         (text-width (round (* scaled-width 0.8)))
-         (text-height (round (* scaled-height 0.4)))
-         (title-y-offset (round (* scaled-height -0.18)))
+         ;; Layout ratios derived from manual visual tuning of the
+         ;; thumbnail composition.  Each factor is relative to the
+         ;; scaled canvas dimensions to stay resolution-independent.
+         (text-width (round (* scaled-width 0.8)))        ; 80% of canvas width
+         (text-height (round (* scaled-height 0.4)))      ; 40% of canvas height
+         (title-y-offset (round (* scaled-height -0.18))) ; shift title upward
          (authors-pointsize (round (* scaled-height 0.035)))
          (authors-y-offset (round (* scaled-height 0.12)))
-         (logo-size (round (* scaled-height 0.18)))
-         (logo-padding (round (* scaled-width 0.03)))
+         (logo-size (round (* scaled-height 0.18)))       ; 18% of canvas height
+         (logo-padding (round (* scaled-width 0.03)))     ; 3% of canvas width
          (stroke-width (round (* 2 scale-factor)))
          (url-pointsize (round (* scaled-height 0.013)))
          (url-padding-x (round (* scaled-width 0.02)))

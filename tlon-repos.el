@@ -106,6 +106,8 @@ reported by `tlon-repo-lookup-all' and the local repositories (as determined by
   "Asynchronously pull from `babel-refs'."
   (magit-extra-async-pull (tlon-repo-lookup :dir :name "babel-refs")))
 
+;; Pull `babel-refs' every 5 minutes of idle time to keep the BibTeX
+;; database in sync with remote changes.
 (run-with-idle-timer (* 5 60) t #'tlon-repos-pull-babel-refs)
 
 ;;;;; Forge
@@ -250,6 +252,8 @@ If REPOS is nil, search in all tracked repos."
 		 ("f" "fetch notifications"        forge-pull-notifications)
 		 ("l" "list notifications"         forge-list-notifications)]])
 
+;; Override the default Forge dispatch with our extended menu that adds
+;; cross-repo search and other Tlon-specific commands.
 (advice-add 'forge-dispatch :override #'tlon-forge-menu)
 
 ;;;;; git-crypt
@@ -303,6 +307,7 @@ When called interactively, prompt for a local Tlön repository name."
       (user-error "File `config.sh' not found in %s" dir))
     (let ((backup (make-temp-file "issues-to-projects-config-")))
       (copy-file config backup t t t)
+      ;; Line 24 of config.sh holds the REPOS=() array entry to configure
       (tlon--repos--write-line-to-file config 24 (format "\"%s\"" name))
       (tlon--repos--run-issues-to-projects-scripts name config backup))))
 

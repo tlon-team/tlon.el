@@ -61,7 +61,7 @@ This usually contains the data source numeric ID or UID.")
   "Manage local environments."
   :group 'tlon)
 
-(defcustom tlon-local-logs-minutes (* 30 24 60)
+(defcustom tlon-local-logs-minutes (* 30 24 60) ; 30 days in minutes
   "Default lookback window, in minutes, for querying logs."
   :type 'integer
   :group 'tlon-local)
@@ -191,6 +191,8 @@ At the end, open the local site in the default browser."
 	       "Browse the local site one minute after the process finishes."
 	       (when (and (string-prefix-p "finished" event)
                           local-url)
+                 ;; Wait 60 seconds for the local server to become ready
+                 ;; before opening the browser.
                  (run-at-time 60 nil #'browse-url local-url)))))))))))
 
 (defun tlon-local--append-stop-other-envs (commands append-command lang)
@@ -521,6 +523,8 @@ If SRC cannot be resolved, return SRC as-is."
                 (when repo (file-name-concat repo rel))))))
            (path (and abs (abbreviate-file-name abs))))
       (if path
+          ;; ": position 1" suffix enables `tlon-visit-file-at-point' to
+          ;; jump to the file when the user presses RET on this line.
           (format "%s: position 1" path)
         src))))
 

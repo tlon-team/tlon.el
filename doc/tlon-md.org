@@ -124,11 +124,11 @@ These commands insert or edit specific tags at point or around the selected regi
 #+findex: tlon-mdx-insert-replace-audio
 ~tlon-mdx-insert-replace-audio~ inserts or edits =<ReplaceAudio>= tags. Text enclosed by this tag will be displayed, but during narration the value of the =text= attribute is used instead. You are prompted for the audio text and an optional voice role (=role=).
 
-#+findex: tlon-mdx-insert-romantlon-insert-mdx-roman
-~tlon-mdx-insert-romantlon-insert-mdx-roman~ inserts or edits =<Roman>= tags. Text enclosed by this tag is displayed in small caps and is also read correctly by the TTS engine. Use this specifically for Roman numerals.
+#+findex: tlon-mdx-insert-roman
+~tlon-mdx-insert-roman~ inserts or edits =<Roman>= tags. Text enclosed by this tag is displayed in small caps and is also read correctly by the TTS engine. Use this specifically for Roman numerals.
 
 #+findex: tlon-mdx-insert-small-caps
-~tlon-mdx-insert-small-caps~ inserts or edits =<SmallCaps>= tags. Text enclosed by this tag is displayed in small caps. For Roman numerals, prefer ~tlon-mdx-insert-romantlon-insert-mdx-roman~ ([[#h:mdx-tags][MDX tags]]) because =<Roman>= additionally ensures correct TTS pronunciation.
+~tlon-mdx-insert-small-caps~ inserts or edits =<SmallCaps>= tags. Text enclosed by this tag is displayed in small caps. For Roman numerals, prefer ~tlon-mdx-insert-roman~ ([[#h:mdx-tags][MDX tags]]) because =<Roman>= additionally ensures correct TTS pronunciation.
 
 #+findex: tlon-mdx-insert-table
 ~tlon-mdx-insert-table~ is intended for inserting complex =<Table>= tags. This command is not yet developed.

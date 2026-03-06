@@ -48,6 +48,7 @@
   (file-name-concat tlon-package-dir "etc/newsletter-prompt.md")
   "Path to the prompt file used for creating newsletter issues.")
 
+;; Hardcoded to a known good issue; update when a better sample is available.
 (defconst tlon-newsletter-sample-issue-file
   (file-name-concat tlon-newsletter-numeros-subdir "2025-08.md")
   "File with a sample issue of the newsletter.")

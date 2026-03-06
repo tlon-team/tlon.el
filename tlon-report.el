@@ -260,6 +260,8 @@ Rows that include the words \"Total time\" or \"/File time/\" are skipped."
 
 ;;;;; Menu
 
+;; `tlon-clock-menu' lives in tlon-report.el (not tlon-clock.el) because
+;; it depends on clock reporting and submission commands defined here.
 ;;;###autoload (autoload 'tlon-clock-menu "tlon-report" nil t)
 (transient-define-prefix tlon-clock-menu ()
   "`clock' menu."

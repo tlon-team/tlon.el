@@ -295,19 +295,19 @@ are the source terms sent to the AI."
   "Parse the CLEAN-RESPONSE string into a list of translation strings."
   (split-string clean-response "\n" t))
 
-(defun tlon-ai--validate-translation-list (received-translations missing-en-terms)
+(defun tlon-ai--validate-translation-list (received-translations source-terms)
   "Validate RECEIVED-TRANSLATIONS against MISSING-EN-TERMS.
 Warns if lengths differ but proceeds with the minimum available.
 Returns the potentially truncated list of RECEIVED-TRANSLATIONS."
   (let ((num-received (length received-translations))
-        (num-expected (length missing-en-terms)))
+        (num-expected (length source-terms)))
     (when (/= num-received num-expected)
       (message "Warning: Verification AI returned %d translation lines, but %d were expected. Processing the %d available..."
                num-received num-expected (min num-received num-expected)))
     ;; Return the list truncated to the minimum length to avoid errors later
     (seq-subseq received-translations 0 (min num-received num-expected)))) ; Maintain original order
 
-(defun tlon-ai--create-translation-pairs (validated-translations missing-en-terms)
+(defun tlon-ai--create-translation-pairs (validated-translations source-terms)
   "Create a list of (EN-TERM . TRANSLATION) pairs.
 VALIDATED-TRANSLATIONS is the list of translation strings.
 MISSING-EN-TERMS is the corresponding list of English terms.
@@ -316,7 +316,7 @@ Ensures translations are strings."
   (let ((translation-pairs '())
         (num-pairs (length validated-translations))) ; Use length of validated list
     (dotimes (i num-pairs)
-      (let* ((en-term (elt missing-en-terms i))
+      (let* ((en-term (elt source-terms i))
              (translation (elt validated-translations i)))
         (unless (stringp translation)
           (error "Invalid non-string translation format in verified AI response line %d: %S" (1+ i) translation))

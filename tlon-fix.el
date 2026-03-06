@@ -33,6 +33,8 @@
 
 ;;;; Variables
 
+;;; French translation fixes
+
 (defconst tlon-fix-french-translation
   '((") - \\[" . ") • [")
     (" - " . " — ")
@@ -104,6 +106,8 @@
     ("»" . " »")
     ("  " . " "))
   "Search and replace pairs for fixing common issues in French translations.")
+
+;;; Italian translation fixes
 
 (defconst tlon-fix-italian-translation
   '((") - \\[" . ") • [")
@@ -296,7 +300,7 @@ If KEEP-CASE is non-nil, keep the case of the matched text."
 
 ;;;###autoload
 (defun tlon-manual-fix-number-ranges ()
-  "Prompt the user to replace hyphens with em dashes, when appropriate."
+  "Prompt the user to replace hyphens with en dashes, when appropriate."
   (interactive)
   (tlon-manual-fix '("\\([ \\[]\\)\\([[:digit:]]\\{1,12\\}\\)-\\([[:digit:]]\\{1,12\\}\\)\\([,.:;?!   ]\\)")
 		   "\\1\\2–\\3\\4"))

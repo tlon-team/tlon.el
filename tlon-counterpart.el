@@ -292,6 +292,8 @@ in the other window."
 			     tlon-yaml-delimiter))
 		       (point-min)))
 	(markdown-forward-paragraph (- paragraphs offset))
+	;; Advance past the paragraph delimiter so point lands inside the
+	;; target paragraph, not on its boundary.
 	(goto-char (1+ (point))))
     (message "Counterpart not found for file `%s'. Call `tlon-yaml-guess-english-counterpart' from translation" file)))
 

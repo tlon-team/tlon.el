@@ -49,6 +49,11 @@
 
 ;;;; Constants
 
+(defconst tlon-dub-segment-gap-seconds 0.040
+  "Gap in seconds subtracted from segment boundaries to avoid overlap.
+This corresponds to approximately one video frame at 25fps, preventing
+ffmpeg from including frames that belong to the next segment.")
+
 (defconst tlon-dub-api-base-url "https://api.elevenlabs.io/v1"
   "Base URL for the ElevenLabs API.")
 
@@ -369,7 +374,7 @@ Returns the path to the OUTPUT-FILE-PATH."
 (defun tlon-dub-resegment-srt (srt-file &optional min-duration)
   "Resegment SRT-FILE and write a new file with larger segments.
 A new segment starts whenever the speaker changes and every segment is at
-least MIN-DURATION seconds (default 30).  Subject to these constraints, the
+least MIN-DURATION seconds (default 5).  Subject to these constraints, the
 segments are as short as possible.  The new file is written next to the
 original with the suffix “-resegmented.srt” and the list of segments is
 returned."
@@ -925,7 +930,7 @@ coincide with those specified in the timestamp file."
          (end-secs (if (< i (1- (length timestamps)))
                        (- (tlon-dub--dot-timestamp-to-seconds
                            (nth (1+ i) timestamps))
-			  0.040)
+			  tlon-dub-segment-gap-seconds)
                      duration))
          (end-str (when end-secs (tlon-dub--seconds-to-dot-timestamp end-secs)))
          (input-ext (downcase (or (file-name-extension video-file) "mp4")))
@@ -1100,7 +1105,7 @@ the end of the audio for the last part. Parts are saved as
                (end-secs (if (< i (1- (length timestamps)))
                              (- (tlon-dub--dot-timestamp-to-seconds
                                  (nth (1+ i) timestamps))
-                                0.040)
+                                tlon-dub-segment-gap-seconds)
                            duration))
                (end-str (when end-secs (tlon-dub--seconds-to-dot-timestamp end-secs)))
                (outfile (expand-file-name

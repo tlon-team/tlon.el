@@ -206,6 +206,8 @@ DIR is the directory where the repo is stored."
 	    ,abbrev
 	    ,dir))))
 
+;; Mirrors the Magit repo menu (`tlon-magit-repo-menu' above) but opens
+;; repos in Dired instead of Magit status.
 ;;;###autoload (autoload 'tlon-dired-repo-menu "tlon-dispatch" nil t)
 (transient-define-prefix tlon-dired-repo-menu ()
   "Browse a Tlön repo in Dired."

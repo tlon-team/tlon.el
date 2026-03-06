@@ -115,14 +115,14 @@ The placeholder %s is replaced with either \"light\" or \"dark\".")
 ;;;;; Load palettes
 
 ;;;###autoload
-(defun tlon-color-load-palette (palette &optional language)
-  "Load color PALETTE for file in LANGUAGE.
-If LANGUAGE is nil, load it for both CSS and JS files."
+(defun tlon-color-load-palette (palette &optional target-format)
+  "Load color PALETTE for file in TARGET-FORMAT.
+If TARGET-FORMAT is nil, load it for both CSS and JS files."
   (interactive (tlon-color-read-palette))
-  (let ((languages (if language (list language) '(css js))))
-    (dolist (language languages)
-      (tlon-color-remove-colors-section language)
-      (tlon-color-insert-colors-section palette language))))
+  (let ((formats (if target-format (list target-format) '(css js))))
+    (dolist (fmt formats)
+      (tlon-color-remove-colors-section fmt)
+      (tlon-color-insert-colors-section palette fmt))))
 
 ;;;;;; Encoding
 
@@ -335,7 +335,7 @@ COMPONENT can be either \"h\", \"s\" or \"l\". DIRECTION can be either `+' or
   (tlon-color-change-value-at-point "h" "-"))
 
 (defun tlon-color-change-hue-at-point (change)
-  "Decrease the hue of the color at point by CHANGE."
+  "Change the hue of the color at point by CHANGE."
   (interactive "sChange (+ or - follow by step): ")
   (let ((direction (substring change 0 1))
 	(step (string-to-number (substring change 1))))
@@ -354,7 +354,7 @@ COMPONENT can be either \"h\", \"s\" or \"l\". DIRECTION can be either `+' or
   (tlon-color-change-value-at-point "s" "-"))
 
 (defun tlon-color-change-saturation-at-point (change)
-  "Decrease the saturation of the color at point by CHANGE."
+  "Change the saturation of the color at point by CHANGE."
   (interactive "sChange (+ or - follow by step): ")
   (let ((direction (substring change 0 1))
 	(step (string-to-number (substring change 1))))
@@ -373,7 +373,7 @@ COMPONENT can be either \"h\", \"s\" or \"l\". DIRECTION can be either `+' or
   (tlon-color-change-value-at-point "l" "-"))
 
 (defun tlon-color-change-lightness-at-point (change)
-  "Decrease the lightness of the color at point by CHANGE."
+  "Change the lightness of the color at point by CHANGE."
   (interactive "sChange (+ or - follow by step): ")
   (let ((direction (substring change 0 1))
 	(step (string-to-number (substring change 1))))

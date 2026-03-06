@@ -412,6 +412,7 @@ Return the modified entry string."
         (bibtex-mode)
         (goto-char (point-min))
         (if (bibtex-search-entry key)
+            ;; shadow kill-ring so bibtex-kill-entry doesn't clobber the user's clipboard
             (progn (let ((kill-ring kill-ring)
                          (kill-ring-yank-pointer kill-ring-yank-pointer))
                      (bibtex-kill-entry))
@@ -1358,6 +1359,7 @@ highlighted with `diff-refine-added` / `diff-refine-removed`."
             ;; Get a *single* unified diff and strip the header
             (setq diff-hunk
                   (with-temp-buffer
+                    ;; request 1000 lines of context to ensure the entire file appears as a single diff hunk
                     (call-process diff-exe nil t nil "-U1000" before-file after-file)
                     (goto-char (point-min))
                     (when (re-search-forward "^@@" nil t)
@@ -1492,6 +1494,7 @@ If there are no differences, return nil."
   (let (diff-output)
     (let ((diff-buffer (generate-new-buffer " *db-diff*")))
       (unwind-protect
+	  ;; request 1000 lines of context to ensure the entire file appears as a single diff hunk
 	  (let ((exit-code
 		 (call-process "diff" nil diff-buffer nil "-U1000"
 			       upstream-file local-file)))

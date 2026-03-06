@@ -145,6 +145,9 @@ or the function itself."
              (buf (get-buffer-create "/Paragraph Pairs/")))
         (with-current-buffer buf
           (erase-buffer)
+          ;; NOTE: This display format is duplicated from
+          ;; `tlon-display-paragraph-pairs'; consider extracting a
+          ;; shared helper if it changes.
           (dolist (pair pairs)
             (insert "Original:\n"
                     (or (car pair) "[Missing paragraph]")

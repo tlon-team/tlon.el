@@ -48,6 +48,7 @@
 
 (defun tlon-get-target-buffer ()
   "Return the buffer that `read-aloud' should read."
+  ;; `markdown-preview' creates buffers with this name pattern.
   (let ((buffer-list (cl-remove-if-not
 		      (lambda (buffer)
 			(string-match-p (regexp-quote "**markdown-output* # eww*") (buffer-name buffer)))

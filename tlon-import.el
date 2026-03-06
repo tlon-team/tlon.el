@@ -379,7 +379,7 @@ The URL is constructed using the tag's slug."
 
 ;;;;; EAF validation
 
-(defun tlon-eaf-base-regexp (url)
+(defun tlon-eaf-url-p (url)
   "Return t if URL is an EAF URL, nil otherwise."
   (not (null (string-match tlon-eaf-base-regexp url))))
 

@@ -89,7 +89,7 @@ Assumes key is enclosed in backticks."
 
 (defun tlon-get-clock-action ()
   "Return action in clock.
-Assumes action is first word of clocked task."
+Assumes action is second word of clocked task."
   ;; as rough validation, we check that the clocked heading contains a file
   (tlon-get-clock-key)
   (let ((action (nth 1 (split-string (tlon-get-clock))))

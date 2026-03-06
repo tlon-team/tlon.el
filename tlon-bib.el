@@ -654,12 +654,10 @@ total number of replacements made."
 		 "")))
     total))
 
-;;;###autoload
-(defun tlon-bib-remove-url-fields-with-doi (&optional save)
-  "Remove the `url' field from entries with a `doi' field in the current buffer.
-If SAVE is non-nil (interactively with a prefix argument), save the buffer after
-modification. Display a message reporting how many entries were updated."
-  (interactive "P")
+(defun tlon-bib-remove-url-fields-with-field (field &optional save)
+  "Remove the `url' field from entries that also have FIELD in the current buffer.
+If SAVE is non-nil, save the buffer after modification.  Display a message
+reporting how many entries were updated."
   (tlon-ensure-bibtex)
   (save-excursion
     (widen)
@@ -671,7 +669,7 @@ modification. Display a message reporting how many entries were updated."
 	   (goto-char start)
 	   (save-restriction
 	     (bibtex-narrow-to-entry)
-	     (when (and (bibtex-extras-get-field "doi")
+	     (when (and (bibtex-extras-get-field field)
 			(bibtex-extras-get-field "url"))
 	       ;; completely remove the url field instead of only clearing its value
 	       (when-let ((url-bounds (bibtex-search-forward-field "url" t)))
@@ -684,31 +682,20 @@ modification. Display a message reporting how many entries were updated."
 	       removed (if (= removed 1) "y" "ies")))))
 
 ;;;###autoload
+(defun tlon-bib-remove-url-fields-with-doi (&optional save)
+  "Remove the `url' field from entries with a `doi' field in the current buffer.
+If SAVE is non-nil (interactively with a prefix argument), save the buffer after
+modification. Display a message reporting how many entries were updated."
+  (interactive "P")
+  (tlon-bib-remove-url-fields-with-field "doi" save))
+
+;;;###autoload
 (defun tlon-bib-remove-url-fields-with-isbn (&optional save)
   "Remove the `url' field from entries with an `isbn' field in the current buffer.
 If SAVE is non-nil (interactively with a prefix argument), save the buffer after
 modification. Display a message reporting how many entries were updated."
   (interactive "P")
-  (tlon-ensure-bibtex)
-  (save-excursion
-    (widen)
-    (goto-char (point-min))
-    (let ((removed 0))
-      (bibtex-map-entries
-       (lambda (_key start _end)
-	 (save-excursion
-	   (goto-char start)
-	   (save-restriction
-	     (bibtex-narrow-to-entry)
-	     (when (and (bibtex-extras-get-field "isbn")
-			(bibtex-extras-get-field "url"))
-	       (when-let ((url-bounds (bibtex-search-forward-field "url" t)))
-		 (goto-char (bibtex-start-of-name-in-field url-bounds))
-		 (bibtex-kill-field nil t))
-	       (cl-incf removed))))))
-      (when save (save-buffer))
-      (message "Removed url field from %d entr%s."
-	       removed (if (= removed 1) "y" "ies")))))
+  (tlon-bib-remove-url-fields-with-field "isbn" save))
 
 ;;;;; Autokey
 
@@ -1073,8 +1060,10 @@ Fields set in the new entry:
     (if mode-ebib
 	;; -------- EBIB --------
 	(progn
-	  (ebib-switch-to-database-nth 3)      ; translation DB
+	  ;; translation DB (fragile: depends on load order in ebib; nth 3 = 4th database)
+	  (ebib-switch-to-database-nth 3)
 	  (ebib-add-entry)                     ; create skeleton
+	  ;; brief pause to let ebib's internal state settle before modifying the new entry
 	  (sleep-for 0.05)
 	  ;; change key first
 	  (ebib--update-keyname new-key)
@@ -1557,10 +1546,10 @@ per-language JSON file."
 			 (push key short-abstracts))))
 	      (push key no-abstract)))
 	  (widen)))
-      (setq long-abstracts (tlon-bibt-remove-translated-entries long-abstracts)
-	    short-abstracts (tlon-bibt-remove-translated-entries short-abstracts)
-	    minimal-abstracts (tlon-bibt-remove-translated-entries minimal-abstracts)
-	    no-abstract (tlon-bibt-remove-translated-entries no-abstract))
+      (setq long-abstracts (tlon-bib-remove-translated-entries long-abstracts)
+	    short-abstracts (tlon-bib-remove-translated-entries short-abstracts)
+	    minimal-abstracts (tlon-bib-remove-translated-entries minimal-abstracts)
+	    no-abstract (tlon-bib-remove-translated-entries no-abstract))
       (let ((buffer-name "*tlon-bib-entries-report*"))
 	(with-current-buffer (get-buffer-create buffer-name)
 	  (erase-buffer)
@@ -1578,7 +1567,7 @@ No abstract: %s"
 	  (pop-to-buffer buffer-name))))))
 
 (declare-function citar-extras-open-in-ebib "citar-extras")
-(defun tlon-bibt-remove-translated-entries (list)
+(defun tlon-bib-remove-translated-entries (list)
   "Remove entries in LIST if they are translated entries."
   (let (new-list)
     (dolist (key list new-list)
@@ -1684,6 +1673,16 @@ ORIG-FUN is the original function, ARGS are the arguments passed to it."
 
 ;;;;; Citation Replacement
 
+;; Format arguments for `tlon-bib-replace-citations-prompt' (supplied by
+;; `tlon-bib-replace-citations-prompt-examples'):
+;;   1 (%1$s) — cite format pattern, e.g. `<Cite bibKey="KEY" />'
+;;   2 (%s)   — example: single cite with context
+;;   3 (%s)   — example: cite inside parentheses
+;;   4 (%s)   — example: full citation replacement
+;;   5 (%5$s) — example: cite with locator
+;;   6 (%s)   — additional note (e.g. consecutive-citation syntax)
+;; After the first `format' pass, the remaining `%%s' become `%s' and are
+;; filled by the second `format' call with FILE and FILE-CONTENTS.
 (defconst tlon-bib-replace-citations-prompt
   "You are an expert academic editor. Your task is to process a text file, identify all bibliographic citations within it, and replace them with structured citation tags.
 
@@ -1717,7 +1716,7 @@ Here is the process you must follow:
 Here is the process you must follow:
 1. In the text provided at the end of these instructions, find all citations enclosed in `{!` and `!}`.
 2. For each citation found, you must find a unique identifier for the work, such as a URL, DOI, or ISBN. The citation string itself may contain it. If not, you must use the `search` tool to find one online.
-3. When you succeed in finding an identifier, use the `add_bib_entry` tool to add a new entry to the bibliography file. The `bibfile` parameter for this tool MUST be '%s'. The `identifier` parameter should be the URL, DOI, or ISBN you found. Rarely, `add_bib_ebtry` may fail to add the work. In these cases, just proceed to the next missing citation.
+3. When you succeed in finding an identifier, use the `add_bib_entry` tool to add a new entry to the bibliography file. The `bibfile` parameter for this tool MUST be '%s'. The `identifier` parameter should be the URL, DOI, or ISBN you found. Rarely, `add_bib_entry` may fail to add the work. In these cases, just proceed to the next missing citation.
 4. After adding the entry, replace the original citation string in the text with the format `<Cite bibKey=\"KEY\" />`, where `KEY` is the BibTeX key generated by the `add_bib_entry` tool. This key is returned by 'add_bib_entry' after adding the entry. For example, if they key corresponding to '{!Smith, 2019$}' is 'Liu2021Covid19And', you should replace '{!Smith, 2019$}' with '<Cite bibKey=\"Smith2019EarlyCovidVaccines\" />'.
 5. If you do not find a unique identifier for a citation, you must leave it as is. Do NOT try to find an alternative work or entry to replace it with. Just leave the citation as '{!CITATION$}'.
 6. After processing all missing citations, use the `edit_file` tool to apply all the replacements to `%s', which is the file from which the text was taken. You should perform all edits in a single operation if possible.

@@ -619,12 +619,15 @@ and the third group captures the collection ID.")
 
 ;;;;; Abstracts
 
+;; editorial guideline for content length
 (defconst tlon-max-abstract-length 300
   "Maximum length of an abstract, in words.")
 
+;; editorial guideline for content length
 (defconst tlon-min-abstract-length 45
   "Minimum length of an abstract, in words.")
 
+;; editorial guideline for content length
 (defconst tlon-synopsis-length 2000
   "Maximum length of a synopsis, in words.")
 

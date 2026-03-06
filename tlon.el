@@ -294,7 +294,7 @@ The commit message is ACTION followed by the name of FILE."
     (when (string= (magit-get-current-branch) "main")
       ;; TODO: Replace interactive call with programmatic way of doing this
       (call-interactively #'magit-pull-from-upstream nil)
-      (sleep-for 2))
+      (sleep-for 2)) ; wait for the async pull to finish before staging
     (magit-stage-file file)
     (tlon-create-commit action file)
     (call-interactively #'magit-push-current-to-pushremote)))

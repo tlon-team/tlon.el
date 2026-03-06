@@ -39,6 +39,9 @@
 
 ;;;; Variables
 
+;; Accept a broad set of HTTP status codes so lychee only flags genuinely
+;; dead URLs: 4xx client errors (except 400 and 401, which are often
+;; false positives from auth-gated pages) and 429 (rate-limited).
 (defconst tlon-lychee-accept-option
   "--accept 200,201,202,204,206,300,301,302,303,307,308,400,401,429"
   "Lychee flag to accept these HTTP status codes.")
@@ -442,6 +445,12 @@ respective file. This process is asynchronous and relies on helper functions."
     (message "This may take a while depending on the number of files and links.")
     (tlon-lychee--run-and-process cmd-string stdout-buffer stderr-file repo-dir)))
 
+(defun tlon-lychee--link-alive-p (status-text)
+  "Return non-nil if STATUS-TEXT indicates the link is alive or excluded."
+  (or (string-prefix-p "Ok" status-text)
+      (string-prefix-p "Cached(Ok" status-text)
+      (string-prefix-p "Excluded" status-text)))
+
 (defun tlon-lychee-ensure ()
   "Ensure the lychee executable is available."
   (unless (executable-find "lychee")
@@ -530,9 +539,7 @@ REPO-DIR is the repository root. STDERR-CONTENT is lychee's stderr output."
                    (status-details (cdr (assoc 'status link-status)))
                    (status-text (if (consp status-details) (cdr (assoc 'text status-details)) nil)))
               (when (and url status-text
-                         (not (or (string-prefix-p "Ok" status-text)
-                                  (string-prefix-p "Cached(Ok" status-text)
-                                  (string-prefix-p "Excluded" status-text))))
+                         (not (tlon-lychee--link-alive-p status-text)))
                 (cl-incf count)))))))
     count))
 
@@ -566,9 +573,7 @@ REPO-DIR is the root directory of the repository. Each item is a plist with
                    (status-details (cdr (assoc 'status link-status)))
                    (status-text (if (consp status-details) (cdr (assoc 'text status-details)) nil)))
               (when (and url status-text
-                         (not (or (string-prefix-p "Ok" status-text)
-                                  (string-prefix-p "Cached(Ok" status-text)
-                                  (string-prefix-p "Excluded" status-text)))
+                         (not (tlon-lychee--link-alive-p status-text))
                          (not (tlon-lychee--is-whitelisted-p url)))
                 (push (list :url url
                             :file-path full-file-path

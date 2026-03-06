@@ -96,7 +96,9 @@ Lazily initialized; use `tlon-deepl-get-key' to access.")
 			tlon-deepl-glossary-delete-callback)))
   "Alist of API calls and their parameters.
 The cdr of each cons cell is a list of the form
- (METHOD URL-SUFFIX CALLBACK JSON).")
+ (METHOD URL-SUFFIX CALLBACK JSON).
+URL-SUFFIX may be a string appended to `tlon-deepl-url-prefix' or a
+function that returns the full URL (e.g. for `glossary-delete').")
 
 (defvar tlon-deepl-glossaries nil
   "A list of glossaries retrieved from the DeepL API.")
@@ -309,7 +311,9 @@ whitelist, and finally treats a known glossary ID as support."
 
 (defconst tlon-deepl-newline-token "Nihil igitur mors est ad nos."
   "Placeholder string used to preserve newlines when using \"quality_optimized\".
-The string is replaced back to newlines after translation is received.")
+The string is replaced back to newlines after translation is received.
+The value is an obscure Latin sentence (Lucretius) chosen to be extremely
+unlikely to appear in normal text, so it can be safely round-tripped.")
 
 (defun tlon-deepl--model-uses-newline-workaround-p ()
   "Return non-nil if the newline workaround must be applied."

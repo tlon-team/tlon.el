@@ -337,7 +337,10 @@ The `cdr` values should be present in `org-todo-keywords'.")
   "List of admissible TODO tags.")
 
 (defconst tlon-forg-sort-by-tags-regexp
-  "[[:digit:]]\\{2\\}_[[:digit:]]\\{2\\}")
+  "[[:digit:]]\\{2\\}_[[:digit:]]\\{2\\}"
+  "Regexp matching a two-part numeric tag in the format NN_NN.
+Tags of this form encode a sort key used by `tlon-forg-sort-by-tag' to order
+Org entries.  Each part is a two-digit number, separated by an underscore.")
 
 (defconst tlon-forg-orgit-regexp
   "\\[\\[orgit-topic:\\(?1:[^]]+\\)\\]\\[\\(?2:.*?\\)\\]\\]"
@@ -386,8 +389,8 @@ Signal an error if pandoc is not in PATH."
   "Return ISSUE NUMBER in REPO-DIR, waiting until it exists locally.
 While waiting, repeatedly pulls FORGE-REPO to refresh the database.
 
-TIMEOUT  – seconds to wait (default 10)
-INTERVAL – seconds between retries (default 0.5)
+TIMEOUT  – seconds to wait (default 30)
+INTERVAL – seconds between retries (default 1.0)
 
 Signal a `user-error' if the issue cannot be found in time."
   (let* ((timeout  (or timeout 30))     ; wait up-to 30 s
@@ -1109,6 +1112,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
   (let ((issue (or issue (forge-current-topic)))
 	(retries 0))
     (tlon-set-assignee (tlon-user-lookup :github :name user-full-name) issue)
+    ;; Poll for up to 15 seconds (30 retries × 0.5s) for the GitHub API change to propagate
     (while (and (not (tlon-assignee-is-current-user-p issue))
 		(< retries 30))
       (tlon-pull-silently "Changing assignee...")
@@ -1932,7 +1936,7 @@ comparison in `org-sort-entries'. Lower values sort earlier."
   (let* ((tags (org-get-tags))
 	 (archive-priority 2000000000) ; Very high number to ensure archive entries sort last
 	 (issue (tlon-get-issue))
-	 (max-priority 999)
+	 (max-priority 999) ; maximum possible priority value (3 digits)
 	 (status-priority max-priority)
 	 (project-position max-priority)
 	 (issue-number max-priority))
@@ -1948,13 +1952,13 @@ comparison in `org-sort-entries'. Lower values sort earlier."
 		 (todo-order tlon-todo-keywords)
 		 (done-keyword "DONE")) ; Assuming "DONE" is the keyword for completed tasks
 	    (cond
-	     ((null status-keyword) (setq status-priority 100)) ; No status
-	     ((string= status-keyword done-keyword) (setq status-priority 99)) ; DONE status
+	     ((null status-keyword) (setq status-priority 100)) ; no status keyword sorts after all explicit states
+	     ((string= status-keyword done-keyword) (setq status-priority 99)) ; DONE sorts just before "no status"
 	     (t
 	      (let ((pos (cl-position status-keyword todo-order :test #'string=)))
 		(if pos
 		    (setq status-priority pos)
-		  (setq status-priority 50)))))) ; Default for other active states
+		  (setq status-priority 50)))))) ; default priority for unrecognized active states
 	  ;; Calculate project-position
 	  (when-let* ((repo-obj (forge-get-repository issue))
 		      (owner (oref repo-obj owner))
@@ -1972,7 +1976,8 @@ comparison in `org-sort-entries'. Lower values sort earlier."
 	      (if found-idx
 		  (setq project-position found-idx)
 		(setq project-position max-priority)))) ; Issue not in project list
-	  ;; Return a single number that encodes all three priorities
+	  ;; Composite sort key: [status (millions)] [project-position (thousands)] [issue-number (units)]
+	  ;; Lower values sort earlier in each tier.
 	  (+ (* status-priority 1000000) (* project-position 1000) issue-number))))))
 
 ;;;;;; status

@@ -234,7 +234,7 @@ function tried to be a nudge in that direction."
 	    (unless (derived-mode-p 'forge-post-mode)
 	      (user-error "Timed out waiting for forge-post-mode")))
 	  (goto-char (point-max))
-	  (insert (format "- Discutir %s." link))
+	  (insert (format "- Discutir %s." link)) ; Spanish: "Discuss %s."
 	  (forge-post-submit))))
     (forge-create-post)
     (let ((deadline (+ (float-time) 30)))
@@ -243,7 +243,7 @@ function tried to be a nudge in that direction."
 	(sleep-for 0.1))
       (unless (derived-mode-p 'forge-post-mode)
 	(user-error "Timed out waiting for forge-post-mode")))
-    (insert (format "A discutir en %s." backlink))
+    (insert (format "A discutir en %s." backlink)) ; Spanish: "To discuss in %s."
     (forge-post-submit)))
 
 ;;;;; org-agenda integration
@@ -251,6 +251,7 @@ function tried to be a nudge in that direction."
 ;;;###autoload
 (defun tlon-set-meeting-buffers (&optional _ _)
   "Open meeting link and create or visit appropriate meeting issue."
+  ;; Only run on Pablo's machine; other team members don't use this workflow.
   (when (string= (system-name) "Pablos-MacBook-Pro.local")
     (let ((heading (org-get-heading t t t t))
 	  (time (format-time-string "%Y-%m-%d")))
@@ -315,7 +316,7 @@ PARTICIPANTS, using filename inference for initial participant suggestion."
       (insert (format "Starting diarization of %s using whisperx…\n\n"
                       audio-file)))
     (tlon-whisperx-diarize
-     audio-file "es" nil nil
+     audio-file "es" nil nil ; "es": meetings are conducted in Spanish
      (lambda (transcript-file _ok)
        (if (not transcript-file)
            (with-current-buffer output-buffer
@@ -370,6 +371,8 @@ saving."
        nil ; No extra string needed
        (lambda (response info)
          ;; Check if response is non-nil AND doesn't start with the known failure pattern
+         ;; "Okay, please provide" is a known AI failure pattern where the
+         ;; model echoes the prompt back instead of producing useful output.
          (if (and response (not (string-prefix-p "Okay, please provide" response)))
              (progn ; Success case: response exists and is not the failure message
                (let ((output-buffer (get-buffer "*Diarization Output*"))) ; Log success
@@ -759,6 +762,7 @@ to automatically process it using `tlon-meet-transcribe-and-summarize'."
     ("s"   "summarize transcript"       tlon-meet-summarize-transcript)
     ("a"   "transcribe & summarize"     tlon-meet-transcribe-and-summarize)]])
 
+;; Only auto-watch recordings on Pablo's machine.
 (when (string= (system-name) "Pablos-MacBook-Pro.local")
   (tlon-meet-watch-recordings))
 

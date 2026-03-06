@@ -536,29 +536,20 @@ such entry exists, store it in abstract-translations.json."
 		   "Cannot translate abstract for %s: missing original abstract or language info" key)
                 (let ((mode (tlon-translate--deepl-glossary-mode src-code dst-code)))
                   (pcase mode
-                    ('require
-                     (tlon-translate--log "Translating abstract of %s → setting into %s" translation-of key)
-                     (tlon-deepl-translate
-                      (tlon-bib-remove-braces orig-abstract) dst-code src-code
-                      (lambda ()
-                        (let ((translated (tlon-translate--get-deepl-translation-from-buffer)))
-                          (when (and translated (stringp translated)
-                                     (not (string-blank-p (string-trim translated))))
-                            (tlon-translate--db-set-abstract key translated)
-                            (tlon-translate--log "Set abstract for %s (from %s)" key translation-of))))
-                      nil))
-                    ('allow
-                     (tlon-translate--log "Translating abstract of %s → setting into %s (no glossary required)"
-					  translation-of key)
-                     (tlon-deepl-translate
-                      (tlon-bib-remove-braces orig-abstract) dst-code src-code
-                      (lambda ()
-                        (let ((translated (tlon-translate--get-deepl-translation-from-buffer)))
-                          (when (and translated (stringp translated)
-                                     (not (string-blank-p (string-trim translated))))
-                            (tlon-translate--db-set-abstract key translated)
-                            (tlon-translate--log "Set abstract for %s (from %s)" key translation-of))))
-                      t))
+                    ((or 'require 'allow)
+                     (let ((no-glossary (tlon-translate--glossary-mode-no-glossary-p mode)))
+                       (tlon-translate--log "Translating abstract of %s → setting into %s%s"
+                                            translation-of key
+                                            (if no-glossary " (no glossary required)" ""))
+                       (tlon-deepl-translate
+                        (tlon-bib-remove-braces orig-abstract) dst-code src-code
+                        (lambda ()
+                          (let ((translated (tlon-translate--get-deepl-translation-from-buffer)))
+                            (when (and translated (stringp translated)
+                                       (not (string-blank-p (string-trim translated))))
+                              (tlon-translate--db-set-abstract key translated)
+                              (tlon-translate--log "Set abstract for %s (from %s)" key translation-of))))
+                        no-glossary)))
                     (_
                      (tlon-translate--log "Skipping abstract for %s -> %s: no suitable glossary found"
 					  translation-of dst-code))))))
@@ -925,18 +916,15 @@ nil, use `tlon-project-target-languages'."
                       (tlon-translate--get-existing-abstract-translation key target-lang))
             (let ((mode (tlon-translate--deepl-glossary-mode source-lang-code target-lang)))
               (pcase mode
-                ('require
-                 (push language initiated-langs)
-                 (message "Initiating translation for %s -> %s" key target-lang)
-                 (tlon-deepl-translate (tlon-bib-remove-braces text) target-lang source-lang-code
-                                       (tlon-translate--json-abstract-write-callback key target-lang)
-                                       nil))
-                ('allow
-                 (push language initiated-langs)
-                 (message "Initiating translation for %s -> %s (no glossary required)" key target-lang)
-                 (tlon-deepl-translate (tlon-bib-remove-braces text) target-lang source-lang-code
-                                       (tlon-translate--json-abstract-write-callback key target-lang)
-                                       t))
+                ((or 'require 'allow)
+                 (let ((no-glossary (tlon-translate--glossary-mode-no-glossary-p mode)))
+                   (push language initiated-langs)
+                   (message "Initiating translation for %s -> %s%s"
+                            key target-lang
+                            (if no-glossary " (no glossary required)" ""))
+                   (tlon-deepl-translate (tlon-bib-remove-braces text) target-lang source-lang-code
+                                         (tlon-translate--json-abstract-write-callback key target-lang)
+                                         no-glossary)))
                 (_
                  (message "Skipping %s -> %s: no suitable glossary found" key target-lang)))))))
       (when initiated-langs
@@ -974,6 +962,13 @@ The return value is one of the following symbols:
      ((and both-in-project glossary-id) 'require)
      ((not both-in-project) 'allow)
      (t 'skip))))
+
+(defun tlon-translate--glossary-mode-no-glossary-p (mode)
+  "Return non-nil when glossary MODE means no glossary is required.
+MODE is a symbol returned by `tlon-translate--deepl-glossary-mode':
+`require' means a glossary exists (no-glossary nil), `allow' means
+translation can proceed without one (no-glossary t)."
+  (eq mode 'allow))
 
 (defun tlon-translate--suppress-file-change-prompt (file thunk)
   "Call THUNK while suppressing file-change prompts, then silently revert FILE.
@@ -1155,6 +1150,7 @@ TYPE can be `errors' or `flow'."
                               ('errors tlon-translate-spot-errors-prompt)
                               ('flow tlon-translate-improve-flow-prompt)))
 	   (prompt-elts (delq nil (list prompt-template translation-file (capitalize language))))
+	   ;; source language is always English because all originals are in English
 	   (src-code "en")
            (range tlon-translate-restrict-revision-to-paragraphs))
       (cl-labels
