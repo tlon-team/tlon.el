@@ -225,10 +225,7 @@ Returns the translated text as a string, or nil if parsing fails."
   (goto-char (point-min))
   (let (translation)
     (condition-case err
-        (let* ((json-array-type 'list)
-               (json-key-type 'string)
-               (json-object-type 'alist)
-               (json-data (json-read))
+        (let* ((json-data (tlon-read-json))
                (translations (alist-get "translations" json-data nil nil #'string=))
                (first-translation (car translations)))
           (cond
@@ -357,10 +354,8 @@ consistently, so callers do not need to invoke
 Accepts and ignores any extra arguments so it can be safely called
 even if the caller passes data."
   (goto-char (point-min))
-  (let ((json-array-type 'list)
-        (json-key-type 'string))
-    (setq tlon-deepl-glossaries
-          (alist-get "glossaries" (tlon-read-json) nil nil #'string=)))
+  (setq tlon-deepl-glossaries
+        (alist-get "glossaries" (tlon-read-json) nil nil #'string=))
   (message "Read glossaries from DeepL API."))
 
 ;;;;;; Supported language pairs
@@ -374,27 +369,24 @@ even if the caller passes data."
 (defun tlon-deepl-language-pairs-callback (&rest _)
   "Callback for `tlon-deepl-refresh-supported-glossary-languages'."
   (goto-char (point-min))
-  (let ((json-array-type 'list)
-        (json-key-type 'string)
-        (json-object-type 'alist))
-    (let* ((data (json-read))
-           (pairs (alist-get "supported_languages" data nil nil #'string=))
-           (acc-pairs '())
-           (codes (make-hash-table :test 'equal)))
-      (dolist (item pairs)
-        (let ((src (alist-get "source_lang" item nil nil #'string=))
-              (tgt (alist-get "target_lang" item nil nil #'string=)))
-          (when (and src tgt)
-            (push (cons src tgt) acc-pairs)
-            (puthash src t codes)
-            (puthash tgt t codes))))
-      (setq tlon-deepl-supported-glossary-pairs (nreverse acc-pairs))
-      (let (code-list)
-        (maphash (lambda (k _v) (push k code-list)) codes)
-        (setq tlon-deepl-supported-glossary-languages (nreverse (seq-uniq code-list))))
-      (message "Updated supported glossary pairs: %d pair(s), %d language code(s)."
-               (length tlon-deepl-supported-glossary-pairs)
-               (length tlon-deepl-supported-glossary-languages)))))
+  (let* ((data (tlon-read-json))
+         (pairs (alist-get "supported_languages" data nil nil #'string=))
+         (acc-pairs '())
+         (codes (make-hash-table :test 'equal)))
+    (dolist (item pairs)
+      (let ((src (alist-get "source_lang" item nil nil #'string=))
+            (tgt (alist-get "target_lang" item nil nil #'string=)))
+        (when (and src tgt)
+          (push (cons src tgt) acc-pairs)
+          (puthash src t codes)
+          (puthash tgt t codes))))
+    (setq tlon-deepl-supported-glossary-pairs (nreverse acc-pairs))
+    (let (code-list)
+      (maphash (lambda (k _v) (push k code-list)) codes)
+      (setq tlon-deepl-supported-glossary-languages (nreverse (seq-uniq code-list))))
+    (message "Updated supported glossary pairs: %d pair(s), %d language code(s)."
+             (length tlon-deepl-supported-glossary-pairs)
+             (length tlon-deepl-supported-glossary-languages))))
 
 ;;;;;; Create glossary
 

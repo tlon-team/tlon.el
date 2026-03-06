@@ -1187,12 +1187,7 @@ Returns the parsed data (hash-table) or nil on error."
     (with-current-buffer buffer
       (goto-char (point-min))
       (when (search-forward-regexp "^$" nil t) ; Move past headers
-	(let ((json-object-type 'hash-table)
-	      (json-array-type 'list)
-	      (json-key-type 'string))
-	  (condition-case err
-	      (json-read)
-	    (error (message "Error parsing JSON response: %s" err) nil)))))))
+	(tlon-read-json nil 'hash-table)))))
 
 (defun tlon-db--display-result-buffer (title formatter-fn data)
   "Display TITLE and formatted DATA (via FORMATTER-FN) in a dedicated buffer.

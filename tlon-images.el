@@ -284,10 +284,7 @@ The images are opened conditional on the value of
   (when (search-forward-regexp "^$" nil t)
     (delete-region (point-min) (point))
     (forward-char)
-    (let* ((json-object-type 'alist)
-           (json-array-type 'list)
-           (json-key-type 'string)
-           (json-response (json-read)))
+    (let ((json-response (tlon-read-json)))
       (kill-buffer)
       json-response)))
 
