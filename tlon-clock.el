@@ -98,15 +98,14 @@ Assumes action is second word of clocked task."
 	action
       (user-error "I wasn't able to find a relevant action in clocked heading"))))
 
-(defun tlon-get-clock-label ()
-  "Return label associated with action in heading at point."
-  (let ((label (tlon-label-lookup :label :action (tlon-get-clock-action))))
-    label))
+(defun tlon-get-clock-phase ()
+  "Return phase associated with action in heading at point."
+  (tlon-label-lookup :label :action (tlon-get-clock-action)))
 
 (defvar tlon-job-labels)
-(defun tlon-get-clock-next-label ()
-  "Return label associated with the action after the one in heading at point."
-  (tlon-next-value :label (tlon-get-clock-label) tlon-job-labels))
+(defun tlon-get-clock-next-phase ()
+  "Return phase associated with the action after the one in heading at point."
+  (tlon-next-value :label (tlon-get-clock-phase) tlon-job-labels))
 
 (defun tlon-next-value (property value alist)
   "Return the \"next\" value of PROPERTY with VALUE in ALIST."

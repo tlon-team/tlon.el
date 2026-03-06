@@ -84,7 +84,7 @@ This variable should not be set manually.")
   (when (derived-mode-p 'org-mode)
     (org-clock-in))
   (save-buffer)
-  (let* ((action (tlon-jobs-get-action-in-label (tlon-get-clock-label)))
+  (let* ((action (tlon-jobs-get-action-in-phase (tlon-get-clock-phase)))
 	 (stage (pcase major-mode
 		  ('org-mode 'initialize)
 		  ('markdown-mode 'finalize)
@@ -95,10 +95,10 @@ This variable should not be set manually.")
 	(funcall fun arg)
       (funcall fun))))
 
-(defun tlon-jobs-get-action-in-label (label)
-  "Return action associated with LABEL."
-  (or (cadr (split-string label))
-      (user-error "Could not extract action from label: %s" label)))
+(defun tlon-jobs-get-action-in-phase (phase)
+  "Return action associated with PHASE."
+  (or (cadr (split-string phase))
+      (user-error "Could not extract action from phase: %s" phase)))
 
 (autoload 'orgit-topic-open "orgit-forge")
 (autoload 'magit-pull-from-upstream "magit-pull")
@@ -115,7 +115,7 @@ for the process that is being initialized."
 	 (file (tlon-metadata-lookup metadata "file" "original_key" key))
 	 (repo (tlon-get-repo-from-file file))
 	 (default-directory repo))
-    (tlon-check-label-and-assignee repo)
+    (tlon-check-phase-and-assignee repo)
     (tlon-check-branch "main" repo)
     (call-interactively #'magit-pull-from-upstream nil)
     (sleep-for 2) ; wait for the async pull to finish before proceeding
@@ -155,12 +155,12 @@ check that current file matches translation."
       (tlon-set-paths-from-clock)
     (let* ((repo (tlon-get-repo))
 	   (current-action (tlon-get-clock-action))
-	   (next-label (tlon-get-clock-next-label))
+	   (next-phase (tlon-get-clock-next-phase))
 	   (next-assignee (tlon-jobs-get-next-assignee)))
       ;; MAYBE: check that it is a repo of `translations' subtype
       ;; thought this would have to exclude “process” stage
-      (tlon-check-branch "main" repo)
-      (tlon-check-label-and-assignee repo)
+      (tlon-check-branch “main” repo)
+      (tlon-check-phase-and-assignee repo)
       (tlon-check-file
        (when (string= current-action "Process")
 	 'original))
@@ -180,33 +180,33 @@ check that current file matches translation."
       (when (string= current-action "Process")
 	(tlon-commit-and-push current-action original-path))
       (tlon-commit-and-push current-action translation-path)
-      (tlon-jobs-act-on-issue original-key next-label next-assignee
+      (tlon-jobs-act-on-issue original-key next-phase next-assignee
 			      (when (string= current-action "Review")
 				'close))
-      (message "Marked as DONE. Set label to `%s' and assignee to `%s'"
-	       next-label next-assignee))
+      (message "Marked as DONE. Set phase to `%s' and assignee to `%s'"
+	       next-phase next-assignee))
     (tlon-jobs-finalize-set-todos)))
 
-(defun tlon-jobs-act-on-issue (original-key label assignee &optional close)
-  "Apply LABEL and ASSIGNEE to issue associated with ORIGINAL-KEY.
+(defun tlon-jobs-act-on-issue (original-key phase assignee &optional close)
+  "Apply PHASE and ASSIGNEE to issue associated with ORIGINAL-KEY.
 If CLOSE is non-nil, close the issue."
   (let* ((issue-title (format "Job: `%s`" original-key))
 	 (issue (tlon-issue-lookup issue-title))
 	 (default-directory (tlon-get-repo 'error 'include-all)))
-    (tlon-set-labels `(,label) 'phase issue)
+    (tlon-set-labels `(,phase) 'phase issue)
     (tlon-set-assignee assignee issue)
     (when close
       (tlon-close-issue issue))))
 
 (defun tlon-jobs-get-next-assignee ()
-  "Get the next assignee based on the current user and clock label.
-This function returns the assignee designated for the next label if the current
-user is the user designated for the current label; otherwise, it returns the
+  "Get the next assignee based on the current user and clock phase.
+This function returns the assignee designated for the next phase if the current
+user is the user designated for the current phase; otherwise, it returns the
 substitute assignee."
   (let*
       ((current-user (tlon-user-lookup :github :name user-full-name))
-       (current-assignee (tlon-label-lookup :assignee :label (tlon-get-clock-label)))
-       (designated-next-assignee (tlon-label-lookup :assignee :label (tlon-get-clock-next-label)))
+       (current-assignee (tlon-label-lookup :assignee :label (tlon-get-clock-phase)))
+       (designated-next-assignee (tlon-label-lookup :assignee :label (tlon-get-clock-next-phase)))
        (substitute-next-assigne (tlon-user-lookup :substitute :github designated-next-assignee)))
     (if (string= current-user current-assignee)
 	designated-next-assignee

@@ -542,7 +542,7 @@ the primary bottleneck when running `tlon-sync-all-issues-in-repo'."
 	(?i ;; Update Org TODO from Issue: apply all tags from the issue
 	 (org-set-tags (string-join (or gh-labels-raw '()) ":")))
 	(?t ;; Update Issue from Org TODO: tlon-update-issue-from-todo handles this.
-	 ;; It currently uses raw org tags to set issue labels.
+	 ;; It currently uses raw org tags to set issue labels via the GitHub API.
 	 (tlon-update-issue-from-todo))))))
 
 (defun tlon-forg--diff-issue-and-todo (issue)
@@ -571,7 +571,6 @@ Possible symbols are `title', `status' and `tags'."
 
 ;;;;; Visit
 
-;; FIXME: this returns nil when called in an issue with no args
 (defun tlon-visit-issue (&optional number repo)
   "Visit Github issue.
 If NUMBER and REPO are nil, follow org link to issue if point is on an `orgit'
@@ -581,7 +580,7 @@ link, else get their values from the heading title, if possible."
       (forge-visit-issue issue)
     (if (and number repo)
 	(user-error "Could not find or retrieve issue #%s in repository %s" number repo)
-      (user-error "Could not find or retrieve issue from current context"))))
+      (user-error "No issue found: either place point on an `orgit' link or on an Org heading whose title contains an issue reference"))))
 
 (defun tlon-get-issue (&optional number repo)
   "Get Github issue.
@@ -1149,7 +1148,7 @@ OVERRIDE-STATUS is passed to `tlon-store-or-refile-job-todo'."
 
 (defun tlon-store-master-job-todo (&optional set-issue issue _invoked-from-org-file)
   "Create a new job master TODO.
-If SET-ISSUE is non-nil, set issue label to `Awaiting processing' and assignee
+If SET-ISSUE is non-nil, set issue phase to `Awaiting processing' and assignee
 to the current user. If ISSUE is non-nil, use the issue at point or in the
 current buffer. _INVOKED-FROM-ORG-FILE is passed down but not used for
 the master TODO itself, which always goes to the jobs file."
@@ -1160,7 +1159,7 @@ the master TODO itself, which always goes to the jobs file."
 	(tlon-visit-todo (cons pos jobs-file))
       (save-window-excursion
 	(when set-issue
-	  (tlon-set-initial-label-and-assignee))
+	  (tlon-set-initial-phase-and-assignee))
 	;; Master TODOs are always created in the central jobs file,
 	;; so invoked-from-org-file is intentionally not passed to this tlon-store-todo call.
 	(tlon-store-todo "tbJ" 'master-todo issue)))))
@@ -1528,7 +1527,7 @@ Preserves existing priority cookie."
 
 (defun tlon-update-issue-from-todo ()
   "Update the GitHub issue to match the Org TODO heading at point.
-This includes title, labels (tags), and project status.
+This includes title, tags, and project status.
 Uses functions from `forge-extras.el` for GitHub Project interactions."
   (interactive)
   (unless (org-at-heading-p)
@@ -2025,11 +2024,10 @@ The status is returned downcased."
       (downcase status))))
 
 ;;;;;; job phases
-;; TODO: make nomenclature consistent: should be called `phases' throughout, not `labels'
 
 (defun tlon-get-phase-in-labels (labels)
   "Return the unique valid phase in LABELS.
-A label is considered a valid phase if it exists in `tlon-todo-statuses'.
+A phase is valid if it exists in `tlon-todo-statuses'.
 If more than one phase is found, signal an error."
   (when-let ((status (cl-intersection labels
 				      (tlon-label-lookup-all :label)
@@ -2040,7 +2038,7 @@ If more than one phase is found, signal an error."
 
 (defun tlon-get-phase-in-issue (&optional issue)
   "Return the unique valid job phase in ISSUE.
-A label is valid job phase iff it is a member of `tlon-job-labels'.
+A phase is valid iff it is a member of `tlon-job-labels'.
 
 If ISSUE is nil, use the issue at point or in the current buffer."
   (tlon-get-labels-of-type 'phase issue))
@@ -2125,9 +2123,9 @@ Otherwise, return nil."
 
 (defun tlon-set-labels (labels &optional type issue)
   "Set list of LABELS of TYPE in ISSUE.
-If TYPE is `phase' or `status', replace the label of that type if present, while
-keeping all other labels. If TYPE is any other value, add LABELS and keep all
-current labels.
+If TYPE is `phase' or `status', replace the phase or status label if present,
+while keeping all other labels. If TYPE is any other value, add LABELS and keep
+all current labels.
 
 If ISSUE is nil, use issue at point or in the current buffer."
   (interactive)
@@ -2141,20 +2139,6 @@ If ISSUE is nil, use issue at point or in the current buffer."
 			   ('phase (remove phase current-labels))
 			   (_ current-labels))))
     (forge--set-topic-labels repo issue (append labels trimmed-labels))))
-
-;; TODO: Cleanup the two functions below
-(defun tlon-set-job-label ()
-  "Prompt the user to select a job label."
-  (let ((label (completing-read "What should be the label? "
-				(tlon-label-lookup-all :label))))
-    label))
-
-(defun tlon-set-status (&optional prompt)
-  "Prompt the user to select a status label.
-Use PROMPT as the prompt, defaulting to \"TODO status? \"."
-  (let* ((prompt (or prompt "TODO status? "))
-	 (label (completing-read prompt (mapcar #'downcase tlon-todo-keywords) nil t)))
-    label))
 
 (defun tlon-set-assignee (assignee &optional issue)
   "Make ASSIGNEE the assignee of ISSUE.
@@ -2174,8 +2158,8 @@ Use PROMPT as the prompt, defaulting to \"Who should be the assignee? \"."
 				    (tlon-user-lookup :github :name user-full-name))))
     assignee))
 
-(defun tlon-set-initial-label-and-assignee ()
-  "Set label to `Awaiting processing' and assignee to current user."
+(defun tlon-set-initial-phase-and-assignee ()
+  "Set phase to `Awaiting processing' and assignee to current user."
   (tlon-set-labels '("Awaiting processing") 'phase)
   (tlon-set-assignee (tlon-user-lookup :github :name user-full-name)))
 
@@ -2193,12 +2177,6 @@ If the issue has more than one element, return the first. If ISSUE is nil, use
 the issue at point or in the current buffer."
   (when-let ((issue (or issue (forge-current-topic))))
     (caar (eieio-oref issue element))))
-
-;; TODO: should return all labels, not just first
-(defun tlon-get-first-label (&optional issue)
-  "Return the first label of the issue at point.
-If ISSUE is nil, use the issue at point or in the current buffer."
-  (tlon-get-first-element 'labels issue))
 
 (defun tlon-get-state (&optional issue)
   "Return state of ISSUE.
@@ -2243,7 +2221,7 @@ STATUS element. If OVERRIDE-STATUS is non-nil, use it instead of fetching."
   (let* ((issue (or issue (forge-current-topic)))
 	 (action (if (and (tlon-issue-is-job-p issue)
 			  (not no-action))
-		     (or (tlon-label-lookup :action :label (tlon-get-first-label issue))
+		     (or (tlon-label-lookup :action :label (tlon-get-phase-in-issue issue))
 			 "")
 		   ""))
 	 (status (if override-status
@@ -2294,7 +2272,7 @@ The command:
 - prompts for a repository, title, status (Org TODO keyword), and optional
   effort estimate in hours;
 
-- creates the issue, labels it with the chosen status, sets the project estimate
+- creates the issue, sets its phase to the chosen status, sets the project estimate
   when given;
 
 - captures the freshly-created issue as an Org TODO and leaves point on that
@@ -2323,7 +2301,7 @@ The command:
     (unless (and forge-repo (eieio-object-p forge-repo))
       (user-error "No tracked Forge repository found for %s" repo-dir))
     (let* ((new-num (tlon-create-issue title repo-dir nil :markdown)))
-      ;; Ensure local DB sees new issue + subsequent remote changes (assignee/labels).
+      ;; Ensure local DB sees new issue + subsequent remote changes (assignee/phase).
       (tlon-forg--pull-sync forge-repo)
       (let* ((issue (tlon-forg--wait-for-issue new-num repo-dir forge-repo)))
 	(tlon-set-assignee assignee issue)
@@ -2333,7 +2311,7 @@ The command:
 	    (tlon-forg--set-github-project-estimate issue effort-h)))
 	(cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
 	  (tlon-forg--set-github-project-status issue status))
-	;; Refresh Forge DB so `issue' reflects the assignee/labels changes, and so
+	;; Refresh Forge DB so `issue' reflects the assignee/phase changes, and so
 	;; Org capture can reliably locate and link the topic.
 	(tlon-forg--pull-sync forge-repo)
 	(setq issue (tlon-forg--wait-for-issue new-num repo-dir forge-repo))
@@ -2584,21 +2562,20 @@ If ISSUE is nil, use the issue at point or in current buffer."
 	(message "Marked `%s' as DONE" todo)))))
 
 (declare-function tlon-get-clock-key "tlon-clock")
-(declare-function tlon-get-clock-label "tlon-clock")
-;; MAYBE: move to jobs?
-(defun tlon-check-label-and-assignee (repo)
-  "Check that clocked action, user match label, assignee of issue in REPO."
+(declare-function tlon-get-clock-phase "tlon-clock")
+(defun tlon-check-phase-and-assignee (repo)
+  "Check that clocked action, user match phase, assignee of issue in REPO."
   (save-window-excursion
     (let* ((default-directory repo)
 	   (key (tlon-get-clock-key))
 	   (issue-title (format "Job: `%s" key))
 	   (issue (tlon-issue-lookup issue-title))
-	   (clocked-label (tlon-get-clock-label))
-	   (label (tlon-get-first-label issue))
+	   (clocked-phase (tlon-get-clock-phase))
+	   (phase (tlon-get-phase-in-issue issue))
 	   (assignee (tlon-user-lookup :name :github (tlon-get-assignee issue))))
-      (unless (string= clocked-label label)
-	(user-error "The `org-mode' TODO says the label is `%s', but the actual issue label is `%s'"
-		    clocked-label label))
+      (unless (string= clocked-phase phase)
+	(user-error "The `org-mode' TODO says the phase is `%s', but the actual issue phase is `%s'"
+		    clocked-phase phase))
       (unless (string= user-full-name assignee)
 	(user-error "The `org-mode' TODO says the assignee is `%s', but the actual issue assignee is `%s'"
 		    user-full-name assignee))
