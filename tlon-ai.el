@@ -451,18 +451,23 @@ MODEL may be a string or symbol; we return a symbol for consistency."
 
 ;;;;;; Generic callback functions
 
+(defmacro tlon-ai-with-valid-response (response info &rest body)
+  "Execute BODY when RESPONSE is non-nil; otherwise report failure via INFO."
+  (declare (indent 2))
+  `(if (not ,response)
+       (tlon-ai-callback-fail ,info)
+     ,@body))
+
 (defun tlon-ai-callback-return (response info)
   "If the request succeeds, return the RESPONSE string.
 Otherwise emit a message with the status provided by INFO."
-  (if (not response)
-      (tlon-ai-callback-fail info)
+  (tlon-ai-with-valid-response response info
     response))
 
 (defun tlon-ai-callback-copy (response info)
   "If the request succeeds, copy the RESPONSE to the kill ring.
 Otherwise emit a message with the status provided by INFO."
-  (if (not response)
-      (tlon-ai-callback-fail info)
+  (tlon-ai-with-valid-response response info
     (kill-new response)
     (message "%s" response)))
 
@@ -470,8 +475,7 @@ Otherwise emit a message with the status provided by INFO."
   "If a response is obtained, save it to FILE.
 Otherwise emit a message with the status provided by INFO."
   (lambda (response info)
-    (if (not response)
-	(tlon-ai-callback-fail info)
+    (tlon-ai-with-valid-response response info
       (with-temp-buffer
 	(erase-buffer)
 	(insert response)
@@ -483,8 +487,7 @@ Otherwise emit a message with the status provided by INFO."
   "If the request succeeds, insert the RESPONSE string.
 Otherwise emit a message with the status provided by INFO. The RESPONSE is
 inserted at the point the request was sent."
-  (if (not response)
-      (tlon-ai-callback-fail info)
+  (tlon-ai-with-valid-response response info
     (let* ((marker (plist-get info :position))
 	   (buf (marker-buffer marker)))
       (when (buffer-live-p buf)
@@ -631,8 +634,7 @@ text using `eww`."
 (defun tlon-ai-translate-callback (response info)
   "Callback for `tlon-ai-translate'.
 RESPONSE is the response from the AI model and INFO is the response info."
-  (if (not response)
-      (tlon-ai-callback-fail info)
+  (tlon-ai-with-valid-response response info
     (let ((translations (split-string response "|")))
       (kill-new (completing-read "Translation: " translations)))))
 
@@ -651,8 +653,7 @@ RESPONSE is the response from the AI model and INFO is the response info."
   "Callback for `tlon-ai-translate-file'.
 FILE is the file to translate."
   (lambda (response info)
-    (if (not response)
-	(tlon-ai-callback-fail info)
+    (tlon-ai-with-valid-response response info
       (let* ((counterpart (tlon-get-counterpart file))
 	     (filename (file-name-nondirectory counterpart))
 	     (target-path (concat
@@ -796,17 +797,12 @@ glossary file which maps English terms to TARGET-LANG."
 (defun tlon-ai-create-reference-article-callback (response info)
   "Callback for `tlon-ai-create-reference-article'.
 RESPONSE is the response from the AI model and INFO is the response info."
-  (if (not response)
-      (tlon-ai-callback-fail info)
-    (let* ((title (tlon-ai-get-reference-article-title response))
-	   (buffer-name (if title
-			    (generate-new-buffer-name title)
-			  (generate-new-buffer-name "*new-article*")))
-	   (buffer (get-buffer-create buffer-name)))
-      (tlon-ai-insert-in-buffer-and-switch-to-it response buffer)
-      (gptel-context-remove-all)
-      (when (y-or-n-p "Proofread the article? ")
-	(tlon-ai-proofread-reference-article)))))
+  (tlon-ai-with-valid-response response info
+    (tlon-ai--display-response-in-buffer
+     response (tlon-ai-get-reference-article-title response) "*new-article*")
+    (gptel-context-remove-all)
+    (when (y-or-n-p "Proofread the article? ")
+      (tlon-ai-proofread-reference-article))))
 
 (defun tlon-ai-get-reference-article-title (response)
   "Return the title of the reference article in RESPONSE."
@@ -830,14 +826,12 @@ RESPONSE is the response from the AI model and INFO is the response info."
 (defun tlon-ai-proofread-reference-article-callback (response info)
   "Callback for `tlon-ai-proofread-reference-article'.
 RESPONSE is the response from the AI model and INFO is the response info."
-  (if (not response)
-      (tlon-ai-callback-fail info)
-    (let* ((title (tlon-ai-get-reference-article-title response))
-	   (buffer-name (if title
-			    (generate-new-buffer-name (format "Comments on %s" title))
-			  (generate-new-buffer-name "*Comments on article*")))
-	   (buffer (get-buffer-create buffer-name)))
-      (tlon-ai-insert-in-buffer-and-switch-to-it response buffer))))
+  (tlon-ai-with-valid-response response info
+    (let ((title (tlon-ai-get-reference-article-title response)))
+      (tlon-ai--display-response-in-buffer
+       response
+       (when title (format "Comments on %s" title))
+       "*Comments on article*"))))
 
 (defun tlon-ai-insert-in-buffer-and-switch-to-it (response buffer)
   "Insert RESPONSE in BUFFER and switch to it."
@@ -847,6 +841,15 @@ RESPONSE is the response from the AI model and INFO is the response info."
     (markdown-mode)
     (goto-char (point-min)))
   (switch-to-buffer buffer))
+
+(defun tlon-ai--display-response-in-buffer (response title-or-nil fallback-name)
+  "Display RESPONSE in a new buffer named after TITLE-OR-NIL or FALLBACK-NAME.
+Returns the created buffer."
+  (let* ((buffer-name (generate-new-buffer-name
+                       (or title-or-nil fallback-name)))
+         (buffer (get-buffer-create buffer-name)))
+    (tlon-ai-insert-in-buffer-and-switch-to-it response buffer)
+    buffer))
 
 (autoload 'markdown-narrow-to-subtree "markdown-mode")
 (declare-function tlon-md-get-tag-section "tlon-md")
@@ -948,8 +951,7 @@ KEY is the key of the entry containing the PDF files."
 (defun tlon-ai-rewrite-callback (response info)
   "Callback for `tlon-ai-rewrite'.
 RESPONSE is the response from the AI model and INFO is the response info."
-  (if (not response)
-      (tlon-ai-callback-fail info)
+  (tlon-ai-with-valid-response response info
     (let* ((variants (split-string response "|"))
 	   (variant (completing-read "Variant: " variants)))
       (delete-region (region-beginning) (region-end))
@@ -1204,8 +1206,7 @@ appropriate for an abstract. BUFFER is the buffer where the abstract should be
 inserted; if nil, use the current buffer."
   (lambda (response info)
     (unwind-protect
-	(if (not response)
-	    (tlon-ai-callback-fail info)
+	(tlon-ai-with-valid-response response info
 	  (with-current-buffer (or buffer (current-buffer))
 	    (cond
 	     (key
@@ -1269,8 +1270,7 @@ specified in `tlon-ai-help-model'."
 Displays the QUESTION and RESPONSE in a new `gptel-mode' buffer. If RESPONSE is
 nil, use `tlon-ai-callback-fail'. INFO is the context information passed to the
 request. The original user question is extracted from INFO."
-  (if (not response)
-      (tlon-ai-callback-fail info)
+  (tlon-ai-with-valid-response response info
     (let* ((question (tlon-ai--extract-question-from-info info))
 	   (buffer-name (generate-new-buffer-name "*AI Help Answer*"))
 	   (buffer (get-buffer-create buffer-name))
@@ -1423,8 +1423,7 @@ If FILE is nil, use the current buffer."
 (defun tlon-ai-set-language-in-file-callback (response info)
   "Callback for `tlon-ai-set-language-in-file'.
 RESPONSE is the response from the AI model and INFO is the response info."
-  (if (not response)
-      (tlon-ai-callback-fail info)
+  (tlon-ai-with-valid-response response info
     (let ((lang (tlon-get-language-code-from-name response)))
       (let ((jinx-save-languages))
 	(jinx-languages lang)))))
@@ -1459,8 +1458,7 @@ If STRING is nil, use the current entry."
 (defun tlon-ai-set-language-bibtex-when-present-callback (response info)
   "Callback for `tlon-ai-set-language-bibtex' when `langid' field is present.
 RESPONSE is the response from the AI model and INFO is the response info."
-  (if (not response)
-      (tlon-ai-callback-fail info)
+  (tlon-ai-with-valid-response response info
     (bibtex-beginning-of-entry)
     (if-let ((langid (bibtex-extras-get-field "langid"))
 	     (valid-langid (tlon-validate-language langid))
@@ -1477,8 +1475,7 @@ RESPONSE is the response from the AI model and INFO is the response info."
 (defun tlon-ai-set-language-bibtex-when-absent-callback (response info)
   "Callback for `tlon-ai-set-language-bibtex' when `langid' field is absent.
 RESPONSE is the response from the AI model and INFO is the response info."
-  (if (not response)
-      (tlon-ai-callback-fail info)
+  (tlon-ai-with-valid-response response info
     (when-let ((language (tlon-validate-language response)))
       (tlon-ai-set-language-bibtex-add-langid language))))
 
@@ -1633,8 +1630,7 @@ attribute. Otherwise, print and copy the string to the kill ring."
 CONTENT is the content of the `Math' element. If RESPONSE is nil, return INFO.
 `tlon-ai-process-math'."
   (lambda (response info)
-    (if (not response)
-	(tlon-ai-callback-fail info)
+    (tlon-ai-with-valid-response response info
       (if (tlon-looking-at-tag-p "Math")
 	  (apply #'tlon-md-insert-attribute-value
 		 "alt" (pcase action
@@ -1722,8 +1718,7 @@ content."
 If RESPONSE is valid, insert it as the \"meta\" field in the YAML front matter
 of the original buffer. Otherwise, call `tlon-ai-callback-fail' with the
 response INFO."
-  (if (not response)
-      (tlon-ai-callback-fail info)
+  (tlon-ai-with-valid-response response info
     (let* ((original-buffer (plist-get info :buffer))
 	   (original-file-name (if (buffer-live-p original-buffer)
 				   (buffer-file-name original-buffer)
@@ -1739,8 +1734,7 @@ response INFO."
 If RESPONSE is valid, insert it as the \"title\" field in the YAML front matter
 of the current buffer. Otherwise, call `tlon-ai-callback-fail' with the
 response INFO."
-  (if (not response)
-      (tlon-ai-callback-fail info)
+  (tlon-ai-with-valid-response response info
     (let ((cleaned-title (string-trim response)))
       (tlon-yaml-insert-field "title" cleaned-title)
       (message "Title set to: %s" cleaned-title))))
@@ -2046,8 +2040,7 @@ INCLUDE-STATS is non-nil (with prefix arg), include diffstats in the prompt."
   "Callback for `tlon-ai-summarize-commit-diffs'.
 COMMITS is a list of commit hashes."
   (lambda (response info)
-    (if (not response)
-        (tlon-ai-callback-fail info)
+    (tlon-ai-with-valid-response response info
       (with-current-buffer (get-buffer-create "*Commit Summary*")
         (let ((inhibit-read-only t))
           (erase-buffer)

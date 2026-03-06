@@ -960,8 +960,7 @@ comma-/newline-separated list."
 TITLE-MAP is a hash table mapping down-cased tag titles to their
 canonical form taken from the tag metadata."
   (lambda (response info)
-    (if (not response)
-        (tlon-ai-callback-fail info)
+    (tlon-ai-with-valid-response response info
       (let* ((tags (tlon-yaml--parse-tags-from-response response))
              ;; normalise casing to match canonical titles
              (tags (mapcar (lambda (tag)
@@ -1052,8 +1051,7 @@ If `original_path' already exists:
 When a valid filename is returned, insert it into FILE as
 `original_path' in the YAML metadata."
   (lambda (response info)
-    (if (not response)
-        (tlon-ai-callback-fail info)
+    (tlon-ai-with-valid-response response info
       (let* ((ans (string-trim response))
              (ans (car (split-string ans "[\r\n]+" t)))
              (match (seq-find (lambda (f) (string= f ans)) candidates)))

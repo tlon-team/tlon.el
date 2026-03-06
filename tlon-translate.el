@@ -133,6 +133,11 @@ message is appended to the buffer named by
 
 ;;;; Variables
 
+(cl-defstruct (tlon-translate--revision-context
+               (:constructor tlon-translate--make-revision-context))
+  "Bundles the parameters shared by all revision pipeline functions."
+  translation-file original-file type prompt model
+  orig-paras trans-paras restrict glossary-file)
 
 (defconst tlon-translate--engine-choices
   '(("DeepL" . deepl)
@@ -357,8 +362,7 @@ If AFTER-FN is non-nil, call it after writing TARGET-FILE."
        (tlon-ai-translate-text
 	text target-lang-code source-lang-code
 	(lambda (response info)
-          (if (not response)
-              (tlon-ai-callback-fail info)
+          (tlon-ai-with-valid-response response info
             (tlon-translate--write-and-finalize response source-file target-file after-fn)))))
       (_ (user-error "Unsupported translation engine: %s" tlon-translate-engine)))))
 
@@ -1192,16 +1196,15 @@ TYPE can be `errors' or `flow'."
 					(length ranges)
 					(if (= (length ranges) 1) "" "s")
 					(file-name-nondirectory translation-file)))
-		 (if (<= (length ranges) tlon-translate-revise-max-parallel)
-		     ;; Few enough chunks → process them all in parallel.
-		     (tlon-translate--revise-parallel
-		      ranges translation-file original-file type prompt model
-		      orig-paras trans-paras restrict glossary-file)
-		   ;; More chunks than the parallel cap → process in parallel *batches*
-		   ;; of `tlon-translate-revise-max-parallel'.
-		   (tlon-translate--revise-parallel-batches
-		    ranges translation-file original-file type prompt model
-		    orig-paras trans-paras restrict glossary-file))))))
+		 (let ((ctx (tlon-translate--make-revision-context
+			     :translation-file translation-file
+			     :original-file original-file
+			     :type type :prompt prompt :model model
+			     :orig-paras orig-paras :trans-paras trans-paras
+			     :restrict restrict :glossary-file glossary-file)))
+		   (if (<= (length ranges) tlon-translate-revise-max-parallel)
+		       (tlon-translate--revise-parallel ranges ctx)
+		     (tlon-translate--revise-parallel-batches ranges ctx)))))))
 	(if (eq type 'flow)
 	    (tlon-translate--ensure-filtered-glossary
 	     src-code lang-code original-file
@@ -1217,20 +1220,15 @@ TYPE can be `errors' or `flow'."
       (setq i (+ i chunk-size)))
     (nreverse ranges)))
 
-(defun tlon-translate--revise-parallel (ranges translation-file original-file type prompt model orig-paras trans-paras restrict glossary-file)
+(defun tlon-translate--revise-parallel (ranges ctx)
   "Use parallel processing to revise translation in RANGES.
-RANGES is a list of ranges to revise. TRANSLATION-FILE is the path to the
-translation file. ORIGINAL-FILE is the path to the original file. TYPE is the
-type of revision. PROMPT is the prompt to use for revision. MODEL is the AI
-model to use. ORIG-PARAS are the original paragraphs. TRANS-PARAS are the
-translated paragraphs. RESTRICT is a boolean indicating whether to restrict the
-revision to specific areas. GLOSSARY-FILE is the glossary file"
+RANGES is a list of ranges to revise.  CTX is a
+`tlon-translate--revision-context' struct."
   (cl-loop for r in ranges
 	   for idx from 0
-	   do (tlon-translate--revise-send-range
-	       r translation-file original-file type
-	       prompt model orig-paras trans-paras restrict glossary-file))
-  (tlon-translate--message-revise-request translation-file ranges t))
+	   do (tlon-translate--revise-send-range r ctx))
+  (tlon-translate--message-revise-request
+   (tlon-translate--revision-context-translation-file ctx) ranges t))
 
 (defun tlon-translate--message-revise-request (translation-file ranges parallel-p)
   "Display message about AI revision request for TRANSLATION-FILE with RANGES.
@@ -1240,43 +1238,32 @@ PARALLEL-P indicates whether processing is parallel or sequential."
                        (length ranges)
                        (if parallel-p "parallel" "paragraph")))
 
-(defun tlon-translate--revise-parallel-batches
-    (ranges translation-file original-file type prompt model
-            orig-paras trans-paras restrict glossary-file)
+(defun tlon-translate--revise-parallel-batches (ranges ctx)
   "Process RANGES in parallel batches of `tlon-translate-revise-max-parallel'.
-RANGES is a list of ranges to process. TRANSLATION-FILE is the path to the
-translation file being revised. ORIGINAL-FILE is the path to the original file
-being translated. TYPE specifies the type of translation or revision operation.
-PROMPT is the prompt text to use for the translation model. MODEL specifies
-which translation model to use. TOOLS are additional tools or parameters for the
-translation process. ORIG-PARAS contains the original paragraphs from the source
-text. TRANS-PARAS contains the translated paragraphs being revised. RESTRICT is
-a boolean indicating whether to restrict the revision to specific areas.
-GLOSSARY-FILE is the glossary file."
-  (cl-labels
-      ((process (remaining idx)
-         (if (null remaining)
-             (progn
+RANGES is a list of ranges to process.  CTX is a
+`tlon-translate--revision-context' struct."
+  (let ((translation-file (tlon-translate--revision-context-translation-file ctx)))
+    (cl-labels
+        ((process (remaining idx)
+           (if (null remaining)
                (tlon-translate--log "Completed processing all %d chunk%s of %s"
                                     idx (if (= idx 1) "" "s")
-                                    (file-name-nondirectory translation-file)))
-           (let* ((batch (cl-subseq remaining
-                                    0 (min tlon-translate-revise-max-parallel
-                                           (length remaining))))
-                  (rest  (nthcdr (length batch) remaining))
-                  (pending (length batch)))
-             (dolist (r batch)
-               (tlon-translate--revise-send-range
-                r translation-file original-file type prompt model
-                orig-paras trans-paras restrict glossary-file
-                (lambda ()
-                  (setq pending (1- pending))
-                  (condition-case err
-                      (when (= pending 0)
-                        ;; Batch finished – launch next one.
-                        (process rest (+ idx (length batch))))
-                    (error (message "Error in batch callback: %S" err))))))))))
-    (process ranges 0)))
+                                    (file-name-nondirectory translation-file))
+             (let* ((batch (cl-subseq remaining
+                                      0 (min tlon-translate-revise-max-parallel
+                                             (length remaining))))
+                    (rest  (nthcdr (length batch) remaining))
+                    (pending (length batch)))
+               (dolist (r batch)
+                 (tlon-translate--revise-send-range
+                  r ctx
+                  (lambda ()
+                    (setq pending (1- pending))
+                    (condition-case err
+                        (when (= pending 0)
+                          (process rest (+ idx (length batch))))
+                      (error (message "Error in batch callback: %S" err))))))))))
+      (process ranges 0))))
 
 (declare-function tlon-ai-extract-relevant-glossary "tlon-glossary")
 (declare-function tlon--glossary-filtered-target-path "tlon-glossary")
@@ -1348,23 +1335,21 @@ This catches stubborn leftovers left behind by `clone-indirect-buffer'."
                (string-match-p name-rx (buffer-name buf)))
           (kill-buffer buf))))))
 
-(defun tlon-translate--revise-send-range
-    (range translation-file original-file type prompt-template model
-           orig-paras trans-paras restrict glossary-file &optional after-fn)
+(defun tlon-translate--revise-send-range (range ctx &optional after-fn)
   "Send an AI revision request for a single paragraph RANGE.
-RANGE is a cons cell (START . END) specifying the paragraph range to revise. IDX
-is the chunk index and is only used for debugging/logging. TRANSLATION-FILE is
-the path to the translation file being revised. ORIGINAL-FILE is the path to the
-original source file. TYPE specifies the type of revision being performed.
-PROMPT-TEMPLATE is the template string for constructing the AI prompt. MODEL
-specifies which AI model to use for the revision request. LANG-CODE is the
-language code for the translation (currently unused). TOOLS specifies AI tools
-to be used in the request. ORIG-PARAS is a list of original paragraphs from the
-source text. TRANS-PARAS is a list of translated paragraphs to be revised.
-RESTRICT is a boolean indicating whether to restrict the revision to specific
-areas. GLOSSARY-FILE is the glossary file. AFTER-FN is an optional function to
-call after the revision is complete."
-  (let* ((start (car range))
+RANGE is a cons cell (START . END) specifying the paragraph range to revise.
+CTX is a `tlon-translate--revision-context' struct.  AFTER-FN is an optional
+function to call after the revision is complete."
+  (let* ((translation-file (tlon-translate--revision-context-translation-file ctx))
+         (original-file    (tlon-translate--revision-context-original-file ctx))
+         (type             (tlon-translate--revision-context-type ctx))
+         (prompt-template  (tlon-translate--revision-context-prompt ctx))
+         (model            (tlon-translate--revision-context-model ctx))
+         (orig-paras       (tlon-translate--revision-context-orig-paras ctx))
+         (trans-paras      (tlon-translate--revision-context-trans-paras ctx))
+         (restrict         (tlon-translate--revision-context-restrict ctx))
+         (glossary-file    (tlon-translate--revision-context-glossary-file ctx))
+         (start (car range))
          (end   (cdr range))
          (orig-chunk  (cl-subseq orig-paras start end))
          (trans-chunk (cl-subseq trans-paras start end))

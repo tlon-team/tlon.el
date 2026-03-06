@@ -140,8 +140,7 @@ Writes the AI-generated newsletter draft to the original input file, replacing
 its contents, and then opens the file. Only processes RESPONSE if it's a
 string (final AI output). Otherwise, call `tlon-ai-callback-fail' with the
 response INFO."
-  (if (not response)
-      (tlon-ai-callback-fail info)
+  (tlon-ai-with-valid-response response info
     (when (stringp response) ; Ensure response is the final text
       (let ((original-file-path (plist-get info :context)))
         (if (and original-file-path (stringp original-file-path) (not (string-empty-p original-file-path)))
