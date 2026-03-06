@@ -75,6 +75,17 @@ The %s will be replaced with the transcript text.")
   :type '(choice (const :tag "Google Meet" meet)
                  (const :tag "Zoom" zoom)))
 
+(defcustom tlon-meet-default-language "es"
+  "Default language code for meeting transcription."
+  :type 'string
+  :group 'tlon-meet)
+
+(defcustom tlon-meet-enable-auto-meeting-setup nil
+  "Whether to enable automatic meeting setup on this machine.
+When non-nil, meeting-related hooks and watchers are activated."
+  :type 'boolean
+  :group 'tlon-meet)
+
 (defvar tlon-meet--recording-watch-descriptor nil
   "File notification descriptor for the recordings directory watch.")
 
@@ -316,7 +327,7 @@ PARTICIPANTS, using filename inference for initial participant suggestion."
       (insert (format "Starting diarization of %s using whisperx…\n\n"
                       audio-file)))
     (tlon-whisperx-diarize
-     audio-file "es" nil nil ; "es": meetings are conducted in Spanish
+     audio-file tlon-meet-default-language nil nil
      (lambda (transcript-file _ok)
        (if (not transcript-file)
            (with-current-buffer output-buffer
@@ -762,8 +773,7 @@ to automatically process it using `tlon-meet-transcribe-and-summarize'."
     ("s"   "summarize transcript"       tlon-meet-summarize-transcript)
     ("a"   "transcribe & summarize"     tlon-meet-transcribe-and-summarize)]])
 
-;; Only auto-watch recordings on Pablo's machine.
-(when (string= (system-name) "Pablos-MacBook-Pro.local")
+(when tlon-meet-enable-auto-meeting-setup
   (tlon-meet-watch-recordings))
 
 (provide 'tlon-meet)

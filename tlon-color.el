@@ -136,8 +136,9 @@ If TARGET-FORMAT is nil, load it for both CSS and JS files."
       (with-current-buffer (find-file-noselect file)
 	(goto-char (point-min))
 	(insert encoded)
-	;; FIXME: for the time being we always use `hsl' format for the
-	;; `theme-colors.js' file, since the site will otherwise break.
+	;; The `theme-colors.js' file must use `hsl' format because the
+	;; frontend CSS parser only accepts HSL values; other formats
+	;; cause the site to break.
 	(if (string= (buffer-file-name) tlon-color-globals-css-file)
 	    (color-extras-convert-all tlon-color-format-in-frontend-files)
 	  (color-extras-convert-all "hsl"))

@@ -1050,10 +1050,12 @@ attribute."
   (interactive)
   (tlon-md-insert-or-edit-tag "lang"))
 
-;; TODO: check whether the two-letter code pairs should be separated by a hyphen or an underscore
 (defun tlon-md-lang-reader ()
-  "Prompt the user to select the `lang' attribute value of the `lang' tag."
-  (tlon-select-language 'locale))
+  "Prompt the user to select the `lang' attribute value of the `lang' tag.
+The locale returned by `tlon-select-language' uses underscores, but SSML
+requires hyphens as the separator, so we convert here."
+  (let ((locale (tlon-select-language 'locale)))
+    (replace-regexp-in-string "_" "-" locale)))
 
 ;;;###autoload
 (defun tlon-tts-insert-ssml-phoneme ()

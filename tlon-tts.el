@@ -132,6 +132,16 @@ Selection candidates for each language are listed in `tlon-tts-prompts'."
   :group 'tlon-tts
   :type 'string)
 
+(defcustom tlon-tts-sample-rate 44100
+  "Sample rate in Hz for ffmpeg audio conversion and silence generation."
+  :group 'tlon-tts
+  :type 'integer)
+
+(defcustom tlon-tts-audio-bitrate "192k"
+  "Audio bitrate for ffmpeg audio conversion and silence generation."
+  :group 'tlon-tts
+  :type 'string)
+
 ;;;;; Microsoft Azure
 
 (defcustom tlon-microsoft-azure-audio-settings
@@ -866,10 +876,12 @@ present value; otherwise return the value itself."
 -y: overwrite output file without asking. First %s is input file, second %s is
 output file, %d is the loudness target.")
 
-(defconst tlon-tts-ffmpeg-convert
-  "ffmpeg -i \"%s\" -acodec libmp3lame -ar 44100 -b:a 128k -ac 1 \"%s\""
-  "Command to convert an audio file to MP3 format with settings optimized for tts.
-The first placeholder is the input file, and the second is the output file.")
+(defun tlon-tts-ffmpeg-convert-command ()
+  "Return the ffmpeg command to convert an audio file to MP3 format.
+Uses `tlon-tts-sample-rate' and `tlon-tts-audio-bitrate' for audio parameters.
+The returned string has two %s placeholders: input file and output file."
+  (format "ffmpeg -i \"%%s\" -acodec libmp3lame -ar %d -b:a %s -ac 1 \"%%s\""
+	  tlon-tts-sample-rate tlon-tts-audio-bitrate))
 
 ;;;;; Report
 
@@ -1447,9 +1459,9 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
     (tlon-tts-remove-horizontal-lines) ; should be before `tlon-tts-process-paragraphs'
     (tlon-bib-replace-keys-with-citations nil 'audio) ; should be before `tlon-tts-escape-xml-special-characters'
     (tlon-tts-process-listener-cues) ; should be before `tlon-tts-process-links', `tlon-tts-process-paragraphs'
-    (tlon-tts-process-links) ; should probably be before `tlon-tts-process-formatting'
+    (tlon-tts-process-links) ; should probably be before `tlon-tts-strip-inline-formatting'
     (tlon-tts-process-all-abbreviations)
-    (tlon-tts-process-formatting) ; should be before `tlon-tts-process-paragraphs'
+    (tlon-tts-strip-inline-formatting) ; should be before `tlon-tts-process-paragraphs'
     (tlon-tts-process-paragraphs)
     (tlon-tts-process-currencies) ; should be before `tlon-tts-process-numerals'
     (tlon-tts-process-numerals)
@@ -2560,10 +2572,10 @@ format used by `mp3split'."
 
 (defun tlon-tts-create-silence-file (duration file)
   "Create a mono silence file of DURATION seconds with the name FILE."
-  ;; TODO: the audio parameters are hard-coded; they should be obtained from the
-  ;; relevant `audio-settings' variable
-  (shell-command (format "ffmpeg -y -f lavfi -i anullsrc=r=44100:cl=mono -t %s -b:a 128k %s"
+  (shell-command (format "ffmpeg -y -f lavfi -i anullsrc=r=%d:cl=mono -t %s -b:a %s %s"
+			 tlon-tts-sample-rate
 			 duration
+			 tlon-tts-audio-bitrate
 			 (shell-quote-argument file))))
 
 (defun tlon-tts-concatenate-files (input-file silence-file output-file)
@@ -3035,8 +3047,7 @@ citation key, format. Hence, it must be run *before*
 
 ;;;;;;; General
 
-;; TODO: should have more descriptive name
-(defun tlon-tts-process-formatting ()
+(defun tlon-tts-strip-inline-formatting ()
   "Remove formatting from text."
   (tlon-tts-process-boldface)
   (tlon-tts-process-italics)

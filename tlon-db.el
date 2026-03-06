@@ -1562,11 +1562,9 @@ If there are no differences, return nil."
     ("-s" "Auto sync" tlon-db-infix-toggle-auto-sync)
     ("-i" "Refresh interval" tlon-db-infix-set-get-entries-interval)]])
 
-;; NOTE: `tlon-db-initialize' is called at load time for backward
-;; compatibility.  Ideally it should be invoked explicitly (e.g. from
-;; an `after-init-hook' or a mode hook) to avoid side effects during
-;; file loading.
-(tlon-db-initialize)
+(if after-init-time
+    (tlon-db-initialize)
+  (add-hook 'after-init-hook #'tlon-db-initialize))
 
 (provide 'tlon-db)
 ;;; tlon-db.el ends here

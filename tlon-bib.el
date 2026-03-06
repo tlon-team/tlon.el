@@ -1011,6 +1011,22 @@ If the field is already set, prompt before overwriting."
 ;;;;; Translation
 
 (declare-function ebib-extras-set-field "ebib-extras")
+(declare-function ebib-db-get-filename "ebib-db")
+(declare-function ebib-switch-to-database "ebib")
+
+(defun tlon-bib--switch-to-db (filename-pattern)
+  "Switch to the Ebib database whose filename matches FILENAME-PATTERN.
+Search through `ebib--databases' for a database whose filename contains
+FILENAME-PATTERN and switch to it."
+  (let ((target-db
+	 (seq-find (lambda (db)
+		     (when-let* ((name (ebib-db-get-filename db)))
+		       (string-match-p filename-pattern name)))
+		   ebib--databases)))
+    (if target-db
+	(ebib-switch-to-database target-db)
+      (user-error "No Ebib database matching \"%s\" found" filename-pattern))))
+
 ;;;###autoload
 (defun tlon-create-bibtex-translation (&optional target-code no-glossary)
   "Create a BibTeX entry representing a translation of the entry at point.
@@ -1060,8 +1076,7 @@ Fields set in the new entry:
     (if mode-ebib
 	;; -------- EBIB --------
 	(progn
-	  ;; translation DB (fragile: depends on load order in ebib; nth 3 = 4th database)
-	  (ebib-switch-to-database-nth 3)
+	  (tlon-bib--switch-to-db "db\\.bib")
 	  (ebib-add-entry)                     ; create skeleton
 	  ;; brief pause to let ebib's internal state settle before modifying the new entry
 	  (sleep-for 0.05)

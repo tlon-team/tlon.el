@@ -48,9 +48,19 @@
   (file-name-concat tlon-package-dir "etc/newsletter-prompt.md")
   "Path to the prompt file used for creating newsletter issues.")
 
-;; Hardcoded to a known good issue; update when a better sample is available.
+(defun tlon-newsletter--latest-issue-file ()
+  "Return the path to the most recent newsletter issue file.
+Issue files are expected to follow a YYYY-MM.md naming pattern in
+`tlon-newsletter-numeros-subdir'."
+  (let ((files (directory-files tlon-newsletter-numeros-subdir t
+				"\\`[0-9]\\{4\\}-[0-9]\\{2\\}\\.md\\'")))
+    (if files
+	(car (last (sort files #'string<)))
+      (user-error "No newsletter issue files found in %s"
+		  tlon-newsletter-numeros-subdir))))
+
 (defconst tlon-newsletter-sample-issue-file
-  (file-name-concat tlon-newsletter-numeros-subdir "2025-08.md")
+  (ignore-errors (tlon-newsletter--latest-issue-file))
   "File with a sample issue of the newsletter.")
 
 ;;;; User options

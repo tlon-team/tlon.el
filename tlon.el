@@ -84,18 +84,19 @@ This variable should not be set manually.")
 
 ;;;;;; lookup
 
-;; TODO: all this should be adapted following the model of
-;; `tlon-get-file-glossary' i.e. a repo-relative path stored in a variable
-;; and a function to get it for specific languages
+(defconst tlon-dict-relative-dir "dict/"
+  "Repo-relative directory where dictionary files are stored.")
+
+(defun tlon-get-dict-dir (&optional language)
+  "Return the absolute dictionary directory for LANGUAGE.
+LANGUAGE defaults to \"es\".  The directory is constructed by
+appending `tlon-dict-relative-dir' to the repo root for LANGUAGE."
+  (let ((repo-dir (tlon-repo-lookup :dir :name (or language "es"))))
+    (file-name-concat repo-dir tlon-dict-relative-dir)))
 
 (defvar tlon-dir-dict
-  (file-name-concat (tlon-repo-lookup :dir :name "es") "dict/")
+  (tlon-get-dict-dir)
   "Directory where dictionary files are stored.")
-
-;; TODO: currently unused; consider implementing
-(defvar tlon-file-hyphenation
-  "hyphenation.json"
-  "File containing hyphenation rules.")
 
 (defvar tlon-file-babel-manual
   (file-name-concat (tlon-repo-lookup :dir :name "babel-core") "manual.org")
@@ -242,6 +243,24 @@ If FILE is not provided, use the file visited by the current buffer."
 	 (commit-file (tlon-create-file-from-commit file commit)))
     (ediff-files commit-file file)))
 
+(defun tlon-create-file-from-commit (file commit-hash)
+  "Create a temporary file with the state of the FILE at the COMMIT-HASH.
+Return the path of the temporary file created."
+  (let* ((file-name (file-name-nondirectory file))
+	 (repo-root (locate-dominating-file file ".git"))
+	 (relative-file (file-relative-name file repo-root))
+	 (new-file-name (format "%s_%s" commit-hash file-name))
+	 (new-file (make-temp-file new-file-name nil ".md"))
+	 (git-command
+	  (format "git show %s"
+		  (shell-quote-argument (concat commit-hash ":" relative-file)))))
+    (let ((default-directory repo-root))
+      (with-temp-buffer
+	(insert (shell-command-to-string git-command))
+	(write-file new-file)))
+    (message "File created: %s" new-file)
+    new-file))
+
 ;;;;;; Metadata
 
 (declare-function tlon-ensure-markdown-mode "tlon-md")
@@ -284,7 +303,7 @@ If FILE is not provided, use the file visited by the current buffer."
 ;;;;; Search
 
 (declare-function magit-stage-file "magit")
-(declare-function magit-pull-from-upstream "magit-pull")
+(declare-function magit-run-git "magit-process")
 (declare-function magit-push-current-to-pushremote "magit-push")
 (defun tlon-commit-and-push (action file)
   "Commit and push modifications to FILE.
@@ -292,9 +311,7 @@ The commit message is ACTION followed by the name of FILE."
   (let* ((default-directory (tlon-get-repo-from-file file)))
     (tlon-ensure-no-uncommitted-changes file)
     (when (string= (magit-get-current-branch) "main")
-      ;; TODO: Replace interactive call with programmatic way of doing this
-      (call-interactively #'magit-pull-from-upstream nil)
-      (sleep-for 2)) ; wait for the async pull to finish before staging
+      (magit-run-git "pull" "--ff-only"))
     (magit-stage-file file)
     (tlon-create-commit action file)
     (call-interactively #'magit-push-current-to-pushremote)))
@@ -436,25 +453,6 @@ If the key is not found, it is added to the list of missing keys."
       (with-output-to-temp-buffer "*Missing BibTeX Keys*"
 	(dolist (key missing-keys)
 	  (princ (format "%s\n" key)))))))
-
-;; TODO: Move to appropriate section
-(defun tlon-create-file-from-commit (file commit-hash)
-  "Create a temporary file with the state of the FILE at the COMMIT-HASH.
-Return the path of the temporary file created."
-  (let* ((file-name (file-name-nondirectory file))
-	 (repo-root (locate-dominating-file file ".git"))
-	 (relative-file (file-relative-name file repo-root))
-	 (new-file-name (format "%s_%s" commit-hash file-name))
-	 (new-file (make-temp-file new-file-name nil ".md"))
-	 (git-command
-	  (format "git show %s"
-		  (shell-quote-argument (concat commit-hash ":" relative-file)))))
-    (let ((default-directory repo-root))
-      (with-temp-buffer
-	(insert (shell-command-to-string git-command))
-	(write-file new-file)))
-    (message "File created: %s" new-file)
-    new-file))
 
 ;;;;; Package files
 
