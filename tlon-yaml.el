@@ -655,48 +655,51 @@ is `translation_key', return the BibTeX key of the translation"
 	  ((and (eq subtype 'translations) (string= field "original_key"))
 	   (citar-get-value "translation" original-key)))))
 
+(defmacro tlon-yaml-with-metadata (file &rest body)
+  "Execute BODY in the buffer visiting FILE with point after the YAML delimiter.
+FILE is resolved via `find-file-noselect'.  Point is placed at the
+beginning of the first line after the opening \"---\" delimiter.  If
+FILE has no YAML front-matter, signal an error.  BODY is wrapped in
+`save-excursion'."
+  (declare (indent 1) (debug (form body)))
+  (let ((f (make-symbol "file")))
+    `(let ((,f ,file))
+       (with-current-buffer (find-file-noselect ,f)
+         (save-excursion
+           (goto-char (point-min))
+           (unless (looking-at-p tlon-yaml-delimiter)
+             (user-error "File `%s' does not appear to contain a metadata section" ,f))
+           (forward-line)
+           ,@body)))))
+
 (defun tlon-yaml-write-field (key value file)
   "Set KEY to VALUE in FILE."
-  (with-current-buffer (find-file-noselect file)
-    (goto-char (point-min))
-    (when (looking-at-p tlon-yaml-delimiter)
-      (forward-line)
-      (insert (format "%s:  %s\n" key value))
-      (save-buffer)
-      (tlon-yaml-reorder-metadata))))
+  (tlon-yaml-with-metadata file
+    (insert (format "%s:  %s\n" key value))
+    (save-buffer)
+    (tlon-yaml-reorder-metadata)))
 
-;; TODO: refactor with above
 (defun tlon-yaml-delete-field (&optional key file)
   "Delete the YAML field with KEY in FILE."
   (let ((key (or key (completing-read "Field: " (tlon-yaml-get-valid-keys))))
 	(file (or file (buffer-file-name))))
-    (if-let ((metadata (tlon-yaml-get-metadata file))) ; Check if metadata section exists
-	(if (assoc key metadata) ; Check if key exists in parsed metadata
-	    (with-current-buffer (find-file-noselect file)
-	      (save-excursion ; Preserve point if called interactively
-                (goto-char (point-min))
-                (if (re-search-forward (format "^%s:[ \t]*" key) nil t) ; Find "key:" possibly followed by spaces/tabs
-                    (let ((field-start (match-beginning 0))
-                          field-end)
-                      ;; Determine the end of the field
-                      (goto-char (line-end-position)) ; Go to end of the "key: ..." line
-                      (forward-line 1) ; Move to the beginning of the next line
-
-                      ;; Loop to consume indented lines (for block scalars like 'meta: >')
-                      ;; The loop continues as long as the current line is indented
-                      ;; AND it's not the closing YAML delimiter.
-                      (while (and (not (eobp))
-                                  (looking-at "[ \t]") ; Current line starts with space/tab (is indented)
-                                  (not (looking-at-p (regexp-quote tlon-yaml-delimiter)))) ; And not the YAML delimiter
-                        (forward-line 1))
-                      ;; After the loop, point is at the beginning of the first line
-                      ;; that is NOT part of the multi-line value (or at eobp, or at '---').
-                      (setq field-end (point))
-                      (delete-region field-start field-end)
-                      (save-buffer))
-                  ;; This case should ideally not be reached if `(assoc key metadata)` was true,
-                  ;; indicating an inconsistency between parsed metadata and file content.
-                  (user-error "Key `%s' was in parsed metadata but regex search failed in file `%s'" key file))))
+    (if-let ((metadata (tlon-yaml-get-metadata file)))
+	(if (assoc key metadata)
+	    (tlon-yaml-with-metadata file
+	      (if (re-search-forward (format "^%s:[ \t]*" key) nil t)
+		  (let ((field-start (match-beginning 0))
+			field-end)
+		    (goto-char (line-end-position))
+		    (forward-line 1)
+		    ;; Consume indented continuation lines (block scalars)
+		    (while (and (not (eobp))
+				(looking-at "[ \t]")
+				(not (looking-at-p (regexp-quote tlon-yaml-delimiter))))
+		      (forward-line 1))
+		    (setq field-end (point))
+		    (delete-region field-start field-end)
+		    (save-buffer))
+		(user-error "Key `%s' was in parsed metadata but regex search failed in file `%s'" key file)))
 	  (user-error "Key `%s' not found in metadata of file `%s'" key file))
       (user-error "File `%s' does not appear to contain a metadata section" file))))
 
@@ -1439,180 +1442,6 @@ For each file it:
               (with-current-buffer (find-file-noselect trans-file)
 		(tlon-yaml-insert-field "key" trans-key))
               (tlon-message-debug "Inserted key %s in %s" trans-key trans-file))))))))))
-
-;; NOTE: contains hardcoded paths specific to one developer's machine; should be refactored to use tlon-repos registry
-;;;###autoload
-(defun tlon-yaml-sync-article-tags-to-es (&optional dir)
-  "Insert Spanish tag translations for all English articles in DIR.
-
-The function iterates over every Markdown file under DIR (defaulting
-to the canonical uqbar-en articles directory) and calls
-`tlon-yaml-insert-translated-tags' on each with target language code
-\"es\".
-
-With a prefix argument, prompt for DIR."
-  (interactive
-   (list (when current-prefix-arg
-           (read-directory-name
-            "English articles directory: "
-            "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-en/articles/"
-            nil t))))
-  (let* ((dir   (or dir "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-en/articles/"))
-         ;; walk the directory tree recursively
-         (files (directory-files-recursively dir "\\.md\\'"))
-         (processed 0))
-    (dolist (file files)
-      ;; only act when a Spanish counterpart exists
-      (when-let ((es-file (tlon-get-counterpart file "es")))
-        (when (file-exists-p es-file)
-          (tlon-yaml-insert-translated-tags file)
-          (setq processed (1+ processed)))))
-    (message "Processed %d of %d article%s in %s"
-             processed
-             (length files)
-             (if (= processed 1) "" "s")
-             dir)))
-
-;; NOTE: contains hardcoded paths specific to one developer's machine; should be refactored to use tlon-repos registry
-;;;###autoload
-(defun tlon-yaml-lowercase-it-tag-titles (&optional dir)
-  "Lowercase only the first word of the YAML title field for al files in DIR.
-When DIR is nil, default to
-\"/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-it/soggetti\".
-Operate recursively and only update files whose title changes. This is
-a temporary clean-up helper."
-  (interactive)
-  (let* ((dir (file-name-as-directory
-               (or dir "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-it/soggetti")))
-         (files (directory-files-recursively dir "\\.md\\'"))
-         (updated 0)
-         (skipped 0))
-    (dolist (file files)
-      (with-current-buffer (find-file-noselect file)
-        (save-excursion
-          (goto-char (point-min))
-          (if (not (looking-at-p tlon-yaml-delimiter))
-              (setq skipped (1+ skipped))
-            (forward-line)
-            (let ((end (save-excursion (re-search-forward tlon-yaml-delimiter nil t))))
-              (if (not end)
-                  (setq skipped (1+ skipped))
-                (when (re-search-forward "^title:\\s-*\\(.*\\)$" end t)
-                  (let* ((raw (match-string 1))
-                         (trim (string-trim raw))
-                         (q (and (>= (length trim) 2)
-                                 (eq (aref trim 0) ?\")
-                                 (eq (aref trim (1- (length trim))) ?\")))
-                         (core (if q (substring trim 1 -1) trim))
-                         (pos (save-match-data (string-match "[ \t]" core)))
-                         (first (if pos (substring core 0 pos) core))
-                         (rest (if pos (substring core pos) ""))
-                         (new-core (concat (downcase first) rest)))
-                    (unless (string= core new-core)
-                      (replace-match (if q (concat "\"" new-core "\"") new-core) t t nil 1)
-                      (save-buffer)
-                      (setq updated (1+ updated))))))))))
-      (message "Lowercased first word of titles in %d file%s under %s"
-               updated (if (= updated 1) "" "s") dir))))
-
-;; NOTE: contains hardcoded paths specific to one developer's machine; should be refactored to use tlon-repos registry
-;;;###autoload
-(defun tlon-yaml-uncapitalize-fr-article-tags (&optional dir)
-  "Lowercase the first word of each tag in the tags field for all files in DIR.
-When DIR is nil, default to
-\"/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-fr/articles\".
-Operate recursively and only update files whose tags change. This is a
-temporary clean-up helper."
-  (interactive)
-  (let* ((dir (file-name-as-directory
-               (or dir "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-fr/articles")))
-         (files (directory-files-recursively dir "\\.md\\'"))
-         (updated 0)
-         (skipped 0))
-    (dolist (file files)
-      (let ((tags (tlon-yaml-get-key "tags" file)))
-        (when (stringp tags)
-          (setq tags (tlon-yaml-format-value tags)))
-        (if (not (listp tags))
-            (setq skipped (1+ skipped))
-          (let* ((new-tags
-                  (mapcar (lambda (s)
-                            (let* ((s (or s ""))
-                                   (s (string-trim s))
-                                   (pos (string-match "[ \t]" s))
-                                   (first (if pos (substring s 0 pos) s))
-                                   (rest (if pos (substring s pos) "")))
-                              (concat (downcase first) rest)))
-                          tags)))
-            (unless (equal tags new-tags)
-              (with-current-buffer (find-file-noselect file)
-                (tlon-yaml-insert-field "tags" new-tags)
-                (save-buffer))
-              (setq updated (1+ updated)))))))
-    (message "Lowercased first word of tags in %d file%s under %s"
-             updated (if (= updated 1) "" "s") dir)))
-
-;; NOTE: contains hardcoded paths specific to one developer's machine; should be refactored to use tlon-repos registry
-;;;###autoload
-(defun tlon-yaml-ko-backfill-original-keys ()
-  "Backfill original_key for a curated list of Korean articles.
-For each file, skip when `original_key' exists; otherwise read
-`original_path', open the corresponding English article under
-uqbar-en/article, read its YAML `key', and set it back in the Korean
-file. Print a summary and return a plist with counters."
-  (interactive)
-  (let* ((files '("/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/8만_시간의_중심_생각_요약.md"
-                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/LEEP_소개_납_노출_근절_사업_Lead_Exposure_Elimination_Project.md"
-                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/남아시아_지역_대기_오염의_원인_조사.md"
-                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/내가_아마도_장기주의자일_수_없는_이유.md"
-                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/독자적_반응.md"
-                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/모든_동물은_동등하다.md"
-                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/미래에는_어떠한_일들이_일어나게_될_것이며_우리는_왜_관심을_가져야_하는가_에_대한_연습.md"
-                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/생명_보안을_위해_기술자와_재료공학자들이_필요하다.md"
-                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/세상에서_가장_신나는_명분_효과적인_이타주의.md"
-                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/스타트업_투자자처럼_기부하기_히트_기반_기부란_무엇인가.md"
-                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/실행에_옮기기_위한.md"
-                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/실행에_옮기기_위한_연습.md"
-                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/어류_포획에_비하면_해양_플라스틱_오염으로_죽어가는_바다새와_해양_포유류의_수는_상대적으로_적다.md"
-                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/여러분은_어떻게_생각하는가.md"
-                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/여러분은_어떻게_생각하는가_에_대한 과제.md"
-                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/우리가_미래에_빚지고_있는_것_제_1장.md"
-                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/이대로는_안_된다.md"
-                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/인공지능의_위험.md"
-                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/인공지능이_인류에_위협이_되는_이유.md"
-                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/인류_최후의_세기.md"
-                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/장기주의자의_진로_선택에_대한_나의_현재_입장.md"
-                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/전문가들이_인간이_초래한_감염병의_세계적_대유행을_두려워하는_이유_그리고_우리가_그것을_막기_위해_할_수_있는_일.md"
-                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/전지구적_문제를_기대_영향력_측면에서_비교하기_위한_체계.md"
-                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/한_가지_이상의_목표를_가져도_된다.md"
-                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/한계_영향력.md"
-                  "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-ko/기사/효과에_집중하기에_관해_더_알아보기.md"))
-         (en-articles-dir "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-en/articles")
-         (updated 0) (skipped 0) (missing 0) (notfound 0) (nokey 0) (errors 0))
-    (dolist (ko-file files)
-      (condition-case err
-          (let ((existing (tlon-yaml-get-key "original_key" ko-file)))
-            (if existing
-                (setq skipped (1+ skipped))
-              (let* ((orig (tlon-yaml-get-key "original_path" ko-file)))
-                (if (not orig)
-                    (setq missing (1+ missing))
-                  (let* ((en-file (expand-file-name orig en-articles-dir)))
-                    (if (not (file-exists-p en-file))
-                        (setq notfound (1+ notfound))
-                      (let ((en-key (tlon-yaml-get-key "key" en-file)))
-                        (if (not en-key)
-                            (setq nokey (1+ nokey))
-                          (with-current-buffer (find-file-noselect ko-file)
-                            (tlon-yaml-insert-field "original_key" en-key t)
-                            (save-buffer))
-                          (setq updated (1+ updated))))))))))
-        (error
-         (setq errors (1+ errors))
-         (message "Error processing %s: %s" ko-file (error-message-string err)))))
-    (message "Backfill complete: updated=%d, skipped=%d, missing-original_path=%d, en-file-not-found=%d, missing-en-key=%d, errors=%d"
-             updated skipped missing notfound nokey errors)
-    (list :updated updated :skipped skipped :missing_original_path missing :en_file_not_found notfound :missing_en_key nokey :errors errors)))
 
 ;;;###autoload
 (defun tlon-yaml-collect-english-tags-in-dir (&optional dir)

@@ -110,8 +110,8 @@ This module does not define ~defcustom~ user options. Behavior is driven by the 
 :CUSTOM_ID: h:phase-logic
 :END:
 
-#+findex: tlon-jobs-get-action-in-label
-- ~tlon-jobs-get-action-in-label~ :: Extract the action verb (e.g., =Process=, =Translate=) from a job phase LABEL string (e.g., =Awaiting processing=). Returns the second word of the label string.
+#+findex: tlon-jobs-get-action-in-phase
+- ~tlon-jobs-get-action-in-phase~ :: Extract the action verb (e.g., =Process=, =Translate=) from a job phase string (e.g., =Awaiting processing=). Returns the second word of the phase string.
 
 #+findex: tlon-jobs-initialize
 - ~tlon-jobs-initialize~ :: Perform common setup tasks when starting any job phase: check the repository's label and assignee, ensure the =main= branch, pull from upstream, set up windows with original and translation files, open the GitHub issue, copy the original buffer content, and call the specific phase initialization function FUN.

@@ -343,8 +343,8 @@ TODO items are stored in a main generic file, a jobs-specific file, or in reposi
 #+findex: tlon-get-first-element
 - ~tlon-get-first-element~ :: Return the first item from an ELEMENT (slot) that holds a list.
 
-#+findex: tlon-get-first-label
-- ~tlon-get-first-label~ :: Return the name of the first label of an issue.
+#+findex: tlon-get-phase-in-issue
+- ~tlon-get-phase-in-issue~ :: Return the workflow phase of an issue by matching its labels against known phases.
 
 #+findex: tlon-get-state
 - ~tlon-get-state~ :: Return the state symbol (=open= or =completed=) of an issue.
@@ -435,8 +435,8 @@ TODO items are stored in a main generic file, a jobs-specific file, or in reposi
 #+findex: tlon-issue-is-job-p
 - ~tlon-issue-is-job-p~ :: Return =t= if the issue title starts with =Job: =.
 
-#+findex: tlon-check-label-and-assignee
-- ~tlon-check-label-and-assignee~ :: Check that the label and assignee of the issue associated with the currently clocked task match the clocked action and the current user.
+#+findex: tlon-check-phase-and-assignee
+- ~tlon-check-phase-and-assignee~ :: Check that the phase and assignee of the issue associated with the currently clocked task match the clocked action and the current user.
 
 ** Estimate and effort helpers
 :PROPERTIES:

@@ -315,39 +315,6 @@ the list of valid statuses.
 :CUSTOM_ID: h:maintenance-helpers
 :END:
 
-*** ~tlon-yaml-lowercase-it-tag-titles~
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-yaml-lowercase-it-tag-titles
-:END:
-#+findex: tlon-yaml-lowercase-it-tag-titles
-
-Lowercase only the first word of the YAML =title= field for every
-Markdown file under a given directory (defaulting to the Italian tags
-directory).  Operates recursively and only updates files whose title
-actually changes.  This is a temporary clean-up helper.
-
-*** ~tlon-yaml-uncapitalize-fr-article-tags~
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-yaml-uncapitalize-fr-article-tags
-:END:
-#+findex: tlon-yaml-uncapitalize-fr-article-tags
-
-Lowercase only the first word of each tag in the YAML =tags= field for
-every Markdown file under the French articles directory.  Operates
-recursively and only updates files whose tags actually change.  This is a
-temporary clean-up helper.
-
-*** ~tlon-yaml-ko-backfill-original-keys~
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-yaml-ko-backfill-original-keys
-:END:
-#+findex: tlon-yaml-ko-backfill-original-keys
-
-For a curated list of Korean articles, set =original_key= by reading
-=original_path=, opening the English counterpart, retrieving its YAML
-=key=, and writing it back.  Skips files that already have =original_key=
-and prints a summary.
-
 *** ~tlon-yaml-collect-english-tags-in-dir~
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-yaml-collect-english-tags-in-dir
@@ -357,18 +324,6 @@ and prints a summary.
 Return the list of unique English tag titles found in the English
 counterparts of all Markdown files in the current directory
 (non-recursive).  Intended as a temporary helper.
-
-*** ~tlon-yaml-sync-article-tags-to-es~
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-yaml-sync-article-tags-to-es
-:END:
-#+findex: tlon-yaml-sync-article-tags-to-es
-
-Insert Spanish tag translations for all English articles in DIR.  The
-function iterates over every Markdown file under DIR (defaulting to the
-canonical =uqbar-en= articles directory) and calls
-~tlon-yaml-insert-translated-tags~ on each file that has a Spanish
-counterpart.  With a prefix argument, prompt for DIR.
 
 ** Transient menu
 :PROPERTIES:

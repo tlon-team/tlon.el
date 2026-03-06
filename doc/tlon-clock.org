@@ -73,11 +73,11 @@ Copy text to the kill ring using a "Do What I Mean" approach.  If a region is ac
 #+findex: tlon-get-clock-action
 - ~tlon-get-clock-action~ :: Return the workflow action word from the clocked heading.  The action is assumed to be the second word in the heading string.  The function validates it against the list of known actions from ~tlon-label-lookup-all~.  As a side effect it also verifies that a BibTeX key is present in the heading.
 
-#+findex: tlon-get-clock-label
-- ~tlon-get-clock-label~ :: Return the label associated with the action in the clocked heading.  Uses ~tlon-label-lookup~ to map the action (from ~tlon-get-clock-action~) to its corresponding label.
+#+findex: tlon-get-clock-phase
+- ~tlon-get-clock-phase~ :: Return the phase associated with the action in the clocked heading.  Uses ~tlon-label-lookup~ to map the action (from ~tlon-get-clock-action~) to its corresponding phase.
 
-#+findex: tlon-get-clock-next-label
-- ~tlon-get-clock-next-label~ :: Return the label that follows the current clock label in ~tlon-job-labels~.  This is used to determine the next step in the workflow sequence.
+#+findex: tlon-get-clock-next-phase
+- ~tlon-get-clock-next-phase~ :: Return the phase that follows the current clock phase in ~tlon-job-labels~.  This is used to determine the next step in the workflow sequence.
 
 ** Utility functions
 :PROPERTIES:
@@ -85,7 +85,7 @@ Copy text to the kill ring using a "Do What I Mean" approach.  If a region is ac
 :END:
 
 #+findex: tlon-next-value
-- ~tlon-next-value~ :: Return the "next" value of PROPERTY after the item with VALUE in ALIST.  This is a generic helper used by ~tlon-get-clock-next-label~ to walk a plist-based alist.
+- ~tlon-next-value~ :: Return the "next" value of PROPERTY after the item with VALUE in ALIST.  This is a generic helper used by ~tlon-get-clock-next-phase~ to walk a plist-based alist.
 
 #+findex: tlon-copy-buffer
 - ~tlon-copy-buffer~ :: Copy the entire contents of FILE (or the current buffer if FILE is =nil=) to the kill ring.

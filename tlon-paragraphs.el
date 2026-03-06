@@ -108,6 +108,17 @@ the position just before the local variables section (if any)."
 
 ;;;;; Display paragraphs
 
+(defun tlon-paragraphs--format-pair (pair)
+  "Insert a formatted display of PAIR of original/translation paragraphs.
+PAIR is a cons cell (ORIGINAL . TRANSLATION)."
+  (insert "Original:\n"
+          (or (car pair) "[Missing paragraph]")
+          "\n\nTranslation:\n"
+          (or (cdr pair) "[Missing paragraph]")
+          "\n\n"
+          (make-string 40 ?-)
+          "\n\n"))
+
 (defun tlon-paragraphs--get-comparison-buffer-content (translation original trans-paras orig-paras with-header)
   "Get paragraph comparison of TRANSLATION and ORIGINAL.
 TRANS-PARAS and ORIG-PARAS are lists of paragraphs in TRANSLATION and ORIGINAL,
@@ -123,13 +134,7 @@ respectively. If WITH-HEADER is non-nil, include a header."
                         (file-name-nondirectory original) (length orig-paras)
 			(file-name-nondirectory translation) (length trans-paras))))
       (dolist (pair pairs)
-        (insert "Original:\n"
-                (or (car pair) "[Missing paragraph]")
-                "\n\nTranslation:\n"
-                (or (cdr pair) "[Missing paragraph]")
-                "\n\n"
-                (make-string 40 ?-)
-                "\n\n"))
+        (tlon-paragraphs--format-pair pair))
       (buffer-string))))
 
 ;;;###autoload
@@ -145,17 +150,8 @@ or the function itself."
              (buf (get-buffer-create "/Paragraph Pairs/")))
         (with-current-buffer buf
           (erase-buffer)
-          ;; NOTE: This display format is duplicated from
-          ;; `tlon-display-paragraph-pairs'; consider extracting a
-          ;; shared helper if it changes.
           (dolist (pair pairs)
-            (insert "Original:\n"
-                    (or (car pair) "[Missing paragraph]")
-                    "\n\nTranslation:\n"
-                    (or (cdr pair) "[Missing paragraph]")
-                    "\n\n"
-                    (make-string 40 ?-)
-                    "\n\n"))
+            (tlon-paragraphs--format-pair pair))
           (goto-char (point-min)))
 	(display-buffer buf))
     (user-error

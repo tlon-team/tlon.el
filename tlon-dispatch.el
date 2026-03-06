@@ -104,176 +104,130 @@
   :variable 'tlon-debug
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-debug)))
 
-;;;;; Browse repo in Magit
+;;;;; Browse repo in Magit/Dired
 
-(defmacro tlon-generate-magit-browse-commands (name dir)
-  "Generate commands for browsing repo named NAME in Magit.
-DIR is the directory where the repo is stored."
-  `(defun ,(intern (format "tlon-magit-browse-%s" name)) ()
-     ,(format "Browse the %s repository in Magit." name)
-     (interactive)
-     (magit-status ,dir)))
+(defmacro tlon-generate-browse-command (name dir backend)
+  "Generate a command for browsing repo NAME in BACKEND.
+DIR is the directory where the repo is stored. BACKEND is either
+`magit' or `dired'."
+  (let ((fn-name (intern (format "tlon-%s-browse-%s" backend name)))
+        (docstring (format "Browse the %s repository in %s." name
+                           (capitalize (symbol-name backend)))))
+    `(defun ,fn-name ()
+       ,docstring
+       (interactive)
+       ,(pcase backend
+          ('magit `(magit-status ,dir))
+          ('dired `(dired ,dir))))))
 
 (dolist (repo tlon-repos)
   (when-let ((abbrev (plist-get repo :abbrev))
 	     (dir (plist-get repo :dir)))
-    (eval `(tlon-generate-magit-browse-commands
-	    ,abbrev
-	    ,dir))))
+    (eval `(tlon-generate-browse-command ,abbrev ,dir magit))
+    (eval `(tlon-generate-browse-command ,abbrev ,dir dired))))
+
+(defconst tlon-repo-menu-entries
+  '(["Languages"
+     ("l d" "de")
+     ("l s" "es")
+     ("l r" "fr")
+     ("l t" "it")]
+    ["General"
+     ("g c" "babel-core")
+     ("g f" "babel-refs")
+     ""
+     "Uqbar"
+     ("q q" "uqbar")
+     ("q d" "uqbar-audio-content")
+     ("q p" "uqbar-audio-api")
+     ""
+     ("q a" "uqbar-ar")
+     ("q n" "uqbar-en")
+     ("q s" "uqbar-es")
+     ("q r" "uqbar-fr")
+     ("q t" "uqbar-it")
+     ("q j" "uqbar-ja")
+     ("q k" "uqbar-ko")
+     ("q b" "uqbar-sr")
+     ("q u" "uqbar-tr")
+     ("q z" "uqbar-zh")]
+    ["Projects"
+     ("8 p" "80k podcast")
+     ("8 a" "ai-in-context")
+     ("7" "ai-2027")
+     ("a a" "aea")
+     ("a c" "aea-content")
+     ("o" "altruismoeficaz.org")
+     ("s s" "bisagra")
+     ("s c" "bisagra-content")
+     ("b" "boletin")
+     ("i" "ea.international")
+     ("n" "ea.news")
+     ("r" "rational-animations")
+     ("t t" "tlon.team")
+     ("t c" "tlon.team-content")
+     ("u n" "utilitarianism-en")
+     ("u s" "utilitarianism-es")]
+    ["Meetings"
+     ("m l p" "Leo-Pablo")
+     ("m f p" "Fede-Pablo")
+     ("m f l" "Fede-Leo")
+     ("m g" "group")
+     ""
+     "Clock"
+     ("c l" "Leo")
+     ("c f" "Fede")
+     ("c p" "Pablo")
+     ""
+     "Emacs"
+     ("e" "tlon.el")
+     ""
+     "Docs"
+     ("d" "tlon-docs")
+     ""
+     "Web"
+     ("w" "web-server")
+     ""
+     "Sandbox"
+     ("H-s" "sandbox")])
+  "Shared repo menu entries for Magit and Dired browse menus.
+Each entry is (KEY LABEL); separators and group headers are strings.")
+
+(defun tlon-dispatch--build-repo-menu-groups (backend &optional extra-entries)
+  "Build transient menu groups for BACKEND from `tlon-repo-menu-entries'.
+BACKEND is a string like \"magit\" or \"dired\". EXTRA-ENTRIES is an
+alist mapping a KEY string to a list of literal entries to insert after
+the entry with that key."
+  (let ((extra-entries (or extra-entries '())))
+    (apply #'vector
+           (cl-loop for group in tlon-repo-menu-entries
+                    collect
+                    (let* ((items (cdr (append group nil)))
+                           (header (car (append group nil))))
+                      (apply #'vector header
+                             (cl-loop for item in items
+                                      if (stringp item) collect item
+                                      else collect
+                                      (let* ((key (nth 0 item))
+                                             (label (nth 1 item))
+                                             (abbrev (replace-regexp-in-string "[.]" "-" label))
+                                             (cmd (intern (format "tlon-%s-browse-%s" backend abbrev))))
+                                        (list key label cmd))
+                                      and append (alist-get (nth 0 item) extra-entries nil nil #'equal))))))))
 
 ;;;###autoload (autoload 'tlon-magit-repo-menu "tlon-dispatch" nil t)
-(transient-define-prefix tlon-magit-repo-menu ()
-  "Browse a Tlön repo in Magit."
-  [["Languages"
-    ("l d" "de"                           tlon-magit-browse-de)
-    ("l s" "es"                           tlon-magit-browse-es)
-    ("l r" "fr"                           tlon-magit-browse-fr)
-    ("l t" "it"                           tlon-magit-browse-it)]
-   ["General"
-    ("g c" "babel-core"                   tlon-magit-browse-babel-core)
-    ("g f" "babel-refs"                   tlon-magit-browse-babel-refs)
-    ""
-    "Uqbar"
-    ("q q" "uqbar"                        tlon-magit-browse-uqbar)
-    ("q Q" "uqbar: pull all"              tlon-uqbar-pull-all)
-    ("q d" "uqbar-audio-content"          tlon-magit-browse-uqbar-audio-content)
-    ("q p" "uqbar-audio-api"              tlon-magit-browse-uqbar-audio-api)
-    ""
-    ("q a" "uqbar-ar"                     tlon-magit-browse-uqbar-ar)
-    ("q n" "uqbar-en"                     tlon-magit-browse-uqbar-en)
-    ("q s" "uqbar-es"                     tlon-magit-browse-uqbar-es)
-    ("q r" "uqbar-fr"                     tlon-magit-browse-uqbar-fr)
-    ("q t" "uqbar-it"                     tlon-magit-browse-uqbar-it)
-    ("q j" "uqbar-ja"                     tlon-magit-browse-uqbar-ja)
-    ("q k" "uqbar-ko"                     tlon-magit-browse-uqbar-ko)
-    ("q b" "uqbar-sr"                     tlon-magit-browse-uqbar-sr)
-    ("q u" "uqbar-tr"                     tlon-magit-browse-uqbar-tr)
-    ("q z" "uqbar-zh"                     tlon-magit-browse-uqbar-zh)]
-   ["Projects"
-    ("8 p" "80k podcast"                  tlon-magit-browse-80k-podcast)
-    ("8 a" "ai-in-context"                tlon-magit-browse-ai-in-context)
-    ("7" "ai-2027"                        tlon-magit-browse-ai-2027)
-    ("a a" "aea"                          tlon-magit-browse-aea)
-    ("a c" "aea-content"                  tlon-magit-browse-aea-content)
-    ("o" "altruismoeficaz.org"            tlon-magit-browse-altruismoeficaz-org)
-    ("s s" "bisagra"                      tlon-magit-browse-bisagra)
-    ("s c" "bisagra-content"              tlon-magit-browse-bisagra-content)
-    ("b" "boletin"                        tlon-magit-browse-boletin)
-    ("i" "ea.international"               tlon-magit-browse-ea-international)
-    ("n" "ea.news"                        tlon-magit-browse-ea-news)
-    ("r" "rational-animations"            tlon-magit-browse-rational-animations)
-    ("t t" "tlon.team"                    tlon-magit-browse-tlon-team)
-    ("t c" "tlon.team-content"            tlon-magit-browse-tlon-team-content)
-    ("u n" "utilitarianism-en"            tlon-magit-browse-utilitarianism-en)
-    ("u s" "utilitarianism-es"            tlon-magit-browse-utilitarianism-es)]
-   ["Meetings"
-    ("m l p" "Leo-Pablo"                  tlon-magit-browse-meetings-leo-pablo)
-    ("m f p" "Fede-Pablo"                 tlon-magit-browse-meetings-fede-pablo)
-    ("m f l" "Fede-Leo"                   tlon-magit-browse-meetings-fede-leo)
-    ("m g" "group"                        tlon-magit-browse-meetings-group)
-    ""
-    "Clock"
-    ("c l" "Leo"                          tlon-magit-browse-clock-leo)
-    ("c f" "Fede"                         tlon-magit-browse-clock-fede)
-    ("c p" "Pablo"                        tlon-magit-browse-clock-pablo)
-    ""
-    "Emacs"
-    ("e" "tlon.el"                        tlon-magit-browse-tlon-el)
-    ""
-    "Docs"
-    ("d" "tlon-docs"                    tlon-magit-browse-docs)
-    ""
-    "Web"
-    ("w" "web-server"                     tlon-magit-browse-web-server)
-    ""
-    "Sandbox"
-    ("H-s" "sandbox"                        tlon-magit-browse-sandbox)]])
+(eval
+ `(transient-define-prefix tlon-magit-repo-menu ()
+    "Browse a Tlön repo in Magit."
+    ,(tlon-dispatch--build-repo-menu-groups
+      "magit"
+      '(("q q" . (("q Q" "uqbar: pull all" tlon-uqbar-pull-all)))))))
 
-;;;;; Browse repo in Dired
-
-(defmacro tlon-generate-dired-browse-commands (name dir)
-  "Generate commands for browsing repo named NAME.
-DIR is the directory where the repo is stored."
-  `(defun ,(intern (format "tlon-dired-browse-%s" name)) ()
-     ,(format "Browse the %s repository in Dired." name)
-     (interactive)
-     (dired ,dir)))
-
-(dolist (repo tlon-repos)
-  (when-let ((abbrev (plist-get repo :abbrev))
-	     (dir (plist-get repo :dir)))
-    (eval `(tlon-generate-dired-browse-commands
-	    ,abbrev
-	    ,dir))))
-
-;; Mirrors the Magit repo menu (`tlon-magit-repo-menu' above) but opens
-;; repos in Dired instead of Magit status.
 ;;;###autoload (autoload 'tlon-dired-repo-menu "tlon-dispatch" nil t)
-(transient-define-prefix tlon-dired-repo-menu ()
-  "Browse a Tlön repo in Dired."
-  [["Languages"
-    ("l d" "de"                           tlon-dired-browse-de)
-    ("l s" "es"                           tlon-dired-browse-es)
-    ("l r" "fr"                           tlon-dired-browse-fr)
-    ("l t" "it"                           tlon-dired-browse-it)]
-   ["General"
-    ("g c" "babel-core"                   tlon-dired-browse-babel-core)
-    ("g f" "babel-refs"                   tlon-dired-browse-babel-refs)
-    ""
-    "Uqbar"
-    ("q q" "uqbar"                        tlon-dired-browse-uqbar)
-    ("q d" "uqbar-audio-content"          tlon-dired-browse-uqbar-audio-content)
-    ("q p" "uqbar-audio-api"              tlon-dired-browse-uqbar-audio-api)
-    ""
-    ("q a" "uqbar-ar"                     tlon-dired-browse-uqbar-ar)
-    ("q n" "uqbar-en"                     tlon-dired-browse-uqbar-en)
-    ("q s" "uqbar-es"                     tlon-dired-browse-uqbar-es)
-    ("q r" "uqbar-fr"                     tlon-dired-browse-uqbar-fr)
-    ("q t" "uqbar-it"                     tlon-dired-browse-uqbar-it)
-    ("q j" "uqbar-ja"                     tlon-dired-browse-uqbar-ja)
-    ("q k" "uqbar-ko"                     tlon-dired-browse-uqbar-ko)
-    ("q b" "uqbar-sr"                     tlon-dired-browse-uqbar-sr)
-    ("q u" "uqbar-tr"                     tlon-dired-browse-uqbar-tr)
-    ("q z" "uqbar-zh"                     tlon-dired-browse-uqbar-zh)]
-   ["Projects"
-    ("8 p" "80k podcast"                  tlon-dired-browse-80k-podcast)
-    ("8 a" "ai-in-context"                tlon-dired-browse-ai-in-context)
-    ("7" "ai-2027"                        tlon-dired-browse-ai-2027)
-    ("a a" "aea"                          tlon-dired-browse-aea)
-    ("a c" "aea-content"                  tlon-dired-browse-aea-content)
-    ("o" "altruismoeficaz.org"            tlon-dired-browse-altruismoeficaz-org)
-    ("s s" "bisagra"                      tlon-dired-browse-bisagra)
-    ("s c" "bisagra-content"              tlon-dired-browse-bisagra-content)
-    ("b" "boletin"                        tlon-dired-browse-boletin)
-    ("i" "ea.international"               tlon-dired-browse-ea-international)
-    ("n" "ea.news"                        tlon-dired-browse-ea-news)
-    ("r" "rational-animations"            tlon-dired-browse-rational-animations)
-    ("t t" "tlon.team"                    tlon-dired-browse-tlon-team)
-    ("t c" "tlon.team-content"            tlon-dired-browse-tlon-team-content)
-    ("u n" "utilitarianism-en"            tlon-dired-browse-utilitarianism-en)
-    ("u s" "utilitarianism-es"            tlon-dired-browse-utilitarianism-es)]
-   ["Meetings"
-    ("m l p" "Leo-Pablo"                  tlon-dired-browse-meetings-leo-pablo)
-    ("m f p" "Fede-Pablo"                 tlon-dired-browse-meetings-fede-pablo)
-    ("m f l" "Fede-Leo"                   tlon-dired-browse-meetings-fede-leo)
-    ("m g" "group"                        tlon-dired-browse-meetings-group)
-    ""
-    "Clock"
-    ("c l" "Leo"                          tlon-dired-browse-clock-leo)
-    ("c f" "Fede"                         tlon-dired-browse-clock-fede)
-    ("c p" "Pablo"                        tlon-dired-browse-clock-pablo)
-    ""
-    "Emacs"
-    ("e" "tlon.el"                         tlon-dired-browse-tlon-el)
-    ""
-    "Docs"
-    ("d" "tlon-docs"                      tlon-dired-browse-docs)
-    ""
-    "Web"
-    ("w" "web-server"                      tlon-dired-browse-web-server)
-    ""
-    "Misc"
-    ("H-s" "sandbox"                        tlon-dired-browse-sandbox)]])
+(eval
+ `(transient-define-prefix tlon-dired-repo-menu ()
+    "Browse a Tlön repo in Dired."
+    ,(tlon-dispatch--build-repo-menu-groups "dired")))
 
 ;;;;; Open file in repo
 
