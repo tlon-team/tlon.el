@@ -1562,9 +1562,14 @@ VOICE-PARAMS are the specific voice parameters for this chunk."
               (when (and (consp voice-params) (eq (car voice-params) 'tlon-tts-voice))
                 (cdr voice-params)))
              (file-name-nondirectory chunk-filename))
-    ;; Wait for completion
-    (while (process-live-p process)
-      (accept-process-output process 0.1))
+    ;; Wait for completion (with timeout)
+    (let ((deadline (+ (float-time) 300))) ; 5 minute timeout
+      (while (and (process-live-p process)
+		  (< (float-time) deadline))
+	(accept-process-output process 0.5))
+      (when (process-live-p process)
+	(delete-process process)
+	(user-error "TTS generation timed out after 5 minutes")))
     ;; Return the process for status checking
     process))
 
@@ -2252,7 +2257,7 @@ should be cleaned up."
     
     (message "Temporary file cleanup finished.")
 
-    (when (and success (derived-mode-p 'dired-mode) (string= (buffer-file-name) (file-name-directory final-output-file)))
+    (when (and success (derived-mode-p 'dired-mode) (string= default-directory (file-name-directory final-output-file)))
       (revert-buffer))))
 
 ;;;###autoload
@@ -2632,12 +2637,19 @@ CHUNK-INDEX is ignored for Microsoft Azure but included for API consistency."
 	       (when parameters (list parameters)))))
     (cl-destructuring-bind (audio locale voice) vars
       (let* ((ssml-wrapper (alist-get "Microsoft Azure" tlon-ssml-wrapper nil nil #'string=))
-	     (wrapped-string (format ssml-wrapper locale voice
-				     ;; handle single quotes in `string' without breaking `curl' command
-				     (replace-regexp-in-string "'" "'\"'\"'" string))))
-	(format tlon-microsoft-azure-request
-		(tlon-tts-microsoft-azure-get-or-set-key) (car audio)
-		wrapped-string destination)))))
+	     (wrapped-string (format ssml-wrapper locale voice string)))
+	(mapconcat #'shell-quote-argument
+		   (list "curl" "-v"
+			 "--location" "--request" "POST"
+			 "https://eastus.tts.speech.microsoft.com/cognitiveservices/v1"
+			 "--header" (format "Ocp-Apim-Subscription-Key: %s"
+					    (tlon-tts-microsoft-azure-get-or-set-key))
+			 "--header" "Content-Type: application/ssml+xml"
+			 "--header" (format "X-Microsoft-OutputFormat: %s" (car audio))
+			 "--header" "User-Agent: curl"
+			 "--data-raw" wrapped-string
+			 "-o" destination)
+		   " ")))))
 
 (defun tlon-tts-microsoft-azure-get-or-set-key ()
   "Get or set the Microsoft Azure key."
@@ -2657,14 +2669,22 @@ CHUNK-INDEX is ignored for Google Cloud but included for API consistency."
 	       (when parameters (list parameters)))))
     (cl-destructuring-bind (locale voice) vars
       (let* ((ssml-wrapper (alist-get "Google Cloud" tlon-ssml-wrapper nil nil #'string=))
-	     (wrapped-string (format ssml-wrapper locale voice string)))
-	(format tlon-google-cloud-request
-		(tlon-tts-google-cloud-get-token)
-		;; note: `wrapped-string' already includes voice and locale info,
-		;; but `tlon-tts-google-cloud-format-ssml' adds this info as part of the
-		;; JSON payload. Is this correct?
-		(tlon-tts-google-cloud-format-ssml wrapped-string)
-		destination)))))
+	     (wrapped-string (format ssml-wrapper locale voice string))
+	     (payload (tlon-tts-google-cloud-format-ssml wrapped-string))
+	     (payload-file (make-temp-file "tlon-tts-gc-" nil ".json")))
+	(with-temp-file payload-file
+	  (insert payload))
+	(concat
+	 (mapconcat #'shell-quote-argument
+		    (list "curl"
+			  "-H" (format "Authorization: Bearer %s" (tlon-tts-google-cloud-get-token))
+			  "-H" "x-goog-user-project: api-project-781899662791"
+			  "-H" "Content-Type: application/json; charset=utf-8"
+			  "--data" (concat "@" payload-file)
+			  "https://texttospeech.googleapis.com/v1/text:synthesize")
+		    " ")
+	 " | jq -r .audioContent | base64 --decode > "
+	 (shell-quote-argument destination))))))
 
 ;; If this keeps failing, consider using the approach in `tlon-tts-elevenlabs-make-request'
 (defun tlon-tts-google-cloud-format-ssml (ssml)
@@ -2695,8 +2715,16 @@ CHUNK-INDEX is ignored for Amazon Polly but included for API consistency."
 		 tlon-tts-voice)
 	       (when parameters (list parameters)))))
     (cl-destructuring-bind (audio voice) vars
-      (format tlon-amazon-polly-request
-	      (car audio) voice string tlon-amazon-polly-region destination))))
+      (mapconcat #'shell-quote-argument
+		 (list "aws" "polly" "synthesize-speech"
+		       "--output-format" (car audio)
+		       "--voice-id" voice
+		       "--engine" "neural"
+		       "--text-type" "ssml"
+		       "--text" (format "<speak>%s</speak>" string)
+		       "--region" tlon-amazon-polly-region
+		       destination)
+		 " ")))))
 
 ;;;;;;; OpenAI
 
@@ -2826,7 +2854,7 @@ Each locator is an alist with string keys \"pronunciation_dictionary_id\" and
       (setq locs (append locs nil)))
     (let ((res '())
           (count 0))
-      (dolist (item locs)
+      (cl-dolist (item locs)
         (when (and (alist-get "pronunciation_dictionary_id" item nil nil #'string=)
                    (alist-get "version_id" item nil nil #'string=))
           (push item res)
