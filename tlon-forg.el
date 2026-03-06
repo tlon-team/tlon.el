@@ -2610,17 +2610,11 @@ If ISSUE is nil, use the issue at point or in current buffer."
 
 ;;;;; Transient
 
-(defun tlon-symbol-reader (prompt symbols)
-  "Return a list of SYMBOLS with PROMPT to be used as an `infix' reader function."
-  (let* ((input (completing-read prompt
-				 (mapcar 'symbol-name symbols))))
-    (intern input)))
-
 (transient-define-infix tlon-when-assignee-is-nil-infix ()
   "Set the value of `tlon-when-assignee-is-nil' in `forg' menu."
   :class 'transient-lisp-variable
   :reader (lambda (prompt _ _)
-	    (tlon-symbol-reader prompt '(prompt change warn capture no-capture)))
+	    (tlon-transient-read-symbol-choice prompt '(prompt change warn capture no-capture)))
   :transient t
   :prompt "What to do when the assignee is nil (see docstring for details): "
   :variable 'tlon-when-assignee-is-nil)
@@ -2629,7 +2623,7 @@ If ISSUE is nil, use the issue at point or in current buffer."
   "Set the value of `tlon-when-assignee-is-someone-else' in `forg' menu."
   :class 'transient-lisp-variable
   :reader (lambda (prompt _ _)
-	    (tlon-symbol-reader prompt '(prompt change warn capture no-capture)))
+	    (tlon-transient-read-symbol-choice prompt '(prompt change warn capture no-capture)))
   :transient t
   :prompt "What to do when the assignee is someone else (see docstring for details): "
   :variable 'tlon-when-assignee-is-someone-else)
@@ -2638,7 +2632,7 @@ If ISSUE is nil, use the issue at point or in current buffer."
   "Set the value of `tlon-forg-when-syncing' in `forg' menu."
   :class 'transient-lisp-variable
   :reader (lambda (prompt _ _)
-	    (tlon-symbol-reader prompt '(prompt issue todo)))
+	    (tlon-transient-read-symbol-choice prompt '(prompt issue todo)))
   :transient t
   :prompt "What to do when the issue and its associated todo differ (see docstring for details): "
   :variable 'tlon-forg-when-syncing)
@@ -2659,7 +2653,7 @@ If ISSUE is nil, use the issue at point or in current buffer."
   "Set the value of `tlon-forg-sync-after-capture-project' in `forg' menu."
   :class 'transient-lisp-variable
   :reader (lambda (prompt _ _)
-	    (tlon-symbol-reader prompt '(t nil prompt)))
+	    (tlon-transient-read-symbol-choice prompt '(t nil prompt)))
   :transient t
   :prompt "Sync after capturing all issues in project (see docstring for details): "
   :variable 'tlon-forg-sync-after-capture-project)

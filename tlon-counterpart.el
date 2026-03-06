@@ -62,6 +62,16 @@ language, unless TARGET-LANGUAGE-CODE is provided."
       (_ (user-error "Subtype of repo `%s' is neither `originals' nor `translations'" repo)))))
 
 (declare-function tlon-bibliography-lookup "tlon-bib")
+(defun tlon-counterpart--resolve-hits (hits error-msg &optional prompt)
+  "Return the single element in HITS, or disambiguate if multiple.
+If HITS is empty, signal an error formatted with ERROR-MSG (which is passed
+to `format' with no extra arguments).  If HITS has one element, return it.
+Otherwise prompt with PROMPT (defaulting to \"Disambiguate: \")."
+  (pcase (length hits)
+    (1 (car hits))
+    (0 (user-error "%s" error-msg))
+    (_ (completing-read (or prompt "Disambiguate: ") (nreverse hits) nil t))))
+
 (defun tlon-get-counterpart-in-translations (file)
   "Return the original counterpart of translation FILE.
 For articles, resolve by YAML key via the bibliography (translation
@@ -82,10 +92,10 @@ under the English counterpart directory derived from FILE."
            (let* ((table (tlon-counterpart--original-table-for-repo r))
                   (hit (and table (gethash orig-key table))))
              (when hit (push hit hits))))
-         (pcase (length hits)
-           (1 (car hits))
-           (0 (user-error "No original found for translation key %s" tr-key))
-           (_ (completing-read "Disambiguate original: " (nreverse hits) nil t)))))
+         (tlon-counterpart--resolve-hits
+          hits
+          (format "No original found for translation key %s" tr-key)
+          "Disambiguate original: ")))
       ((or "tag" "author")
        (let* ((op (tlon-yaml-get-key "original_path" file))
               (op* (and (stringp op) (string-trim op)))
@@ -120,11 +130,11 @@ the basename of FILE."
            (let* ((table (tlon-counterpart--translation-table-for-repo repo))
                   (hit (and table (gethash orig-key table))))
              (when hit (push hit hits))))
-         (pcase (length hits)
-           (1 (car hits))
-           (0 (user-error "No translation found for %s in %s"
-                          (file-name-nondirectory file) target-language-code))
-           (_ (completing-read "Disambiguate translation: " (nreverse hits) nil t)))))
+         (tlon-counterpart--resolve-hits
+          hits
+          (format "No translation found for %s in %s"
+                  (file-name-nondirectory file) target-language-code)
+          "Disambiguate translation: ")))
       ((or "tag" "author")
        (let* ((orig-base (file-name-nondirectory file))
               (orig-repo (tlon-get-repo-from-file file))
@@ -144,11 +154,11 @@ the basename of FILE."
 		  (message "Warning: error scanning counterpart: %s" (error-message-string err))
 		  nil)))))
          (setq hits (delete-dups hits))
-         (pcase (length hits)
-           (1 (car hits))
-           (0 (user-error "No translation found for %s in %s"
-                          (file-name-nondirectory file) target-language-code))
-           (_ (completing-read "Disambiguate translation: " (nreverse hits) nil t)))))
+         (tlon-counterpart--resolve-hits
+          hits
+          (format "No translation found for %s in %s"
+                  (file-name-nondirectory file) target-language-code)
+          "Disambiguate translation: ")))
       (_
        (user-error "Unsupported YAML type %s for counterpart lookup" yaml-type)))))
 

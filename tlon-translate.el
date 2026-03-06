@@ -217,6 +217,8 @@ Returns the translated text as a string, or nil if skipped."
 ;;;;;; file
 
 (declare-function tlon-get-counterpart-in-originals "tlon-counterpart")
+(declare-function tlon-bib--get-field-fn "tlon-bib")
+(declare-function tlon-get-key-at-point "tlon-bib")
 (declare-function tlon-get-counterpart "tlon-counterpart")
 (declare-function tlon-db-get-translation-key "tlon-db")
 (declare-function tlon-yaml-guess-english-counterpart "tlon-yaml")
@@ -794,28 +796,26 @@ Returns a list (key text source-lang-code) with all information needed for
 translation, or nil if any required piece is missing."
   (let* ((key (or key
                   (if interactive-call-p
-                      (pcase major-mode
-                        ('ebib-entry-mode (ebib--get-key-at-point))
-                        ('bibtex-mode (bibtex-extras-get-key))
-                        (_ (user-error "Cannot determine key interactively in mode: %s" major-mode)))
+                      (or (tlon-get-key-at-point)
+                          (user-error "Cannot determine key interactively in mode: %s" major-mode))
                     (user-error "KEY argument must be provided when called non-interactively"))))
+         (get-field (and (derived-mode-p 'bibtex-mode 'ebib-entry-mode)
+                         (tlon-bib--get-field-fn)))
          (text (or abstract
                    (when key
-                     (or (when (and interactive-call-p
-				    (derived-mode-p 'ebib-entry-mode)
-				    (string= key (ebib--get-key-at-point)))
-                           (ebib-extras-get-field "abstract"))
+                     (or (when (and interactive-call-p get-field
+				    (string= key (tlon-get-key-at-point)))
+                           (funcall get-field "abstract"))
                          (tlon-bibliography-lookup "=key=" key "abstract")))
                    (when interactive-call-p
                      (pcase major-mode
                        ('text-mode (buffer-string))
-                       ('ebib-entry-mode (unless key (ebib-extras-get-field "abstract")))
-                       ('bibtex-mode (unless key (bibtex-extras-get-field "abstract")))))))
+                       ((or 'ebib-entry-mode 'bibtex-mode)
+                        (unless key (funcall get-field "abstract")))))))
          (source-lang-name (when key
-                             (or (when (and interactive-call-p
-					    (derived-mode-p 'ebib-entry-mode)
-					    (string= key (ebib--get-key-at-point)))
-                                   (ebib-extras-get-field "langid"))
+                             (or (when (and interactive-call-p get-field
+					    (string= key (tlon-get-key-at-point)))
+                                   (funcall get-field "langid"))
                                  (tlon-bibliography-lookup "=key=" key "langid"))))
          (source-lang-code (when source-lang-name
                              (tlon-lookup tlon-languages-properties :code :name source-lang-name))))

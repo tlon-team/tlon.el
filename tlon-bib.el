@@ -220,11 +220,7 @@ When the entry already contains an abstract, prompt the user for confirmation.
 Bypass this prompt if OVERWRITE is either `always' or `never'; if so, the new
 abstract will, or will not, replace the existing one, respectively."
   (interactive)
-  (cl-destructuring-bind (get-field set-field)
-      (pcase major-mode
-	('ebib-entry-mode '(ebib-extras-get-field ebib-extras-set-field))
-	('bibtex-mode '(bibtex-extras-get-field bibtex-set-field))
-	(_ (error "Not in `ebib-entry-mode' or `bibtex-mode'")))
+  (cl-destructuring-bind (get-field set-field) (tlon-bib--field-accessors)
     (let ((found nil))
       (when (tlon-abstract-may-proceed-p)
 	(cl-destructuring-bind (doi isbn url)
@@ -334,10 +330,8 @@ string or nil.  SOURCE-LABEL is used in messages (e.g. \"Crossref\")."
 (defun tlon-abstract-may-proceed-p ()
   "Return t iff it’s okay to proceed with abstract processing."
   (if (derived-mode-p 'bibtex-mode 'ebib-entry-mode)
-      (let* ((get-field (pcase major-mode
-			  ('ebib-entry-mode #'ebib-extras-get-field)
-			  ('bibtex-mode #'bibtex-extras-get-field)))
-	     (abstract (funcall get-field  "abstract")))
+      (let* ((get-field (tlon-bib--get-field-fn))
+	     (abstract (funcall get-field "abstract")))
 	(if (or
 	     (eq tlon-abstract-overwrite 'always)
 	     (not abstract)
@@ -839,13 +833,24 @@ If FILE is nil, use the file visited by the current buffer."
 
 (declare-function simple-extras-slugify "simple-extras")
 
+(defun tlon-bib--get-field-fn ()
+  "Return the field-getter function for the current BibTeX-related mode."
+  (pcase major-mode
+    ('ebib-entry-mode #'ebib-extras-get-field)
+    ('bibtex-mode #'bibtex-extras-get-field)
+    (_ (user-error "Not in a BibTeX-related mode"))))
+
+(defun tlon-bib--set-field-fn ()
+  "Return the field-setter function for the current BibTeX-related mode."
+  (pcase major-mode
+    ('ebib-entry-mode #'ebib-extras-set-field)
+    ('bibtex-mode #'bibtex-set-field)
+    (_ (user-error "Not in a BibTeX-related mode"))))
+
 (defun tlon-bib--field-accessors ()
   "Return (GET-FN SET-FN) for the current BibTeX-related mode.
 Signal an error if not in a BibTeX-related mode."
-  (pcase major-mode
-    ('ebib-entry-mode '(ebib-extras-get-field ebib-extras-set-field))
-    ('bibtex-mode '(bibtex-extras-get-field bibtex-set-field))
-    (_ (user-error "Not in a BibTeX-related mode"))))
+  (list (tlon-bib--get-field-fn) (tlon-bib--set-field-fn)))
 
 ;;;###autoload
 (defun tlon-bib-populate-url-field ()
@@ -1483,9 +1488,7 @@ If KEY is nil, use the key of the entry at point. If TARGET-LANG is nil, prompt
 the user to select a language. If VAR is non-nil, save the translation in VAR;
 otherwise, save it to `tlon-file-abstract-translations'."
   (interactive)
-  (when-let* ((get-field (pcase major-mode
-			   ('ebib-entry-mode #'ebib-extras-get-field)
-			   ('bibtex-mode #'bibtex-extras-get-field)))
+  (when-let* ((get-field (tlon-bib--get-field-fn))
 	      (key (or key (tlon-get-key-at-point)))
 	      (abstract (funcall get-field "abstract"))
 	      (source-lang (or source-lang

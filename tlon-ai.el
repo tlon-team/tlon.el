@@ -1053,6 +1053,9 @@ Messages refer to paragraphs with one-based numbering."
 ;;;;; Summarization
 
 (declare-function tlon-fetch-and-set-abstract "tlon-bib")
+(declare-function tlon-bib--get-field-fn "tlon-bib")
+(declare-function tlon-bib--set-field-fn "tlon-bib")
+(declare-function tlon-get-key-at-point "tlon-bib")
 ;;;###autoload
 (defun tlon-get-abstract-with-or-without-ai ()
   "Try to get an abstract using non-AI methods; if unsuccessful, use AI.
@@ -1113,16 +1116,11 @@ TYPE is either `abstract' or `synopsis'."
 (defun tlon-shorten-abstract-with-ai ()
   "Shorten the abstract at point so that does not exceed word threshold."
   (interactive)
-  (when-let* ((get-field (pcase major-mode
-			   ('bibtex-mode #'bibtex-extras-get-field)
-			   ('ebib-entry-mode #'ebib-extras-get-field)))
-	      (get-key (pcase major-mode
-			 ('bibtex-mode #'bibtex-extras-get-key)
-			 ('ebib-entry-mode #'ebib--get-key-at-point)))
+  (when-let* ((get-field (tlon-bib--get-field-fn))
 	      (abstract (funcall get-field "abstract"))
 	      (language (tlon-get-iso-code (or (funcall get-field "langid")
 					       (tlon-select-language))))
-	      (key (funcall get-key)))
+	      (key (tlon-get-key-at-point)))
     (tlon-ai-get-abstract-common
      tlon-ai-shorten-abstract-prompts abstract language
      (tlon-get-abstract-callback key))))
@@ -1162,10 +1160,7 @@ other value, generate an abstract."
   (if-let ((string (tlon-get-string-dwim file))
 	   (lang-2 (tlon-get-language-code-from-name language)))
       (let ((original-buffer (current-buffer))
-	    (key (pcase major-mode
-		   ('bibtex-mode (bibtex-extras-get-key))
-		   ('ebib-entry-mode (ebib--get-key-at-point))
-		   (_ nil))))
+	    (key (ignore-errors (tlon-get-key-at-point))))
 	(tlon-ai-get-abstract-common
 	 (pcase type
 	   ('synopsis tlon-ai-get-synopsis-prompts)
@@ -1385,9 +1380,7 @@ Documentation files are collected from:
       (error "Could not find BibTeX file for key %s" key))
     (let ((target-buffer (find-file-noselect bib-file)))
       (with-current-buffer target-buffer
-	(let ((set-field (pcase major-mode
-			   ('bibtex-mode #'bibtex-set-field)
-			   (_ (error "Unsupported major mode in BibTeX file: %s" major-mode)))))
+	(let ((set-field (tlon-bib--set-field-fn)))
 	  (save-excursion
 	    (goto-char (point-min))
 	    (when (bibtex-search-entry key)
