@@ -396,6 +396,23 @@ Older models (also supported):
 
 ;;;; Variables
 
+;;;;; Authorship
+
+(defconst tlon-authorship-pattern
+  '((:language "ar" :pattern "بواسطة %s.")
+    (:language "de" :pattern "von %s.")
+    (:language "en" :pattern "by %s.")
+    (:language "es" :pattern "por %s.")
+    (:language "fr" :pattern "par %s.")
+    (:language "it" :pattern "di %s.")
+    (:language "ja" :pattern "%sによって".)
+    (:language "ko" :pattern "%s에 의해.")
+    (:language "ru" :pattern "от %s.")
+    (:language "tr" :pattern "tarafından %s."))
+  "Pattern to use when listing the author(s) of a work.
+For example, in English, the pattern is `by %s', where `%s' is replaced by the
+author name(s).")
+
 ;;;;; Paths
 
 (defconst tlon-file-elevenlabs-dictionary-locators
@@ -2594,6 +2611,12 @@ Returns a list of paths to new temporary files with silence appended."
 
 ;;;;;; TTS engines
 
+(defun tlon-tts-get-or-set-api-key (var auth-field auth-domain)
+  "Get or set the API key stored in symbol VAR.
+Look up AUTH-FIELD in auth-source-pass under AUTH-DOMAIN with `tlon-email-shared'."
+  (or (symbol-value var)
+      (set var (auth-source-pass-get auth-field (concat auth-domain tlon-email-shared)))))
+
 ;;;;;;; Microsoft Azure
 
 (defun tlon-tts-microsoft-azure-make-request (string destination parameters &optional _chunk-index)
@@ -2618,9 +2641,7 @@ CHUNK-INDEX is ignored for Microsoft Azure but included for API consistency."
 
 (defun tlon-tts-microsoft-azure-get-or-set-key ()
   "Get or set the Microsoft Azure key."
-  (or tlon-microsoft-azure-key
-      (setq tlon-microsoft-azure-key
-	    (auth-source-pass-get "tts1" (concat "tlon/core/azure.com/" tlon-email-shared)))))
+  (tlon-tts-get-or-set-api-key 'tlon-microsoft-azure-key "tts1" "tlon/core/azure.com/"))
 
 ;;;;;;; Google Cloud
 
@@ -2698,9 +2719,7 @@ CHUNK-INDEX is ignored for OpenAI but included for API consistency."
 
 (defun tlon-tts-openai-get-or-set-key ()
   "Get or set the OpenAI API key."
-  (or tlon-openai-key
-      (setq tlon-openai-key
-	    (auth-source-pass-get "gptel" (concat "tlon/core/openai.com/" tlon-email-shared)))))
+  (tlon-tts-get-or-set-api-key 'tlon-openai-key "gptel" "tlon/core/openai.com/"))
 
 ;;;;;;; ElevenLabs
 
@@ -2842,9 +2861,7 @@ Each locator is an alist with string keys \"pronunciation_dictionary_id\" and
 
 (defun tlon-tts-elevenlabs-get-or-set-key ()
   "Get or set the ElevenLabs API key."
-  (or tlon-elevenlabs-key
-      (setq tlon-elevenlabs-key
-	    (auth-source-pass-get "key" (concat "tlon/core/elevenlabs.io/" tlon-email-shared)))))
+  (tlon-tts-get-or-set-api-key 'tlon-elevenlabs-key "key" "tlon/core/elevenlabs.io/"))
 
 ;;;;; Metadata
 
