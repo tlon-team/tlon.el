@@ -2,7 +2,7 @@
 
 ;; Author: Pablo Stafforini
 ;; Maintainer: Pablo Stafforini
-;; Version: 1.6.7
+;; Version: 1.7.1
 ;; URL: https://github.com/tlon-team/tlon
 ;; Keywords: convenience tools
 ;; Package-Requires: ((bibtex-extras "0.1")
