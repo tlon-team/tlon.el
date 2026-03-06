@@ -44,7 +44,7 @@
   "Alist of playlist names and their corresponding YouTube playlist IDs.")
 
 (defconst tlon-youtube-thumbnail-command-template
-  "magick -density %d -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' -font %s -size %dx%d -background none -fill '#2c3e50' -stroke '#34495e' -strokewidth %d -gravity center caption:'%s' -geometry +0%d -composite -font %s -pointsize %d -fill '#5d6d7e' -stroke '#5d6d7e' -strokewidth 1 -gravity center -annotate +0+%d '%s' \\( %s -density %d -background none -trim -resize %dx%d \\) -gravity southeast -geometry +%d+%d -composite -font %s -pointsize %d -fill '#7f8c8d' -gravity southwest -annotate +%d+%d '%s' -resize %dx%d -quality 95 %s"
+  "magick -density %d -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' -font %s -size %dx%d -background none -fill '#2c3e50' -stroke '#34495e' -strokewidth %d -gravity center caption:%s -geometry +0%d -composite -font %s -pointsize %d -fill '#5d6d7e' -stroke '#5d6d7e' -strokewidth 1 -gravity center -annotate +0+%d %s \\( %s -density %d -background none -trim -resize %dx%d \\) -gravity southeast -geometry +%d+%d -composite -font %s -pointsize %d -fill '#7f8c8d' -gravity southwest -annotate +%d+%d %s -resize %dx%d -quality 95 %s"
   "ImageMagick command template for generating YouTube thumbnails.
 
 Format arguments (in order):
@@ -258,19 +258,19 @@ the \"tlon.team-content\" repository to create a thumbnail image."
                           (shell-quote-argument font-path)
                           text-width text-height
                           stroke-width
-                          (tlon-youtube--sanitize-draw-string title)
+                          (shell-quote-argument (tlon-youtube--sanitize-draw-string title))
                           title-y-offset
                           (shell-quote-argument font-path)
                           authors-pointsize
                           authors-y-offset
-                          (tlon-youtube--sanitize-draw-string author-text)
+                          (shell-quote-argument (tlon-youtube--sanitize-draw-string author-text))
                           (shell-quote-argument logo-path)
                           dpi logo-size logo-size
                           logo-padding logo-padding
                           (shell-quote-argument monospace-font-path)
                           url-pointsize
                           url-padding-x url-padding-y
-                          url-text
+                          (shell-quote-argument url-text)
                           width height
                           (shell-quote-argument thumbnail-file))))
     (unless (file-exists-p font-path)

@@ -70,7 +70,7 @@ Markdown alt into the alt attribute. If nil, we omit the alt attribute."
 ;;;; Variables
 
 (defconst tlon-invertornot-generic-endpoint
-  "https://invertornot.com/api/"
+  "https://invertornot.com/api/%s"
   "Generic endpoint for the invertornot.com API.")
 
 (defconst tlon-imagemagick-reduce-brightness
@@ -184,7 +184,7 @@ BACKGROUND defaults to \"white\" if nil."
          (command (format tlon-imagemagick-make-nontransparent
 			  (shell-quote-argument source)
 			  (shell-quote-argument target)
-			  background))
+			  (shell-quote-argument background)))
 	 (output (shell-command-to-string command)))
     (tlon-images-handle-output output (format "Made `%s' nontransparent." source))))
 
@@ -417,7 +417,7 @@ relative to the repository root. For example, if FILE is
                (directory-files target-dir nil "^[^.]"))
       (if (y-or-n-p (format "Directory `%s' is not empty. Delete contents and proceed? "
                             (file-relative-name target-dir repo-root)))
-          (delete-directory target-dir t)
+          (delete-directory target-dir t t)
         (user-error "Aborted")))
     (unless (file-directory-p target-dir)
       (make-directory target-dir t))

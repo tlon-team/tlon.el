@@ -37,13 +37,10 @@
 
 (defvar tlon-email-language nil)
 
-(defconst tlon-email-replacements
+(defun tlon-email-replacements ()
+  "Return the current email replacement alist."
   `(("name" . ,tlon-email-name)
-    ("language" . ,tlon-email-language))
-  "List of replacements to be performed in email templates.
-Each element is a cons cell where the car is the placeholder and the cdr is
-either a string or the name of the variable whose value should replace
-it.")
+    ("language" . ,tlon-email-language)))
 
 (defun tlon-email-unset-variables ()
   "Unset email variables."

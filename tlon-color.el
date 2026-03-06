@@ -226,9 +226,11 @@ OVERWRITE is non-nil."
 	 (format-string "Palette %s %s.")
 	 action)
     (if existing-palette
-        (when (or overwrite (yes-or-no-p "Palette already exists. Overwrite? "))
-          (setcdr existing-palette (cdr parsed-palette))
-	  (setq action "updated"))
+        (if (or overwrite (yes-or-no-p "Palette already exists. Overwrite? "))
+            (progn
+              (setcdr existing-palette (cdr parsed-palette))
+	      (setq action "updated"))
+          (user-error "Aborted"))
       (push parsed-palette tlon-color-palettes)
       (setq action "added"))
     (tlon-color-save-palettes-to-file)

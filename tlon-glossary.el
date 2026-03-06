@@ -559,14 +559,14 @@ and paste the contents into a file."
                    (setq glossary (tlon-update-glossary glossary new-entry src-term src))
                    (cl-incf updated)))
                 (_
-                 (push src-term missing))))))))
-      (tlon-write-data tlon-file-glossary-source glossary)
-      (message "Imported %d translation(s) for %s→%s. Missing: %d"
-               updated (upcase src) (upcase tgt) (length missing))
-      (when missing
-	(message "No matching entries for: %s"
-		 (mapconcat #'identity (nreverse missing) ", ")))
-      glossary)))
+                 (push src-term missing)))))))))
+    (tlon-write-data tlon-file-glossary-source glossary)
+    (message "Imported %d translation(s) for %s→%s. Missing: %d"
+             updated (upcase src) (upcase tgt) (length missing))
+    (when missing
+      (message "No matching entries for: %s"
+	       (mapconcat #'identity (nreverse missing) ", ")))
+    glossary))
 
 (defun tlon--glossary-parse-tsv (file)
   "Parse TSV FILE and return a list (SRC TGT PAIRS).

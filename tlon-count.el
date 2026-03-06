@@ -289,7 +289,6 @@ computed by dividing the file size by CHARS-PER-WORD."
 			  (shell-quote-argument script)
 			  (shell-quote-argument dir)
 			  days chars-per-word) buffer)))
-(provide 'tlon-count)
 
 ;;;;; Menu
 

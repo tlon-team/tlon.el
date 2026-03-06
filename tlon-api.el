@@ -157,12 +157,14 @@ If POP-TO-BUFFER is non-nil, display the response in a buffer."
 
 (defun tlon-api-get-credentials ()
   "Return a list of credentials for `uqbar' API requests."
-  (let ((username (tlon-user-lookup :github :name user-full-name))
-	(inhibit-message t))
+  (let* ((username (tlon-user-lookup :github :name user-full-name))
+	 (inhibit-message t)
+	 (password (auth-source-pass-get 'secret
+					 (concat "tlon/babel/altruismoeficaz.net/" username))))
+    (unless password
+      (user-error "No password found for user `%s' in auth-source-pass" username))
     (concat "username=" (url-hexify-string username)
-            "&password=" (url-hexify-string
-			  (auth-source-pass-get 'secret
-						(concat "tlon/babel/altruismoeficaz.net/" username))))))
+            "&password=" (url-hexify-string password))))
 
 ;;;;;; Routes
 
@@ -290,7 +292,8 @@ If DELETE-AFTER-UPLOAD is non-nil, delete FILE after uploading."
   (interactive)
   (let* ((file (or file (files-extras-read-file file)))
 	 (file-sans-fir (file-name-nondirectory file))
-	 (destination (or destination (read-directory-name "Destination: "))))
+	 (destination (or destination (read-directory-name "Destination: ")))
+	 (calling-buffer (current-buffer)))
     (let ((proc (start-process "scp-upload" "*scp-upload*"
 				"scp"
 				(expand-file-name file)
@@ -304,8 +307,10 @@ If DELETE-AFTER-UPLOAD is non-nil, delete FILE after uploading."
 	       (when delete-after-upload
 		 (delete-file file))
 	       (message "`%s' successfully uploaded to `%s'." file-sans-fir destination)
-	       (when (derived-mode-p 'dired-mode)
-		 (revert-buffer)))
+	       (when (buffer-live-p calling-buffer)
+		 (with-current-buffer calling-buffer
+		   (when (derived-mode-p 'dired-mode)
+		     (revert-buffer)))))
 	   (progn
 	     (message "Upload failed: %s" event)
 	     (display-buffer "*scp-upload*"))))))))

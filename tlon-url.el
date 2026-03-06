@@ -233,7 +233,7 @@ Whitelist entries are treated as regexps and are matched against URL."
   (let ((whitelist (tlon-lychee--load-whitelist))
         (matched nil))
     (while (and whitelist (not matched))
-      (setq matched (string-match-p (car whitelist) url))
+      (setq matched (string-match-p (regexp-quote (car whitelist)) url))
       (setq whitelist (cdr whitelist)))
     matched))
 

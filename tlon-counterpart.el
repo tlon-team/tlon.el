@@ -646,12 +646,18 @@ language within the current subproject."
     (cond
      ((string= src-lang target-language-code) t)
      ((eq subtype 'originals)
-      (not (null (tlon-get-counterpart-in-originals file target-language-code))))
+      (condition-case nil
+          (not (null (tlon-get-counterpart-in-originals file target-language-code)))
+        (user-error nil)))
      ((eq subtype 'translations)
       (if (string= target-language-code "en")
-          (not (null (tlon-get-counterpart-in-translations file)))
-        (when-let* ((orig (tlon-get-counterpart-in-translations file)))
-          (not (null (tlon-get-counterpart-in-originals orig target-language-code))))))
+          (condition-case nil
+              (not (null (tlon-get-counterpart-in-translations file)))
+            (user-error nil))
+        (condition-case nil
+            (when-let* ((orig (tlon-get-counterpart-in-translations file)))
+              (not (null (tlon-get-counterpart-in-originals orig target-language-code))))
+          (user-error nil))))
      (t nil))))
 
 (defun tlon-counterpart--prompt-entity-type ()

@@ -75,8 +75,9 @@ Assumes key is enclosed in backticks."
       (org-narrow-to-subtree)
       (when (re-search-forward org-link-bracket-re nil t)
 	(let ((raw-link (org-link-unescape (match-string-no-properties 1))))
-	  (string-match "orgit-topic:\\(.+\\)" raw-link)
-	  (match-string 1 raw-link))))))
+	  (if (string-match "orgit-topic:\\(.+\\)" raw-link)
+	      (match-string 1 raw-link)
+	    (user-error "No orgit-topic link found in clocked heading")))))))
 
 (declare-function forge-visit-issue "forge-commands")
 (defun tlon-open-clock-issue ()

@@ -120,8 +120,8 @@ The alignment is performed by scrolling up or down the other window."
 (defun tlon-split-mode-reset ()
   "Reset `split-mode'."
   (interactive)
-  (remove-hook 'post-command-hook #'tlon-split-autoalign-paragraphs)
-  (add-hook 'post-command-hook #'tlon-split-autoalign-paragraphs))
+  (remove-hook 'post-command-hook #'tlon-split-autoalign-paragraphs t)
+  (add-hook 'post-command-hook #'tlon-split-autoalign-paragraphs nil t))
 
 ;;;; menu
 
