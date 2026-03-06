@@ -454,10 +454,6 @@
 	   :project "issues-to-projects"
 	   :abbrev "issues-to-projects"
 	   :type misc)
-    (:name "tlon-generic"
-	   :project "tlon"
-	   :abbrev "tlon-generic"
-	   :type misc)
     (:name "sandbox"
 	   :abbrev "sandbox"
 	   :type test))
@@ -575,23 +571,6 @@ and the third group captures the collection ID.")
 (defconst tlon-eaf-tag-slug-regexp
   "\\([[:alnum:]-]*\\)"
   "Regular expression for matching tag slugs.")
-
-;;;;; Authorhip
-
-(defconst tlon-authorship-pattern
-  '((:language "ar" :pattern "بواسطة %s.")
-    (:language "de" :pattern "von %s.")
-    (:language "en" :pattern "by %s.")
-    (:language "es" :pattern "por %s.")
-    (:language "fr" :pattern "par %s.")
-    (:language "it" :pattern "di %s.")
-    (:language "ja" :pattern "%sによって".)
-    (:language "ko" :pattern "%s에 의해.")
-    (:language "ru" :pattern "от %s.")
-    (:language "tr" :pattern "tarafından %s."))
-  "Pattern to use when listing the author(s) of a work.
-For example, in English, the pattern is `by %s', where `%s' is replaced by the
-author name(s).")
 
 ;;;;; Conjuncts
 
@@ -1094,14 +1073,17 @@ directory."
 
 ;;;;; Misc
 
-(defun tlon-concatenate-list (list)
-  "Concatenate LIST into a string with commas and a conjunct, as appropriate."
+(defun tlon-concatenate-list (list &optional conjuncts)
+  "Concatenate LIST into a string with commas and a conjunct, as appropriate.
+CONJUNCTS is an alist of language-specific conjunctions; it defaults to
+`tlon-tts-conjuncts'."
   (cond
    ((null list) "")
    ((cdr list)
     (let ((all-but-last (mapconcat #'identity (butlast list) ", "))
 	  (last (car (last list)))
-	  (conjunct (tlon-lookup tlon-tts-conjuncts :conjunct :language (tlon-get-language-in-file))))
+	  (conjunct (tlon-lookup (or conjuncts tlon-tts-conjuncts)
+				 :conjunct :language (tlon-get-language-in-file))))
       (format "%s %s %s" all-but-last conjunct last)))
    (t (car list))))
 
@@ -1404,17 +1386,20 @@ INNER is a nested key inside OUTER like \"title\"."
 ;;;;; transient
 
 (defun tlon-transient-read-symbol-choice (prompt choices)
-  "Return a list of CHOICES with PROMPT to be used as an `infix' reader function."
+  "Read one of CHOICES with PROMPT and return it as a symbol.
+Intended for use as a transient `infix' reader function."
   (let* ((input (completing-read prompt (mapcar 'symbol-name choices))))
     (intern input)))
 
 (defun tlon-transient-read-number-choice (prompt choices)
-  "Return a list of CHOICES with PROMPT to be used as an `infix' reader function."
+  "Read one of CHOICES with PROMPT and return it as a number.
+Intended for use as a transient `infix' reader function."
   (let* ((input (completing-read prompt (mapcar 'number-to-string choices))))
     (string-to-number input)))
 
 (defun tlon-transient-read-string-choice (prompt choices)
-  "Return a list of CHOICES with PROMPT to be used as an `infix' reader function."
+  "Read one of CHOICES with PROMPT and return it as a string.
+Intended for use as a transient `infix' reader function."
   (let* ((input (completing-read prompt choices)))
     (substring-no-properties input)))
 

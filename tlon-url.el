@@ -48,33 +48,62 @@
 (declare-function ffap-url-p "ffap")
 (declare-function bibtex-text-in-field "bibtex")
 
-(defun tlon--get-wayback-machine-url (url callback)
-  "Fetch the latest working archived version of URL from Wayback Machine.
-Call CALLBACK with (ARCHIVE-URL ORIGINAL-URL). ARCHIVE-URL is nil if no archive
-is found or an error occurs."
-  (let ((api-url (format "https://archive.org/wayback/available?url=%s"
-                         (url-hexify-string url))))
-    (message "Fetching latest working archive for %s..." url)
+(defun tlon--get-wayback-machine-url (url callback &optional variant)
+  "Fetch an archived version of URL from the Wayback Machine asynchronously.
+Call CALLBACK with (ARCHIVE-URL ORIGINAL-URL).  ARCHIVE-URL is nil if no
+archive is found or an error occurs.
+
+VARIANT selects which API endpoint to query:
+  `latest'   (default) -- use the Availability API to get the most recent snapshot.
+  `earliest' -- use the CDX API to get the oldest snapshot with HTTP 200."
+  (let* ((variant (or variant 'latest))
+         (api-url
+          (pcase variant
+            ('latest
+             (format "https://archive.org/wayback/available?url=%s"
+                     (url-hexify-string url)))
+            ('earliest
+             (format "https://web.archive.org/cdx/search/cdx?url=%s&statuscode=200&limit=1"
+                     (url-hexify-string url)))))
+         (label (if (eq variant 'latest) "latest" "earliest")))
+    (message "Fetching %s working archive for %s..." label url)
     (url-retrieve
      api-url
      (lambda (status &rest _)
-       (let ((buffer (current-buffer)) (archive-url nil))
+       (let ((buffer (current-buffer))
+             (archive-url nil))
          (unwind-protect
              (with-current-buffer buffer
                (if (plist-get status :error)
-                   (message "Wayback Machine request for %s failed: %S" url (plist-get status :error))
+                   (message "Wayback Machine request for %s failed: %S"
+                            url (plist-get status :error))
                  (goto-char (point-min))
                  (when (re-search-forward "^\\s-*$" nil t)
-                   (let* ((json-object-type 'alist)
-                          (json-array-type 'list)
-                          (json-key-type 'symbol)
-                          (data (condition-case _ (json-read) (error nil)))
-                          (snapshots (and data (alist-get 'archived_snapshots data)))
-                          (closest (and snapshots (alist-get 'closest snapshots)))
-                          (available (and closest (alist-get 'available closest)))
-                          (closest-url (and closest (alist-get 'url closest))))
-                     (when (and available closest-url)
-                       (setq archive-url (tlon--normalize-wayback-url closest-url)))))))
+                   (pcase variant
+                     ('latest
+                      (let* ((json-object-type 'alist)
+                             (json-array-type 'list)
+                             (json-key-type 'symbol)
+                             (data (condition-case _ (json-read) (error nil)))
+                             (snapshots (and data (alist-get 'archived_snapshots data)))
+                             (closest (and snapshots (alist-get 'closest snapshots)))
+                             (available (and closest (alist-get 'available closest)))
+                             (closest-url (and closest (alist-get 'url closest))))
+                        (when (and available closest-url)
+                          (setq archive-url (tlon--normalize-wayback-url closest-url)))))
+                     ('earliest
+                      (let* ((response (buffer-substring-no-properties (point) (point-max)))
+                             (lines (split-string response "\n" t)))
+                        (if (and lines (> (length lines) 0))
+                            (let* ((fields (split-string (car lines) " "))
+                                   (timestamp (nth 1 fields))
+                                   (original-url-from-api (nth 2 fields)))
+                              (when (and timestamp original-url-from-api)
+                                (setq archive-url
+                                      (tlon--normalize-wayback-url
+                                       (format "https://web.archive.org/web/%s/%s"
+                                               timestamp original-url-from-api)))))
+                          (message "No working archives found for %s" url))))))))
            (when (buffer-live-p buffer) (kill-buffer buffer)))
          (funcall callback archive-url url))))))
 
@@ -326,66 +355,41 @@ If JSON is non-nil, use JSON format."
                     (shell-quote-argument target)))
     (eshell-send-input)))
 
+(defun tlon-get-archived-url (url &optional variant)
+  "Fetch an archived version of URL from the Wayback Machine and copy it.
+VARIANT is `latest' (the default) or `earliest'.  The archive URL is copied to
+the kill ring and displayed in the echo area."
+  (let* ((variant (or variant 'latest))
+         (label (if (eq variant 'latest) "Latest" "Earliest")))
+    (tlon--get-wayback-machine-url
+     url
+     (lambda (archive-url original-url)
+       (if archive-url
+           (progn
+             (message "%s working archive: %s" label archive-url)
+             (kill-new archive-url))
+         (message "No working archives found for %s (or error during fetch)." original-url)))
+     variant)))
+
 ;;;###autoload
 (defun tlon-get-archived (url)
   "Return the latest working archived version of URL from Wayback Machine.
 Also, copy the URL to the kill ring."
   (interactive "sURL: ")
-  (tlon--get-wayback-machine-url
-   url
-   (lambda (archive-url original-url) ; original-url is the same as url here
-     (if archive-url
-         (progn
-           (message "Latest working archive: %s" archive-url)
-           (kill-new archive-url))
-       (message "No working archives found for %s (or error during fetch)." original-url)))))
+  (tlon-get-archived-url url 'latest))
 
 ;;;###autoload
 (defun tlon-get-earliest-archived (url)
   "Return the earliest working archived version of URL from the Wayback Machine.
 Also, copy the URL to the kill ring."
   (interactive "sURL: ")
-  (tlon--get-earliest-wayback-machine-url
-   url
-   (lambda (archive-url original-url)
-     (if archive-url
-         (progn
-           (message "Earliest working archive: %s" archive-url)
-           (kill-new archive-url))
-       (message "No working archives found for %s (or error during fetch)." original-url)))))
+  (tlon-get-archived-url url 'earliest))
 
 (defun tlon--get-earliest-wayback-machine-url (url callback)
   "Fetch the earliest working archived version of URL from Wayback Machine.
 Call CALLBACK with (ARCHIVE-URL ORIGINAL-URL).
 ARCHIVE-URL is nil if no archive is found or an error occurs."
-  (let ((api-url (format "https://web.archive.org/cdx/search/cdx?url=%s&statuscode=200&limit=1"
-                         (url-hexify-string url))))
-    (message "Fetching earliest working archive for %s..." url)
-    (url-retrieve
-     api-url
-     (lambda (status &rest _)
-       (let ((buffer (current-buffer))
-             (archive-url nil))
-         (with-current-buffer buffer
-           (if (plist-get status :error)
-               (message "Wayback Machine request for %s failed: %S" url (plist-get status :error))
-             ;; Find the end of HTTP headers (empty line)
-             (goto-char (point-min))
-             (if (re-search-forward "^\\s-*$" nil t)
-                 (let* ((response (buffer-substring-no-properties (point) (point-max)))
-                        (lines (split-string response "\n" t)))
-                   (if (and lines (> (length lines) 0))
-                       (let* ((fields (split-string (car lines) " "))
-                              (timestamp (nth 1 fields))
-                              (original-url-from-api (nth 2 fields)))
-                         (when (and timestamp original-url-from-api)
-                           (setq archive-url
-				 (tlon--normalize-wayback-url
-				  (format "https://web.archive.org/web/%s/%s" timestamp original-url-from-api)))))
-                     (message "No working archives found for %s" url)))
-               (message "Could not parse Wayback Machine API response for %s" url))))
-         (kill-buffer buffer)
-         (funcall callback archive-url url))))))
+  (tlon--get-wayback-machine-url url callback 'earliest))
 
 ;;;;; Fix dead URLs
 
