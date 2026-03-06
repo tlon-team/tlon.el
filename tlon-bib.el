@@ -286,57 +286,50 @@ Give up after five seconds."
 		  (match-string 1))))
       (string-trim-right final-url "[\r\n]"))))
 
-;; TODO: refactor two functions below
+(defun tlon-bib--fetch-abstract-synchronously (url extract-fn &optional source-label)
+  "Fetch URL synchronously, parse JSON, and return the result of EXTRACT-FN.
+EXTRACT-FN receives the parsed JSON plist and should return the abstract
+string or nil.  SOURCE-LABEL is used in messages (e.g. \"Crossref\")."
+  (ignore source-label)
+  (let ((buf (shut-up (url-retrieve-synchronously url))))
+    (unwind-protect
+        (when buf
+          (with-current-buffer buf
+            (goto-char (point-min))
+            (when (search-forward-regexp "HTTP/.* \\(2[0-9][0-9]\\)" nil t)
+              (re-search-forward "^$")
+              (delete-region (point) (point-min))
+              (set-buffer-multibyte t)
+              (set-buffer-file-coding-system 'utf-8)
+              (let* ((json-object-type 'plist)
+                     (json-array-type 'list)
+                     (json (json-read)))
+                (funcall extract-fn json)))))
+      (when (buffer-live-p buf) (kill-buffer buf)))))
+
 (defun tlon-fetch-abstract-from-crossref (doi)
   "Return the abstract of the work with DOI."
   (when doi
-    (let ((url (format "https://api.crossref.org/works/%s" doi)))
-      (message "Trying to find abstract for %s with Crossref..." doi)
-      (let ((buf (shut-up (url-retrieve-synchronously url))))
-	(unwind-protect
-	    (if buf
-		(with-current-buffer buf
-		  (goto-char (point-min))
-		  (if (search-forward-regexp "HTTP/.* 404" nil t) ; check for 404 not found
-		      nil
-		    (re-search-forward "^$")
-		    (delete-region (point) (point-min))
-		    (let* ((json-object-type 'plist)
-			   (json-array-type 'list)
-			   (json (json-read))
-			   (message-plist (plist-get json :message)))
-		      (if-let ((abstract (plist-get message-plist :abstract)))
-			  abstract
-			(progn (message "No abstract found.") nil)))))
-	      (message "Failed to retrieve Crossref data for %s." doi)
-	      nil)
-	  (when (buffer-live-p buf) (kill-buffer buf)))))))
+    (message "Trying to find abstract for %s with Crossref..." doi)
+    (or (tlon-bib--fetch-abstract-synchronously
+         (format "https://api.crossref.org/works/%s" doi)
+         (lambda (json) (plist-get (plist-get json :message) :abstract))
+         "Crossref")
+        (progn (message "No abstract found.") nil))))
 
 (defun tlon-fetch-abstract-from-google-books (isbn)
   "Return the abstract of the book with ISBN, timing out after 5 seconds."
   (when isbn
     (with-timeout (5 (message "Timeout while fetching abstract") nil)
-      (let ((url (format "https://www.googleapis.com/books/v1/volumes?q=isbn:%s" isbn))
-	    (description nil))
-	(message "Trying to find abstract for %s with Google Books..." isbn)
-	(let ((buf (url-retrieve-synchronously url)))
-	  (unwind-protect
-	      (if buf
-		  (with-current-buffer buf
-		    (set-buffer-multibyte t)
-		    (set-buffer-file-coding-system 'utf-8)
-		    (goto-char (point-min))
-		    (re-search-forward "^$")
-		    (delete-region (point) (point-min))
-		    (let* ((json-object-type 'plist)
-			   (json-array-type 'list)
-			   (json (json-read))
-			   (items (plist-get json :items))
-			   (volume-info (and items (plist-get (car items) :volumeInfo))))
-		      (setq description (and volume-info (plist-get volume-info :description)))))
-		(message "Failed to retrieve Google Books data for %s." isbn))
-	    (when (buffer-live-p buf) (kill-buffer buf))))
-	(if description description (progn (message "No abstract found.") nil))))))
+      (message "Trying to find abstract for %s with Google Books..." isbn)
+      (or (tlon-bib--fetch-abstract-synchronously
+           (format "https://www.googleapis.com/books/v1/volumes?q=isbn:%s" isbn)
+           (lambda (json)
+             (when-let* ((items (plist-get json :items))
+                         (vol (plist-get (car items) :volumeInfo)))
+               (plist-get vol :description)))
+           "Google Books")
+          (progn (message "No abstract found.") nil)))))
 
 (defun tlon-abstract-may-proceed-p ()
   "Return t iff it’s okay to proceed with abstract processing."
