@@ -61,8 +61,8 @@
 (defcustom tlon-newsletter-model '("Gemini" . gemini-pro-latest)
   "Model to use for creating newsletter issues.
 The value is a cons cell whose car is the backend and whose cdr is the model
-itself. See `gptel-extras-ai-models' for the available options. If nil, do not
-use a different model for creating a newsletter issue."
+itself. See `gptel-extras-ai-models' for the available options. If nil, use the
+default `gptel-model'."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-newsletter)
 

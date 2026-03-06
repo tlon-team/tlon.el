@@ -58,8 +58,8 @@
   '("Gemini" . gemini-flash-latest)
   "Model to use for summarization.
 The value is a cons cell whose car is the backend and whose cdr is the model
-itself. See `gptel-extras-ai-models' for available options. If nil, do not
-use a different model for summarization.
+itself. See `gptel-extras-ai-models' for available options. If nil, use the
+default `gptel-model'.
 
 Note that the selected model should have a large context window, ideally larger
 than 1m tokens, since otherwise some books will not be summarized."
@@ -70,25 +70,26 @@ than 1m tokens, since otherwise some books will not be summarized."
   '("Gemini" . gemini-flash-latest)
   "Model to use for fixing the Markdown.
 The value is a cons cell whose car is the backend and whose cdr is the model
-itself. See `gptel-extras-ai-models' for the available options. If nil, do not
-use a different model for fixing the Markdown."
+itself. See `gptel-extras-ai-models' for the available options. If nil, use the
+default `gptel-model'."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-ai)
 
 (defcustom tlon-ai-create-reference-article-model nil
   "Model to use for creating reference articles.
 The value is a cons cell whose car is the backend and whose cdr is the model
-itself. See `gptel-extras-ai-models' for the available options. If nil, do not
-use a different model for creating a reference article."
-  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
+itself. See `gptel-extras-ai-models' for the available options. If nil, use the
+default `gptel-model'."
+  :type '(choice (const :tag "Default" nil)
+               (cons (string :tag "Backend") (symbol :tag "Model")))
   :group 'tlon-ai)
 
 (defcustom tlon-ai-proofread-reference-article-model
   '("ChatGPT" . gpt-4.5-preview)
   "Model to use for proofreading reference articles.
 The value is a cons cell whose car is the backend and whose cdr is the model
-itself. See `gptel-extras-ai-models' for the available options. If nil, do not
-use a different model for proofreading the reference article."
+itself. See `gptel-extras-ai-models' for the available options. If nil, use the
+default `gptel-model'."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-ai)
 
@@ -96,8 +97,8 @@ use a different model for proofreading the reference article."
   '("Gemini" . gemini-pro-latest)
   "Model to use for summarizing commit diffs.
 The value is a cons cell whose car is the backend and whose cdr is the model
-itself. See `gptel-extras-ai-models' for the available options. If nil, do not
-use a different model for summarizing commit diffs."
+itself. See `gptel-extras-ai-models' for the available options. If nil, use the
+default `gptel-model'."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-ai)
 
@@ -115,7 +116,8 @@ default `gptel-model'."
 The value is a cons cell whose car is the BACKEND name (string) and whose cdr is
 the MODEL symbol. See `gptel-extras-ai-models' for available options. If nil,
 use the default `gptel-model'."
-  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
+  :type '(choice (const :tag "Default" nil)
+               (cons (string :tag "Backend") (symbol :tag "Model")))
   :group 'tlon-ai)
 
 

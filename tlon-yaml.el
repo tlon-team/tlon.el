@@ -105,16 +105,18 @@ The order of the keys determines the sort order by
 (defcustom tlon-yaml-suggest-tags-model nil
   "AI model to use for `tlon-yaml-suggest-tags'.
 The value is a cons cell (BACKEND . MODEL) like the other
-`tlon-yaml-*model' custom variables.  When nil, use the current
-`gptel' default model."
-  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
+`tlon-yaml-*model' custom variables.  When nil, use the default
+`gptel-model'."
+  :type '(choice (const :tag "Default" nil)
+               (cons (string :tag "Backend") (symbol :tag "Model")))
   :group 'tlon-yaml)
 
 (defcustom tlon-yaml-guess-counterpart-model nil
   "AI model to use for `tlon-yaml-guess-english-counterpart'.
-The value is a cons cell (BACKEND . MODEL). When nil, use the current
-`gptel' default model."
-  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
+The value is a cons cell (BACKEND . MODEL). When nil, use the default
+`gptel-model'."
+  :type '(choice (const :tag "Default" nil)
+               (cons (string :tag "Backend") (symbol :tag "Model")))
   :group 'tlon-yaml)
 
 ;;;; Functions

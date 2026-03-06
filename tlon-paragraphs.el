@@ -41,8 +41,8 @@
   '("Claude" . claude-sonnet-4-20250514)
   "Model to use for aligning paragraphs.
 The value is a cons cell whose car is the backend and whose cdr is the model
-itself. See `gptel-extras-ai-models' for available options. If nil, do not
-use a different model for aligning paragraphs."
+itself. See `gptel-extras-ai-models' for available options. If nil, use the
+default `gptel-model'."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-paragraphs)
 
