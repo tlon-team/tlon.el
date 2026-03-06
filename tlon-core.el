@@ -243,7 +243,7 @@
 	   :type content
 	   :subtype translations
 	   :language "tr"
-	   :key "q u"
+	   :key "q t"
 	   :url "https://efektifaltruizm.org"
 	   :help t)
     (:name "uqbar-zh"
@@ -774,7 +774,7 @@ the actual user.")
     (:name "japanese" :standard "japanese" :code "ja" :locale "ja_JP" :iso-639-2 "jpn")
     (:name "kannada" :standard "kannada" :code "kn" :locale "kn_IN")
     (:name "korean" :standard "korean" :code "ko" :locale "ko_KR" :iso-639-2 "kor")
-    (:name "kurdish" :standard "kurdish" :code "ku" :locale :"ku_IQ" :iso-639-2 "kur")
+    (:name "kurdish" :standard "kurdish" :code "ku" :locale "ku_IQ" :iso-639-2 "kur")
     (:name "lao" :standard "lao" :code "lo" :locale "lo_LA")
     (:name "latin" :standard "latin" :code "la" :locale "la_VA" :iso-639-2 "lat")
     (:name "latvian" :standard "latvian" :code "lv" :locale "lv_LV")
@@ -1106,12 +1106,12 @@ validate a list of natural languages."
       language)))
 
 (defun tlon-get-iso-code (language)
-  "Return the two-letter ISO 639-1 code for LANGUAGE."
+  "Return the ISO 639 code for LANGUAGE."
   (if (= (length language) 2)
       language
     (when-let* ((downcased (downcase language))
 		(code-raw (tlon-lookup tlon-languages-properties :code :name downcased)))
-      (string-limit code-raw 2))))
+      code-raw)))
 
 ;;;###autoload
 (defun tlon-select-language (&optional format babel prompt require-match initial-input
@@ -1471,7 +1471,7 @@ repository."
   "Check if there are staged or unstaged modifications in repo involving FILE."
   (catch 'found
     (dolist (flag '("staged" ""))
-      (let ((git-command (format "git diff --%s --name-only %s" flag file)))
+      (let ((git-command (format "git diff --%s --name-only -- %s" flag (shell-quote-argument file))))
 	(when (not (string-empty-p (shell-command-to-string git-command)))
 	  (throw 'found t))))))
 

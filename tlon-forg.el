@@ -558,7 +558,7 @@ Possible symbols are `title', `status' and `tags'."
 	 (org-tags-for-compare (tlon-forg--valid-tags (org-get-tags nil t)))
 	 (diff '()))
     (unless (string= issue-title org-title)   (push 'title  diff))
-    (unless (string= issue-status org-status) (push 'status diff))
+    (unless (equal issue-status org-status) (push 'status diff))
     (unless (equal issue-tags-for-compare org-tags-for-compare) (push 'tags   diff))
     diff))
 
@@ -1086,13 +1086,13 @@ The appropriate action is determined by the value of
     (unless (tlon-assignee-is-current-user-p issue)
       (let* ((title (oref issue title))
 	     (assignee (tlon-get-assignee issue))
-	     (cond (if assignee
+	     (action (if assignee
 		       tlon-when-assignee-is-someone-else
 		     tlon-when-assignee-is-nil))
 	     (warning (if assignee
 			  (format "Warning: the assignee of issue `%s' is %s." title assignee)
 			(format "Warning: issue `%s' has no assignee." title))))
-	(pcase cond
+	(pcase action
 	  ('prompt
 	   (if (y-or-n-p (concat warning " Assign to you? "))
 	       (tlon-forg-change-assignee issue)
@@ -2010,7 +2010,7 @@ PROJECT-ITEM-DATA is a plist that may contain :status and :estimate."
 
     ;; 4. fallback to open/closed when mapping failed
     (or org-status
-	(if (and issue (eq (oref issue state) 'completed)) "DONE" "TODO"))))
+	(if (and issue (eq (oref issue state) 'closed)) "DONE" "TODO"))))
 
 (defun tlon-get-status-in-todo ()
   "Return the status of the `org-mode' heading at point.
