@@ -412,7 +412,7 @@ Signal a `user-error' if the issue cannot be found in time."
 
 (defun tlon-forg--org-heading-title ()
   "Return the *issue title* encoded in the Org heading at point.
-Strips the repo tag, the orgit-link and the "#NNN " prefix produced by
+Strips the repo tag, the orgit-link and the \"#NNN \" prefix produced by
 `tlon-make-todo-name-from-issue'."
   (let* ((el (org-element-at-point))
 	 (raw (org-element-property :raw-value el)))
