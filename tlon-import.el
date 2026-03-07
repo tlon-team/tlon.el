@@ -68,9 +68,6 @@
   (file-name-concat paths-dir-external-repos "pdf2md/lib/pdf2md-cli.js")
   "Path to `pdf2md-cli.js' executable.")
 
-(defvar tlon-pdftotext
-  "pdftotext"
-  "Path to `pdftotext' executable.")
 
 ;;;; Functions
 
@@ -211,20 +208,7 @@ entity being imported (e.g., article or tag)."
 
 ;;;;;; PDF import
 
-(defun tlon-import--run-pdftotext (source output &optional extra-args)
-  "Run pdftotext on SOURCE, writing to OUTPUT.
-OUTPUT is either a file path or \"-\" for stdout. EXTRA-ARGS is an
-optional list of additional argument strings (e.g. margin flags).
-Signals an error if pdftotext is not found."
-  (unless (executable-find "pdftotext")
-    (user-error "`pdftotext' not found. Please install it (`brew install poppler') and set `tlon-pdftotext' to its path"))
-  (let ((cmd (mapconcat #'shell-quote-argument
-                        (append (list tlon-pdftotext)
-                                extra-args
-                                (list (expand-file-name source) output))
-                        " ")))
-    (shell-command-to-string cmd)))
-
+(declare-function pdf-tools-extras--run-pdftotext "pdf-tools-extras")
 (defun tlon-import-pdf (path &optional title)
   "Import the PDF in PATH to TARGET and convert it to Markdown.
 This command requires the user to supply values for the header and footer
@@ -240,17 +224,9 @@ If TITLE is nil, prompt the user for one."
   (let ((target (read-string "Save file in: " (tlon-set-file-from-title title)))
 	(header (read-string "Header: "))
 	(footer (read-string "Footer: ")))
-    (tlon-import--run-pdftotext path target
-                                (list "-margint" header "-marginb" footer))
+    (pdf-tools-extras--run-pdftotext path target
+                                     (list "-margint" header "-marginb" footer))
     (find-file target)))
-
-(defun tlon-convert-pdf (source &optional destination)
-  "Convert PDF in SOURCE to Markdown in DESTINATION.
-If DESTINATION is nil, return the Markdown string."
-  (tlon-import--run-pdftotext source
-                              (if destination
-                                  (expand-file-name destination)
-                                "-")))
 
 ;;;;; EAF API
 
