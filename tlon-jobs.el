@@ -158,8 +158,8 @@ check that current file matches translation."
 	   (next-phase (tlon-get-clock-next-phase))
 	   (next-assignee (tlon-jobs-get-next-assignee)))
       ;; MAYBE: check that it is a repo of `translations' subtype
-      ;; thought this would have to exclude “process” stage
-      (tlon-check-branch “main” repo)
+      ;; thought this would have to exclude "process" stage
+      (tlon-check-branch "main" repo)
       (tlon-check-phase-and-assignee repo)
       (tlon-check-file
        (when (string= current-action "Process")

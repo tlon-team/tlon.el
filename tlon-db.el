@@ -349,7 +349,7 @@ ATTEMPT is used to track retries in case of missing author names."
 	    (let* ((body (tlon-db--get-response-body raw-text))
 		   (local-copy (or body entry-text)))
 	      (tlon-db--replace-entry-locally entry-key local-copy)
-	      (message "Entry “%s” posted and mirrored locally." entry-key)))
+	      (message "Entry \"%s\" posted and mirrored locally." entry-key)))
 	  ;; TODO: fix this; currently it always throws an error
 	  ;; (tlon-db-ensure-key-is-unique entry-key)
 	  (eql status-code 200)))
@@ -520,7 +520,7 @@ Handles both vector and list representations of `ebib--databases'."
     (unless key
       (user-error "Could not determine BibTeX key"))
     (unless file
-      (user-error "Could not locate file for key “%s”" key))
+      (user-error "Could not locate file for key \"%s\"" key))
     (with-current-buffer (find-file-noselect file)
       (widen)
       (bibtex-search-entry key)
@@ -598,8 +598,8 @@ Interactively, NO-CONFIRM is set with a prefix argument, and LOCALLY is t."
             (bibtex-kill-entry))
           (save-buffer))))
     (if deleted
-        (message "Entry “%s” deleted locally." key)
-      (message "Entry “%s” not found in local db." key))))
+        (message "Entry \"%s\" deleted locally." key)
+      (message "Entry \"%s\" not found in local db." key))))
 
 (defun tlon-db--handle-entry-request (method endpoint data headers &optional json-on-success)
   "Handle a request to an entry endpoint and process the response.
@@ -825,21 +825,21 @@ Returns a plist with :status, :data, and :raw-text."
   (setq name (tlon-db--normalize-name name))
   (when new-name
     (setq new-name (tlon-db--normalize-name new-name)))
-  (let* ((payload `((“name” . ,name)))
-         (payload (if new-name (append payload `((“new_name” . ,new-name))) payload))
-         (payload (if force (append payload '((“force” . t))) payload))
+  (let* ((payload `(("name" . ,name)))
+         (payload (if new-name (append payload `(("new_name" . ,new-name))) payload))
+         (payload (if force (append payload '(("force" . t))) payload))
          (data (json-encode payload))
-         (headers '((“Content-Type” . “application/json”)
-                    (“accept” . “application/json”)))
-         (result (tlon-db--handle-entry-request “POST” “/api/names/” data headers t))
+         (headers '(("Content-Type" . "application/json")
+                    ("accept" . "application/json")))
+         (result (tlon-db--handle-entry-request "POST" "/api/names/" data headers t))
          (status-code (plist-get result :status)))
     (if (or tlon-debug (not (and status-code (= status-code 200))))
         (tlon-db--display-result-buffer
-         (format “Set name result (Status: %s)”
-                 (if status-code (number-to-string status-code) “N/A”))
+         (format "Set name result (Status: %s)"
+                 (if status-code (number-to-string status-code) "N/A"))
          #'tlon-db--format-set-name-result
          result)
-      (message “Name \u201c%s\u201d inserted/updated successfully.” name))
+      (message "Name \u201c%s\u201d inserted/updated successfully." name))
     result))
 
 (defun tlon-db--format-set-name-result (result)
@@ -1348,7 +1348,7 @@ highlighted with `diff-refine-added` / `diff-refine-removed`."
   (with-current-buffer (get-buffer-create tlon-db--sync-log-buffer-name)
     (let* ((inhibit-read-only t)
            (diff-exe (or (executable-find "diff")
-                         (user-error "Cannot find the external program “diff”")))
+                         (user-error "Cannot find the external program \"diff\"")))
            (before-file (make-temp-file "db-sync-before-"))
            (after-file  (make-temp-file "db-sync-after-"))
            diff-hunk)

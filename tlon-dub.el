@@ -218,7 +218,7 @@ raw response string when JSON parsing fails."
 			 (list "--header" "Content-Type: application/json"
 			       "--data" (json-encode payload)))
 		       extra-args))
-	 (command (mapconcat #'shell-quote-argument args " ")))
+	 (_command (mapconcat #'shell-quote-argument args " ")))
     (message "%s" description)
     (when tlon-debug (message "Debug: Running command: curl %s"
 			      (mapconcat #'shell-quote-argument (cdr args) " ")))

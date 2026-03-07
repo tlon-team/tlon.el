@@ -311,7 +311,8 @@ If ASYNC is t, run the request asynchronously."
   "Property extraction rules for each EAF entity type.
 Each entry maps an entity type (article, tag) to an alist of:
 - `response-key': the top-level key in the API response.
-- `url', `html', `title': lambdas that extract the property from the result alist.")
+- `url', `html', `title': lambdas that extract the property from
+  the result alist.")
 
 (defun tlon-import-eaf-get-entity-result (entity-type response)
   "Get ENTITY-TYPE details from EA Forum API RESPONSE.

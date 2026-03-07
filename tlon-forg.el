@@ -412,19 +412,19 @@ Signal a `user-error' if the issue cannot be found in time."
 
 (defun tlon-forg--org-heading-title ()
   "Return the *issue title* encoded in the Org heading at point.
-Strips the repo tag, the orgit-link and the “#NNN ” prefix produced by
+Strips the repo tag, the orgit-link and the "#NNN " prefix produced by
 `tlon-make-todo-name-from-issue'."
   (let* ((el (org-element-at-point))
 	 (raw (org-element-property :raw-value el)))
     (let* ((str (string-trim (or raw ""))))
-      ;; drop a leading repo tag such as “[repo] ”
+      ;; drop a leading repo tag such as "[repo] "
       (setq str (replace-regexp-in-string "^\\[[^]]+\\][[:space:]]*" "" str))
 
       ;; if the headline contains an orgit link, keep only its description
       (when (string-match tlon-forg-orgit-regexp str)
 	(setq str (match-string 2 str)))
 
-      ;; discard a leading “#123 ” issue number, if present
+      ;; discard a leading "#123 " issue number, if present
       (when (string-match "^#[0-9]+[[:space:]]+\\(.*\\)$" str)
 	(setq str (match-string 1 str)))
 
@@ -796,10 +796,10 @@ upon completion.
 
 If called with a prefix ARG, the initial pull from forge is omitted and the
 cached project items list is used instead of fetching a fresh one."
-  (interactive “P”)
+  (interactive "P")
   ;; Inform the user what is happening and how to skip it.
   (unless arg
-    (message “Pulling issues from all repositories in project... (use \”C-u %s\” to skip this pull)”
+    (message "Pulling issues from all repositories in project... (use \"C-u %s\" to skip this pull)"
 	     this-command))
   (let* ((original-window-config (current-window-configuration))
 	 (project-items (forge-extras-list-project-items-ordered nil nil arg))
@@ -808,7 +808,7 @@ cached project items list is used instead of fetching a fresh one."
 			  (buffer-file-name)
 			nil)))
     (if (= (hash-table-count issue-repos) 0)
-	(user-error “No repositories with issues found in the project”)
+	(user-error "No repositories with issues found in the project")
       ;; Process each repository
       (let* ((total-repos (hash-table-count issue-repos))
 	     (repos-finished 0)
@@ -822,12 +822,12 @@ cached project items list is used instead of fetching a fresh one."
 		  (let ((do-sync (pcase tlon-forg-sync-after-capture-project
 				   ('t t)
 				   ('nil nil)
-				   ('prompt (y-or-n-p “Sync all issues in project after capture? “)))))
+				   ('prompt (y-or-n-p "Sync all issues in project after capture? ")))))
 		    (when do-sync
-		      (message “Proceeding to sync issues in project after capture...”)
+		      (message "Proceeding to sync issues in project after capture...")
 		      ;; Pass `arg` to tlon-sync-all-issues-in-project to use cached project items.
 		      (tlon-sync-all-issues-in-project arg)
-		      (message “Sync after capture complete.”)))
+		      (message "Sync after capture complete.")))
 
 		  (set-window-configuration original-window-config)
 		  (when tlon-forg-sort-after-sync-or-capture
@@ -835,7 +835,7 @@ cached project items list is used instead of fetching a fresh one."
 		      (when (and todos-file (file-exists-p todos-file))
 			(with-current-buffer (find-file-noselect todos-file)
 			  (tlon-forg-sort-by-status-and-project-order t)))))
-		  (message “Finished capturing issues from %d repositories in project. Subsequent sync (if any) also completed. Refile cache cleared.”
+		  (message "Finished capturing issues from %d repositories in project. Subsequent sync (if any) also completed. Refile cache cleared."
 			   total-repos)))))
 	(tlon-forg--for-each-repo
 	 issue-repos
@@ -1605,9 +1605,9 @@ Uses functions from `forge-extras.el` for GitHub Project interactions."
 		 "Skipping project status update for issue #%s (missing issue node id)"
 		 issue-number))))))))
       ;; 4. close the issue when the TODO is DONE
-      (when (string= org-todo-keyword “DONE”)
+      (when (string= org-todo-keyword "DONE")
 	(tlon-close-issue issue))
-      (message "Issue “%s” (#%s) updated successfully." org-title issue-number))))
+      (message "Issue \"%s\" (#%s) updated successfully." org-title issue-number))))
 
 ;;;;; Files
 
@@ -2267,8 +2267,8 @@ The command:
 - prompts for a repository, title, status (Org TODO keyword), and optional
   effort estimate in hours;
 
-- creates the issue, sets its phase to the chosen status, sets the project estimate
-  when given;
+- creates the issue, sets its phase to the chosen status, sets the
+  project estimate when given;
 
 - captures the freshly-created issue as an Org TODO and leaves point on that
   heading.

@@ -342,6 +342,10 @@ If called with a prefix ARG, open the counterpart in the other window."
 
 ;;;;;  Internal caches to speed up counterpart lookup
 
+(defvar tlon-counterpart--orig-key->orig-file-cache (make-hash-table :test #'equal)
+  "Cache mapping repository directories to originals tables.
+Each value maps original keys to original file paths within that repo.")
+
 (defvar tlon-counterpart--orig->trans-cache (make-hash-table :test #'equal)
   "Cache mapping repository directories to translation tables.
 Each value is a hash table mapping original bibliography keys to their
@@ -390,10 +394,6 @@ The table is cached in `tlon-counterpart--orig->trans-cache'."
                  (puthash orig-key file table)))))
          table)
        tlon-counterpart--orig->trans-cache)))
-
-(defvar tlon-counterpart--orig-key->orig-file-cache (make-hash-table :test #'equal)
-  "Cache mapping repository directories to originals tables.
-Each value maps original keys to original file paths within that repo.")
 
 (defun tlon-counterpart--original-table-for-repo (repo-dir)
   "Return a hash table mapping original keys to original files in REPO-DIR.

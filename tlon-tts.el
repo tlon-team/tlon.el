@@ -2635,7 +2635,8 @@ Returns a list of paths to new temporary files with silence appended."
 
 (defun tlon-tts-get-or-set-api-key (var auth-field auth-domain)
   "Get or set the API key stored in symbol VAR.
-Look up AUTH-FIELD in auth-source-pass under AUTH-DOMAIN with `tlon-email-shared'."
+Look up AUTH-FIELD in auth-source-pass under AUTH-DOMAIN
+with `tlon-email-shared'."
   (or (symbol-value var)
       (set var (auth-source-pass-get auth-field (concat auth-domain tlon-email-shared)))))
 

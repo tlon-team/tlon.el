@@ -93,8 +93,7 @@ cons cells. If `count', return the word count as a number. If `summary', or any
 other value, return a message with the word count and the file count."
   (interactive)
   (when-let ((files (or files (dired-get-marked-files))))
-    (let ((initial-buffers (buffer-list))
-	  list)
+    (let (list)
       (dolist (file files list)
 	(with-temp-buffer
 	  (insert-file-contents file)

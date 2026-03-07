@@ -57,7 +57,8 @@ Call CALLBACK with (ARCHIVE-URL ORIGINAL-URL).  ARCHIVE-URL is nil if no
 archive is found or an error occurs.
 
 VARIANT selects which API endpoint to query:
-  `latest'   (default) -- use the Availability API to get the most recent snapshot.
+  `latest'   (default) -- use the Availability API to get the most
+              recent snapshot.
   `earliest' -- use the CDX API to get the oldest snapshot with HTTP 200."
   (let* ((variant (or variant 'latest))
          (api-url
