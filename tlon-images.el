@@ -533,6 +533,7 @@ variable."
 ;;;###autoload (autoload 'tlon-images-menu "tlon-images" nil t)
 (transient-define-prefix tlon-images-menu ()
   "Images menu."
+  :info-manual "(tlon-images)"
   [["Light/Dark"
     ("a" "auto"                                  tlon-images-auto-process)
     ("r" "reduce brightness"                     tlon-images-reduce-brightness)

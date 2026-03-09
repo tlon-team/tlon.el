@@ -395,6 +395,7 @@ COMPONENT can be either \"h\", \"s\" or \"l\". DIRECTION can be either `+' or
 ;;;###autoload (autoload 'tlon-color-menu "tlon-color" nil t)
 (transient-define-prefix tlon-color-menu ()
   "`tlon-color' menu."
+  :info-manual "(tlon-color)"
   [["Change colors"
     ""
     "hue (H)"

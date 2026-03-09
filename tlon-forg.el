@@ -2659,7 +2659,7 @@ If DIR is nil, use the current repository."
 ;;;###autoload (autoload 'tlon-forg-menu "tlon-forg" nil t)
 (transient-define-prefix tlon-forg-menu ()
   "`forg' menu."
-  :info-manual "(tlon) GitHub and org-mode synchronization"
+  :info-manual "(tlon-forg)"
   [["Actions"
     ("n" "new"                                              tlon-create-new-issue)
     ("p" "post"                                             tlon-create-issue-from-todo)

@@ -1391,7 +1391,7 @@ variables section. If FILE is nil, read the file visited by the current buffer."
 ;;;###autoload (autoload 'tlon-md-menu "tlon-md" nil t)
 (transient-define-prefix tlon-md-menu ()
   "Dispatch a `tlon' command for Markdown insertion."
-  :info-manual "(tlon) Editing Markdown"
+  :info-manual "(tlon-md)"
   [["YAML"
     ("y" "field"                tlon-edit-yaml-field)]
    ["TTS"

@@ -901,6 +901,7 @@ than \"/\" or empty)."
 ;;;###autoload (autoload 'tlon-url-menu "tlon-url" nil t)
 (transient-define-prefix tlon-url-menu ()
   "`url' menu."
+  :info-manual "(tlon-url)"
   [["List dead URLs"
     ("l" "In file"                      tlon-list-dead-urls-in-file)
     ("L" "In repo"                      tlon-list-dead-urls-in-repo)

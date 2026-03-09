@@ -1376,7 +1376,7 @@ If nil, use the default model."
 ;;;###autoload (autoload 'tlon-yaml-menu "tlon-yaml" nil t)
 (transient-define-prefix tlon-yaml-menu ()
   "Menu for `tlon-yaml'."
-  :info-manual "(tlon) yaml"
+  :info-manual "(tlon-yaml)"
   [["General"
     ("i" "insert or edit field" tlon-yaml-insert-field)
     ("m" "list files missing field in dir" tlon-yaml-list-files-missing-field-in-dir)

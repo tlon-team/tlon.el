@@ -206,6 +206,7 @@ If REPOS is nil, search in all tracked repos."
 
 (transient-define-prefix tlon-forge-menu ()
   "Dispatch a forge command."
+  :info-manual "(tlon-repos)"
   [:if (##forge-get-repository :tracked?)
        ["Create"
 	("c i" "issue"             forge-create-issue)
@@ -363,6 +364,7 @@ Restore CONFIG-FILE from BACKUP-FILE when finished."
 ;;;###autoload (autoload 'tlon-repos-menu "tlon-repos" nil t)
 (transient-define-prefix tlon-repos-menu ()
   "Repos menu."
+  :info-manual "(tlon-repos)"
   [["Git"
     ""
     ("l" "Clone repo"                    tlon-clone-repo)

@@ -1236,7 +1236,7 @@ the pathname of OUTPUT-FILE."
 ;;;###autoload (autoload 'tlon-dub-menu "tlon-dub" nil t)
 (transient-define-prefix tlon-dub-menu ()
   "Menu for Tlön Dubbing (`tlon-dub`) functionality."
-  :info-manual "(tlon) Dubbing"
+  :info-manual "(tlon-dub)"
   [["Transcription & Timestamps (srt)"
     ("t t" "Transcribe with WhisperX (Audio -> srt)" tlon-dub-transcribe-with-whisperx)
     ("t i" "Diarize with WhisperX (Audio -> diarized srt/txt)" tlon-dub-diarize-with-whisperx)

@@ -2205,7 +2205,7 @@ If nil, use the default model."
 ;;;###autoload (autoload 'tlon-ai-menu "tlon-ai" nil t)
 (transient-define-prefix tlon-ai-menu ()
   "Menu for `tlon-ai'."
-  :info-manual "(tlon) AI"
+  :info-manual "(tlon-ai)"
   [["Summarize"
     ("s s" "get abstract with or without AI"          tlon-get-abstract-with-or-without-ai)
     ("s n" "get abstract without AI"                  tlon-fetch-and-set-abstract)

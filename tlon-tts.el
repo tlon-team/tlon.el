@@ -4423,6 +4423,7 @@ Reads audio format choices based on the currently selected engine."
 ;;;###autoload (autoload 'tlon-tts-menu "tlon-tts" nil t)
 (transient-define-prefix tlon-tts-menu ()
   "`tts' menu."
+  :info-manual "(tlon-tts)"
   [["Narration"
     ("s" "Stage content"                                        tlon-tts-stage-content)
     ("b" "Narrate buffer"                                       tlon-tts-narrate-staged-buffer)

@@ -77,6 +77,7 @@ If REPO is nil, use the current repo."
 ;;;###autoload (autoload 'tlon-search-menu "tlon-search" nil t)
 (transient-define-prefix tlon-search-menu ()
   "Search menu."
+  :info-manual "(tlon-search)"
   ["Search"
    ("c" "commits"                      tlon-search-commits)
    ("d" "commit-diffs"                 tlon-search-commit-diffs)

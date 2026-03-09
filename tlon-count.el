@@ -294,6 +294,7 @@ computed by dividing the file size by CHARS-PER-WORD."
 ;;;###autoload (autoload 'tlon-count-menu "tlon-count" nil t)
 (transient-define-prefix tlon-count-menu ()
   "`count' menu."
+  :info-manual "(tlon-count)"
   [["Count words"
     ("w f" "in file(s)"                tlon-count-words-in-files)
     ("w d" "in dir"                    tlon-count-words-in-dir)

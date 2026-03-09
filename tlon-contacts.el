@@ -200,6 +200,7 @@ PROPERTY must be a string that appears in `tlon-contacts-property-values'."
      ;;    plus your existing commands
      (transient-define-prefix tlon-contacts-menu ()
        "Menu for Tlön contacts management."
+       :info-manual "(tlon-contacts)"
        [:description "Tlön Contacts"
 		     [""
 		      ("S" "search"               org-contacts)

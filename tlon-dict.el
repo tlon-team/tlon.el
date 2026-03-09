@@ -49,6 +49,7 @@
 ;;;###autoload (autoload 'tlon-dict-menu "tlon-dict" nil t)
 (transient-define-prefix tlon-dict-menu ()
   "`tlon-dict' menu."
+  :info-manual "(tlon-dict)"
   [
    ("s" "Synonyms" tlon-reverso-get-synonyms)
    ]

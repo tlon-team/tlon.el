@@ -486,7 +486,7 @@ a language from `tlon-project-languages'."
 ;;;###autoload (autoload 'tlon-jobs-menu "tlon-jobs" nil t)
 (transient-define-prefix tlon-jobs-menu ()
   "`jobs' menu."
-  :info-manual "(tlon) Jobs"
+  :info-manual "(tlon-jobs)"
   [["Job phases"
     ("j" "start or finish phase"                tlon-jobs-start-or-finish-phase)]
    ["Job creation"

@@ -808,6 +808,7 @@ Set to a positive integer to limit, or nil for no limit."
 ;;;###autoload (autoload 'tlon-glossary-menu "tlon-glossary" nil t)
 (transient-define-prefix tlon-glossary-menu ()
   "Menu for glossary functions."
+  :info-manual "(tlon-glossary)"
   [["Glossary Actions"
     ("e" "Edit entry"                             tlon-edit-glossary)
     ("x" "Extract glossary"                       tlon-extract-glossary)

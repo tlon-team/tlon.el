@@ -2076,6 +2076,7 @@ If nil, use the default model."
 ;;;###autoload (autoload 'tlon-bib-menu "tlon-bib" nil t)
 (transient-define-prefix tlon-bib-menu ()
   "Menu for `tex' functions."
+  :info-manual "(tlon-bib)"
   [["Markdown"
     "URLs missing from database"
     ("m f" "Find in file"                            tlon-prompt-to-add-missing-urls)

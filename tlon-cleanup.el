@@ -519,6 +519,7 @@ If DELETE is non-nil, delete the footnote."
 ;;;###autoload (autoload 'tlon-cleanup-menu "tlon-cleanup" nil t)
 (transient-define-prefix tlon-cleanup-menu ()
   "`tlon-cleanup' menu."
+  :info-manual "(tlon-cleanup)"
   ["Cleanup"
    ("c" "Common" tlon-cleanup-common)
    ("e" "EA Forum" tlon-cleanup-eaf)

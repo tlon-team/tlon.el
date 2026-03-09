@@ -37,7 +37,7 @@
 ;;;###autoload (autoload 'tlon-dispatch "tlon-dispatch" nil t)
 (transient-define-prefix tlon-dispatch ()
   "Dispatch a `tlon' command."
-  :info-manual "(tlon) Main menu"
+  :info-manual "(tlon-dispatch) Main menu"
   [["Main menu"
     "Submenus"
     ("a" "AI"                             tlon-ai-menu)
@@ -219,6 +219,7 @@ the entry with that key."
 (eval
  `(transient-define-prefix tlon-magit-repo-menu ()
     "Browse a Tlön repo in Magit."
+    :info-manual "(tlon-dispatch) Magit repo menu"
     ,(tlon-dispatch--build-repo-menu-groups
       "magit"
       '(("q q" . (("q Q" "uqbar: pull all" tlon-uqbar-pull-all)))))))
@@ -227,6 +228,7 @@ the entry with that key."
 (eval
  `(transient-define-prefix tlon-dired-repo-menu ()
     "Browse a Tlön repo in Dired."
+    :info-manual "(tlon-dispatch) Dired repo menu"
     ,(tlon-dispatch--build-repo-menu-groups "dired")))
 
 ;;;;; Open file in repo
@@ -249,7 +251,7 @@ the entry with that key."
 ;;;###autoload (autoload 'tlon-files-menu "tlon-dispatch" nil t)
 (transient-define-prefix tlon-files-menu ()
   "Files menu."
-  :info-manual "(tlon) Files"
+  :info-manual "(tlon-dispatch) Files menu"
   [["Find"
     ("c" "in current repo"                 tlon-find-file-in-repo)
     ("a" "across repos"                    tlon-open-file-across-repos)]

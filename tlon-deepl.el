@@ -536,6 +536,7 @@ After successful deletion, execute CALLBACK (if non-nil)."
 ;;;###autoload (autoload 'tlon-deepl-menu "tlon-deepl" nil t)
 (transient-define-prefix tlon-deepl-menu ()
   "DeepL menu."
+  :info-manual "(tlon-deepl)"
   [["Translate"
     ("e" "Ediff translation" tlon-deepl-diff)]
    ["Glossaries"

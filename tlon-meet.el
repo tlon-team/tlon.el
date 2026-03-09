@@ -762,6 +762,7 @@ to automatically process it using `tlon-meet-transcribe-and-summarize'."
 ;;;###autoload (autoload 'tlon-meet-menu "tlon-meet" nil t)
 (transient-define-prefix tlon-meet-menu ()
   "`meet' menu."
+  :info-manual "(tlon-meet)"
   [["Meetings"
     ("l p" "Leo-Pablo"                  tlon-create-or-visit-meeting-issue-leo-pablo)
     ("f p" "Fede-Pablo"                 tlon-create-or-visit-meeting-issue-fede-pablo)

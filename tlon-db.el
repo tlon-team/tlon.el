@@ -1539,6 +1539,7 @@ If there are no differences, return nil."
 
 (transient-define-prefix tlon-db-menu ()
   "`tlon-db' menu."
+  :info-manual "(tlon-db)"
   [["Actions"
     ("g" "Get entries (prompt)" tlon-db-get-entries)
     ("G" "Get entries (overwrite)" tlon-db-get-entries-no-confirm)

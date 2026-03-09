@@ -1606,6 +1606,7 @@ If nil, use the default model."
 ;;;###autoload (autoload 'tlon-translate-menu "tlon-translate" nil t)
 (transient-define-prefix tlon-translate-menu ()
   "`tlon-translate' menu."
+  :info-manual "(tlon-translate)"
   [["Translate"
     ("t t" "Translate text" tlon-translate-text)
     ("t f" "Translate file" tlon-translate-file)

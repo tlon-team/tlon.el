@@ -302,7 +302,7 @@ If nil, use the default model."
 ;;;###autoload (autoload 'tlon-newsletter-menu "tlon-newsletter" nil t)
 (transient-define-prefix tlon-newsletter-menu ()
   "Menu for `tlon-newsletter'."
-  :info-manual "(tlon) newsletter"
+  :info-manual "(tlon-newsletter)"
   [["Commands"
     ("n" "Create issue"            tlon-newsletter-create-issue)
     ("p" "Publish issue"           tlon-newsletter-publish-issue)]

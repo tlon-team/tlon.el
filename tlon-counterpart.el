@@ -740,6 +740,7 @@ counterpart in LANG-A."
 ;;;###autoload (autoload 'tlon-counterpart-menu "tlon-counterpart" nil t)
 (transient-define-prefix tlon-counterpart-menu ()
   "`tlon-counterpart' menu."
+  :info-manual "(tlon-counterpart)"
   [["Navigation"
     ("u" "visit counterpart"                     tlon-open-counterpart-dwim)
     ("H-u" "visit counterpart other window"      tlon-open-counterpart-in-other-window-dwim)

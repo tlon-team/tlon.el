@@ -635,6 +635,7 @@ This is useful if the stored tokens are invalid or have been revoked."
 ;;;###autoload (autoload 'tlon-youtube-menu "tlon-youtube" nil t)
 (transient-define-prefix tlon-youtube-menu ()
   "YouTube menu."
+  :info-manual "(tlon-youtube)"
   [["Generate"
     ("g" "Generate wavelength video" tlon-youtube-generate-wavelength-video)
     ("t" "Generate video thumbnail" tlon-youtube-generate-thumbnail)]

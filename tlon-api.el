@@ -320,6 +320,7 @@ If DELETE-AFTER-UPLOAD is non-nil, delete FILE after uploading."
 ;;;###autoload (autoload 'tlon-api-menu "tlon-api" nil t)
 (transient-define-prefix tlon-api-menu ()
   "`api' menu."
+  :info-manual "(tlon-api)"
   ["Requests"
    ("q" "uqbar"                                tlon-api-request)
    ("Q" "uqbar force"                          tlon-api-request-force)

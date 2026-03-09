@@ -93,6 +93,7 @@ The alignment is performed by scrolling up or down the other window."
 ;;;###autoload (autoload 'tlon-split-menu "tlon-split" nil t)
 (transient-define-prefix tlon-split-menu ()
   "`split’ menu."
+  :info-manual "(tlon-split)"
   [["Split mode"
     ("s" "toggle"                     tlon-split-mode)
     ("r" "reset"                      tlon-split-mode-reset)]])

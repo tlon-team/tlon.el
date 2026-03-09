@@ -776,6 +776,7 @@ Returns a string like \"https://local-dev.example.org\" or nil if unknown."
 ;;;###autoload (autoload 'tlon-local-menu "tlon-local" nil t)
 (transient-define-prefix tlon-local-menu ()
   "`tlon-local' menu."
+  :info-manual "(tlon-local)"
   [["Run environment"
     ("q a" "arabic"                        tlon-local-run-uqbar-ar)
     ("q n" "english"                       tlon-local-run-uqbar-en)

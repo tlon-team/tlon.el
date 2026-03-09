@@ -426,6 +426,7 @@ If nil, use the default model."
 ;;;###autoload (autoload 'tlon-paragraphs-menu "tlon-paragraphs" nil t)
 (transient-define-prefix tlon-paragraphs-menu ()
   "Menu for `tlon-paragraphs' functions."
+  :info-manual "(tlon-paragraphs)"
   [["Commands"
     ("p" "Toggle paragraphs in mode line"               tlon-paragraphs-mode-line-mode)
     ("a" "Align paragraphs"                             tlon-paragraphs-align-with-ai)

@@ -602,7 +602,7 @@ Return cons of the form (missing-open . POS) or (missing-close . POS), or nil."
 ;;;###autoload (autoload 'tlon-fix-menu "tlon-fix" nil t)
 (transient-define-prefix tlon-fix-menu ()
   "`tlon-fix' menu."
-  :info-manual "(tlon) Manual & Automatic Fixes"
+  :info-manual "(tlon-fix)"
   [["Auto fix"
     ("a a" "all" tlon-autofix-all)
     ""
