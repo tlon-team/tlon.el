@@ -1326,6 +1326,7 @@ in the :data structure, including Gemini's format (which may use vectors)."
 	"Unknown Question"))))
 
 (defvar elpaca-repos-directory)
+(defvar elpaca-sources-directory)
 (defun tlon-ai-get-documentation-files ()
   "Return a list of full paths to documentation files.
 Documentation files are collected from:
@@ -1334,16 +1335,19 @@ Documentation files are collected from:
 3. Specific individual files."
   (let* ((all-doc-files '())
 	 ;; 1. Directories containing .org documentation files
+	 (sources-dir (if (boundp 'elpaca-sources-directory)
+			 elpaca-sources-directory
+		       elpaca-repos-directory))
 	 (doc-dirs (append (list (tlon-repo-lookup :dir :name "tlon-docs"))
 			   (mapcar (lambda (subdir)
-				     (file-name-concat elpaca-repos-directory subdir))
+				     (file-name-concat sources-dir subdir))
 				   '("tlon/doc/"
 				     "dotfiles/emacs/extras/doc/"))))
 	 (doc-pattern "\\.org\\'")
 	 ;; 2. Repositories to check for readme files
 	 (repos (append (tlon-lookup-all tlon-repos :dir :help t)
 			(mapcar (lambda (subdir)
-				  (file-name-concat elpaca-repos-directory subdir))
+				  (file-name-concat sources-dir subdir))
 				'("annas-archive"
 				  "bib"
 				  "gdrive"

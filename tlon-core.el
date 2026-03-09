@@ -56,7 +56,9 @@
 ;;;;; Files
 
 (defconst tlon-package-dir
-  (file-name-concat user-emacs-directory "elpaca/repos/tlon/")
+  (expand-file-name "tlon" (if (boundp 'elpaca-sources-directory)
+                               elpaca-sources-directory
+                             elpaca-repos-directory))
   "Directory where the `tlon' package is located.")
 
 ;;;;; Repos
