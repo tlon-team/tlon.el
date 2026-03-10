@@ -344,7 +344,7 @@ in this tag and pass the URL as the value of the `src' attribute.")
 
 ;;;;;; metadata
 
-;;;;###autoload
+;;;###autoload
 (defun tlon-edit-yaml-field ()
   "Edit the YAML field at point."
   (interactive)

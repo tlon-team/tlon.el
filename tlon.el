@@ -60,7 +60,7 @@
 
 ;;;; Variables
 
-(defconst tlon-version "1.6.7"
+(defconst tlon-version "2.0.0"
   "Version of the `tlon' package.")
 
 ;;;;; Files and dirs
