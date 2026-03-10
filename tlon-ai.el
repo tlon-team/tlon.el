@@ -592,7 +592,7 @@ or PDF file associated with the current BibTeX entry, if either is found.
 	    (t
 	     (buffer-substring-no-properties (point-min) (point-max)))))))
 
-(autoload 'tlon-convert-pdf "tlon-import")
+(declare-function pdf-tools-extras-convert-pdf "pdf-tools-extras")
 (defun tlon-get-file-as-string (file)
   "Get the contents of FILE as a string.
 If FILE is a PDF, convert it to Markdown first. If FILE is HTML, render it to
@@ -612,7 +612,7 @@ text using `eww`."
      ((string= (file-name-extension original-file-path) "pdf")
       (with-temp-buffer
 	(let ((markdown-temp-file (make-temp-file "pdf-to-markdown-")))
-	  (tlon-convert-pdf original-file-path markdown-temp-file)
+	  (pdf-tools-extras-convert-pdf original-file-path markdown-temp-file)
 	  (insert-file-contents markdown-temp-file)
 	  (delete-file markdown-temp-file)
 	  (buffer-substring-no-properties (point-min) (point-max)))))
