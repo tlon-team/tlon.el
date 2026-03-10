@@ -779,6 +779,7 @@ Returns a string like \"https://local-dev.example.org\" or nil if unknown."
   :info-manual "(tlon-local)"
   [["Run environment"
     ("q a" "arabic"                        tlon-local-run-uqbar-ar)
+    ("q z" "chinese"                       tlon-local-run-uqbar-zh)
     ("q n" "english"                       tlon-local-run-uqbar-en)
     ("q s" "spanish"                       tlon-local-run-uqbar-es)
     ("q r" "french"                        tlon-local-run-uqbar-fr)
