@@ -62,12 +62,15 @@
   (require 'org-element nil t)
   (provide 'org-element-ast))
 
-;;;; tlon-dispatch (transient menus — requires bleeding-edge transient for :info*)
+;;;; tlon-dispatch (transient menus)
 
-(provide 'tlon-dispatch)
+;; tlon-dispatch is no longer stubbed.  It requires transient, which is
+;; installed from MELPA by `make deps'.  The generated browse commands
+;; reference magit-status, which is defined as a no-op below.
 
 ;;;; magit / forge
 
+(defun magit-status (&optional _dir) nil)
 (provide 'magit)
 (provide 'magit-extras)
 (provide 'forge)

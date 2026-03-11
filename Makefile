@@ -15,7 +15,7 @@ TEST_FILES := $(wildcard test/*-test.el)
 DEPS_DIR ?= .deps
 CI_LOAD_PATH := -L . -L test -L $(DEPS_DIR)
 
-.PHONY: test test-ci deps test-core test-yaml test-url test-cleanup test-counterpart
+.PHONY: test test-ci deps test-core test-yaml test-url test-cleanup test-counterpart test-dispatch
 
 ## Run the full test suite (local, with elpaca).
 test:
@@ -75,4 +75,10 @@ test-counterpart:
 	$(EMACS) -Q --batch $(LOAD_PATH) \
 	  --eval "(setq debug-on-error nil)" \
 	  -l test/tlon-counterpart-test.el \
+	  -f ert-run-tests-batch-and-exit
+
+test-dispatch:
+	$(EMACS) -Q --batch $(LOAD_PATH) \
+	  --eval "(setq debug-on-error nil)" \
+	  -l test/tlon-dispatch-test.el \
 	  -f ert-run-tests-batch-and-exit

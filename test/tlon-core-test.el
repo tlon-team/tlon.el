@@ -217,5 +217,212 @@
     (should (listp names))
     (should (> (length names) 0))))
 
+;;;; tlon-string-to-number
+
+(ert-deftest tlon-string-to-number-english ()
+  "Parse English-formatted number with comma thousands separator."
+  (should (= 1234567.89
+             (tlon-string-to-number "1,234,567.89" "," "."))))
+
+(ert-deftest tlon-string-to-number-german ()
+  "Parse German-formatted number with dot thousands and comma decimal."
+  (should (= 1234567.89
+             (tlon-string-to-number "1.234.567,89" "." ","))))
+
+(ert-deftest tlon-string-to-number-spanish ()
+  "Parse Spanish-formatted number with space thousands and comma decimal."
+  (should (= 1234.56
+             (tlon-string-to-number "1 234,56" " " ","))))
+
+(ert-deftest tlon-string-to-number-no-thousands ()
+  "Parse a number without thousands separators."
+  (should (= 42.5
+             (tlon-string-to-number "42.5" "," "."))))
+
+(ert-deftest tlon-string-to-number-integer ()
+  "Parse an integer (no decimal part)."
+  (should (= 1000
+             (tlon-string-to-number "1,000" "," "."))))
+
+(ert-deftest tlon-string-to-number-plain-integer ()
+  "Parse a plain integer with no separators."
+  (should (= 42 (tlon-string-to-number "42" "," "."))))
+
+;;;; tlon-concatenate-list
+
+(ert-deftest tlon-concatenate-list-empty ()
+  "Empty list returns empty string."
+  (should (equal "" (tlon-concatenate-list nil))))
+
+(ert-deftest tlon-concatenate-list-single ()
+  "Single-element list returns that element."
+  (should (equal "apple" (tlon-concatenate-list '("apple")))))
+
+(ert-deftest tlon-concatenate-list-two-elements ()
+  "Two elements are joined with the conjunct."
+  (let ((conjuncts '((:language "en" :conjunct "and"))))
+    (should (equal "apple and banana"
+                   (tlon-concatenate-list '("apple" "banana") conjuncts)))))
+
+(ert-deftest tlon-concatenate-list-three-elements ()
+  "Three elements use commas and a conjunct."
+  (let ((conjuncts '((:language "en" :conjunct "and"))))
+    (should (equal "apple, banana and cherry"
+                   (tlon-concatenate-list '("apple" "banana" "cherry") conjuncts)))))
+
+(ert-deftest tlon-concatenate-list-fallback-without-file-context ()
+  "Without a file context, falls back to and regardless of conjuncts data."
+  ;; tlon-concatenate-list looks up language from the current file, not from
+  ;; the conjuncts list, so in batch mode it always falls back to "and".
+  (let ((conjuncts '((:language "es" :conjunct "y"))))
+    (should (equal "manzana and naranja"
+                   (tlon-concatenate-list '("manzana" "naranja") conjuncts)))))
+
+(ert-deftest tlon-concatenate-list-fallback-conjunct ()
+  "Falls back to and when language lookup fails."
+  (let ((conjuncts '((:language "xx" :conjunct "UND"))))
+    ;; No matching language, so falls back to "and"
+    (should (equal "a and b"
+                   (tlon-concatenate-list '("a" "b") conjuncts)))))
+
+;;;; tlon-get-delimited-region-pos
+
+(ert-deftest tlon-get-delimited-region-pos-symmetric-delimiters ()
+  "Find region between two identical delimiters (e.g. YAML front matter)."
+  (with-temp-buffer
+    (insert "---\ntitle: foo\n---\nbody text\n")
+    (let ((pos (tlon-get-delimited-region-pos "---")))
+      (should pos)
+      (should (= 1 (car pos)))
+      (should (= 19 (cdr pos))))))
+
+(ert-deftest tlon-get-delimited-region-pos-exclude-delimiters ()
+  "Exclude the delimiters from the returned region."
+  (with-temp-buffer
+    (insert "---\ntitle: foo\n---\nbody text\n")
+    (let ((pos (tlon-get-delimited-region-pos "---" nil t)))
+      (should pos)
+      ;; begin-pos is match-end of first ---, end-pos is match-beginning of second ---
+      (should (= 4 (car pos)))
+      (should (= 16 (cdr pos))))))
+
+(ert-deftest tlon-get-delimited-region-pos-different-delimiters ()
+  "Find region between two different delimiters."
+  (with-temp-buffer
+    (insert "BEGIN\ncontent here\nEND\n")
+    (let ((pos (tlon-get-delimited-region-pos "BEGIN" "END")))
+      (should pos)
+      (should (= 1 (car pos)))
+      ;; match-end returns position AFTER the match, so END at 20-22 → 23
+      (should (= 23 (cdr pos))))))
+
+(ert-deftest tlon-get-delimited-region-pos-no-begin-returns-nil ()
+  "Return nil when the begin delimiter is not found."
+  (with-temp-buffer
+    (insert "nothing here\n")
+    (should (null (tlon-get-delimited-region-pos "---")))))
+
+(ert-deftest tlon-get-delimited-region-pos-no-end-returns-nil ()
+  "Return nil when only the begin delimiter is found."
+  (with-temp-buffer
+    (insert "---\ntitle: foo\n")
+    (should (null (tlon-get-delimited-region-pos "---")))))
+
+;;;; tlon-read-json
+
+(ert-deftest tlon-read-json-from-buffer ()
+  "Parse JSON from a buffer."
+  (with-temp-buffer
+    (insert "{\"name\": \"Alice\", \"age\": 30}")
+    (let ((result (tlon-read-json)))
+      (should (equal "Alice" (alist-get "name" result nil nil #'equal)))
+      (should (= 30 (alist-get "age" result nil nil #'equal))))))
+
+(ert-deftest tlon-read-json-with-leading-text ()
+  "Parse JSON from a buffer with text before the opening brace."
+  (with-temp-buffer
+    (insert "some header\n{\"key\": \"value\"}")
+    (let ((result (tlon-read-json)))
+      (should (equal "value" (alist-get "key" result nil nil #'equal))))))
+
+(ert-deftest tlon-read-json-empty-buffer-returns-nil ()
+  "Return nil for an empty buffer."
+  (with-temp-buffer
+    (should (null (tlon-read-json)))))
+
+(ert-deftest tlon-read-json-no-brace-returns-nil ()
+  "Return nil when buffer contains no JSON object."
+  (with-temp-buffer
+    (insert "just plain text, no braces")
+    (should (null (tlon-read-json)))))
+
+(ert-deftest tlon-read-json-malformed-returns-nil ()
+  "Return nil for malformed JSON."
+  (with-temp-buffer
+    (insert "{invalid json!!!}")
+    (should (null (tlon-read-json)))))
+
+(ert-deftest tlon-read-json-nested-object ()
+  "Parse nested JSON objects."
+  (with-temp-buffer
+    (insert "{\"a\": {\"b\": \"nested\"}}")
+    (let* ((result (tlon-read-json))
+           (inner (alist-get "a" result nil nil #'equal)))
+      (should (equal "nested" (alist-get "b" inner nil nil #'equal))))))
+
+(ert-deftest tlon-read-json-custom-types ()
+  "Custom object-type and array-type are respected."
+  (with-temp-buffer
+    (insert "{\"items\": [1, 2, 3]}")
+    (let ((result (tlon-read-json nil 'alist 'vector)))
+      (should (vectorp (alist-get "items" result nil nil #'equal))))))
+
+;;;; tlon-set-dir
+
+(ert-deftest tlon-set-dir-sets-directory ()
+  "Set :dir from :name and paths-dir-tlon-repos."
+  (let ((repo (list :name "test-repo" :abbrev "test-repo"))
+        (paths-dir-tlon-repos "/tmp/repos/"))
+    (tlon-set-dir repo)
+    (should (equal "/tmp/repos/test-repo/" (plist-get repo :dir)))))
+
+(ert-deftest tlon-set-dir-skips-when-already-set ()
+  "Do not overwrite :dir when already set."
+  (let ((repo (list :name "test-repo" :abbrev "test-repo" :dir "/custom/path/"))
+        (paths-dir-tlon-repos "/tmp/repos/"))
+    (tlon-set-dir repo)
+    (should (equal "/custom/path/" (plist-get repo :dir)))))
+
+;;;; tlon-get-number-separator-pattern
+
+(ert-deftest tlon-get-number-separator-pattern-english ()
+  "English pattern matches comma-separated numbers."
+  (let ((pat (tlon-get-number-separator-pattern nil "," ".")))
+    (should pat)
+    (should (string-match-p pat "1,234,567.89"))
+    (should (string-match-p pat "42"))
+    (should (string-match-p pat "1,000"))))
+
+(ert-deftest tlon-get-number-separator-pattern-german ()
+  "German pattern matches dot-separated numbers with comma decimal."
+  (let ((pat (tlon-get-number-separator-pattern nil "." ",")))
+    (should pat)
+    (should (string-match-p pat "1.234.567,89"))))
+
+(ert-deftest tlon-get-number-separator-pattern-bounded ()
+  "Bounded pattern adds word boundaries."
+  (let ((pat (tlon-get-number-separator-pattern nil "," "." t)))
+    (should (string-match-p "\\\\b" pat))))
+
+(ert-deftest tlon-get-number-separator-pattern-by-lang ()
+  "Pattern can be derived from a language code."
+  (let ((pat (tlon-get-number-separator-pattern "en")))
+    (should pat)
+    (should (string-match-p pat "1,234.56"))))
+
+(ert-deftest tlon-get-number-separator-pattern-unknown-lang ()
+  "Return nil for an unknown language code."
+  (should (null (tlon-get-number-separator-pattern "xx"))))
+
 (provide 'tlon-core-test)
 ;;; tlon-core-test.el ends here
