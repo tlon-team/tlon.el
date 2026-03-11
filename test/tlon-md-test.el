@@ -168,5 +168,102 @@
   (let ((pattern (tlon-md-get-tag-pattern "Sidenote")))
     (should (string-match-p pattern "<Sidenote />"))))
 
+;;;; tlon-md-tag-list
+
+(ert-deftest tlon-md-tag-list-returns-list ()
+  "Tag list returns a non-empty list of strings."
+  (let ((tags (tlon-md-tag-list)))
+    (should (listp tags))
+    (should (> (length tags) 0))
+    (should (cl-every #'stringp tags))))
+
+(ert-deftest tlon-md-tag-list-contains-known-tags ()
+  "Tag list contains known tag names."
+  (let ((tags (tlon-md-tag-list)))
+    (should (member "Cite" tags))
+    (should (member "Aside" tags))))
+
+;;;; tlon-md-format-tag
+
+(ert-deftest tlon-md-format-tag-self-closing-match-string ()
+  "Self-closing tag produces a regex pattern in match-string mode."
+  (let ((pattern (tlon-md-format-tag "Cite" nil 'get-match-string)))
+    (should (stringp pattern))
+    (should (string-match-p pattern "<Cite bibKey=\"test\" />"))))
+
+(ert-deftest tlon-md-format-tag-pair-match-string ()
+  "Pair tag produces a regex pattern matching open+content+close."
+  (let ((pattern (tlon-md-format-tag "Aside" nil 'get-match-string)))
+    (should (stringp pattern))
+    (should (string-match-p pattern "<Aside>hello world</Aside>"))))
+
+(ert-deftest tlon-md-format-tag-self-closing-values ()
+  "Self-closing tag with values returns a list with one element."
+  (let ((result (tlon-md-format-tag "Cite" '("Smith2020") 'get-values)))
+    (should (listp result))
+    (should (= 1 (length result)))
+    (should (string-match-p "Smith2020" (car result)))))
+
+(ert-deftest tlon-md-format-tag-pair-placeholders ()
+  "Pair tag with placeholders returns a cons cell."
+  (let ((result (tlon-md-format-tag "Aside" nil 'get-placeholders)))
+    (should (consp result))
+    (should (stringp (car result)))
+    (should (stringp (cdr result)))
+    (should (string-match-p "Aside" (car result)))
+    (should (string-match-p "Aside" (cdr result)))))
+
+;;;; tlon-offset-timestamps
+
+(ert-deftest tlon-md-offset-timestamps-basic ()
+  "Offset a single timestamp by a fixed amount."
+  (with-temp-buffer
+    (insert "[01:30] Some text")
+    (tlon-offset-timestamps "00:30")
+    (should (equal "[02:00] Some text" (buffer-string)))))
+
+(ert-deftest tlon-md-offset-timestamps-multiple ()
+  "Offset multiple timestamps."
+  (with-temp-buffer
+    (insert "[00:00] Start\n[01:30] Middle\n[10:00] End")
+    (tlon-offset-timestamps "05:00")
+    (should (equal "[05:00] Start\n[06:30] Middle\n[15:00] End" (buffer-string)))))
+
+(ert-deftest tlon-md-offset-timestamps-seconds-overflow ()
+  "Seconds overflow correctly rolls into minutes."
+  (with-temp-buffer
+    (insert "[00:45] Text")
+    (tlon-offset-timestamps "00:30")
+    (should (equal "[01:15] Text" (buffer-string)))))
+
+(ert-deftest tlon-md-offset-timestamps-no-timestamps ()
+  "Buffer without timestamps is unchanged."
+  (with-temp-buffer
+    (insert "No timestamps here.")
+    (tlon-offset-timestamps "01:00")
+    (should (equal "No timestamps here." (buffer-string)))))
+
+(ert-deftest tlon-md-offset-timestamps-invalid-format-errors ()
+  "Invalid offset format signals an error."
+  (with-temp-buffer
+    (insert "[01:00] Text")
+    (should-error (tlon-offset-timestamps "bad") :type 'user-error)))
+
+;;;; tlon-looking-at-tag-p
+
+(ert-deftest tlon-looking-at-tag-p-on-tag ()
+  "Return non-nil when point is on a matching tag."
+  (with-temp-buffer
+    (insert "<Aside>content</Aside>")
+    (goto-char 1)
+    (should (tlon-looking-at-tag-p "Aside"))))
+
+(ert-deftest tlon-looking-at-tag-p-not-on-tag ()
+  "Return nil when point is not on a matching tag."
+  (with-temp-buffer
+    (insert "plain text")
+    (goto-char 1)
+    (should-not (tlon-looking-at-tag-p "Aside"))))
+
 (provide 'tlon-md-test)
 ;;; tlon-md-test.el ends here

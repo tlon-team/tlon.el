@@ -186,5 +186,77 @@
     (let ((raw (tlon-yaml-get-metadata (current-buffer) t)))
       (should (equal '("title: Test") raw)))))
 
+;;;; tlon-yaml--parse-tags-from-response
+
+(ert-deftest tlon-yaml-parse-tags-json-array ()
+  "Parse a raw JSON array response."
+  (should (equal '("Alpha" "Beta" "Gamma")
+                 (tlon-yaml--parse-tags-from-response "[\"Alpha\", \"Beta\", \"Gamma\"]"))))
+
+(ert-deftest tlon-yaml-parse-tags-fenced-json ()
+  "Parse a fenced code block containing a JSON array."
+  (should (equal '("Tag A" "Tag B")
+                 (tlon-yaml--parse-tags-from-response
+                  "```json\n[\"Tag A\", \"Tag B\"]\n```"))))
+
+(ert-deftest tlon-yaml-parse-tags-comma-separated ()
+  "Parse a comma-separated plain text response."
+  (should (equal '("Alpha" "Beta" "Gamma")
+                 (tlon-yaml--parse-tags-from-response "Alpha, Beta, Gamma"))))
+
+(ert-deftest tlon-yaml-parse-tags-newline-separated ()
+  "Parse a newline-separated plain text response."
+  (should (equal '("Alpha" "Beta")
+                 (tlon-yaml--parse-tags-from-response "Alpha\nBeta"))))
+
+(ert-deftest tlon-yaml-parse-tags-empty-response ()
+  "Return nil for an empty response."
+  (should (null (tlon-yaml--parse-tags-from-response ""))))
+
+(ert-deftest tlon-yaml-parse-tags-nil-response ()
+  "Return nil for a nil response."
+  (should (null (tlon-yaml--parse-tags-from-response nil))))
+
+(ert-deftest tlon-yaml-parse-tags-quoted-items-without-brackets ()
+  "Quoted items without brackets: JSON greedily parses the first item.
+Note: this is a limitation — json-read-from-string returns the first
+JSON value without erroring, so the fallback splitter is never reached."
+  (let ((result (tlon-yaml--parse-tags-from-response "\"Tag A\", \"Tag B\"")))
+    ;; JSON parser returns just the first string, not a list
+    (should (equal "Tag A" result))))
+
+;;;; tlon-yaml-get-valid-keys
+
+(ert-deftest tlon-yaml-get-valid-keys-article ()
+  "Return article keys for type article."
+  (let ((keys (tlon-yaml-get-valid-keys nil "article")))
+    (should (member "title" keys))
+    (should (member "authors" keys))
+    (should (member "tags" keys))))
+
+(ert-deftest tlon-yaml-get-valid-keys-tag ()
+  "Return tag keys for type tag."
+  (let ((keys (tlon-yaml-get-valid-keys nil "tag")))
+    (should (member "title" keys))
+    (should (member "brief_title" keys))
+    (should-not (member "authors" keys))))
+
+(ert-deftest tlon-yaml-get-valid-keys-author ()
+  "Return author keys for type author."
+  (let ((keys (tlon-yaml-get-valid-keys nil "author")))
+    (should (member "title" keys))
+    (should-not (member "authors" keys))
+    (should-not (member "tags" keys))))
+
+(ert-deftest tlon-yaml-get-valid-keys-unknown-returns-nil ()
+  "Return nil for an unknown type."
+  (should (null (tlon-yaml-get-valid-keys nil "unknown_type"))))
+
+(ert-deftest tlon-yaml-get-valid-keys-no-core ()
+  "Exclude core keys when no-core is non-nil."
+  (let ((keys (tlon-yaml-get-valid-keys nil "article" t)))
+    (should (member "title" keys))
+    (should-not (member "original_path" keys))))
+
 (provide 'tlon-yaml-test)
 ;;; tlon-yaml-test.el ends here

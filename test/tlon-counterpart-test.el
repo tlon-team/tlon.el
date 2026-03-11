@@ -78,5 +78,33 @@
   (should-not (string-match-p tlon-translate-relative-links--parent-dir-pattern
                               "./file.md")))
 
+;;;; tlon-translate-relative-links--get-original-path
+
+(ert-deftest tlon-counterpart-get-original-path-cur-dir ()
+  "Resolve a current-directory link to the original repo."
+  (let ((result (tlon-translate-relative-links--get-original-path
+                 "./some-file.md" "/repos/uqbar-en/" "articles" "es" "en")))
+    (should (equal "/repos/uqbar-en/articles/some-file.md" result))))
+
+(ert-deftest tlon-counterpart-get-original-path-parent-dir ()
+  "Resolve a parent-directory link translating the bare dir name."
+  (let ((result (tlon-translate-relative-links--get-original-path
+                 "../temas/some-tag.md" "/repos/uqbar-en/" "articles" "es" "en")))
+    ;; "temas" (Spanish) should be translated to "tags" (English)
+    (should (equal "/repos/uqbar-en/tags/some-tag.md" result))))
+
+(ert-deftest tlon-counterpart-get-original-path-strips-anchor ()
+  "Anchor fragment is stripped before path resolution."
+  (let ((result (tlon-translate-relative-links--get-original-path
+                 "./file.md#section" "/repos/uqbar-en/" "articles" "es" "en")))
+    (should (equal "/repos/uqbar-en/articles/file.md" result))))
+
+(ert-deftest tlon-counterpart-get-original-path-parent-unknown-bare-dir ()
+  "When bare dir translation fails, use the original bare dir name."
+  (let ((result (tlon-translate-relative-links--get-original-path
+                 "../unknown-dir/file.md" "/repos/uqbar-en/" "articles" "es" "en")))
+    ;; "unknown-dir" has no translation, so it's used as-is
+    (should (equal "/repos/uqbar-en/unknown-dir/file.md" result))))
+
 (provide 'tlon-counterpart-test)
 ;;; tlon-counterpart-test.el ends here
