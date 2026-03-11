@@ -169,21 +169,21 @@ DIR is the directory where the repo is stored. BACKEND is either
      ("u n" "utilitarianism-en")
      ("u s" "utilitarianism-es")]
     ["Meetings"
-     ("m l p" "Leo-Pablo")
-     ("m f p" "Fede-Pablo")
-     ("m f l" "Fede-Leo")
-     ("m g" "group")
+     ("m l p" "Leo-Pablo" "meetings-leo-pablo")
+     ("m f p" "Fede-Pablo" "meetings-fede-pablo")
+     ("m f l" "Fede-Leo" "meetings-fede-leo")
+     ("m g" "group" "meetings-group")
      ""
      "Clock"
-     ("c l" "Leo")
-     ("c f" "Fede")
-     ("c p" "Pablo")
+     ("c l" "Leo" "clock-leo")
+     ("c f" "Fede" "clock-fede")
+     ("c p" "Pablo" "clock-pablo")
      ""
      "Emacs"
      ("e" "tlon.el")
      ""
      "Docs"
-     ("d" "tlon-docs")
+     ("d" "tlon-docs" "docs")
      ""
      "Web"
      ("w" "web-server")
@@ -191,7 +191,9 @@ DIR is the directory where the repo is stored. BACKEND is either
      "Sandbox"
      ("H-s" "sandbox")])
   "Shared repo menu entries for Magit and Dired browse menus.
-Each entry is (KEY LABEL); separators and group headers are strings.")
+Each entry is (KEY LABEL) or (KEY LABEL ABBREV); separators and group
+headers are strings.  When ABBREV is omitted, it is derived from LABEL
+by replacing dots and spaces with hyphens.")
 
 (defun tlon-dispatch--build-repo-menu-groups (backend &optional extra-entries)
   "Build transient menu groups for BACKEND from `tlon-repo-menu-entries'.
@@ -210,7 +212,8 @@ the entry with that key."
                                       else collect
                                       (let* ((key (nth 0 item))
                                              (label (nth 1 item))
-                                             (abbrev (replace-regexp-in-string "[. ]" "-" label))
+                                             (abbrev (or (nth 2 item)
+                                                         (replace-regexp-in-string "[. ]" "-" label)))
                                              (cmd (intern (format "tlon-%s-browse-%s" backend abbrev))))
                                         (list key label cmd))
                                       and append (alist-get (nth 0 item) extra-entries nil nil #'equal))))))))
