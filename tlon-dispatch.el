@@ -210,7 +210,7 @@ the entry with that key."
                                       else collect
                                       (let* ((key (nth 0 item))
                                              (label (nth 1 item))
-                                             (abbrev (replace-regexp-in-string "[.]" "-" label))
+                                             (abbrev (replace-regexp-in-string "[. ]" "-" label))
                                              (cmd (intern (format "tlon-%s-browse-%s" backend abbrev))))
                                         (list key label cmd))
                                       and append (alist-get (nth 0 item) extra-entries nil nil #'equal))))))))
