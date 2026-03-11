@@ -268,7 +268,7 @@ of a visiting buffer if that yields better information:
                     (buffer-local-value 'major-mode visiting-buffer))))
     (cond
      ((or (eq mode 'bibtex-mode)
-          (string= ext "bib"))
+          (and ext (string= ext "bib")))
       (tlon--get-urls-in-file-bibtex file))
      ((or (eq mode 'markdown-mode)
           (member ext '("md" "markdown")))

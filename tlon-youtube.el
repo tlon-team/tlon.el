@@ -292,6 +292,8 @@ Escapes backslashes, double quotes, and single quotes."
     (setq result (replace-regexp-in-string "\\\\" "\\\\\\\\" result t t))
     (setq result (replace-regexp-in-string "\"" "\\\\\"" result t t))
     (setq result (replace-regexp-in-string "'" "\\\\'" result t t))
+    (setq result (replace-regexp-in-string "%" "%%" result))
+    (setq result (replace-regexp-in-string "@" "\\\\@" result))
     result))
 
 ;;;;; Upload
@@ -560,12 +562,16 @@ Prompts for video ID and playlist selection."
     (user-error "Thumbnail file is not readable: %s" thumbnail-file))
   (let* ((access-token (tlon-youtube--get-access-token))
          (url (format "https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=%s" video-id))
-         (request-body-file (make-temp-file "youtube-thumbnail-" nil ".png")))
+         (ext (or (file-name-extension thumbnail-file) "png"))
+         (mime (pcase (downcase ext)
+                 ((or "jpg" "jpeg") "image/jpeg")
+                 (_ "image/png")))
+         (request-body-file (make-temp-file "youtube-thumbnail-" nil (concat "." ext))))
     (copy-file thumbnail-file request-body-file t)
     (let ((command `("curl" "-s" "-X" "POST"
                      "--data-binary" ,(format "@%s" request-body-file)
                      "-H" ,(format "Authorization: Bearer %s" access-token)
-                     "-H" "Content-Type: image/png"
+                     "-H" ,(format "Content-Type: %s" mime)
                      ,url)))
       (tlon-youtube--execute-upload-command
        command

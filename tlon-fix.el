@@ -257,7 +257,7 @@ match certain words that should not be altered, such as \"80,000 Hours\"."
 (defun tlon-is-in-protected-range-p (start end protected-ranges)
   "Check if range from START to END overlaps with any PROTECTED-RANGES."
   (cl-loop for (pstart . pend) in protected-ranges
-	   thereis (not (or (< end pstart) (> start pend)))))
+	   thereis (not (or (<= end pstart) (>= start pend)))))
 
 ;;;###autoload
 (defun tlon-autofix-all ()
@@ -270,11 +270,8 @@ match certain words that should not be altered, such as \"80,000 Hours\"."
   (tlon-autofix-replace-thousands-separators)
   (tlon-autofix-thin-spaces)
   (tlon-autofix-superscripts)
-  (let ((was-in-hook (memq #'tlon-autofix-all after-save-hook))
-	(after-save-hook (remove #'tlon-autofix-all after-save-hook)))
-    (save-buffer)
-    (when was-in-hook
-      (add-hook 'after-save-hook #'tlon-autofix-all nil t))))
+  (let ((after-save-hook (remq #'tlon-autofix-all after-save-hook)))
+    (save-buffer)))
 
 ;;;;; manual-fix
 

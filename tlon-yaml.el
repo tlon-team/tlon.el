@@ -129,7 +129,7 @@ The value is a cons cell (BACKEND . MODEL). When nil, use the default
   "Convert YAML STRINGS to an alist."
   (let ((metadata '()))
     (dolist (line strings)
-      (when (string-match "^\\(.*?\\):\\s-+\\(.*\\)$" line)
+      (when (string-match "^\\(.*?\\):\\s-*\\(.*\\)$" line)
 	(let* ((key (match-string 1 line))
 	       (value (match-string 2 line))
 	       (trimmed-value (string-trim value)))
@@ -147,12 +147,15 @@ The value is a cons cell (BACKEND . MODEL). When nil, use the default
   "Format VALUE by converting from the YAML format to an Elisp format."
   (cond
    ((and (string-prefix-p "[" value) (string-suffix-p "]" value)) ;; list
-    (mapcar #'string-trim
-	    (mapcar (lambda (s)
-		      (if (and (string-prefix-p "\"" s) (string-suffix-p "\"" s))
-			  (substring s 1 -1)
-			s))
-		    (split-string (substring value 1 -1) "\\s *,\\s *"))))
+    (let ((inner (substring value 1 -1)))
+      (if (string-empty-p (string-trim inner))
+	  '()
+	(mapcar #'string-trim
+		(mapcar (lambda (s)
+			  (if (and (string-prefix-p "\"" s) (string-suffix-p "\"" s))
+			      (substring s 1 -1)
+			    s))
+			(split-string inner "\\s *,\\s *"))))))
    ((and (string-prefix-p "\"" value) (string-suffix-p "\"" value)) ;; string
     (substring value 1 -1))
    (t value)))
@@ -209,7 +212,9 @@ additional metadata such as the file name and the file type."
   (let* ((file-or-buffer (or file-or-buffer (buffer-file-name)))
 	 (metadata (tlon-yaml-get-metadata file-or-buffer))
 	 (repo (tlon-get-repo-from-dir (or
-					(when-let ((file (buffer-file-name)))
+					(when-let ((file (if (bufferp file-or-buffer)
+							    (buffer-file-name file-or-buffer)
+							  file-or-buffer)))
 					  (file-name-directory file))
 					default-directory)))
 	 (language (tlon-repo-lookup :language :dir repo))
@@ -708,9 +713,9 @@ FILE has no YAML front-matter, signal an error.  BODY is wrapped in
 (defun tlon-yaml-get-field-at-point ()
   "Return a list with the YAML key and value at point, or nil if there is none."
   (when-let* ((bounds (bounds-of-thing-at-point 'line))
-	      (line (buffer-substring-no-properties (car bounds) (cdr bounds)))
-	      (elts (split-string line ":" nil "\\s-+")))
-    elts))
+	      (line (buffer-substring-no-properties (car bounds) (cdr bounds))))
+    (when (string-match "^\\([^:]+\\):\\s-*\\(.*\\)" line)
+      (list (string-trim (match-string 1 line)) (string-trim (match-string 2 line))))))
 
 ;;;###autoload
 (defun tlon-yaml-get-key (key &optional file-or-buffer)

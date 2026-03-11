@@ -247,6 +247,7 @@ function tried to be a nudge in that direction."
 	  (goto-char (point-max))
 	  (insert (format "- Discutir %s." link)) ; Spanish: "Discuss %s."
 	  (forge-post-submit))))
+    (unless backlink (user-error "Could not determine backlink"))
     (forge-create-post)
     (let ((deadline (+ (float-time) 30)))
       (while (and (not (derived-mode-p 'forge-post-mode))
@@ -335,7 +336,7 @@ PARTICIPANTS, using filename inference for initial participant suggestion."
              (insert "\nError: Transcript file not created.\n"))
          (let* ((base-name (file-name-sans-extension transcript-file)))
            (dolist (ext '(".vtt" ".srt" ".tsv" ".json"))
-             (ignore-errors (delete-file (concat base-name ext))))
+             (ignore-errors (delete-file (concat base-name ext) t)))
            (with-current-buffer output-buffer
              (goto-char (point-max))
              (insert (format "Transcript found: %s. Starting formatting…\n"
@@ -613,7 +614,7 @@ Updates OUTPUT-BUFFER with progress messages."
                     (progn
                       (insert "Push successful.\n")
                       ;; Delete the original input transcript file after successful commit and push
-                      (ignore-errors (delete-file input-transcript-file))
+                      (ignore-errors (delete-file input-transcript-file t))
                       (insert (format "Deleted original transcript file: %s\n" input-transcript-file)))
                   (insert "Error: Push failed. See buffer output.\n")))
             (insert "\nError: Commit failed. See buffer output.\n"))))
@@ -668,7 +669,7 @@ Reads TRANSCRIPT-FILE, uses PARTICIPANTS list, calls AI, saves the result to a
                  (write-region (point-min) (point-max) output-file))
                (message "Formatted transcript saved to: %s" output-file)
                ;; Delete the original .txt file
-               (ignore-errors (delete-file transcript-file))
+               (ignore-errors (delete-file transcript-file t))
                (message "Deleted original transcript file: %s" transcript-file)
                ;; Call the cleanup function, passing the original callback along
                (tlon-meet-cleanup-transcript output-file callback))

@@ -190,7 +190,7 @@ Rows that include the words \"Total time\" or \"/File time/\" are skipped."
                              (substring line 1 (if (string-suffix-p "|" line)
                                                    -1
                                                  (length line)))
-                             "|" t)))
+                             "|")))
              (col1 (nth 0 cells))
              (headline (nth 1 cells)))
         ;; We want only detailed rows, which have an empty first column;

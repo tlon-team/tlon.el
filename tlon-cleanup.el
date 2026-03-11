@@ -59,7 +59,7 @@ non-EAF."
   "Unescape relevant characters in the current buffer."
   ;; characters that need to be escaped
   (dolist (char '("." "[" "]" "$"))
-    (let ((regexp (concat "\\\\\\" char)))
+    (let ((regexp (concat (regexp-quote "\\") (regexp-quote char))))
       (goto-char (point-min))
       (while (re-search-forward regexp nil t)
 	(replace-match char t t))))
@@ -105,18 +105,19 @@ if there is at least one level 1 heading, and promote all headings while there
 are no level 2 headings and some headings level 3 or higher."
   (save-excursion
     (goto-char (point-min))
-    (when (> (point-max) (markdown-next-heading)) ; buffer has at least one heading
-      (goto-char (point-min))
-      (when (re-search-forward "^# " nil t)
-	(substitute-target-in-buffer "^#" "##"))
-      (goto-char (point-min))
-      (let ((changed t))
-	(while (and changed (not (save-excursion
-				   (goto-char (point-min))
-				   (re-search-forward "^## " nil t))))
-	  (let ((before (buffer-chars-modified-tick)))
-	    (substitute-target-in-buffer "^###" "##")
-	    (setq changed (/= before (buffer-chars-modified-tick)))))))))
+    (when-let ((next (markdown-next-heading)))
+      (when (> (point-max) next) ; buffer has at least one heading
+	(goto-char (point-min))
+	(when (re-search-forward "^# " nil t)
+	  (substitute-target-in-buffer "^#" "##"))
+	(goto-char (point-min))
+	(let ((changed t))
+	  (while (and changed (not (save-excursion
+				     (goto-char (point-min))
+				     (re-search-forward "^## " nil t))))
+	    (let ((before (buffer-chars-modified-tick)))
+	      (substitute-target-in-buffer "^###" "##")
+	      (setq changed (/= before (buffer-chars-modified-tick))))))))))
 
 ;; Not sure what the cause of these double brackets is; for now, just remove them
 (defun tlon-cleanup-remove-double-brackets ()
@@ -483,7 +484,7 @@ If DELETE is non-nil, delete the footnote."
       (if (re-search-forward "\\[\\^[[:digit:]]\\{1,3\\}\\]:\\ " nil t)
 	  (goto-char (match-beginning 0))
 	(goto-char (point-max)))
-      (setq footnote-end (if (bolp) (- (point) 1) (point)))
+      (setq footnote-end (if (bolp) (max (point-min) (1- (point))) (point)))
       ;; Extract footnote content
       (setq footnote-content (buffer-substring-no-properties footnote-start footnote-end))
       (when delete

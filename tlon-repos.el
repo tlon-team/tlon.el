@@ -108,7 +108,9 @@ reported by `tlon-repo-lookup-all' and the local repositories (as determined by
 
 ;; Pull `babel-refs' every 5 minutes of idle time to keep the BibTeX
 ;; database in sync with remote changes.
-(run-with-idle-timer (* 5 60) t #'tlon-repos-pull-babel-refs)
+(when-let ((dir (tlon-repo-lookup :dir :name "babel-refs")))
+  (when (file-directory-p dir)
+    (run-with-idle-timer (* 5 60) t #'tlon-repos-pull-babel-refs)))
 
 ;;;;; Forge
 ;;;;;; Track repos

@@ -297,7 +297,7 @@ Return the path of the temporary file created."
   "Get key of commit file."
   (let* ((dir (file-name-directory (files-extras-buffer-file-name)))
 	 (file (magit-extras-get-commit-file))
-	 (path (file-name-concat (replace-regexp-in-string "\\.git/" "" dir) file)))
+	 (path (file-name-concat (replace-regexp-in-string "\\.git/\\'" "" dir) file)))
     (tlon-get-key-from-file path)))
 
 ;;;;; Search
@@ -329,7 +329,8 @@ respectively."
 	   (subtype (tlon-repo-lookup :subtype :dir repo))
 	   (file-or-key (pcase subtype
 			  ('translations (tlon-get-key-from-file file))
-			  ('biblio (file-name-nondirectory file)))))
+			  ('biblio (file-name-nondirectory file))
+			  (_ (file-name-nondirectory file)))))
       (magit-commit-create (list "-m" (format "%s %s" action file-or-key))))))
 
 ;;;;; hyphenation

@@ -46,13 +46,13 @@
   "Path prefix for the Grafana Loki data source proxy.
 This usually contains the data source numeric ID or UID.")
 
-(defconst tlon-local-rebuild-content-database nil
+(defvar tlon-local-rebuild-content-database nil
   "When non-nil, append `--rebuild-content-database' to Uqbar start.")
 
-(defconst tlon-local-content-branch-production nil
+(defvar tlon-local-content-branch-production nil
   "When non-nil, append `--content-branch=production' to Uqbar start.")
 
-(defconst tlon-local-no-include-testing nil
+(defvar tlon-local-no-include-testing nil
   "When non-nil, append `--no-include-testing' Uqbar start.")
 
 ;;;; User options

@@ -1518,7 +1518,7 @@ Preserves existing priority cookie."
 
 	(when tlon-debug (message "TODO updated to: %s"
 				  (org-get-heading t t nil nil))))) ; Log the full new heading
-    (visual-line-mode original-visual-line-mode)))
+    (visual-line-mode (if original-visual-line-mode 1 -1))))
 
 (defun tlon-update-issue-from-todo ()
   "Update the GitHub issue to match the Org TODO heading at point.
@@ -2065,7 +2065,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
   "Return the valid tags in the `org-mode' heading at point.
 A tag is valid iff it is a member of `tlon-todo-tags'."
   (when-let ((tags (cl-intersection
-		    (cdr (org-get-tags)) tlon-todo-tags :test 'string=)))
+		    (org-get-tags) tlon-todo-tags :test 'string=)))
     tags))
 
 ;;;;; Validate
@@ -2563,7 +2563,7 @@ If ISSUE is nil, use the issue at point or in current buffer."
   (save-window-excursion
     (let* ((default-directory repo)
 	   (key (tlon-get-clock-key))
-	   (issue-title (format "Job: `%s" key))
+	   (issue-title (format "Job: `%s`" key))
 	   (issue (tlon-issue-lookup issue-title))
 	   (clocked-phase (tlon-get-clock-phase))
 	   (phase (tlon-get-phase-in-issue issue))

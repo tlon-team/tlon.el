@@ -358,7 +358,7 @@ the path to the temporary file containing the raw AI response."
   (message "Successfully merged %d non-placeholder verified AI translations for '%s' into %s"
            updated-count new-lang-code (file-name-nondirectory tlon-file-glossary-source))
   (when (file-exists-p raw-response-file)
-    (delete-file raw-response-file)
+    (delete-file raw-response-file t)
     (message "Deleted temporary raw response file: %s" (file-name-nondirectory raw-response-file))))
 
 (defun tlon-ai--handle-processing-error (err verified-response raw-response-file)
@@ -470,7 +470,7 @@ Unescapes doubled quotes inside fields. Skips empty or malformed lines."
           (pcase line
             ((and (pred (string-match-p "^\\s-*$")) _) nil)
             (_
-             (when (string-match "^\"\\([^\"]*\\)\"\\s-*,\\s-*\"\\([^\"]*\\)\"" line)
+             (when (string-match "^\"\\(\\(?:[^\"]\\|\"\"\\)*\\)\"\\s-*,\\s-*\"\\(\\(?:[^\"]\\|\"\"\\)*\\)\"" line)
                (let* ((src (replace-regexp-in-string "\"\"" "\"" (match-string 1 line) t t))
                       (tgt (replace-regexp-in-string "\"\"" "\"" (match-string 2 line) t t)))
                  (push (cons src tgt) pairs))))))

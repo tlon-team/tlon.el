@@ -282,8 +282,8 @@ hex format irrespective of their original format."
 	      (push (cons (intern (concat "--" (match-string-no-properties 1)))
 			  (match-string-no-properties 2))
 		    theme-collect))
-	    (save-buffer)
-	    (kill-buffer temp-buf))
+	    (save-buffer))
+	(when (buffer-live-p temp-buf) (kill-buffer temp-buf))
 	(delete-file temp-file))
       (reverse theme-collect))))
 
@@ -315,11 +315,13 @@ hex format irrespective of their original format."
 COMPONENT can be either \"h\", \"s\" or \"l\". DIRECTION can be either `+' or
 `-'. STEP is the amount to change the value by. If STEP is nil, use the value of
 `tlon-colors-change-step'."
-  (let ((color (color-extras-looking-at-color))
-	(fun (pcase direction
-	       ("+" (intern (format "ct-edit-hsluv-%s-inc" component)))
-	       ("-" (intern (format "ct-edit-hsluv-%s-dec" component))))))
-    (replace-match "")
+  (let* ((color (color-extras-looking-at-color))
+	 (match-beg (match-beginning 0))
+	 (match-end (match-end 0))
+	 (fun (pcase direction
+		("+" (intern (format "ct-edit-hsluv-%s-inc" component)))
+		("-" (intern (format "ct-edit-hsluv-%s-dec" component))))))
+    (delete-region match-beg match-end)
     (insert (funcall fun color (or step tlon-colors-change-step)))
     (tlon-color-save-frontend-files)))
 

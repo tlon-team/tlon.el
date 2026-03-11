@@ -254,11 +254,18 @@ The images are opened conditional on the value of
                          (set-buffer-multibyte nil)
                          (insert-file-contents-literally file)
                          (buffer-string)))
+         (mime-type (pcase (downcase (or (file-name-extension file) "png"))
+                     ("jpg" "image/jpeg")
+                     ("jpeg" "image/jpeg")
+                     ("gif" "image/gif")
+                     ("webp" "image/webp")
+                     ("svg" "image/svg+xml")
+                     (_ "image/png")))
          (url-request-data (encode-coding-string
                             (concat "--" boundary "\r\n"
                                     "Content-Disposition: form-data; name=\"files\"; filename=\""
                                     (file-name-nondirectory file) "\"\r\n"
-                                    "Content-Type: image/png\r\n\r\n"
+                                    "Content-Type: " mime-type "\r\n\r\n"
                                     file-content "\r\n"
                                     "--" boundary "--\r\n")
                             'binary))
@@ -281,11 +288,13 @@ The images are opened conditional on the value of
   "Handle the HTTP response from a synchronous request and return JSON."
   (goto-char (point-min))
   (let ((json-response nil))
-    (when (search-forward-regexp "^$" nil t)
-      (delete-region (point-min) (point))
-      (forward-char)
-      (setq json-response (tlon-read-json)))
-    (kill-buffer)
+    (unwind-protect
+        (progn
+          (when (search-forward-regexp "^$" nil t)
+            (delete-region (point-min) (point))
+            (forward-char)
+            (setq json-response (tlon-read-json))))
+      (kill-buffer))
     json-response))
 
 (defun tlon-images-can-invert-p (image)
@@ -424,34 +433,35 @@ relative to the repository root. For example, if FILE is
     (dolist (url image-urls)
       (message "Downloading %s..." url)
       (let ((image-data-buffer (url-retrieve-synchronously url)))
-        (with-current-buffer image-data-buffer
-          (goto-char (point-min))
-          (if (re-search-forward "\r?\n\r?\n" nil t)
-              (let* ((header-end (match-end 0))
-                     (headers (buffer-substring-no-properties (point-min) header-end))
-                     (extension
-                      (or (tlon-images--get-image-format-from-content (current-buffer))
-                          (let* ((case-fold-search t)
-                                 (raw (and (string-match "Content-Type: image/\\([a-zA-Z0-9-+]+\\)" headers)
-                                           (match-string 1 headers))))
-                            (tlon-images--normalize-image-extension raw))
-                          (let* ((path (url-filename (url-generic-parse-url url)))
-                                 (raw (and path (file-name-extension path))))
-                            (tlon-images--normalize-image-extension raw)))))
-                (if (not extension)
-                    (progn
-                      (message "Skipping %s (unknown or unsupported image type)" url)
-                      (kill-buffer image-data-buffer))
-                  (let* ((lang (tlon-get-language-in-file file))
-			 (figure-name (tlon-lookup tlon-figure-names :name :language lang))
-			 (image-file-name (format "%s-%02d.%s" figure-name counter extension))
-			 (image-path (expand-file-name image-file-name target-dir)))
-		    (write-region header-end (point-max) image-path nil 0)
-		    (message "Saved to %s" image-path)
-                    (let* ((relative-src (file-relative-name image-path (file-name-directory file))))
-                      (push (cons url relative-src) tag-replacements))
-		    (kill-buffer image-data-buffer)
-		    (setq counter (1+ counter))))))))
+        (when image-data-buffer
+          (with-current-buffer image-data-buffer
+            (goto-char (point-min))
+            (if (re-search-forward "\r?\n\r?\n" nil t)
+                (let* ((header-end (match-end 0))
+                       (headers (buffer-substring-no-properties (point-min) header-end))
+                       (extension
+                        (or (tlon-images--get-image-format-from-content (current-buffer))
+                            (let* ((case-fold-search t)
+                                   (raw (and (string-match "Content-Type: image/\\([a-zA-Z0-9-+]+\\)" headers)
+                                             (match-string 1 headers))))
+                              (tlon-images--normalize-image-extension raw))
+                            (let* ((path (url-filename (url-generic-parse-url url)))
+                                   (raw (and path (file-name-extension path))))
+                              (tlon-images--normalize-image-extension raw)))))
+                  (if (not extension)
+                      (progn
+                        (message "Skipping %s (unknown or unsupported image type)" url)
+                        (kill-buffer image-data-buffer))
+                    (let* ((lang (tlon-get-language-in-file file))
+			   (figure-name (tlon-lookup tlon-figure-names :name :language lang))
+			   (image-file-name (format "%s-%02d.%s" figure-name counter extension))
+			   (image-path (expand-file-name image-file-name target-dir)))
+		      (write-region header-end (point-max) image-path nil 0)
+		      (message "Saved to %s" image-path)
+                      (let* ((relative-src (file-relative-name image-path (file-name-directory file))))
+                        (push (cons url relative-src) tag-replacements))
+		      (kill-buffer image-data-buffer)
+		      (setq counter (1+ counter)))))))))
       (tlon-images--replace-markdown-images-with-figure-tags file tag-replacements)
       (when tlon-images-open-after-processing
 	(dired target-dir))

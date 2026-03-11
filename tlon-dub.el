@@ -404,9 +404,9 @@ returned."
               (cond
                ;; 1. Speaker changed → always close current block
                ((not same-speaker)
-                (let ((seg (copy-sequence current)))
-                  (cl-remf seg :speaker)
-                  (push seg merged))
+                (let ((closed-seg (copy-sequence current)))
+                  (cl-remf closed-seg :speaker)
+                  (push closed-seg merged))
                 (setq current (list :start (plist-get seg :start)
                                     :end   (plist-get seg :end)
                                     :text  text
@@ -414,9 +414,9 @@ returned."
                ;; 2. Same speaker, ≥ MIN-DURATION, and current text ends a sentence → close
                ((and (>= cur-dur min-duration)
                      (tlon-dub--ends-sentence-p (plist-get current :text)))
-                (let ((seg (copy-sequence current)))
-                  (cl-remf seg :speaker)
-                  (push seg merged))
+                (let ((closed-seg (copy-sequence current)))
+                  (cl-remf closed-seg :speaker)
+                  (push closed-seg merged))
                 (setq current (list :start (plist-get seg :start)
                                     :end   (plist-get seg :end)
                                     :text  text
@@ -428,9 +428,9 @@ returned."
                       (concat (plist-get current :text) "\n" text)))))))))
     ;; push the last open segment
     (when current
-      (let ((seg (copy-sequence current)))
-        (cl-remf seg :speaker)
-        (push seg merged)))
+      (let ((closed-seg (copy-sequence current)))
+        (cl-remf closed-seg :speaker)
+        (push closed-seg merged)))
     (setq merged (nreverse merged))
     (let ((out-file (concat (file-name-sans-extension srt-file) "-resegmented.srt")))
       (tlon-dub--write-srt-file merged out-file)
@@ -543,7 +543,7 @@ Returns the JSON response from the API, typically containing the `dubbing_id'."
 		       "--header" (format "xi-api-key: %s" api-key)
 		       "--form" "mode=automatic"
 		       ;; Use the determined content-type
-		       "--form" (format "file=@%s;type=%s" source-file content-type)
+		       "--form" (format "file=@\"%s\";type=%s" source-file content-type)
 		       "--form" (format "name=%s" project-name)
 		       "--form" (format "source_lang=%s" source-lang)
 		       "--form" (format "target_lang=%s" target-lang)))
@@ -1185,7 +1185,7 @@ the pathname of OUTPUT-FILE."
     (setq output-file (expand-file-name output-file))
     ;; Decide whether to use ffmpeg
     (let* ((media-exts '("mp4" "mov" "mkv" "webm" "mp3" "wav" "flac" "ogg" "opus" "m4a"))
-           (first-ext (downcase (file-name-extension (car clean-paths))))
+           (first-ext (downcase (or (file-name-extension (car clean-paths)) "")))
            (use-ffmpeg (and first-ext (member first-ext media-exts)
                             ;; all files must share the same extension
                             (cl-every (lambda (f)

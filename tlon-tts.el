@@ -415,7 +415,7 @@ Older models (also supported):
     (:language "es" :pattern "por %s.")
     (:language "fr" :pattern "par %s.")
     (:language "it" :pattern "di %s.")
-    (:language "ja" :pattern "%sによって".)
+    (:language "ja" :pattern "%sによって.")
     (:language "ko" :pattern "%s에 의해.")
     (:language "ru" :pattern "от %s.")
     (:language "tr" :pattern "tarafından %s."))
@@ -709,20 +709,6 @@ to err on the safe side.")
   "Default AWS region for Amazon Polly requests.")
 
 ;;;;;; OpenAI
-
-(defconst tlon-openai-tts-request
-  "curl https://api.openai.com/v1/audio/speech \\
-  -H 'Authorization: Bearer %s' \\
-  -H 'Content-Type: application/json' \\
-  -d '{
-    \"model\": \"%s\",
-    \"input\": %s,
-    \"voice\": \"%s\"
-  }' \\
-  --output '%s'"
-  "Curl command to send a request to the OpenAI text-to-speech engine.
-The placeholders are the API key, the TTS model, the text to be synthesized, the
-voice, and the file destination.")
 
 (defconst tlon-openai-voices
   '((:id "allow" :language "es" :gender "female")
@@ -1735,7 +1721,8 @@ DESTINATION is the base output filename."
 	(re-search-forward tlon-tts-local-variables-section-start)
 	(let* ((section (buffer-substring-no-properties (match-beginning 0) (point-max))))
 	  (delete-region (match-beginning 0) (point-max))
-	  section))))
+	  section))
+    ""))
 
 (defun tlon-tts-break-into-chunks (chunk-size destination)
   "Break text in current buffer into chunks.
@@ -2001,8 +1988,7 @@ CAPTURED-STAGING-BUFFER-NAME is the name of the buffer this process belongs to."
           (unless chunk-data
             (message "Error: Could not retrieve chunk data for chunk %d in buffer '%s'. Sentinel cannot proceed."
                      chunk-index captured-staging-buffer-name)
-            (error "Missing chunk data for chunk %d in sentinel" chunk-index)
-            (cl-return-from tlon-tts-process-chunk-sentinel)) ; Exit sentinel
+            (error "Missing chunk data for chunk %d in sentinel" chunk-index))
 
           ;; Defensive check
           (unless (equal staging-buffer-name-from-chunk captured-staging-buffer-name)
@@ -2514,9 +2500,7 @@ If LOCALE is nil, use the locale of the current voice."
 	(output-filename (tlon-tts-get-output-filename file miliseconds)))
     (let ((quoted-file (shell-quote-argument file)))
       (shell-command (format "mp3splt 0.0 %s %s -o %s" duration quoted-file quoted-file))
-      (shell-command (format "mv %s %s"
-			     (shell-quote-argument output-filename)
-			     quoted-file)))))
+      (rename-file output-filename file t))))
 
 ;;;###autoload
 (defun tlon-tts-normalize-audio-files (&optional files)
@@ -2756,12 +2740,16 @@ CHUNK-INDEX is ignored for OpenAI but included for API consistency."
 	       '(tlon-tts-voice)
 	       (when parameters (list parameters)))))
     (cl-destructuring-bind (voice) vars
-      (format tlon-openai-tts-request
-	      (tlon-tts-openai-get-or-set-key)
-	      tlon-openai-model
-	      (json-encode-string string)
-	      voice
-	      destination))))
+      (let ((payload (json-encode `((model . ,tlon-openai-model)
+				    (input . ,string)
+				    (voice . ,voice)))))
+	(mapconcat #'shell-quote-argument
+		   (list "curl" "https://api.openai.com/v1/audio/speech"
+			 "-H" (format "Authorization: Bearer %s" (tlon-tts-openai-get-or-set-key))
+			 "-H" "Content-Type: application/json"
+			 "-d" payload
+			 "--output" destination)
+		   " ")))))
 
 (defun tlon-tts-openai-get-or-set-key ()
   "Get or set the OpenAI API key."

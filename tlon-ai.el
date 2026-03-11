@@ -574,23 +574,26 @@ or PDF file associated with the current BibTeX entry, if either is found.
 - Otherwise, return the contents of the current buffer."
   (if (region-active-p)
       (buffer-substring-no-properties (region-beginning) (region-end))
-    (if-let ((file (or file (pcase major-mode
-			      ((or 'bibtex-mode 'ebib-entry-mode)
-			       (ebib-extras-get-text-file))
-			      ('pdf-view-mode (buffer-file-name))
-			      ('eww-mode (let ((contents (buffer-string))
-					       (file (make-temp-file "eww-")))
-					   (with-current-buffer (find-file-noselect file)
-					     (insert contents)
-					     (write-file file))
-					   file))))))
-	(tlon-get-file-as-string file)
-      (cond ((derived-mode-p 'bibtex-mode 'ebib-entry-mode)
-	     nil) ; no linked file found for this entry
-	    ((derived-mode-p 'markdown-mode)
-	     (tlon-md-read-content file))
-	    (t
-	     (buffer-substring-no-properties (point-min) (point-max)))))))
+    (if (eq major-mode 'eww-mode)
+	(let ((temp-file (make-temp-file "tlon-eww-" nil ".html"))
+	      (content (buffer-string)))
+	  (unwind-protect
+	      (progn
+		(with-temp-file temp-file (insert content))
+		(tlon-get-file-as-string temp-file))
+	    (when (file-exists-p temp-file)
+	      (delete-file temp-file))))
+      (if-let ((file (or file (pcase major-mode
+				((or 'bibtex-mode 'ebib-entry-mode)
+				 (ebib-extras-get-text-file))
+				('pdf-view-mode (buffer-file-name))))))
+	  (tlon-get-file-as-string file)
+	(cond ((derived-mode-p 'bibtex-mode 'ebib-entry-mode)
+	       nil) ; no linked file found for this entry
+	      ((derived-mode-p 'markdown-mode)
+	       (tlon-md-read-content file))
+	      (t
+	       (buffer-substring-no-properties (point-min) (point-max))))))))
 
 (declare-function pdf-tools-extras-convert-pdf "pdf-tools-extras")
 (defun tlon-get-file-as-string (file)
@@ -656,9 +659,8 @@ FILE is the file to translate."
   (lambda (response info)
     (tlon-ai-with-valid-response response info
       (let* ((counterpart (tlon-get-counterpart file))
-	     (filename (file-name-nondirectory counterpart))
 	     (target-path (concat
-			   (file-name-sans-extension filename)
+			   (file-name-sans-extension counterpart)
 			   "--ai-translated.md")))
 	(with-temp-buffer
 	  (insert response)
@@ -946,20 +948,29 @@ If the region is active, send the selected text to the AI for rewriting;
 otherwise, prompt the user for text to rewrite.  The AI generates multiple
 variants of the input text, which are then presented to the user for selection."
   (interactive)
-  (let* ((string (if (region-active-p)
-		     (buffer-substring-no-properties (region-beginning) (region-end))
+  (let* ((has-region (region-active-p))
+	 (beg (when has-region
+		(set-marker (make-marker) (region-beginning))))
+	 (end (when has-region
+		(set-marker (make-marker) (region-end))))
+	 (string (if has-region
+		     (buffer-substring-no-properties (marker-position beg) (marker-position end))
 		   (read-string "Text to rewrite: "))))
     (tlon-make-gptel-request tlon-ai-rewrite-prompt string
-			     #'tlon-ai-callback-return)))
+			     (tlon-ai-rewrite-callback beg end))))
 
-(defun tlon-ai-rewrite-callback (response info)
-  "Callback for `tlon-ai-rewrite'.
-RESPONSE is the response from the AI model and INFO is the response info."
-  (tlon-ai-with-valid-response response info
-    (let* ((variants (split-string response "|"))
-	   (variant (completing-read "Variant: " variants)))
-      (delete-region (region-beginning) (region-end))
-      (kill-new variant))))
+(defun tlon-ai-rewrite-callback (beg end)
+  "Return a callback for `tlon-ai-rewrite'.
+BEG and END are markers delimiting the region to replace."
+  (lambda (response info)
+    (tlon-ai-with-valid-response response info
+      (let* ((variants (split-string response "|"))
+	     (variant (completing-read "Variant: " variants)))
+	(when (and beg end)
+	  (delete-region beg end)
+	  (set-marker beg nil)
+	  (set-marker end nil))
+	(kill-new variant)))))
 
 ;;;;; File comparison
 
@@ -1753,24 +1764,22 @@ Skips files that already have a meta description or if language cannot be
 determined."
   (interactive "DDirectory: ")
   (let ((md-files (directory-files-recursively directory "\\.md$")))
-    (unless md-files
-      (message "No Markdown files found in %s" directory)
-      (cl-return-from tlon-ai-create-meta-descriptions-in-directory))
-
-    (message "Found %d Markdown files. Starting meta description generation..." (length md-files))
-    (dolist (file md-files)
-      (message "Processing %s..." (file-name-nondirectory file))
-      (if (tlon-yaml-get-key "meta" file)
-	  (message "Skipping %s: meta description already exists." (file-name-nondirectory file))
-	(condition-case err
-	    ;; Call the helper, not for interactive command (nil for second arg)
-	    (tlon-ai--generate-and-insert-meta-description-for-file file nil)
-	  (user-error ; Catch user-errors from helper (e.g., language issues)
-	   (message "Skipping %s: %s" (file-name-nondirectory file) (error-message-string err)))
-	  (error ; Catch other unexpected errors
-	   (message "Error processing %s: %s" (file-name-nondirectory file) (error-message-string err)))))
-      (sit-for 0.5)) ; Allow messages to display and avoid overwhelming services
-    (message "Finished processing all files in %s." directory)))
+    (if (not md-files)
+	(message "No Markdown files found in %s" directory)
+      (message "Found %d Markdown files. Starting meta description generation..." (length md-files))
+      (dolist (file md-files)
+	(message "Processing %s..." (file-name-nondirectory file))
+	(if (tlon-yaml-get-key "meta" file)
+	    (message "Skipping %s: meta description already exists." (file-name-nondirectory file))
+	  (condition-case err
+	      ;; Call the helper, not for interactive command (nil for second arg)
+	      (tlon-ai--generate-and-insert-meta-description-for-file file nil)
+	    (user-error ; Catch user-errors from helper (e.g., language issues)
+	     (message "Skipping %s: %s" (file-name-nondirectory file) (error-message-string err)))
+	    (error ; Catch other unexpected errors
+	     (message "Error processing %s: %s" (file-name-nondirectory file) (error-message-string err)))))
+	(sit-for 0.5)) ; Allow messages to display and avoid overwhelming services
+      (message "Finished processing all files in %s." directory))))
 
 ;;;;; Change propagation
 

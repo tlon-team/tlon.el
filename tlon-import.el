@@ -343,8 +343,9 @@ The URL is constructed using the tag's slug."
 (defun tlon-import-eaf-shorten-title (title)
   "Return a shortened version of TITLE."
   (when (stringp title)
-    (string-match "\\([[:alnum:] ,'‘’“”@#$%*\\^`~&\"]*\\)" title)
-    (match-string 1 title)))
+    (if (string-match "\\([[:alnum:] ,'‘’“”@#$%*\\^`~&\"]*\\)" title)
+        (match-string 1 title)
+      title)))
 
 ;;;;; EAF validation
 

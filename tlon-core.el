@@ -1069,8 +1069,9 @@ CONJUNCTS is an alist of language-specific conjunctions; it defaults to
    ((cdr list)
     (let ((all-but-last (mapconcat #'identity (butlast list) ", "))
 	  (last (car (last list)))
-	  (conjunct (tlon-lookup (or conjuncts tlon-tts-conjuncts)
-				 :conjunct :language (tlon-get-language-in-file))))
+	  (conjunct (or (tlon-lookup (or conjuncts tlon-tts-conjuncts)
+				      :conjunct :language (tlon-get-language-in-file))
+		       "and")))
       (format "%s %s %s" all-but-last conjunct last)))
    (t (car list))))
 
