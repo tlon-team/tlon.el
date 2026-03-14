@@ -599,30 +599,34 @@ or PDF file associated with the current BibTeX entry, if either is found.
 (defun tlon-get-file-as-string (file)
   "Get the contents of FILE as a string.
 If FILE is a PDF, convert it to Markdown first. If FILE is HTML, render it to
-text using `eww`."
+text using `eww'. Return nil if FILE does not exist."
   (let ((original-file-path file))
-    (cond
-     ((string= (file-name-extension original-file-path) "html")
-      (let ((rendered-text nil)
-	    (eww-buf nil))
-	(save-selected-window
-	  (eww-browse-url (concat "file://" (expand-file-name original-file-path)))
-	  (setq eww-buf (current-buffer))
-	  (setq rendered-text (buffer-substring-no-properties (point-min) (point-max))))
-	(when (buffer-live-p eww-buf)
-	  (kill-buffer eww-buf))
-	rendered-text))
-     ((string= (file-name-extension original-file-path) "pdf")
-      (with-temp-buffer
-	(let ((markdown-temp-file (make-temp-file "pdf-to-markdown-")))
-	  (pdf-tools-extras-convert-pdf original-file-path markdown-temp-file)
-	  (insert-file-contents markdown-temp-file)
-	  (delete-file markdown-temp-file)
-	  (buffer-substring-no-properties (point-min) (point-max)))))
-     (t
-      (with-temp-buffer
-	(insert-file-contents original-file-path)
-	(buffer-substring-no-properties (point-min) (point-max)))))))
+    (if (not (file-exists-p original-file-path))
+	(progn
+	  (message "File not found: %s" original-file-path)
+	  nil)
+      (cond
+       ((string= (file-name-extension original-file-path) "html")
+	(let ((rendered-text nil)
+	      (eww-buf nil))
+	  (save-selected-window
+	    (eww-browse-url (concat "file://" (expand-file-name original-file-path)))
+	    (setq eww-buf (current-buffer))
+	    (setq rendered-text (buffer-substring-no-properties (point-min) (point-max))))
+	  (when (buffer-live-p eww-buf)
+	    (kill-buffer eww-buf))
+	  rendered-text))
+       ((string= (file-name-extension original-file-path) "pdf")
+	(with-temp-buffer
+	  (let ((markdown-temp-file (make-temp-file "pdf-to-markdown-")))
+	    (pdf-tools-extras-convert-pdf original-file-path markdown-temp-file)
+	    (insert-file-contents markdown-temp-file)
+	    (delete-file markdown-temp-file)
+	    (buffer-substring-no-properties (point-min) (point-max)))))
+       (t
+	(with-temp-buffer
+	  (insert-file-contents original-file-path)
+	  (buffer-substring-no-properties (point-min) (point-max))))))))
 
 ;;;;; Translation
 
@@ -2277,7 +2281,7 @@ missing or failing server never aborts the main request."
   (when (and servers (require 'gptel-integrations nil t))
     ;; `gptel-mcp-connect' will start servers if necessary.
     (ignore-errors
-      (gptel-mcp-connect servers nil nil))))
+      (gptel-mcp-connect servers t nil))))
 
 (provide 'tlon-ai)
 ;;; tlon-ai.el ends here
