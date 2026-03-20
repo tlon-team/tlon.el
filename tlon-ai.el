@@ -1571,7 +1571,7 @@ with the path to the transcript file on success, or nil on failure;
 otherwise the transcript is displayed in a new buffer."
   (interactive
    (list (read-file-name "Choose audio file: ")
-	 (read-string "Language (e.g. en, es): ")))
+	 (tlon-select-language 'code nil "Language: " t)))
   (let ((language (or language (error "Language is required"))))
     (message "Transcribing %s with whisperx (language: %s)…"
 	     (file-name-nondirectory file) language)
