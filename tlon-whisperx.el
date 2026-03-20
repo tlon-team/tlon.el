@@ -59,7 +59,9 @@ nil) on failure. The transcript extension is determined from the
          (fmt-pos (cl-position "--output_format" args :test #'string=))
          (output-ext (if (and fmt-pos (< (1+ fmt-pos) (length args)))
                          (nth (1+ fmt-pos) args)
-                       "txt")))
+                       "txt"))
+	 ;; Compute eagerly while default-directory is correct.
+	 (expected-file (expand-file-name (concat basename "." output-ext))))
     (with-current-buffer buffer
       (goto-char (point-max))
       (let ((display-cmd (copy-sequence cmd))
@@ -75,8 +77,7 @@ nil) on failure. The transcript extension is determined from the
      :command cmd
      :sentinel
      (lambda (_proc event)
-       (let* ((expected-file (expand-file-name (concat basename "." output-ext)))
-              (success (and (string= event "finished\n")
+       (let* ((success (and (string= event "finished\n")
 			    (file-exists-p expected-file)))
 	      (transcript-path (when success expected-file)))
          (with-current-buffer buffer
