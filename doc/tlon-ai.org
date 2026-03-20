@@ -249,7 +249,7 @@ The command ~tlon-phonetically-transcribe-in-buffer~ processes every line in the
 :END:
 
 #+findex: tlon-transcribe-audio
-The command ~tlon-transcribe-audio~ transcribes an audio file using OpenAI's Whisper API. It prompts you for the audio file, uploads it asynchronously via =curl=, and passes the resulting transcript to a callback. The callback is provided programmatically; it receives the transcript string on success or =nil= on failure.
+The command ~tlon-transcribe-audio~ transcribes and diarizes an audio file using =whisperx= locally.  It prompts for the audio file and a language code (e.g. =en=, =es=).  When called interactively, the transcript is displayed in a dedicated buffer.  When called programmatically with a callback, the callback receives the path to the transcript file on success or =nil= on failure.
 
 ** Mathematical expressions
 :PROPERTIES:
