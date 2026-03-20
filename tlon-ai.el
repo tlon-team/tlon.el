@@ -1401,6 +1401,8 @@ Documentation files are collected from:
 (declare-function bibtex-set-field "bibtex")
 (autoload 'ebib-extras-set-field "ebib-extras")
 (declare-function ebib-extras-get-file-of-key "ebib-extras")
+(declare-function ebib--get-db-from-filename "ebib-db")
+(declare-function ebib-extras-reload-database-no-confirm "ebib-extras")
 (defun tlon-ai-summarize-set-bibtex-abstract (abstract key)
   "Set the `abstract' field of entry with KEY entry to ABSTRACT."
   (let ((bib-file (ebib-extras-get-file-of-key key)))
@@ -1416,7 +1418,9 @@ Documentation files are collected from:
 		(funcall set-field "abstract" abstract))
 	      (message "Set abstract of `%s' in %s" key (buffer-name))
 	      (when (derived-mode-p 'bibtex-mode)
-		(save-buffer)))
+		(save-buffer))
+	      (when-let* ((db (ebib--get-db-from-filename bib-file)))
+		(ebib-extras-reload-database-no-confirm db)))
 	    (unless (bibtex-search-entry key)
 	      (error "Could not find entry for key %s in buffer %s" key (buffer-name)))))))))
 
