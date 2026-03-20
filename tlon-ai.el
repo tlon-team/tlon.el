@@ -1565,14 +1565,14 @@ Separate the original line and the transcription with a comma."
 (autoload 'tlon-whisperx-diarize "tlon-whisperx")
 (defun tlon-transcribe-audio (file &optional language callback)
   "Transcribe and diarize audio FILE using whisperx.
-LANGUAGE defaults to `tlon-meet-default-language' (\"es\").  When called
-interactively, the transcript is displayed in a new buffer.  When CALLBACK
-is provided, it is called with the path to the transcript file on success,
-or nil on failure."
-  (interactive "fChoose audio file: ")
-  (let ((language (or language
-		     (bound-and-true-p tlon-meet-default-language)
-		     "es")))
+LANGUAGE is a BCP-47 code (e.g. \"en\", \"es\") and is required.
+Interactively, prompts for it.  When CALLBACK is provided, it is called
+with the path to the transcript file on success, or nil on failure;
+otherwise the transcript is displayed in a new buffer."
+  (interactive
+   (list (read-file-name "Choose audio file: ")
+	 (read-string "Language (e.g. en, es): ")))
+  (let ((language (or language (error "Language is required"))))
     (message "Transcribing %s with whisperx (language: %s)…"
 	     (file-name-nondirectory file) language)
     (tlon-whisperx-diarize
