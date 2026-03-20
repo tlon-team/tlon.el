@@ -1564,7 +1564,7 @@ Separate the original line and the transcription with a comma."
 
 (autoload 'tlon-tts-openai-get-or-set-key "tlon-tts")
 (declare-function request "request")
-(defun tlon-transcribe-audio (file callback)
+(defun tlon-transcribe-audio (file &optional callback)
   "Asynchronously transcribe the audio in FILE using OpenAI's Whisper API via curl.
 FILE is the audio file to transcribe. CALLBACK is a function that is called with
 the transcript string on success, or nil if no transcript is available or an
@@ -1597,14 +1597,16 @@ error occurs."
 		       (if transcript
 			   (progn
 			     (message "Transcription complete.")
-			     (funcall callback transcript))
+			     (if callback
+				 (funcall callback transcript)
+			       (message "Transcript: %s" transcript)))
 			 (progn
 			   (message "No transcript returned. Full response: %s" output)
-			   (funcall callback nil))))
+			   (when callback (funcall callback nil)))))
 		   (error
 		    (message "Error parsing JSON response: %s" (error-message-string err))
 		    (message "Response was: %s" output)
-		    (funcall callback nil)))))
+		    (when callback (funcall callback nil))))))
 	     (kill-buffer (process-buffer process)))))))))
 
 ;;;;; Math
