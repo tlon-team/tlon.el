@@ -1562,63 +1562,38 @@ Separate the original line and the transcription with a comma."
 
 ;;;;; Audio transcription
 
-(autoload 'tlon-tts-openai-get-or-set-key "tlon-tts")
-(declare-function request "request")
-(defun tlon-transcribe-audio (file &optional callback)
-  "Asynchronously transcribe the audio in FILE using OpenAI's Whisper API via curl.
-FILE is the audio file to transcribe. CALLBACK is a function that is called with
-the transcript string on success, or nil if no transcript is available or an
-error occurs."
+(autoload 'tlon-whisperx-diarize "tlon-whisperx")
+(defun tlon-transcribe-audio (file &optional language callback)
+  "Transcribe and diarize audio FILE using whisperx.
+LANGUAGE defaults to `tlon-meet-default-language' (\"es\").  When called
+interactively, the transcript is displayed in a new buffer.  When CALLBACK
+is provided, it is called with the path to the transcript file on success,
+or nil on failure."
   (interactive "fChoose audio file: ")
-  (let* ((api-key (tlon-tts-openai-get-or-set-key))
-	 (endpoint "https://api.openai.com/v1/audio/transcriptions"))
-    (unless api-key
-      (error "Could not retrieve API key"))
-    (message "Uploading %s to OpenAI via curl asynchronously..." file)
-    (let* ((output-buffer (generate-new-buffer "/openai-transcribe-output/"))
-	   (args (list "-sS" "-X" "POST"
-		       endpoint
-		       "-H" (concat "Authorization: Bearer " api-key)
-		       "-F" "model=whisper-1"
-		       "-F" (concat "file=@" (expand-file-name file)))))
-      (let ((proc (apply 'start-process "openai-transcribe-process" output-buffer "curl" args)))
-	(set-process-sentinel
-	 proc
-	 (lambda (process _)
-	   (when (eq (process-status process) 'exit)
-	     (with-current-buffer (process-buffer process)
-	       (let ((output (buffer-string)))
-		 (condition-case err
-		     (let* ((json-object-type 'hash-table)
-			    (json-array-type 'list)
-			    (json-key-type 'string)
-			    (response (json-read-from-string output))
-			    (transcript (gethash "text" response)))
-		       (if transcript
-			   (progn
-			     (message "Transcription complete.")
-			     (if callback
-				 (funcall callback transcript)
-			       (tlon-transcribe-audio--display transcript file)))
-			 (progn
-			   (message "No transcript returned. Full response: %s" output)
-			   (when callback (funcall callback nil)))))
-		   (error
-		    (message "Error parsing JSON response: %s" (error-message-string err))
-		    (message "Response was: %s" output)
-		    (when callback (funcall callback nil))))))
-	     (kill-buffer (process-buffer process)))))))))
+  (let ((language (or language
+		     (bound-and-true-p tlon-meet-default-language)
+		     "es")))
+    (message "Transcribing %s with whisperx (language: %s)…"
+	     (file-name-nondirectory file) language)
+    (tlon-whisperx-diarize
+     file language nil nil
+     (lambda (transcript-path _ok)
+       (if (not transcript-path)
+	   (message "Error: whisperx did not produce a transcript file.")
+	 (if callback
+	     (funcall callback transcript-path)
+	   (tlon-transcribe-audio--display-file transcript-path)))))))
 
-(defun tlon-transcribe-audio--display (transcript file)
-  "Display TRANSCRIPT in a new buffer named after FILE."
+(defun tlon-transcribe-audio--display-file (transcript-path)
+  "Display the contents of TRANSCRIPT-PATH in a new buffer."
   (let ((buf (generate-new-buffer
 	      (format "*Transcript: %s*"
-		      (file-name-nondirectory file)))))
+		      (file-name-nondirectory transcript-path)))))
     (with-current-buffer buf
-      (insert transcript)
+      (insert-file-contents transcript-path)
       (goto-char (point-min)))
     (pop-to-buffer buf)
-    (message "Transcription complete.")))
+    (message "Transcription complete: %s" transcript-path)))
 
 ;;;;; Math
 
