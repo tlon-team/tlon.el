@@ -68,6 +68,7 @@ nil) on failure. The transcript extension is determined from the
 	  (setf (nth (1+ pos) display-cmd) "[REDACTED]"))
 	(insert (format "Running: %s\n\n" (string-join display-cmd " "))))
 )
+    (display-buffer buffer)
     (make-process
      :name process-name
      :buffer buffer
