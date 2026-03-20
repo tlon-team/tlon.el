@@ -1576,7 +1576,7 @@ error occurs."
       (error "Could not retrieve API key"))
     (message "Uploading %s to OpenAI via curl asynchronously..." file)
     (let* ((output-buffer (generate-new-buffer "/openai-transcribe-output/"))
-	   (args (list "-s" "-X" "POST"
+	   (args (list "-sS" "-X" "POST"
 		       endpoint
 		       "-H" (concat "Authorization: Bearer " api-key)
 		       "-F" "model=whisper-1"
@@ -1599,7 +1599,7 @@ error occurs."
 			     (message "Transcription complete.")
 			     (if callback
 				 (funcall callback transcript)
-			       (message "Transcript: %s" transcript)))
+			       (tlon-transcribe-audio--display transcript file)))
 			 (progn
 			   (message "No transcript returned. Full response: %s" output)
 			   (when callback (funcall callback nil)))))
@@ -1608,6 +1608,17 @@ error occurs."
 		    (message "Response was: %s" output)
 		    (when callback (funcall callback nil))))))
 	     (kill-buffer (process-buffer process)))))))))
+
+(defun tlon-transcribe-audio--display (transcript file)
+  "Display TRANSCRIPT in a new buffer named after FILE."
+  (let ((buf (generate-new-buffer
+	      (format "*Transcript: %s*"
+		      (file-name-nondirectory file)))))
+    (with-current-buffer buf
+      (insert transcript)
+      (goto-char (point-min)))
+    (pop-to-buffer buf)
+    (message "Transcription complete.")))
 
 ;;;;; Math
 
