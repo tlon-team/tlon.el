@@ -155,7 +155,10 @@ If DIR is nil, use the current directory."
 	     (name (tlon-repo-lookup :name :dir default-directory))
 	     (repo (forge-get-repository :tracked?)))
     (message "Pulling issues in %s..." name)
-    (shut-up (forge--pull repo))))
+    (condition-case err
+	(shut-up (forge--pull repo))
+      (error
+       (message "Failed to pull issues in %s: %s" name (error-message-string err))))))
 
 ;;;###autoload
 (defun tlon-pull-issues-in-all-repos ()
