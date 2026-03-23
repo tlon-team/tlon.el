@@ -72,6 +72,15 @@ available options. If nil, use the default `gptel-model'."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-translate)
 
+(defcustom tlon-translate-global-review-model
+  '("Gemini" . gemini-pro-latest)
+  "Model to use for global review of translations.
+See `tlon-translate-global-review'.  The value is a cons cell whose car is the
+backend and whose cdr is the model itself.  See `gptel-extras-ai-models' for the
+available options.  If nil, use the default `gptel-model'."
+  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
+  :group 'tlon-translate)
+
 (defcustom tlon-translate-revise-commit-changes nil
   "Whether to commit changes after an AI revision."
   :group 'tlon-translate
@@ -164,6 +173,19 @@ message is appended to the buffer named by
 	  "Your task is to read both carefully and try to improve the translation for a better flow. Do not modify URLs, BibTeX keys, or tags enclosed in angular brackets (such as \"<Roman>\", \"<LiteralLink>\", etc.)"
 	  tlon-translate-prompt-revise-suffix)
   "Prompt for improving translation flow.")
+
+(defconst tlon-translate-global-review-prompt
+  "I am sharing with you a complete article that has been translated from English into %s, along with the English original. The translation was produced in two phases: first, machine translation (DeepL), then paragraph-by-paragraph AI revision. Your task is to perform a final global review of the translation---the kind of review a human editor would do after the paragraph-level corrections:
+
+a) Fix terminological inconsistencies: the two-phase process may have introduced different translations for the same term in different paragraphs. Ensure that key terms are translated consistently throughout the entire article.
+
+b) Check overall coherence and meaning: read the translation as a whole and verify that it reads naturally and makes sense. If anything sounds odd, awkward, or potentially incorrect, compare it with the English original and correct the translation as needed.
+
+Do not modify URLs, BibTeX keys, or custom tags enclosed in angular brackets (such as \"<Roman>\", \"<LiteralLink>\", etc.). Do not modify the YAML metadata section at the beginning of the file (delimited by ‘---’).
+
+Return ONLY the complete revised translation (including the YAML metadata section unchanged), and nothing else. Do not include any explanation, comments, or Markdown code fences. Output plain text only."
+  "Prompt for global review of a complete translation.
+The format argument is the capitalized target language name.")
 
 (defconst tlon-translate-glossary-prompt
   " I have attached a glossary file named `%s`. It lists English terms and their required translations into the target language. Use the attached glossary mappings exactly whenever a glossary term appears; if a term is not listed, choose a translation consistent with the glossary’s terminology and style."
@@ -1070,6 +1092,123 @@ entry's language."
     (let ((tlon-translate-restrict-revision-to-paragraphs range))
       (tlon-translate-improve-flow))))
 
+;;;###autoload
+(defun tlon-translate-global-review ()
+  "Use AI to perform a global review of a complete translation file.
+Unlike `tlon-translate-spot-errors' and `tlon-translate-improve-flow',
+which work paragraph by paragraph, this function sends the entire
+translation to the AI for a holistic review.  This helps catch
+terminological inconsistencies and semantic issues that span multiple
+paragraphs."
+  (interactive)
+  (when (fboundp 'gptel-extras-warn-when-context)
+    (gptel-extras-warn-when-context))
+  (let* ((translation-file (expand-file-name
+			     (read-file-name "Translation file: " (buffer-file-name))))
+	 (original-file
+	  (let ((counterpart (condition-case _err
+				 (tlon-get-counterpart translation-file)
+			       (error nil))))
+	    (if counterpart
+		(expand-file-name counterpart)
+	      (read-file-name "Original file: "))))
+	 (lang-code (or (tlon-get-language-in-file translation-file)
+			(tlon-select-language 'code 'babel
+					      "Language of translation file: "
+					      'require-match)))
+	 (language (or (tlon-lookup tlon-languages-properties :standard :code lang-code)
+		       lang-code))
+	 (src-code "en")
+	 (original-text (with-temp-buffer
+			  (insert-file-contents original-file)
+			  (buffer-string)))
+	 (translation-text (with-temp-buffer
+			     (insert-file-contents translation-file)
+			     (buffer-string)))
+	 (model tlon-translate-global-review-model))
+    (cl-labels
+	((do-start (glossary-file)
+	   (let* ((glossary-prompt (when glossary-file
+				     (format tlon-translate-glossary-prompt
+					     (file-name-nondirectory glossary-file))))
+		  (base-prompt (format tlon-translate-global-review-prompt
+				       (capitalize language)))
+		  (full-prompt (concat base-prompt
+				       (or glossary-prompt "")
+				       "\n\n=== ORIGINAL (English) ===\n\n"
+				       original-text
+				       "\n\n=== TRANSLATION ("
+				       (capitalize language)
+				       ") ===\n\n"
+				       translation-text))
+		  (prompt (tlon-ai-maybe-edit-prompt full-prompt))
+		  (req-buf (get-buffer-create
+			    (format "*tlon-global-review:%s*"
+				    (file-name-nondirectory translation-file))))
+		  (proc nil))
+	     (tlon-translate--log "\nSending global review request for %s..."
+				  (file-name-nondirectory translation-file))
+	     (with-current-buffer req-buf
+	       (setq-local gptel-include-reasoning nil)
+	       (when glossary-file
+		 (gptel-context-add-file glossary-file)))
+	     (setq proc
+		   (tlon-make-gptel-request
+		    prompt nil
+		    (tlon-translate--gptel-callback-global-review
+		     translation-file)
+		    model 'skip-context-check req-buf nil))
+	     (push proc tlon-translate--active-revision-processes)
+	     proc)))
+      (tlon-translate--ensure-filtered-glossary
+       src-code lang-code original-file
+       (lambda (filtered-path) (do-start filtered-path))))))
+
+(defun tlon-translate--gptel-callback-global-review (translation-file)
+  "Return a gptel callback that applies global review results to TRANSLATION-FILE."
+  (lambda (response info)
+    (unwind-protect
+	(cond
+	 ((or (not response)
+	      (plist-get info :error)
+	      (let ((st (plist-get info :status)))
+		(and (numberp st) (>= st 400))))
+	  (tlon-ai-callback-fail info))
+	 (t
+	  (let* ((revised (string-trim response))
+		 (revised (replace-regexp-in-string
+			   "^```[[:alnum:]-]*[ \t]*\n\\|^```[ \t]*$" ""
+			   revised)))
+	    (when (and (stringp revised) (> (length revised) 0))
+	      (with-current-buffer (find-file-noselect translation-file)
+		(erase-buffer)
+		(insert revised)
+		(unless (= (char-before (point-max)) ?\n)
+		  (goto-char (point-max))
+		  (insert "\n"))
+		(save-buffer))
+	      (tlon-translate--log "Global review of %s complete."
+				   (file-name-nondirectory translation-file))
+	      (run-at-time
+	       0 nil
+	       (lambda (f)
+		 (when-let ((buf (get-file-buffer f)))
+		   (with-current-buffer buf
+		     (unless (buffer-modified-p)
+		       (revert-buffer :ignore-auto :noconfirm)))))
+	       translation-file)
+	      (when tlon-translate-revise-commit-changes
+		(let ((default-directory (tlon-get-repo-from-file translation-file)))
+		  (magit-stage-files (list translation-file))
+		  (tlon-create-commit
+		   (format "Global review of %s (AI)"
+			   (tlon-get-key-from-file translation-file))
+		   translation-file)))))))
+      (setq tlon-translate--active-revision-processes
+	    (cl-remove-if-not (lambda (p)
+				(and (processp p) (process-live-p p)))
+			      tlon-translate--active-revision-processes)))))
+
 (defun tlon-translate--read-paragraph-range ()
   "Prompt for a paragraph range and return it as a cons (START . END).
 Empty inputs mean the beginning or end of the file respectively. START and END
@@ -1585,6 +1724,12 @@ If nil, use the default model."
   :class 'tlon-model-selection-infix
   :variable 'tlon-translate-improve-flow-model)
 
+(transient-define-infix tlon-translate-infix-select-global-review-model ()
+  "AI model to use for global review of translations.
+If nil, use the default model."
+  :class 'tlon-model-selection-infix
+  :variable 'tlon-translate-global-review-model)
+
 (transient-define-infix tlon-translate-infix-toggle-commit-changes ()
   "Toggle whether to commit changes after an AI revision."
   :class 'transient-lisp-variable
@@ -1622,6 +1767,7 @@ If nil, use the default model."
    ["Revise"
     ("r e" "Spot errors" tlon-translate-spot-errors)
     ("r f" "Improve flow" tlon-translate-improve-flow)
+    ("r g" "Global review" tlon-translate-global-review)
     ("r E" "Spot errors in range" tlon-translate-spot-errors-in-range)
     ("r F" "Improve flow in range" tlon-translate-improve-flow-in-range)
     ""
@@ -1631,6 +1777,7 @@ If nil, use the default model."
     "Options"
     ("r -e" "Spot errors model" tlon-translate-infix-select-spot-errors-model)
     ("r -f" "Improve flow model" tlon-translate-infix-select-improve-flow-model)
+    ("r -g" "Global review model" tlon-translate-infix-select-global-review-model)
     ""
     ("r -c" "Chunk size"     tlon-translate-infix-set-chunk-size)
     ("r -p" "Max parallel" tlon-translate-infix-set-max-parallel)]
