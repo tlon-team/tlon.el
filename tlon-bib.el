@@ -1960,7 +1960,7 @@ non-nil response)."
 			 (with-temp-buffer
 			   (insert-file-contents file)
 			   (buffer-string))))
-	 (tools '("search_bibliography" "fetch_content" "search" "edit_file" "apply_diff" "replace_file_contents"))
+	 (tools '("search_bibliography" "fetch_markdown" "brave_web_search" "edit_file" "apply_diff" "replace_file_contents"))
 	 (callback
 	  (lambda (response info)
 	    (tlon-bib-replace-citations-callback response info)
@@ -1970,7 +1970,7 @@ non-nil response)."
       (user-error "File does not exist: %s" file))
     (message "Requesting AI to process citations in %s..." (file-name-nondirectory file))
     (tlon-make-gptel-request prompt nil callback
-			     tlon-bib-replace-citations-model t nil tools nil '("ddg-search"))))
+			     tlon-bib-replace-citations-model t nil tools nil '("brave-search" "fetch"))))
 
 (declare-function dired-get-marked-files "dired")
 ;;;###autoload

@@ -121,12 +121,12 @@ news. The original input file is then overwritten with this new draft."
      tlon-newsletter-model
      'skip-content-check
      nil
-     (list (list "mcp-ddg-search" "search")
-	   (list "mcp-ddg-search" "fetch_content")
+     (list (list "mcp-brave-search" "brave_web_search")
+	   (list "mcp-fetch" "fetch_markdown")
 	   (list "mcp-slack-ae-racionalidad" "slack_list_channels")
 	   (list "mcp-slack-ae-racionalidad" "slack_get_channel_history"))
      input-file-path
-     (list "ddg-search" "slack-ae-racionalidad"))
+     (list "brave-search" "fetch" "slack-ae-racionalidad"))
     (message "Requesting AI to draft newsletter issue (input: %s, prompt: %s)..."
 	     input-file-path tlon-newsletter-prompt-file)))
 
