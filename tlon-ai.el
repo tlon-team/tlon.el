@@ -2266,12 +2266,56 @@ If nil, use the default model."
     ("a -a" "Help model" tlon-ai-infix-select-help-model)]])
 
 (autoload 'gptel-mcp-connect "gptel-integrations")
+(declare-function mcp--status "mcp")
+(declare-function mcp-stop-server "mcp")
+(defvar mcp-server-connections)
 (defun tlon--ensure-mcp-servers (servers)
   "Ensure SERVERS are connected through MCP before a gptel request.
 SERVERS is a list of server names (strings)."
   (when (and servers (require 'gptel-integrations nil t))
-    ;; `gptel-mcp-connect' will start servers if necessary.
-    (gptel-mcp-connect servers t nil)))
+    ;; Restart servers stuck in `init' state: their process exists so
+    ;; `mcp-hub-start-all-server' considers them running, but they never
+    ;; finished connecting, so gptel can't register their tools.
+    (dolist (name servers)
+      (when-let* ((conn (gethash name mcp-server-connections)))
+        (when (eq (mcp--status conn) 'init)
+          (mcp-stop-server name))))
+    (gptel-mcp-connect servers t nil)
+    ;; Sanitize tool schemas for Gemini compatibility: convert `anyOf'
+    ;; with `const' entries (valid JSON Schema but unsupported by Gemini)
+    ;; into a simple `enum' array.
+    (tlon--sanitize-mcp-tool-schemas servers)))
+
+(defun tlon--sanitize-mcp-tool-schemas (servers)
+  "Sanitize tool schemas from SERVERS for Gemini API compatibility.
+Convert anyOf/const patterns to enum, and strip enum from non-string
+types.  Builds new arg plists to avoid shared-structure mutation."
+  (dolist (server servers)
+    (let ((category (format "mcp-%s" server)))
+      (when-let* ((tools (gptel-get-tool category)))
+        (dolist (tool (if (listp tools) tools (list tools)))
+          (setf (gptel-tool-args tool)
+                (mapcar #'tlon--sanitize-tool-arg (gptel-tool-args tool))))))))
+
+(defun tlon--sanitize-tool-arg (arg)
+  "Return a clean copy of tool ARG plist for Gemini compatibility."
+  (let* ((new-arg (copy-sequence arg))
+         (any-of (plist-get new-arg :anyOf)))
+    ;; Convert anyOf/const → type + enum
+    (when any-of
+      (let* ((variants (append any-of nil))
+             (type (plist-get (car variants) :type))
+             (values (mapcar (lambda (v) (plist-get v :const)) variants)))
+        (when (and type (cl-every #'identity values))
+          (setq new-arg (plist-put new-arg :type type))
+          (when (string= type "string")
+            (setq new-arg (plist-put new-arg :enum (vconcat values)))))
+        (cl-remf new-arg :anyOf)))
+    ;; Strip enum from non-string types (Gemini rejects it)
+    (when (and (plist-get new-arg :enum)
+               (not (equal (plist-get new-arg :type) "string")))
+      (cl-remf new-arg :enum))
+    new-arg))
 
 (provide 'tlon-ai)
 ;;; tlon-ai.el ends here
