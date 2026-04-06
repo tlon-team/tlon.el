@@ -78,6 +78,53 @@ This option controls the batch size for
   :type 'natnum
   :group 'tlon-bib)
 
+;;;;; Batch abstract options
+
+(defcustom tlon-batch-abstract-watchdog-timeout 180
+  "Seconds before declaring a single AI abstract request stalled.
+If a gptel callback has not fired within this many seconds, the
+watchdog increments the generation counter (invalidating the stale
+callback) and advances to the next entry."
+  :type 'natnum
+  :group 'tlon-bib)
+
+(defcustom tlon-batch-abstract-max-backoff 120
+  "Maximum backoff delay in seconds between retries after API errors."
+  :type 'natnum
+  :group 'tlon-bib)
+
+(defcustom tlon-batch-abstract-circuit-breaker-threshold 5
+  "Consecutive API errors before the circuit breaker trips.
+When tripped, the batch pauses for
+`tlon-batch-abstract-circuit-breaker-pause' seconds before resuming."
+  :type 'natnum
+  :group 'tlon-bib)
+
+(defcustom tlon-batch-abstract-circuit-breaker-pause 300
+  "Seconds to pause when the circuit breaker trips."
+  :type 'natnum
+  :group 'tlon-bib)
+
+(defcustom tlon-batch-abstract-curl-max-time 300
+  "Curl --max-time in seconds for AI requests during batch processing.
+This is a hard ceiling on how long curl will wait for any single API
+request.  Set to 0 to disable."
+  :type 'natnum
+  :group 'tlon-bib)
+
+(defcustom tlon-batch-abstract-progress-file
+  (file-name-concat tlon-package-dir "tlon-batch-abstract-progress.el")
+  "File where the batch abstract queue is persisted for crash recovery."
+  :type 'file
+  :group 'tlon-bib)
+
+(defcustom tlon-batch-abstract-non-ai-timeout 30
+  "Timeout in seconds for synchronous HTTP requests in the non-AI pass.
+Applies to CrossRef and Google Books lookups via
+`url-retrieve-synchronously'."
+  :type 'natnum
+  :group 'tlon-bib)
+
 ;;;; Variables
 
 ;;;;; Files
@@ -373,22 +420,60 @@ errors gracefully."
 (defvar tlon-batch-abstract--ai-done 0
   "Count of AI abstracts successfully set.")
 
+(defvar tlon-batch-abstract--generation 0
+  "Monotonically increasing counter tagging each AI request.
+When the watchdog fires, the counter is incremented so that stale
+callbacks are silently dropped.")
+
+(defvar tlon-batch-abstract--watchdog-timer nil
+  "Timer object for the current watchdog, or nil when no request is in flight.")
+
+(defvar tlon-batch-abstract--backoff-delay 1
+  "Current backoff delay in seconds.
+Doubles on each consecutive error, resets to 1 on success.  Capped at
+`tlon-batch-abstract-max-backoff'.")
+
+(defvar tlon-batch-abstract--consecutive-errors 0
+  "Number of consecutive API errors, used by the circuit breaker.")
+
+(defvar tlon-batch-abstract--saved-curl-args nil
+  "Saved value of `gptel-curl-extra-args' before batch override.
+Stored as a one-element list so that a saved nil is distinguishable
+from \"not saved\".")
+
+(defvar tlon-batch-abstract--bib-file nil
+  "Absolute path of the bib file being processed.")
+
+(defvar tlon-batch-abstract--active-p nil
+  "Non-nil when a batch is currently running.")
+
+(defvar tlon-batch-abstract--retry-key nil
+  "Key to retry after a rate-limit or transient error.
+When non-nil, the next queue pop is skipped and this key is retried.")
+
 (declare-function tlon-make-gptel-request "tlon-ai")
 (declare-function tlon-ai-summarize-set-bibtex-abstract "tlon-ai")
 (defvar tlon-ai-get-abstract-prompts)
 (defvar tlon-ai-summarization-model)
+
 ;;;###autoload
 (defun tlon-batch-set-abstracts ()
   "Add abstracts to all entries in the current buffer that lack one.
 First try non-AI sources (CrossRef, Google Books, Zotra), then queue
-remaining entries with linked files for AI processing."
+remaining entries with linked files for AI processing.  The AI queue
+is persisted to disk so it can be resumed with
+`tlon-batch-abstract-resume' after a crash."
   (interactive)
+  (when tlon-batch-abstract--active-p
+    (user-error "A batch is already running"))
   (unless (derived-mode-p 'bibtex-mode)
     (user-error "Not in a BibTeX buffer"))
   (widen)
+  (setq tlon-batch-abstract--bib-file
+	(abbreviate-file-name (buffer-file-name)))
   (let ((non-ai-set 0) (non-ai-fail 0) (skipped 0)
-	(ai-candidates nil))
-    ;; Pass 1: non-AI
+	(ai-candidates nil)
+	(url-retrieve-timeout tlon-batch-abstract-non-ai-timeout))
     (bibtex-map-entries
      (lambda (key _beg _end)
        (if (ignore-errors (bibtex-extras-get-field "abstract"))
@@ -412,72 +497,302 @@ remaining entries with linked files for AI processing."
     (save-buffer)
     (message "Non-AI pass: %d set, %d skipped, %d failed (%d queued for AI)."
 	     non-ai-set skipped non-ai-fail (length ai-candidates))
-    ;; Pass 2: AI
     (if ai-candidates
 	(progn
 	  (setq tlon-batch-abstract--queue (nreverse ai-candidates)
 		tlon-batch-abstract--total (length ai-candidates)
 		tlon-batch-abstract--ai-done 0)
+	  (tlon-batch-abstract--setup)
+	  (tlon-batch-abstract--progress-save)
 	  (tlon-batch-abstract--process-ai-queue))
       (message "No entries to process with AI."))))
 
+;;;###autoload
+(defun tlon-batch-abstract-resume ()
+  "Resume a batch abstract run from the last saved progress file.
+Validates that the progress file refers to the same bib file as the
+current buffer."
+  (interactive)
+  (when tlon-batch-abstract--active-p
+    (user-error "A batch is already running"))
+  (unless (derived-mode-p 'bibtex-mode)
+    (user-error "Not in a BibTeX buffer"))
+  (let ((progress (tlon-batch-abstract--progress-load)))
+    (unless progress
+      (user-error "No progress file found at %s"
+		  tlon-batch-abstract-progress-file))
+    (tlon-batch-abstract--resume-from-progress progress)))
+
+(defun tlon-batch-abstract--resume-from-progress (progress)
+  "Resume batch processing from PROGRESS plist."
+  (let ((saved-file (plist-get progress :bib-file))
+	(current-file (abbreviate-file-name (buffer-file-name))))
+    (unless (string= saved-file current-file)
+      (user-error "Progress file is for %s, but current buffer is %s"
+		  saved-file current-file))
+    (let ((valid-queue (tlon-batch-abstract--filter-completed-keys
+		       (plist-get progress :queue))))
+      (setq tlon-batch-abstract--queue valid-queue
+	    tlon-batch-abstract--total (+ (plist-get progress :done)
+					  (length valid-queue))
+	    tlon-batch-abstract--ai-done (plist-get progress :done)
+	    tlon-batch-abstract--bib-file saved-file)
+      (message "Resuming: %d entries remaining (%d already done, %d now complete)."
+	       (length valid-queue) tlon-batch-abstract--ai-done
+	       (- (length (plist-get progress :queue))
+		  (length valid-queue)))
+      (tlon-batch-abstract--setup)
+      (tlon-batch-abstract--process-ai-queue))))
+
+(defun tlon-batch-abstract--filter-completed-keys (keys)
+  "Return the subset of KEYS that still lack an abstract."
+  (cl-remove-if
+   (lambda (key)
+     (save-excursion
+       (goto-char (point-min))
+       (and (bibtex-search-entry key)
+	    (ignore-errors (bibtex-extras-get-field "abstract")))))
+   keys))
+
 (defun tlon-batch-abstract--process-ai-queue ()
   "Process the next entry in the AI abstract queue."
-  (if (null tlon-batch-abstract--queue)
-      (progn
-	(save-buffer)
-	(message "AI pass complete. %d abstracts set." tlon-batch-abstract--ai-done))
-    (let* ((key (pop tlon-batch-abstract--queue))
-	   (num (- tlon-batch-abstract--total (length tlon-batch-abstract--queue))))
-      (condition-case err
-	  (progn
-	    (widen)
-	    (save-excursion
-	      (goto-char (point-min))
-	      (if (bibtex-search-entry key)
-		  (let* ((file (ignore-errors (ebib-extras-get-text-file)))
-			 (language (or (ignore-errors (bibtex-extras-get-field "langid"))
-				       "english"))
-			 (lang-code (tlon-get-language-code-from-name language))
-			 (prompt (when lang-code
-				   (tlon-lookup tlon-ai-get-abstract-prompts
-					       :prompt :language lang-code))))
-		    (if (and file prompt)
-			(let ((string (ignore-errors (tlon-get-file-as-string file))))
-			  (if string
-			      (progn
-				(message "[AI %d/%d] %s..."
-					 num tlon-batch-abstract--total key)
-				(tlon-make-gptel-request
-				 prompt string
-				 (tlon-batch-abstract--make-callback key num)
-				 tlon-ai-summarization-model))
-			    (message "[AI %d/%d] Could not read file for %s"
-				     num tlon-batch-abstract--total key)
-			    (run-with-idle-timer 0 nil #'tlon-batch-abstract--process-ai-queue)))
-		      (message "[AI %d/%d] Skipping %s (no prompt for %s)"
-			       num tlon-batch-abstract--total key (or lang-code "?"))
-		      (run-with-idle-timer 0 nil #'tlon-batch-abstract--process-ai-queue)))
-		(message "[AI %d/%d] Key not found: %s" num tlon-batch-abstract--total key)
-		(run-with-idle-timer 0 nil #'tlon-batch-abstract--process-ai-queue))))
-	(error
-	 (message "[AI %d/%d] Error for %s: %S" num tlon-batch-abstract--total key err)
-	 (run-with-idle-timer 0 nil #'tlon-batch-abstract--process-ai-queue))))))
+  (cond
+   ((not tlon-batch-abstract--active-p)
+    (message "[batch-abstract] Batch is no longer active"))
+   ((not (tlon-batch-abstract--bib-buffer-live-p))
+    (message "[batch-abstract] Bib buffer was killed, aborting")
+    (tlon-batch-abstract--cleanup))
+   (t
+    (with-current-buffer (get-file-buffer tlon-batch-abstract--bib-file)
+      (tlon-batch-abstract--process-next-entry)))))
 
-(defun tlon-batch-abstract--make-callback (key num)
-  "Return a callback for the AI abstract request for KEY (entry NUM)."
-  (lambda (response _info)
-    (condition-case err
-	(if (not response)
-	    (message "[AI %d/%d] Failed for %s" num tlon-batch-abstract--total key)
-	  (tlon-ai-summarize-set-bibtex-abstract response key)
-	  (setq tlon-batch-abstract--ai-done (1+ tlon-batch-abstract--ai-done))
-	  (message "[AI %d/%d] Set abstract for %s"
-		   num tlon-batch-abstract--total key))
-      (error
-       (message "[AI %d/%d] Callback error for %s: %S"
-		num tlon-batch-abstract--total key err)))
-    (run-with-idle-timer 1 nil #'tlon-batch-abstract--process-ai-queue)))
+(defun tlon-batch-abstract--bib-buffer-live-p ()
+  "Return non-nil if the bib buffer is still alive."
+  (buffer-live-p (get-file-buffer tlon-batch-abstract--bib-file)))
+
+(defun tlon-batch-abstract--process-next-entry ()
+  "Pop the next key and fire an AI request for it."
+  (if (and (null tlon-batch-abstract--retry-key)
+	   (null tlon-batch-abstract--queue))
+      (tlon-batch-abstract--finish)
+    (let* ((key (or tlon-batch-abstract--retry-key
+		    (pop tlon-batch-abstract--queue)))
+	   (num (- tlon-batch-abstract--total
+		   (length tlon-batch-abstract--queue)))
+	   (gen tlon-batch-abstract--generation))
+      (setq tlon-batch-abstract--retry-key nil)
+      (tlon-batch-abstract--progress-save)
+      (condition-case err
+	  (tlon-batch-abstract--request-for-key key num gen)
+	(error
+	 (message "[AI %d/%d] Error for %s: %S"
+		  num tlon-batch-abstract--total key err)
+	 (tlon-batch-abstract--schedule-next))))))
+
+(defun tlon-batch-abstract--finish ()
+  "Finalize a completed batch run."
+  (save-buffer)
+  (tlon-batch-abstract--progress-delete)
+  (tlon-batch-abstract--cleanup)
+  (message "AI pass complete. %d abstracts set."
+	   tlon-batch-abstract--ai-done))
+
+(defun tlon-batch-abstract--request-for-key (key num gen)
+  "Fire an AI abstract request for KEY (entry NUM, generation GEN)."
+  (widen)
+  (save-excursion
+    (goto-char (point-min))
+    (if (not (bibtex-search-entry key))
+	(progn
+	  (message "[AI %d/%d] Key not found: %s"
+		   num tlon-batch-abstract--total key)
+	  (tlon-batch-abstract--schedule-next))
+      (let* ((file (ignore-errors (ebib-extras-get-text-file)))
+	     (language (or (ignore-errors
+			     (bibtex-extras-get-field "langid"))
+			   "english"))
+	     (lang-code (tlon-get-language-code-from-name language))
+	     (prompt (when lang-code
+		       (tlon-lookup tlon-ai-get-abstract-prompts
+				    :prompt :language lang-code))))
+	(tlon-batch-abstract--dispatch-request
+	 key num gen file prompt lang-code)))))
+
+(defun tlon-batch-abstract--dispatch-request (key num gen file prompt lang-code)
+  "Dispatch the gptel request for KEY or skip if prerequisites are missing.
+NUM is the entry number, GEN the generation counter, FILE the text
+file, PROMPT the AI prompt, and LANG-CODE the language code."
+  (if (not (and file prompt))
+      (progn
+	(message "[AI %d/%d] Skipping %s (no prompt for %s)"
+		 num tlon-batch-abstract--total key (or lang-code "?"))
+	(tlon-batch-abstract--schedule-next))
+    (let ((string (ignore-errors (tlon-get-file-as-string file))))
+      (if (not string)
+	  (progn
+	    (message "[AI %d/%d] Could not read file for %s"
+		     num tlon-batch-abstract--total key)
+	    (tlon-batch-abstract--schedule-next))
+	(message "[AI %d/%d] %s (gen %d)..."
+		 num tlon-batch-abstract--total key gen)
+	(tlon-batch-abstract--watchdog-start)
+	(tlon-make-gptel-request
+	 prompt string
+	 (tlon-batch-abstract--make-callback key num gen)
+	 tlon-ai-summarization-model)))))
+
+(defun tlon-batch-abstract--make-callback (key num gen)
+  "Return a callback for the AI abstract request for KEY (entry NUM).
+GEN is the generation counter at the time the request was issued."
+  (lambda (response info)
+    (tlon-batch-abstract--watchdog-stop)
+    (if (/= gen tlon-batch-abstract--generation)
+	(message "[AI %d/%d] Stale callback for %s (gen %d, now %d)"
+		 num tlon-batch-abstract--total key gen
+		 tlon-batch-abstract--generation)
+      (tlon-batch-abstract--handle-response key num response info)
+      (tlon-batch-abstract--schedule-next))))
+
+(defun tlon-batch-abstract--handle-response (key num response info)
+  "Handle the AI RESPONSE for KEY (entry NUM) with request INFO."
+  (let ((http-status (plist-get info :http-status)))
+    (cond
+     (response
+      (tlon-batch-abstract--handle-success key num response))
+     ((tlon-batch-abstract--retryable-status-p http-status)
+      (tlon-batch-abstract--handle-retry key num http-status))
+     (t
+      (tlon-batch-abstract--handle-failure key num http-status info)))))
+
+(defun tlon-batch-abstract--handle-success (key num response)
+  "Set the abstract from RESPONSE for KEY (entry NUM) and reset error state."
+  (condition-case err
+      (progn
+	(tlon-ai-summarize-set-bibtex-abstract response key)
+	(cl-incf tlon-batch-abstract--ai-done)
+	(setq tlon-batch-abstract--consecutive-errors 0
+	      tlon-batch-abstract--backoff-delay 1)
+	(message "[AI %d/%d] Set abstract for %s"
+		 num tlon-batch-abstract--total key))
+    (error
+     (message "[AI %d/%d] Callback error for %s: %S"
+	      num tlon-batch-abstract--total key err))))
+
+(defun tlon-batch-abstract--handle-retry (key num http-status)
+  "Schedule KEY (entry NUM) for retry after HTTP-STATUS error."
+  (message "[AI %d/%d] Retryable error (%s) for %s, retry after %ds"
+	   num tlon-batch-abstract--total http-status key
+	   tlon-batch-abstract--backoff-delay)
+  (setq tlon-batch-abstract--retry-key key)
+  (cl-incf tlon-batch-abstract--consecutive-errors)
+  (setq tlon-batch-abstract--backoff-delay
+	(min (* tlon-batch-abstract--backoff-delay 2)
+	     tlon-batch-abstract-max-backoff)))
+
+(defun tlon-batch-abstract--handle-failure (key num http-status info)
+  "Log non-retryable failure for KEY (entry NUM).
+HTTP-STATUS and INFO provide error details."
+  (message "[AI %d/%d] Failed for %s (status: %s, error: %S)"
+	   num tlon-batch-abstract--total key
+	   (or http-status "unknown")
+	   (plist-get info :error))
+  (cl-incf tlon-batch-abstract--consecutive-errors))
+
+(defun tlon-batch-abstract--retryable-status-p (http-status)
+  "Return non-nil if HTTP-STATUS indicates a retryable error."
+  (and http-status
+       (or (string= http-status "429")
+	   (string-match-p "^5" http-status))))
+
+(defun tlon-batch-abstract--setup ()
+  "Initialize batch infrastructure: curl args, generation, active flag."
+  (setq tlon-batch-abstract--active-p t
+	tlon-batch-abstract--generation 0
+	tlon-batch-abstract--consecutive-errors 0
+	tlon-batch-abstract--backoff-delay 1
+	tlon-batch-abstract--retry-key nil)
+  (when (> tlon-batch-abstract-curl-max-time 0)
+    (setq tlon-batch-abstract--saved-curl-args (list gptel-curl-extra-args))
+    (setq gptel-curl-extra-args
+	  (append gptel-curl-extra-args
+		  (list "--max-time"
+			(number-to-string
+			 tlon-batch-abstract-curl-max-time))))))
+
+(defun tlon-batch-abstract--cleanup ()
+  "Restore global state after a batch run completes or is aborted."
+  (tlon-batch-abstract--watchdog-stop)
+  (when tlon-batch-abstract--saved-curl-args
+    (setq gptel-curl-extra-args (car tlon-batch-abstract--saved-curl-args))
+    (setq tlon-batch-abstract--saved-curl-args nil))
+  (setq tlon-batch-abstract--active-p nil
+	tlon-batch-abstract--consecutive-errors 0
+	tlon-batch-abstract--backoff-delay 1
+	tlon-batch-abstract--retry-key nil))
+
+(defun tlon-batch-abstract--schedule-next ()
+  "Schedule the next queue entry with backoff and circuit-breaker logic."
+  (let ((delay tlon-batch-abstract--backoff-delay))
+    (when (>= tlon-batch-abstract--consecutive-errors
+	      tlon-batch-abstract-circuit-breaker-threshold)
+      (setq delay tlon-batch-abstract-circuit-breaker-pause
+	    tlon-batch-abstract--consecutive-errors 0
+	    tlon-batch-abstract--backoff-delay 1)
+      (message "[batch-abstract] Circuit breaker tripped, pausing %ds"
+	       delay))
+    (run-with-timer delay nil #'tlon-batch-abstract--process-ai-queue)))
+
+(defun tlon-batch-abstract--watchdog-start ()
+  "Start the watchdog timer for the current AI request."
+  (tlon-batch-abstract--watchdog-stop)
+  (setq tlon-batch-abstract--watchdog-timer
+	(run-with-timer tlon-batch-abstract-watchdog-timeout nil
+			#'tlon-batch-abstract--watchdog-fired)))
+
+(defun tlon-batch-abstract--watchdog-stop ()
+  "Cancel the current watchdog timer, if any."
+  (when tlon-batch-abstract--watchdog-timer
+    (cancel-timer tlon-batch-abstract--watchdog-timer)
+    (setq tlon-batch-abstract--watchdog-timer nil)))
+
+(defun tlon-batch-abstract--watchdog-fired ()
+  "Handle a watchdog timeout: invalidate the stale callback and advance."
+  (setq tlon-batch-abstract--watchdog-timer nil)
+  (cl-incf tlon-batch-abstract--generation)
+  (cl-incf tlon-batch-abstract--consecutive-errors)
+  (message "[batch-abstract] Watchdog fired (gen %d), advancing"
+	   tlon-batch-abstract--generation)
+  (tlon-batch-abstract--schedule-next))
+
+(defun tlon-batch-abstract--progress-save ()
+  "Persist the current queue and metadata to the progress file."
+  (with-temp-file tlon-batch-abstract-progress-file
+    (insert ";;; tlon-batch-abstract progress -*- no-byte-compile: t -*-\n\n")
+    (prin1 (list :bib-file tlon-batch-abstract--bib-file
+		 :queue tlon-batch-abstract--queue
+		 :total tlon-batch-abstract--total
+		 :done tlon-batch-abstract--ai-done
+		 :timestamp (float-time))
+	   (current-buffer))
+    (insert "\n")))
+
+(defun tlon-batch-abstract--progress-load ()
+  "Load progress from the progress file, or return nil if absent."
+  (let ((file tlon-batch-abstract-progress-file))
+    (when (file-exists-p file)
+      (with-temp-buffer
+	(insert-file-contents file)
+	(goto-char (point-min))
+	(while (looking-at "^;")
+	  (forward-line 1))
+	(condition-case nil
+	    (read (current-buffer))
+	  (error nil))))))
+
+(defun tlon-batch-abstract--progress-delete ()
+  "Delete the progress file if it exists."
+  (when (file-exists-p tlon-batch-abstract-progress-file)
+    (delete-file tlon-batch-abstract-progress-file)))
 
 ;;;;; Move entries
 
