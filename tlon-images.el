@@ -135,15 +135,16 @@ inside the repo, without extension."
 
 (defun tlon-images-read-image (&optional image)
   "Prompt the user for an IMAGE."
-  (or image
-      (let ((insert-default-directory nil)
-	    (image-candidate (or (when (derived-mode-p 'dired-mode)
-				   (dired-get-filename))
-				 (buffer-file-name))))
-	(or (and tlon-images-read-file-without-asking image-candidate)
-	    (read-file-name "Image: " nil nil nil
-			    (when image-candidate
-			      (file-relative-name image-candidate default-directory)))))))
+  (expand-file-name
+   (or image
+       (let ((insert-default-directory nil)
+	     (image-candidate (or (when (derived-mode-p 'dired-mode)
+				    (dired-get-filename))
+				  (buffer-file-name))))
+	 (or (and tlon-images-read-file-without-asking image-candidate)
+	     (read-file-name "Image: " nil nil nil
+			     (when image-candidate
+			       (file-relative-name image-candidate default-directory))))))))
 
 ;;;;; Process images
 

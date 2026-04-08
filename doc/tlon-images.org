@@ -210,7 +210,7 @@ The menu provides the following groups:
 :END:
 
 #+findex: tlon-images-read-image
-- ~tlon-images-read-image~ :: Prompt for an image file path.  In Dired, default to the file at point.  If the current buffer visits an image, default to that.  If ~tlon-images-read-file-without-asking~ is non-nil, skip the prompt and use the default directly.
+- ~tlon-images-read-image~ :: Prompt for an image file path.  In Dired, default to the file at point.  If the current buffer visits an image, default to that.  If ~tlon-images-read-file-without-asking~ is non-nil, skip the prompt and use the default directly.  The returned path is always expanded via ~expand-file-name~, ensuring that tildes and relative components are resolved before being passed to external tools such as ImageMagick.
 
 #+findex: tlon-images-process-image
 - ~tlon-images-process-image~ :: Execute the ImageMagick COMMAND for SOURCE and TARGET.  Copy SOURCE to a light-themed filename, optionally open both versions, and display MESSAGE-FMT with the source file name.
