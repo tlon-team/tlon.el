@@ -1082,23 +1082,27 @@ Messages refer to paragraphs with one-based numbering."
 (declare-function tlon-bib--get-field-fn "tlon-bib")
 (declare-function tlon-bib--set-field-fn "tlon-bib")
 (declare-function tlon-get-key-at-point "tlon-bib")
+(declare-function tlon-bib--batch-dispatch-from-command-p "tlon-bib")
+(declare-function tlon-batch-set-abstracts "tlon-bib")
 ;;;###autoload
 (defun tlon-get-abstract-with-or-without-ai ()
   "Try to get an abstract using non-AI methods; if unsuccessful, use AI.
-To get an abstract with AI, the function uses
-`tlon-fetch-and-set-abstract'. See its docstring for details.
+Non-AI handling is delegated to `tlon-fetch-and-set-abstract' and AI
+handling to `tlon-get-abstract-with-ai'; see their docstrings.
 
-To get an abstract with AI, the function uses
-`tlon-get-abstract-with-ai'. See its docstring for details."
+When invoked interactively from a BibTeX buffer with `tlon-ai-batch-fun'
+set, dispatch to `tlon-batch-set-abstracts' (background, strategy
+`both') instead of processing the entry at point."
   (interactive)
-  (if (tlon-fetch-and-set-abstract)
-      ;; Non-AI succeeded; continue to next entry in batch mode
-      (let ((buf (current-buffer)))
-	(run-with-idle-timer 0 nil (lambda () (when (buffer-live-p buf)
-						(with-current-buffer buf
-						  (tlon-ai-batch-continue))))))
-    ;; Non-AI failed or was skipped; try AI (handles batch continuation internally)
-    (tlon-get-abstract-with-ai)))
+  (if (tlon-bib--batch-dispatch-from-command-p)
+      (tlon-batch-set-abstracts (buffer-file-name) 'both)
+    (if (tlon-fetch-and-set-abstract)
+	(let ((buf (current-buffer)))
+	  (run-with-idle-timer 0 nil (lambda ()
+				       (when (buffer-live-p buf)
+					 (with-current-buffer buf
+					   (tlon-ai-batch-continue))))))
+      (tlon-get-abstract-with-ai))))
 
 (autoload 'tlon-abstract-may-proceed-p "tlon-bib")
 ;;;###autoload
@@ -1121,22 +1125,29 @@ If FILE is non-nil, get an abstract of its contents. Otherwise,
 In all the above cases, the AI will first look for an existing abstract and, if
 it finds one, use it. Otherwise it will create an abstract from scratch.
 
-TYPE is either `abstract' or `synopsis'."
+TYPE is either `abstract' or `synopsis'.
+
+When invoked interactively from a BibTeX buffer with `tlon-ai-batch-fun'
+set, dispatch to `tlon-batch-set-abstracts' (background, strategy `ai')
+instead of processing the entry at point."
   (interactive)
-  (if (tlon-abstract-may-proceed-p)
-      (if-let ((language (or (tlon-get-language-in-mode)
-			     (unless tlon-ai-batch-fun
-			       (tlon-select-language)))))
-	  (tlon-ai-get-abstract-in-language file language type)
-	(tlon-ai-detect-language-in-file
-	 file (tlon-ai-get-abstract-from-detected-language file)))
+  (cond
+   ((tlon-bib--batch-dispatch-from-command-p)
+    (tlon-batch-set-abstracts (buffer-file-name) 'ai))
+   ((tlon-abstract-may-proceed-p)
+    (if-let ((language (or (tlon-get-language-in-mode)
+			   (unless tlon-ai-batch-fun
+			     (tlon-select-language)))))
+	(tlon-ai-get-abstract-in-language file language type)
+      (tlon-ai-detect-language-in-file
+       file (tlon-ai-get-abstract-from-detected-language file))))
+   (t
     (when tlon-debug
-      (message "`%s' is scheduling `tlon-ai-batch-continue' via timer." "tlon-get-abstract-with-ai"))
-    ;; Use a timer to avoid deep recursion in batch mode when skipping many items
+      (message "`%s' is scheduling `tlon-ai-batch-continue' via timer" "tlon-get-abstract-with-ai"))
     (let ((buf (current-buffer)))
       (run-with-idle-timer 0 nil (lambda () (when (buffer-live-p buf)
 					      (with-current-buffer buf
-						(tlon-ai-batch-continue))))))))
+						(tlon-ai-batch-continue)))))))))
 
 (declare-function bibtex-extras-get-field "bibtex-extras")
 (defun tlon-shorten-abstract-with-ai ()

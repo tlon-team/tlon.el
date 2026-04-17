@@ -37,9 +37,15 @@ A key design principle is that each task can use a dedicated AI model, letting y
 :END:
 
 #+vindex: tlon-ai-batch-fun
-The user option ~tlon-ai-batch-fun~ specifies which function to call when processing BibTeX entries in batch mode. When non-nil, after each AI request completes the module automatically advances to the next entry (in =bibtex-mode= or =ebib-entry-mode=) and invokes this function again. Set it to =nil= to disable batch processing. You can also set it interactively from the transient menu ([[#h:transient-menu][transient menu]]).
+The user option ~tlon-ai-batch-fun~ specifies which function to call when processing BibTeX entries in batch mode. You can set it interactively from the transient menu ([[#h:transient-menu][transient menu]]) via the =s -b= infix. Set it to =nil= to disable batch processing.
 
 Typical values include ~tlon-get-abstract-with-or-without-ai~, ~tlon-get-abstract-with-ai~, ~tlon-fetch-and-set-abstract~, and ~tlon-ai-set-language-bibtex~. The default value is =nil=.
+
+When ~tlon-ai-batch-fun~ is set to one of the three abstract-related commands and the command is invoked interactively from a BibTeX buffer, it delegates to ~tlon-batch-set-abstracts~ (see the =tlon-bib= manual, [[info:tlon-bib#h:batch-set-abstracts][Batch set abstracts]]) with the matching strategy (=non-ai=, =ai=, or =both=). The batch runs in the background on a hidden copy of the file, so the current Emacs session is not interrupted: the buffer is not widened, point does not jump, and progress is written to =*tlon-batch-abstract-log*= instead of the echo area.
+
+For the legacy function ~tlon-ai-set-language-bibtex~, the older per-entry iteration driven by ~tlon-ai-batch-continue~ continues to apply.
+
+Because the overwrite infix (=s -o=, ~tlon-abstract-overwrite~) still controls collisions and its =ask= value prompts mid-run, set it to =always= or =never= when you want an unattended batch.
 
 *** Editing prompts before sending
 :PROPERTIES:

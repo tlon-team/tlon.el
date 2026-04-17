@@ -88,7 +88,7 @@ The command ~tlon-fetch-and-set-abstract~ attempts to fetch an abstract for the 
 
 The command first checks whether proceeding is allowed based on ~tlon-abstract-overwrite~ ([[#h:abstract-overwrite][Abstract overwrite behavior]]) and any existing abstract. It then tries three data sources in sequence: CrossRef (using the entry's DOI), Google Books (using its ISBN), and Zotra (using its URL or DOI). If an abstract is found, it is cleaned up (XML/HTML tags and extraneous prefixes are removed, and a trailing period is ensured) before being set. If no abstract is found, a message is displayed.
 
-When invoked as part of a batch operation via ~tlon-ai-batch-fun~, the command automatically triggers ~tlon-ai-batch-continue~ to process the next entry.
+When invoked interactively from a BibTeX buffer with the Summarize =batch= infix (~tlon-ai-batch-fun~) set, the command delegates to ~tlon-batch-set-abstracts~ with strategy =non-ai= ([[#h:batch-set-abstracts][Batch set abstracts]]), which runs in the background without widening or saving the current buffer. Outside a BibTeX buffer, or when the infix is unset, the command still uses the legacy per-entry path driven by ~tlon-ai-batch-continue~.
 
 *** Batch set abstracts
 :PROPERTIES:
@@ -96,9 +96,23 @@ When invoked as part of a batch operation via ~tlon-ai-batch-fun~, the command a
 :END:
 
 #+findex: tlon-batch-set-abstracts
-The command ~tlon-batch-set-abstracts~ adds abstracts to all entries in the current BibTeX buffer that lack one. It operates in two passes. In the first pass, it tries non-AI sources (CrossRef, Google Books, Zotra) for each entry. In the second pass, it queues entries that have an associated text file for AI-powered abstract generation using ~tlon-make-gptel-request~. The AI pass processes entries one at a time, using the language-specific prompt from ~tlon-ai-get-abstract-prompts~.
+The command ~tlon-batch-set-abstracts~ adds abstracts to entries in a BibTeX file that lack one. It takes two optional arguments: a =FILE= to process (defaulting to the current BibTeX buffer, or prompting if none) and a =STRATEGY=, one of the symbols =non-ai=, =ai=, or =both= (the default).
 
-This command requires the buffer to be in =bibtex-mode=. It saves the buffer after each pass and reports statistics on how many abstracts were set, skipped, or failed.
+The command returns immediately; all work happens in the background on a hidden copy of the file, so the user's BibTeX buffer is not widened, point is not moved, and the buffer is not saved in place. Progress is written to the log buffer =*tlon-batch-abstract-log*= (pop it up with ~tlon-batch-abstract-show-log~) and, for the AI pass, to the progress file defined by ~tlon-batch-abstract-progress-file~.
+
+The three strategies work as follows:
+
+- =non-ai=: scans the file and tries CrossRef (via DOI), Google Books (via ISBN), and Zotra (via URL) for each entry without an abstract. Runs one entry per idle tick so Emacs stays responsive.
+- =ai=: queues every entry without an abstract that has an associated text file and sends each to the summarization model using the language-specific prompt from ~tlon-ai-get-abstract-prompts~.
+- =both=: runs the non-AI pass first; any entry for which non-AI sources fail but that has an associated text file is queued for the AI pass.
+
+If the user's BibTeX buffer for the target file has unsaved edits, the command errors out. If it is unmodified, it is quietly reverted when the batch completes so the new abstracts become visible.
+
+#+findex: tlon-batch-abstract-resume
+If the AI pass crashes or Emacs is restarted mid-run, ~tlon-batch-abstract-resume~ picks up from the saved progress file. ~tlon-batch-abstract-stop~ cancels a running batch while preserving the progress file for later resumption.
+
+#+vindex: tlon-ai-batch-fun
+The Summarize submenu exposes a =batch= infix (see the corresponding section in the manual of =tlon-ai=) whose value is a function symbol. When any of the summarize commands (~tlon-fetch-and-set-abstract~, ~tlon-get-abstract-with-ai~, ~tlon-get-abstract-with-or-without-ai~) is invoked interactively from a BibTeX buffer with this infix set, the command delegates to ~tlon-batch-set-abstracts~ with the matching strategy instead of processing only the entry at point. The =s -o= (overwrite) infix still controls collision behaviour; set it to =always= or =never= for unattended runs, since =ask= prompts mid-run.
 
 *** Translate abstract
 :PROPERTIES:
