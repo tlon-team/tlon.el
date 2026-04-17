@@ -855,16 +855,18 @@ CONTINUATION is forwarded to `tlon-batch-abstract--both-step'."
 
 (defun tlon-batch-abstract--both-try-at-point (key num advance)
   "With point at KEY's entry, try non-AI; fall back to AI; then ADVANCE.
-NUM is the 1-based position for log messages."
+NUM is the 1-based position for log messages.  Each non-AI source is
+wrapped in `ignore-errors' so that a transient failure in one method
+does not abort the entry and prevent the AI fallback."
   (let* ((doi (ignore-errors (bibtex-extras-get-field "doi")))
 	 (isbn (ignore-errors (bibtex-extras-get-field "isbn")))
 	 (url (ignore-errors (bibtex-extras-get-field "url")))
 	 (url-retrieve-timeout tlon-batch-abstract-non-ai-timeout)
 	 (text-file (ignore-errors (ebib-extras-get-text-file)))
 	 (value (shut-up
-		  (or (tlon-fetch-abstract-from-crossref doi)
-		      (tlon-fetch-abstract-from-google-books isbn)
-		      (tlon-fetch-abstract-with-zotra url url)))))
+		  (or (ignore-errors (tlon-fetch-abstract-from-crossref doi))
+		      (ignore-errors (tlon-fetch-abstract-from-google-books isbn))
+		      (ignore-errors (tlon-fetch-abstract-with-zotra url url))))))
     (cond
      (value
       (shut-up
