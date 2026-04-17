@@ -574,8 +574,8 @@ interrupted, it can be resumed with `tlon-batch-abstract-resume'."
        (tlon-batch-abstract--process-ai-queue)))
     (_
      (tlon-batch-abstract--non-ai-prepare)
-     (run-with-idle-timer 0 nil #'tlon-batch-abstract--non-ai-step
-			  #'tlon-batch-abstract--start-ai-pass))))
+     (run-with-idle-timer 0 nil #'tlon-batch-abstract--both-step
+			  #'tlon-batch-abstract--finish-both))))
 
 ;;;###autoload
 (defun tlon-batch-abstract-resume ()
@@ -803,6 +803,154 @@ NUM is the 1-based position in the non-AI pass, used for log messages."
   (tlon-batch-abstract--cleanup)
   (tlon-batch-abstract--kill-work-buffer)
   (message "Batch complete (non-AI only); see %s"
+	   tlon-batch-abstract--log-buffer-name))
+
+(defun tlon-batch-abstract--both-step (continuation)
+  "Process one entry for the interleaved non-AI + AI strategy.
+For each entry we synchronously try non-AI sources.  If that fails and
+the entry has a linked text file, fire an AI request whose callback
+advances to the next entry.  Otherwise, advance via a short timer.
+CONTINUATION is called with no arguments once the queue is empty."
+  (cond
+   ((not tlon-batch-abstract--active-p) nil)
+   ((null tlon-batch-abstract--non-ai-queue)
+    (tlon-batch-abstract--save-work-buffer)
+    (tlon-batch-abstract--sync-user-buffer)
+    (funcall continuation))
+   (t
+    (let* ((key (pop tlon-batch-abstract--non-ai-queue))
+	   (num (- tlon-batch-abstract--non-ai-total
+		   (length tlon-batch-abstract--non-ai-queue))))
+      (tlon-batch-abstract--both-process-key key num continuation)))))
+
+(defun tlon-batch-abstract--both-process-key (key num continuation)
+  "Handle KEY (entry NUM) in the interleaved strategy.
+CONTINUATION is passed on to the next `tlon-batch-abstract--both-step'
+after this entry finishes (synchronously for non-AI, via callback for
+AI)."
+  (let ((advance (tlon-batch-abstract--make-advance continuation)))
+    (condition-case err
+	(with-current-buffer (tlon-batch-abstract--work-buffer)
+	  (save-excursion
+	    (goto-char (point-min))
+	    (if (not (bibtex-search-entry key))
+		(progn
+		  (tlon-batch-abstract--log
+		   "[%d/%d] Key not found: %s"
+		   num tlon-batch-abstract--non-ai-total key)
+		  (funcall advance))
+	      (tlon-batch-abstract--both-try-at-point key num advance))))
+      (error
+       (tlon-batch-abstract--log
+	"[%d/%d] Error for %s: %S"
+	num tlon-batch-abstract--non-ai-total key err)
+       (funcall advance)))))
+
+(defun tlon-batch-abstract--make-advance (continuation)
+  "Return a zero-arg function that saves and schedules the next both-step.
+CONTINUATION is forwarded to `tlon-batch-abstract--both-step'."
+  (lambda ()
+    (tlon-batch-abstract--save-work-buffer)
+    (run-with-timer 0.2 nil #'tlon-batch-abstract--both-step continuation)))
+
+(defun tlon-batch-abstract--both-try-at-point (key num advance)
+  "With point at KEY's entry, try non-AI; fall back to AI; then ADVANCE.
+NUM is the 1-based position for log messages."
+  (let* ((doi (ignore-errors (bibtex-extras-get-field "doi")))
+	 (isbn (ignore-errors (bibtex-extras-get-field "isbn")))
+	 (url (ignore-errors (bibtex-extras-get-field "url")))
+	 (url-retrieve-timeout tlon-batch-abstract-non-ai-timeout)
+	 (text-file (ignore-errors (ebib-extras-get-text-file)))
+	 (value (shut-up
+		  (or (tlon-fetch-abstract-from-crossref doi)
+		      (tlon-fetch-abstract-from-google-books isbn)
+		      (tlon-fetch-abstract-with-zotra url url)))))
+    (cond
+     (value
+      (shut-up
+	(bibtex-set-field "abstract" (tlon-abstract-cleanup value)))
+      (cl-incf (cl-getf tlon-batch-abstract--counters :non-ai-set))
+      (tlon-batch-abstract--log
+       "[%d/%d] Set (non-AI) %s"
+       num tlon-batch-abstract--non-ai-total key)
+      (funcall advance))
+     ((and text-file
+	   (not (tlon-batch-abstract--file-too-large-p text-file)))
+      (tlon-batch-abstract--both-fire-ai key num text-file advance))
+     (t
+      (cl-incf (cl-getf tlon-batch-abstract--counters :non-ai-fail))
+      (tlon-batch-abstract--log
+       "[%d/%d] No match: %s"
+       num tlon-batch-abstract--non-ai-total key)
+      (funcall advance)))))
+
+(defun tlon-batch-abstract--both-fire-ai (key num text-file advance)
+  "Fire an async AI request for KEY using TEXT-FILE; ADVANCE on callback.
+NUM is the 1-based position for log messages."
+  (let* ((language (or (ignore-errors (bibtex-extras-get-field "langid"))
+		       "english"))
+	 (lang-code (tlon-get-language-code-from-name language))
+	 (prompt (when lang-code
+		   (tlon-lookup tlon-ai-get-abstract-prompts
+				:prompt :language lang-code))))
+    (cond
+     ((not prompt)
+      (tlon-batch-abstract--log
+       "[%d/%d] Skip %s (no prompt for %s)"
+       num tlon-batch-abstract--non-ai-total key (or lang-code "?"))
+      (funcall advance))
+     (t
+      (let ((string (ignore-errors (tlon-get-file-as-string text-file))))
+	(if (not string)
+	    (progn
+	      (tlon-batch-abstract--log
+	       "[%d/%d] Could not read %s for %s"
+	       num tlon-batch-abstract--non-ai-total text-file key)
+	      (funcall advance))
+	  (tlon-batch-abstract--log
+	   "[%d/%d] AI request: %s"
+	   num tlon-batch-abstract--non-ai-total key)
+	  (tlon-make-gptel-request
+	   prompt string
+	   (tlon-batch-abstract--both-make-callback key num advance)
+	   tlon-ai-summarization-model)))))))
+
+(defun tlon-batch-abstract--both-make-callback (key num advance)
+  "Return an AI callback for KEY (entry NUM) that advances via ADVANCE."
+  (lambda (response info)
+    (condition-case err
+	(cond
+	 (response
+	  (tlon-batch-abstract--set-abstract-in-work-buffer key response)
+	  (cl-incf tlon-batch-abstract--ai-done)
+	  (tlon-batch-abstract--log
+	   "[%d/%d] Set (AI) %s"
+	   num tlon-batch-abstract--non-ai-total key))
+	 (t
+	  (tlon-batch-abstract--log
+	   "[%d/%d] AI failed for %s (status: %s)"
+	   num tlon-batch-abstract--non-ai-total key
+	   (or (plist-get info :http-status) "unknown"))))
+      (error
+       (tlon-batch-abstract--log
+	"[%d/%d] AI callback error for %s: %S"
+	num tlon-batch-abstract--non-ai-total key err)))
+    (funcall advance)))
+
+(defun tlon-batch-abstract--finish-both ()
+  "Finalize the interleaved strategy after all entries are processed."
+  (tlon-batch-abstract--save-work-buffer)
+  (tlon-batch-abstract--sync-user-buffer)
+  (tlon-batch-abstract--progress-delete)
+  (tlon-batch-abstract--log
+   "Batch complete: %d non-AI, %d AI, %d skipped (of %d)"
+   (plist-get tlon-batch-abstract--counters :non-ai-set)
+   tlon-batch-abstract--ai-done
+   (plist-get tlon-batch-abstract--counters :non-ai-fail)
+   tlon-batch-abstract--non-ai-total)
+  (tlon-batch-abstract--cleanup)
+  (tlon-batch-abstract--kill-work-buffer)
+  (message "Batch complete; see %s"
 	   tlon-batch-abstract--log-buffer-name))
 
 (defun tlon-batch-abstract--start-ai-pass ()
