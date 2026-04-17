@@ -507,6 +507,11 @@ longer restart themselves.")
   "Key to retry after a rate-limit or transient error.
 When non-nil, the next queue pop is skipped and this key is retried.")
 
+(defvar tlon-batch-abstract--start-key nil
+  "If non-nil, the batch includes only entries from this key onward.
+Set from the key at point when the batch is kicked off interactively
+from a BibTeX buffer, so the run starts where the user's cursor is.")
+
 (declare-function tlon-make-gptel-request "tlon-ai")
 (declare-function tlon-ai-summarize-set-bibtex-abstract "tlon-ai")
 (declare-function bibtex-set-field "bibtex")
@@ -516,11 +521,16 @@ When non-nil, the next queue pop is skipped and this key is retried.")
 (defvar tlon-ai-batch-fun)
 
 ;;;###autoload
-(defun tlon-batch-set-abstracts (&optional file strategy)
+(defun tlon-batch-set-abstracts (&optional file strategy start-key)
   "Add abstracts to entries in FILE that lack one.
 STRATEGY is one of the symbols `non-ai', `ai', or `both' (the default).
 When called interactively, FILE defaults to the current buffer's file when
 it is in `bibtex-mode', otherwise it is read from the minibuffer.
+
+If START-KEY is non-nil, the batch processes only entries from that
+key onward in buffer order; earlier entries are ignored.  When called
+interactively from a BibTeX buffer, this defaults to the key at point
+so the run starts where the user's cursor is.
 
 The command returns immediately; work runs in the background on a hidden
 copy of the file.  Progress is written to
@@ -537,9 +547,13 @@ interrupted, it can be resumed with `tlon-batch-abstract-resume'."
 				   (lambda (f)
 				     (or (file-directory-p f)
 					 (string-suffix-p ".bib" f))))))
-	 (strategy (or strategy 'both)))
+	 (strategy (or strategy 'both))
+	 (start-key (or start-key
+			(and (derived-mode-p 'bibtex-mode)
+			     (ignore-errors (tlon-get-key-at-point))))))
     (setq tlon-batch-abstract--bib-file (abbreviate-file-name file)
-	  tlon-batch-abstract--strategy strategy)
+	  tlon-batch-abstract--strategy strategy
+	  tlon-batch-abstract--start-key start-key)
     (tlon-batch-abstract--check-user-buffer)
     (tlon-batch-abstract--work-buffer)
     (setq tlon-batch-abstract--counters
@@ -551,7 +565,9 @@ interrupted, it can be resumed with `tlon-batch-abstract-resume'."
 	  tlon-batch-abstract--non-ai-total 0)
     (tlon-batch-abstract--setup)
     (tlon-batch-abstract--log
-     "Starting batch (strategy: %s, file: %s)" strategy file)
+     "Starting batch (strategy: %s, file: %s%s)"
+     strategy file
+     (if start-key (format ", from: %s" start-key) ""))
     (tlon-batch-abstract--kick-off-strategy strategy)
     (message "Batch started in background; see %s for progress"
 	     tlon-batch-abstract--log-buffer-name)))
@@ -713,7 +729,9 @@ If it is modified, leave it alone and log a warning."
      keys)))
 
 (defun tlon-batch-abstract--non-ai-prepare ()
-  "Scan the work buffer and queue all entries lacking an abstract."
+  "Scan the work buffer and queue all entries lacking an abstract.
+If `tlon-batch-abstract--start-key' is non-nil, entries before it in
+buffer order are dropped from the queue."
   (with-current-buffer (tlon-batch-abstract--work-buffer)
     (let (queue)
       (save-excursion
@@ -722,12 +740,24 @@ If it is modified, leave it alone and log a warning."
 	 (lambda (key _beg _end)
 	   (unless (ignore-errors (bibtex-extras-get-field "abstract"))
 	     (push key queue)))))
-      (setq tlon-batch-abstract--non-ai-queue (nreverse queue))
+      (setq tlon-batch-abstract--non-ai-queue
+	    (tlon-batch-abstract--apply-start-key (nreverse queue)))
       (setq tlon-batch-abstract--non-ai-total
 	    (length tlon-batch-abstract--non-ai-queue))))
   (tlon-batch-abstract--log
-   "Non-AI pass: %d entries need abstracts"
-   tlon-batch-abstract--non-ai-total))
+   "Non-AI pass: %d entries need abstracts%s"
+   tlon-batch-abstract--non-ai-total
+   (if tlon-batch-abstract--start-key
+       (format " (starting from %s)" tlon-batch-abstract--start-key)
+     "")))
+
+(defun tlon-batch-abstract--apply-start-key (keys)
+  "Return KEYS truncated to start at `tlon-batch-abstract--start-key'.
+If the start key is nil or not in KEYS, return KEYS unchanged.  The
+start key itself is included in the returned list."
+  (if (not tlon-batch-abstract--start-key)
+      keys
+    (or (member tlon-batch-abstract--start-key keys) keys)))
 
 (defun tlon-batch-abstract--non-ai-step (continuation)
   "Process one non-AI entry, then schedule the next via idle timer.
@@ -967,7 +997,9 @@ NUM is the 1-based position for log messages."
     (tlon-batch-abstract--process-ai-queue)))
 
 (defun tlon-batch-abstract--ai-collect-from-work-buffer ()
-  "Queue entries lacking an abstract that have a linked text file."
+  "Queue entries lacking an abstract that have a linked text file.
+If `tlon-batch-abstract--start-key' is non-nil, entries before it in
+buffer order are dropped from the queue."
   (with-current-buffer (tlon-batch-abstract--work-buffer)
     (let (queue)
       (save-excursion
@@ -977,7 +1009,8 @@ NUM is the 1-based position for log messages."
 	   (unless (ignore-errors (bibtex-extras-get-field "abstract"))
 	     (when (ignore-errors (ebib-extras-get-text-file))
 	       (push key queue))))))
-      (setq tlon-batch-abstract--queue (nreverse queue)))))
+      (setq tlon-batch-abstract--queue
+	    (tlon-batch-abstract--apply-start-key (nreverse queue))))))
 
 (defun tlon-batch-abstract--process-ai-queue ()
   "Process the next entry in the AI abstract queue."
@@ -1197,7 +1230,8 @@ themselves while the background driver runs."
 	tlon-batch-abstract--backoff-delay 1
 	tlon-batch-abstract--retry-key nil
 	tlon-batch-abstract--strategy nil
-	tlon-batch-abstract--non-ai-queue nil))
+	tlon-batch-abstract--non-ai-queue nil
+	tlon-batch-abstract--start-key nil))
 
 (defun tlon-batch-abstract--schedule-next ()
   "Schedule the next queue entry with backoff and circuit-breaker logic."
