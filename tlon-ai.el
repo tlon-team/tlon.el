@@ -1082,19 +1082,20 @@ Messages refer to paragraphs with one-based numbering."
 (declare-function tlon-bib--get-field-fn "tlon-bib")
 (declare-function tlon-bib--set-field-fn "tlon-bib")
 (declare-function tlon-get-key-at-point "tlon-bib")
-(declare-function tlon-bib--batch-dispatch-from-command-p "tlon-bib")
+(declare-function tlon-bib--should-dispatch-to-batch-p "tlon-bib")
 (declare-function tlon-batch-set-abstracts "tlon-bib")
 ;;;###autoload
-(defun tlon-get-abstract-with-or-without-ai ()
+(defun tlon-get-abstract-with-or-without-ai (&optional interactive-p)
   "Try to get an abstract using non-AI methods; if unsuccessful, use AI.
 Non-AI handling is delegated to `tlon-fetch-and-set-abstract' and AI
 handling to `tlon-get-abstract-with-ai'; see their docstrings.
 
-When invoked interactively from a BibTeX buffer with `tlon-ai-batch-fun'
-set, dispatch to `tlon-batch-set-abstracts' (background, strategy
-`both') instead of processing the entry at point."
-  (interactive)
-  (if (tlon-bib--batch-dispatch-from-command-p)
+When INTERACTIVE-P is non-nil (which the `interactive' spec sets to t),
+`tlon-ai-batch-fun' is set, and the buffer is a file-visiting
+`bibtex-mode' buffer, dispatch to `tlon-batch-set-abstracts'
+(background, strategy `both') instead of processing the entry at point."
+  (interactive (list t))
+  (if (tlon-bib--should-dispatch-to-batch-p interactive-p)
       (tlon-batch-set-abstracts (buffer-file-name) 'both)
     (if (tlon-fetch-and-set-abstract)
 	(let ((buf (current-buffer)))
@@ -1106,7 +1107,7 @@ set, dispatch to `tlon-batch-set-abstracts' (background, strategy
 
 (autoload 'tlon-abstract-may-proceed-p "tlon-bib")
 ;;;###autoload
-(defun tlon-get-abstract-with-ai (&optional file type)
+(defun tlon-get-abstract-with-ai (&optional file type interactive-p)
   "Return an abstract of TYPE using AI.
 If FILE is non-nil, get an abstract of its contents. Otherwise,
 
@@ -1127,12 +1128,13 @@ it finds one, use it. Otherwise it will create an abstract from scratch.
 
 TYPE is either `abstract' or `synopsis'.
 
-When invoked interactively from a BibTeX buffer with `tlon-ai-batch-fun'
-set, dispatch to `tlon-batch-set-abstracts' (background, strategy `ai')
-instead of processing the entry at point."
-  (interactive)
+When this command is invoked interactively from a BibTeX buffer with
+`tlon-ai-batch-fun' set (INTERACTIVE-P is non-nil, which the
+`interactive' spec sets to t), dispatch to `tlon-batch-set-abstracts'
+(background, strategy `ai') instead of processing the entry at point."
+  (interactive (list nil nil t))
   (cond
-   ((tlon-bib--batch-dispatch-from-command-p)
+   ((tlon-bib--should-dispatch-to-batch-p interactive-p)
     (tlon-batch-set-abstracts (buffer-file-name) 'ai))
    ((tlon-abstract-may-proceed-p)
     (if-let ((language (or (tlon-get-language-in-mode)
