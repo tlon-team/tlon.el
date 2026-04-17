@@ -636,11 +636,12 @@ FMT and ARGS are passed to `format'."
     buf))
 
 (defun tlon-batch-abstract--save-work-buffer ()
-  "Write the work buffer's contents to the bib file on disk.
+  "Write the work buffer to disk if it has unsaved modifications.
 Does not visit the file, so the user's own buffer visiting the same file
 is unaffected."
   (let ((buf (get-buffer tlon-batch-abstract--work-buffer-name)))
-    (when (buffer-live-p buf)
+    (when (and (buffer-live-p buf)
+	       (buffer-modified-p buf))
       (with-current-buffer buf
 	(let ((coding-system-for-write 'utf-8))
 	  (write-region (point-min) (point-max)
@@ -721,8 +722,9 @@ If it is modified, leave it alone and log a warning."
 	 (lambda (key _beg _end)
 	   (unless (ignore-errors (bibtex-extras-get-field "abstract"))
 	     (push key queue)))))
-      (setq tlon-batch-abstract--non-ai-queue (nreverse queue)
-	    tlon-batch-abstract--non-ai-total (length queue))))
+      (setq tlon-batch-abstract--non-ai-queue (nreverse queue))
+      (setq tlon-batch-abstract--non-ai-total
+	    (length tlon-batch-abstract--non-ai-queue))))
   (tlon-batch-abstract--log
    "Non-AI pass: %d entries need abstracts"
    tlon-batch-abstract--non-ai-total))
@@ -752,9 +754,9 @@ CONTINUATION is called with no arguments when the queue is empty."
 	  "[non-AI %d/%d] Error for %s: %S"
 	  num tlon-batch-abstract--non-ai-total key err)))
       (tlon-batch-abstract--save-work-buffer)
-      (run-with-idle-timer 0.01 nil
-			   #'tlon-batch-abstract--non-ai-step
-			   continuation)))))
+      (run-with-timer 0.2 nil
+		      #'tlon-batch-abstract--non-ai-step
+		      continuation)))))
 
 (defun tlon-batch-abstract--non-ai-process-key (key num)
   "Run the non-AI lookup for KEY (entry NUM) inside the work buffer."
