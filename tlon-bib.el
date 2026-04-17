@@ -512,6 +512,12 @@ When non-nil, the next queue pop is skipped and this key is retried.")
 Set from the key at point when the batch is kicked off interactively
 from a BibTeX buffer, so the run starts where the user's cursor is.")
 
+(defvar tlon-batch-abstract--pending-advance nil
+  "Zero-arg closure set by the `both' pipeline while an AI request is
+in flight.  Invoked by `tlon-batch-abstract--both-watchdog-fired' to
+advance to the next entry when a gptel request stalls past
+`tlon-batch-abstract-watchdog-timeout'.")
+
 (declare-function tlon-make-gptel-request "tlon-ai")
 (declare-function tlon-ai-summarize-set-bibtex-abstract "tlon-ai")
 (declare-function bibtex-set-field "bibtex")
@@ -925,7 +931,9 @@ does not abort the entry and prevent the AI fallback."
 
 (defun tlon-batch-abstract--both-fire-ai (key num text-file advance)
   "Fire an async AI request for KEY using TEXT-FILE; ADVANCE on callback.
-NUM is the 1-based position for log messages."
+NUM is the 1-based position for log messages.  A watchdog timer is
+started so a stalled gptel request advances automatically after
+`tlon-batch-abstract-watchdog-timeout' seconds."
   (let* ((language (or (ignore-errors (bibtex-extras-get-field "langid"))
 		       "english"))
 	 (lang-code (tlon-get-language-code-from-name language))
@@ -949,32 +957,70 @@ NUM is the 1-based position for log messages."
 	  (tlon-batch-abstract--log
 	   "[%d/%d] AI request: %s"
 	   num tlon-batch-abstract--non-ai-total key)
-	  (tlon-make-gptel-request
-	   prompt string
-	   (tlon-batch-abstract--both-make-callback key num advance)
-	   tlon-ai-summarization-model)))))))
+	  (let ((gen tlon-batch-abstract--generation))
+	    (setq tlon-batch-abstract--pending-advance advance)
+	    (tlon-batch-abstract--both-watchdog-start)
+	    (tlon-make-gptel-request
+	     prompt string
+	     (tlon-batch-abstract--both-make-callback key num gen advance)
+	     tlon-ai-summarization-model))))))))
 
-(defun tlon-batch-abstract--both-make-callback (key num advance)
-  "Return an AI callback for KEY (entry NUM) that advances via ADVANCE."
+(defun tlon-batch-abstract--both-watchdog-start ()
+  "Start the watchdog for the in-flight AI request in the `both' pipeline."
+  (tlon-batch-abstract--watchdog-stop)
+  (setq tlon-batch-abstract--watchdog-timer
+	(run-with-timer tlon-batch-abstract-watchdog-timeout nil
+			#'tlon-batch-abstract--both-watchdog-fired)))
+
+(defun tlon-batch-abstract--both-watchdog-fired ()
+  "Handle a watchdog timeout in the `both' pipeline.
+Invalidate the in-flight callback via the generation counter and advance
+to the next entry using the pending advance closure."
+  (setq tlon-batch-abstract--watchdog-timer nil)
+  (cl-incf tlon-batch-abstract--generation)
+  (tlon-batch-abstract--log
+   "Watchdog fired (gen %d), advancing"
+   tlon-batch-abstract--generation)
+  (when-let ((advance tlon-batch-abstract--pending-advance))
+    (setq tlon-batch-abstract--pending-advance nil)
+    (when tlon-batch-abstract--active-p
+      (funcall advance))))
+
+(defun tlon-batch-abstract--both-make-callback (key num gen advance)
+  "Return an AI callback for KEY (entry NUM) that advances via ADVANCE.
+GEN is the generation counter at the time the request was issued; if
+the counter has since advanced (watchdog fired) or the batch has been
+stopped (`tlon-batch-abstract--active-p' is nil), the callback is a
+no-op to avoid writing to a killed work buffer or advancing twice."
   (lambda (response info)
-    (condition-case err
-	(cond
-	 (response
-	  (tlon-batch-abstract--set-abstract-in-work-buffer key response)
-	  (cl-incf tlon-batch-abstract--ai-done)
-	  (tlon-batch-abstract--log
-	   "[%d/%d] Set (AI) %s"
-	   num tlon-batch-abstract--non-ai-total key))
-	 (t
-	  (tlon-batch-abstract--log
-	   "[%d/%d] AI failed for %s (status: %s)"
-	   num tlon-batch-abstract--non-ai-total key
-	   (or (plist-get info :http-status) "unknown"))))
-      (error
-       (tlon-batch-abstract--log
-	"[%d/%d] AI callback error for %s: %S"
-	num tlon-batch-abstract--non-ai-total key err)))
-    (funcall advance)))
+    (cond
+     ((not tlon-batch-abstract--active-p) nil)
+     ((/= gen tlon-batch-abstract--generation)
+      (tlon-batch-abstract--log
+       "[%d/%d] Stale callback for %s (gen %d, now %d)"
+       num tlon-batch-abstract--non-ai-total key gen
+       tlon-batch-abstract--generation))
+     (t
+      (tlon-batch-abstract--watchdog-stop)
+      (setq tlon-batch-abstract--pending-advance nil)
+      (condition-case err
+	  (cond
+	   (response
+	    (tlon-batch-abstract--set-abstract-in-work-buffer key response)
+	    (cl-incf tlon-batch-abstract--ai-done)
+	    (tlon-batch-abstract--log
+	     "[%d/%d] Set (AI) %s"
+	     num tlon-batch-abstract--non-ai-total key))
+	   (t
+	    (tlon-batch-abstract--log
+	     "[%d/%d] AI failed for %s (status: %s)"
+	     num tlon-batch-abstract--non-ai-total key
+	     (or (plist-get info :http-status) "unknown"))))
+	(error
+	 (tlon-batch-abstract--log
+	  "[%d/%d] AI callback error for %s: %S"
+	  num tlon-batch-abstract--non-ai-total key err)))
+      (funcall advance)))))
 
 (defun tlon-batch-abstract--finish-both ()
   "Finalize the interleaved strategy after all entries are processed."
@@ -1232,7 +1278,8 @@ themselves while the background driver runs."
 	tlon-batch-abstract--retry-key nil
 	tlon-batch-abstract--strategy nil
 	tlon-batch-abstract--non-ai-queue nil
-	tlon-batch-abstract--start-key nil))
+	tlon-batch-abstract--start-key nil
+	tlon-batch-abstract--pending-advance nil))
 
 (defun tlon-batch-abstract--schedule-next ()
   "Schedule the next queue entry with backoff and circuit-breaker logic."
