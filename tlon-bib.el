@@ -731,19 +731,14 @@ If it is modified, leave it alone and log a warning."
 (defun tlon-batch-abstract--non-ai-prepare ()
   "Scan the work buffer and queue all entries lacking an abstract.
 If `tlon-batch-abstract--start-key' is non-nil, entries before it in
-buffer order are dropped from the queue."
-  (with-current-buffer (tlon-batch-abstract--work-buffer)
-    (let (queue)
-      (save-excursion
-	(goto-char (point-min))
-	(bibtex-map-entries
-	 (lambda (key _beg _end)
-	   (unless (ignore-errors (bibtex-extras-get-field "abstract"))
-	     (push key queue)))))
-      (setq tlon-batch-abstract--non-ai-queue
-	    (tlon-batch-abstract--apply-start-key (nreverse queue)))
-      (setq tlon-batch-abstract--non-ai-total
-	    (length tlon-batch-abstract--non-ai-queue))))
+buffer order are skipped entirely, even if they would otherwise qualify.
+The start key is honored even when the entry itself already has an
+abstract and wouldn't have been queued."
+  (setq tlon-batch-abstract--non-ai-queue
+	(tlon-batch-abstract--collect-keys-from-start
+	 (lambda () (not (ignore-errors (bibtex-extras-get-field "abstract"))))))
+  (setq tlon-batch-abstract--non-ai-total
+	(length tlon-batch-abstract--non-ai-queue))
   (tlon-batch-abstract--log
    "Non-AI pass: %d entries need abstracts%s"
    tlon-batch-abstract--non-ai-total
@@ -751,13 +746,25 @@ buffer order are dropped from the queue."
        (format " (starting from %s)" tlon-batch-abstract--start-key)
      "")))
 
-(defun tlon-batch-abstract--apply-start-key (keys)
-  "Return KEYS truncated to start at `tlon-batch-abstract--start-key'.
-If the start key is nil or not in KEYS, return KEYS unchanged.  The
-start key itself is included in the returned list."
-  (if (not tlon-batch-abstract--start-key)
-      keys
-    (or (member tlon-batch-abstract--start-key keys) keys)))
+(defun tlon-batch-abstract--collect-keys-from-start (filter-fn)
+  "Walk the work buffer and return keys satisfying FILTER-FN.
+FILTER-FN is called with no arguments at each entry's position and
+should return non-nil to include that entry's key in the result.
+If `tlon-batch-abstract--start-key' is non-nil, keys before that key
+in buffer order are excluded."
+  (with-current-buffer (tlon-batch-abstract--work-buffer)
+    (let ((queue nil)
+	  (started (not tlon-batch-abstract--start-key)))
+      (save-excursion
+	(goto-char (point-min))
+	(bibtex-map-entries
+	 (lambda (key _beg _end)
+	   (unless started
+	     (when (string= key tlon-batch-abstract--start-key)
+	       (setq started t)))
+	   (when (and started (funcall filter-fn))
+	     (push key queue)))))
+      (nreverse queue))))
 
 (defun tlon-batch-abstract--non-ai-step (continuation)
   "Process one non-AI entry, then schedule the next via idle timer.
@@ -999,18 +1006,12 @@ NUM is the 1-based position for log messages."
 (defun tlon-batch-abstract--ai-collect-from-work-buffer ()
   "Queue entries lacking an abstract that have a linked text file.
 If `tlon-batch-abstract--start-key' is non-nil, entries before it in
-buffer order are dropped from the queue."
-  (with-current-buffer (tlon-batch-abstract--work-buffer)
-    (let (queue)
-      (save-excursion
-	(goto-char (point-min))
-	(bibtex-map-entries
-	 (lambda (key _beg _end)
-	   (unless (ignore-errors (bibtex-extras-get-field "abstract"))
-	     (when (ignore-errors (ebib-extras-get-text-file))
-	       (push key queue))))))
-      (setq tlon-batch-abstract--queue
-	    (tlon-batch-abstract--apply-start-key (nreverse queue))))))
+buffer order are skipped."
+  (setq tlon-batch-abstract--queue
+	(tlon-batch-abstract--collect-keys-from-start
+	 (lambda ()
+	   (and (not (ignore-errors (bibtex-extras-get-field "abstract")))
+		(ignore-errors (ebib-extras-get-text-file)))))))
 
 (defun tlon-batch-abstract--process-ai-queue ()
   "Process the next entry in the AI abstract queue."
