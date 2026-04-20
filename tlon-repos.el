@@ -106,11 +106,17 @@ reported by `tlon-repo-lookup-all' and the local repositories (as determined by
   "Asynchronously pull from `babel-refs'."
   (magit-extra-async-pull (tlon-repo-lookup :dir :name "babel-refs")))
 
-;; Pull `babel-refs' every 5 minutes of idle time to keep the BibTeX
-;; database in sync with remote changes.
+(defvar tlon-repos-pull-babel-refs-timer nil
+  "Idle timer that periodically pulls `babel-refs'.
+Held so reloading this file can cancel the previous schedule before
+registering a new one, preventing stacked duplicates.")
+
 (when-let ((dir (tlon-repo-lookup :dir :name "babel-refs")))
   (when (file-directory-p dir)
-    (run-with-idle-timer (* 5 60) t #'tlon-repos-pull-babel-refs)))
+    (when (timerp tlon-repos-pull-babel-refs-timer)
+      (cancel-timer tlon-repos-pull-babel-refs-timer))
+    (setq tlon-repos-pull-babel-refs-timer
+          (run-with-idle-timer (* 5 60) t #'tlon-repos-pull-babel-refs))))
 
 ;;;;; Forge
 ;;;;;; Track repos

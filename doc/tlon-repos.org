@@ -141,7 +141,7 @@ This module does not define ~defcustom~ user options. It defines a customization
 - ~tlon-get-local-repos~ :: Prompt you to select from a list of Tlon repository names that exist locally. Returns the selected name. The candidates are the intersection of all configured Tlon repo names and the locally available repos under =tlon-team=.
 
 #+findex: tlon-repos-pull-babel-refs
-- ~tlon-repos-pull-babel-refs~ :: Asynchronously pull from the =babel-refs= repository. This function is called automatically by an idle timer every 5 minutes.
+- ~tlon-repos-pull-babel-refs~ :: Asynchronously pull from the =babel-refs= repository. This function is called automatically by an idle timer every 5 minutes. The timer handle is stored in =tlon-repos-pull-babel-refs-timer= so that re-loading the file cancels the previous schedule before registering a new one, preventing stacked duplicate timers.
 
 ** Git-crypt helpers
 :PROPERTIES:
