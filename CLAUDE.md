@@ -9,4 +9,17 @@
 
 ## GitHub bot account
 
-When posting comments, replies, or any public-facing GitHub activity on behalf of AI/Claude on tlon repos, use the `tlon-ai` bot account (token: `TLON_AI_GITHUB_TOKEN` in `~/.zshenv-secrets`), not the user's personal `benthamite` account.
+When posting comments, replies, or any public-facing GitHub activity on behalf of AI/Claude on tlon repos, use the `tlon-ai` bot account, not the user's personal `benthamite` account. Retrieve the token from `pass`:
+
+```bash
+GH_TOKEN="$(pass env/tlon-ai-github-token)" gh <command> ...
+```
+
+Before posting, verify the token resolves to the right account:
+
+```bash
+GH_TOKEN="$(pass env/tlon-ai-github-token)" gh api user --jq .login
+# must print: tlon-ai
+```
+
+Never silently fall back to the default `gh` auth — if `pass` can't find the entry or the token resolves to a different account, stop and tell me.
