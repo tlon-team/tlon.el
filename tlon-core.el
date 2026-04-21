@@ -375,6 +375,8 @@
 	   :subproject "rational-animations"
 	   :abbrev "rational-animations"
 	   :type content
+	   :structure multilingual
+	   :file-extensions ("srt")
 	   :key "r"
 	   :help t)
     (:name "meetings-leo-pablo"
@@ -465,7 +467,17 @@ The `:name' property is the full name of the repo, as it appears in the URL. The
 creating `org-mode' TODOs.
 
 If `:help' is non-nil, include this repo in the list of directories scanned by
-`tlon-ai-get-documentation-files'.")
+`tlon-ai-get-documentation-files'.
+
+`:structure' controls how a file's language is derived for counterpart
+navigation.  The default, `per-language', means each repo holds a single
+language (its `:language' property) — e.g. `uqbar-en' and `uqbar-es' are
+siblings paired by subproject.  `multilingual' means the repo contains a
+top-level subdirectory per language, and a file's language is the first path
+component below the repo root.
+
+`:file-extensions' is a list of filename extensions (without the dot) that
+counterpart navigation should scan.  Defaults to (\"md\").")
 
 ;;;;; Email
 

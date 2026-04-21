@@ -55,11 +55,11 @@ A file's counterpart is the original if it is a translation, and a translation
 into some language if it is the original. If the latter, prompt the user for a
 language, unless TARGET-LANGUAGE-CODE is provided."
   (let* ((file (or file (files-extras-buffer-file-name)))
-	 (repo (tlon-get-repo-from-file file)))
-    (pcase (tlon-repo-lookup :subtype :dir repo)
+         (subtype (tlon-counterpart--file-subtype file)))
+    (pcase subtype
       ('translations (tlon-get-counterpart-in-translations file))
       ('originals (tlon-get-counterpart-in-originals file target-language-code))
-      (_ (user-error "Subtype of repo `%s' is neither `originals' nor `translations'" repo)))))
+      (_ (user-error "Cannot determine subtype (originals/translations) for `%s'" file)))))
 
 (declare-function tlon-bibliography-lookup "tlon-bib")
 (defun tlon-counterpart--resolve-hits (hits error-msg &optional prompt)
@@ -74,59 +74,56 @@ Otherwise prompt with PROMPT (defaulting to \"Disambiguate: \")."
 
 (defun tlon-get-counterpart-in-translations (file)
   "Return the original counterpart of translation FILE.
-For articles, resolve by YAML key via the bibliography (translation
-key → original key) and locate the original by key in the English
-originals repos.  For tags and authors, require YAML field
-`original_path' (basename of the English original) and resolve it
-under the English counterpart directory derived from FILE."
-  (let ((yaml-type (tlon-yaml-get-type file)))
-    (pcase yaml-type
-      ("article"
-       (let* ((tr-key (tlon-yaml-get-key "key" file))
-              (orig-key (and tr-key (tlon-get-counterpart-key tr-key)))
-              (repos (tlon-counterpart--original-repos "en"))
-              (hits '()))
-         (unless orig-key
-           (user-error "Translation file %s has no usable key" file))
-         (dolist (r repos)
-           (let* ((table (tlon-counterpart--original-table-for-repo r))
-                  (hit (and table (gethash orig-key table))))
-             (when hit (push hit hits))))
-         (tlon-counterpart--resolve-hits
-          hits
-          (format "No original found for translation key %s" tr-key)
-          "Disambiguate original: ")))
-      ((or "tag" "author")
-       (let* ((op (tlon-yaml-get-key "original_path" file))
-              (op* (and (stringp op) (string-trim op)))
-              (dir (tlon-get-counterpart-dir file "en")))
-         (unless (and op* (not (string-empty-p op*)))
-           (user-error "Translation file %s is missing required original_path" file))
-         (unless dir
-           (user-error "Could not resolve English counterpart directory for %s" file))
-         (let ((p (file-name-concat dir op*)))
-           (if (file-exists-p p) p
-             (user-error "Original %s does not exist under %s" op* dir)))))
-      (_
-       (user-error "Unsupported YAML type %s for counterpart lookup" yaml-type)))))
+For articles and subtitles, resolve by key via the bibliography (translation key
+→ original key) and locate the original by key in the English originals scan
+roots.  For tags and authors, require YAML field `original_path' (basename of
+the English original) and resolve it under the English counterpart directory
+derived from FILE."
+  (pcase (tlon-counterpart--content-kind file)
+    ((or 'article 'subtitle)
+     (let* ((tr-key (tlon-counterpart--file-key file))
+            (orig-key (and tr-key (tlon-get-counterpart-key tr-key)))
+            (roots (tlon-counterpart--original-repos "en"))
+            (hits '()))
+       (unless orig-key
+         (user-error "Translation file %s has no usable key" file))
+       (dolist (r roots)
+         (let* ((table (tlon-counterpart--original-table-for-repo r))
+                (hit (and table (gethash orig-key table))))
+           (when hit (push hit hits))))
+       (tlon-counterpart--resolve-hits
+        hits
+        (format "No original found for translation key %s" tr-key)
+        "Disambiguate original: ")))
+    ((or 'tag 'author)
+     (let* ((op (tlon-yaml-get-key "original_path" file))
+            (op* (and (stringp op) (string-trim op)))
+            (dir (tlon-get-counterpart-dir file "en")))
+       (unless (and op* (not (string-empty-p op*)))
+         (user-error "Translation file %s is missing required original_path" file))
+       (unless dir
+         (user-error "Could not resolve English counterpart directory for %s" file))
+       (let ((p (file-name-concat dir op*)))
+         (if (file-exists-p p) p
+           (user-error "Original %s does not exist under %s" op* dir)))))
+    (_
+     (user-error "Unsupported file kind for counterpart lookup: %s" file))))
 
 (defun tlon-get-counterpart-in-originals (file &optional target-language-code)
   "Return the translation counterpart of original FILE.
-TARGET-LANGUAGE-CODE is the target translation language code.  If
-nil, prompt.  For articles, resolve by YAML key across translation
-repos (original key → translation file).  For tags and authors,
-search translation metadata for entries whose `original_path' equals
-the basename of FILE."
-  (let* ((target-language-code (or target-language-code (tlon-select-language 'code 'babel)))
-         (yaml-type (tlon-yaml-get-type file)))
-    (pcase yaml-type
-      ("article"
-       (let* ((orig-key (tlon-yaml-get-key "key" file))
-              (repos (tlon-counterpart--translation-repos target-language-code))
+TARGET-LANGUAGE-CODE is the target translation language code.  If nil, prompt.
+For articles and subtitles, resolve by key across translation scan roots
+\(original key → translation file).  For tags and authors, search translation
+metadata for entries whose `original_path' equals the basename of FILE."
+  (let ((target-language-code (or target-language-code (tlon-select-language 'code 'babel))))
+    (pcase (tlon-counterpart--content-kind file)
+      ((or 'article 'subtitle)
+       (let* ((orig-key (tlon-counterpart--file-key file))
+              (roots (tlon-counterpart--translation-repos target-language-code))
               (hits '()))
          (unless orig-key
            (user-error "Original file %s has no key" file))
-         (dolist (repo repos)
+         (dolist (repo roots)
            (let* ((table (tlon-counterpart--translation-table-for-repo repo))
                   (hit (and table (gethash orig-key table))))
              (when hit (push hit hits))))
@@ -135,8 +132,9 @@ the basename of FILE."
           (format "No translation found for %s in %s"
                   (file-name-nondirectory file) target-language-code)
           "Disambiguate translation: ")))
-      ((or "tag" "author")
-       (let* ((orig-base (file-name-nondirectory file))
+      ((and (or 'tag 'author) kind)
+       (let* ((yaml-type (symbol-name kind))
+              (orig-base (file-name-nondirectory file))
               (orig-repo (tlon-get-repo-from-file file))
               (orig-lang (tlon-repo-lookup :language :dir orig-repo))
               (orig-bare (tlon-get-bare-dir file))
@@ -151,8 +149,8 @@ the basename of FILE."
                           (all (tlon-metadata-lookup-all meta "file" "original_path" orig-base "type" yaml-type)))
                      (dolist (h all) (push h hits)))
                  (error
-		  (message "Warning: error scanning counterpart: %s" (error-message-string err))
-		  nil)))))
+                  (message "Warning: error scanning counterpart: %s" (error-message-string err))
+                  nil)))))
          (setq hits (delete-dups hits))
          (tlon-counterpart--resolve-hits
           hits
@@ -160,7 +158,7 @@ the basename of FILE."
                   (file-name-nondirectory file) target-language-code)
           "Disambiguate translation: ")))
       (_
-       (user-error "Unsupported YAML type %s for counterpart lookup" yaml-type)))))
+       (user-error "Unsupported file kind for counterpart lookup: %s" file)))))
 
 (defun tlon-get-counterpart-repo (&optional file)
   "Get the counterpart repo of FILE.
@@ -276,25 +274,29 @@ For example, if PATH is
   "Open the counterpart of file in FILE and move point to matching position.
 If FILE is nil, open the counterpart of the file visited by the current buffer.
 If called with a prefix argument, or OTHER-WIN is non-nil, open the counterpart
-in the other window."
+in the other window.
+
+Paragraph-level point alignment only runs when both the source and the
+counterpart are Markdown files; for other formats (e.g. `.srt' subtitles) the
+counterpart is simply opened."
   (interactive "P")
   (unless file
     (save-buffer))
   (if-let* ((file (or file (buffer-file-name)))
-	    (counterpart (tlon-get-counterpart file)))
+            (counterpart (tlon-get-counterpart file)))
       (let* ((fun (if other-win #'find-file-other-window #'find-file))
-	     (paragraphs (tlon-get-number-of-paragraphs
-			  (point-min)
-			  (point)))
-	     (offset (if (tlon-is-between-paragraphs-p) -1 0)))
-	(funcall fun counterpart)
-	(goto-char (or (cdr (tlon-get-delimited-region-pos
-			     tlon-yaml-delimiter))
-		       (point-min)))
-	(markdown-forward-paragraph (- paragraphs offset))
-	;; Advance past the paragraph delimiter so point lands inside the
-	;; target paragraph, not on its boundary.
-	(goto-char (1+ (point))))
+             (markdown-p (and (string-suffix-p ".md" file)
+                              (string-suffix-p ".md" counterpart)))
+             (paragraphs (and markdown-p
+                              (tlon-get-number-of-paragraphs (point-min) (point))))
+             (offset (and markdown-p
+                          (if (tlon-is-between-paragraphs-p) -1 0))))
+        (funcall fun counterpart)
+        (when markdown-p
+          (goto-char (or (cdr (tlon-get-delimited-region-pos tlon-yaml-delimiter))
+                         (point-min)))
+          (markdown-forward-paragraph (- paragraphs offset))
+          (goto-char (1+ (point)))))
     (message "Counterpart not found for file `%s'. Call `tlon-yaml-guess-english-counterpart' from translation" file)))
 
 (autoload 'dired-get-file-for-visit "dired")
@@ -312,16 +314,16 @@ If called with a prefix ARG, open the counterpart in the other window."
 ;;;###autoload
 (defun tlon-open-counterpart-dwim (&optional arg file)
   "Open the counterpart of file in FILE as appropriate.
-If called in `markdown-mode', open FILE’s counterpart. If called in
-`dired-mode', jump to its counterpart’s Dired buffer.
+In `dired-mode', jump to the counterpart's Dired buffer.  Otherwise (e.g. in
+`markdown-mode' or a subtitle buffer), open FILE's counterpart.
 
 If FILE is nil, act on the file at point or visited in the current buffer.
 
 If called with a prefix ARG, open the counterpart in the other window."
   (interactive "P")
   (pcase major-mode
-    ('markdown-mode (tlon-open-counterpart arg file))
-    ('dired-mode (tlon-open-counterpart-in-dired arg file))))
+    ('dired-mode (tlon-open-counterpart-in-dired arg file))
+    (_ (tlon-open-counterpart arg file))))
 
 ;;;###autoload
 (defun tlon-open-counterpart-in-other-window-dwim (&optional file)
@@ -365,45 +367,46 @@ lookups reflect the new state of the filesystem."
     (clrhash tlon-counterpart--orig->trans-cache)
     (clrhash tlon-counterpart--orig-key->orig-file-cache)))
 
-(defun tlon-counterpart--uqbar-repo-p (repo-dir)
-  "Return non-nil iff REPO-DIR belongs to subproject \"uqbar\"."
-  (string= "uqbar" (tlon-repo-lookup :subproject :dir repo-dir)))
-
 (defun tlon-counterpart--translation-repos (language)
-  "Return a list of translation repo dirs for LANGUAGE."
-  (tlon-repo-lookup-all :dir :language language :subtype 'translations))
+  "Return a list of directories to scan for translations in LANGUAGE."
+  (tlon-counterpart--scan-roots language 'translations))
 
 (defun tlon-counterpart--original-repos (language)
-  "Return a list of originals repo dirs for LANGUAGE."
-  (tlon-repo-lookup-all :dir :language language :subtype 'originals))
+  "Return a list of directories to scan for originals in LANGUAGE."
+  (tlon-counterpart--scan-roots language 'originals))
 
-(defun tlon-counterpart--translation-table-for-repo (repo-dir)
-  "Return a hash table mapping original keys to translation files in REPO-DIR.
-All translation repos store YAML ‘key’ as the translation key; map it to the
-original key via `tlon-get-counterpart-key'.
-
-The table is cached in `tlon-counterpart--orig->trans-cache'."
-  (or (gethash repo-dir tlon-counterpart--orig->trans-cache)
+(defun tlon-counterpart--translation-table-for-repo (scan-root)
+  "Return a hash table mapping original keys to translation files under SCAN-ROOT.
+SCAN-ROOT is either a per-language translation repo directory or a language
+subdirectory in a multilingual repo.  Files are keyed via
+`tlon-counterpart--file-key' and mapped to their original key via
+`tlon-get-counterpart-key'.  The table is cached in
+`tlon-counterpart--orig->trans-cache'."
+  (or (gethash scan-root tlon-counterpart--orig->trans-cache)
       (puthash
-       repo-dir
-       (let* ((table (make-hash-table :test #'equal)))
-         (dolist (file (directory-files-recursively repo-dir "\\.md\\'"))
-           (when-let ((tr-key (ignore-errors (tlon-yaml-get-key "key" file))))
+       scan-root
+       (let* ((table (make-hash-table :test #'equal))
+              (rx (tlon-counterpart--scan-root-extensions-regexp scan-root)))
+         (dolist (file (directory-files-recursively scan-root rx))
+           (when-let ((tr-key (tlon-counterpart--file-key file)))
              (let ((orig-key (tlon-get-counterpart-key tr-key)))
                (when orig-key
                  (puthash orig-key file table)))))
          table)
        tlon-counterpart--orig->trans-cache)))
 
-(defun tlon-counterpart--original-table-for-repo (repo-dir)
-  "Return a hash table mapping original keys to original files in REPO-DIR.
-The table is cached in `tlon-counterpart--orig-key->orig-file-cache'."
-  (or (gethash repo-dir tlon-counterpart--orig-key->orig-file-cache)
+(defun tlon-counterpart--original-table-for-repo (scan-root)
+  "Return a hash table mapping original keys to original files under SCAN-ROOT.
+SCAN-ROOT is either a per-language originals repo directory or the English
+subdirectory of a multilingual repo.  The table is cached in
+`tlon-counterpart--orig-key->orig-file-cache'."
+  (or (gethash scan-root tlon-counterpart--orig-key->orig-file-cache)
       (puthash
-       repo-dir
-       (let ((table (make-hash-table :test #'equal)))
-         (dolist (file (directory-files-recursively repo-dir "\\.md\\'"))
-           (when-let ((ok (ignore-errors (tlon-yaml-get-key "key" file))))
+       scan-root
+       (let ((table (make-hash-table :test #'equal))
+             (rx (tlon-counterpart--scan-root-extensions-regexp scan-root)))
+         (dolist (file (directory-files-recursively scan-root rx))
+           (when-let ((ok (tlon-counterpart--file-key file)))
              (puthash ok file table)))
          table)
        tlon-counterpart--orig-key->orig-file-cache)))
@@ -417,6 +420,103 @@ If no file is found, return nil."
     (seq-find (lambda (file)
                 (string= key (tlon-yaml-get-key "key" file)))
               (directory-files-recursively repo "\\.md\\'"))))
+
+;;;;;  Structural helpers
+
+;; These helpers abstract over two repo layouts.  `per-language' (the default)
+;; means one repo per language, identified by the repo's `:language' and
+;; `:subtype' properties (e.g. `uqbar-en', `uqbar-es').  `multilingual' means
+;; one repo containing a top-level subdirectory per language (e.g.
+;; `rational-animations/en/', `rational-animations/es/'): a file's language is
+;; the first path component below the repo root, English files are originals,
+;; and all other languages are translations.
+
+(defun tlon-counterpart--file-subtype (file)
+  "Return `originals' or `translations' for FILE.
+For per-language repos this reads the repo's `:subtype'.  For multilingual
+repos, English files are originals and all other languages are translations."
+  (when-let* ((repo (tlon-get-repo-from-file file)))
+    (pcase (tlon-counterpart--repo-structure repo)
+      ('multilingual
+       (if (string= "en" (tlon-counterpart--file-language file))
+           'originals
+         'translations))
+      (_ (tlon-repo-lookup :subtype :dir repo)))))
+
+(defun tlon-counterpart--file-language (file)
+  "Return the language code of FILE, honoring its repo's structure.
+For per-language repos this is the repo's `:language' property; for
+multilingual repos it is the first path component of FILE below the repo
+root."
+  (when-let* ((repo (tlon-get-repo-from-file file)))
+    (pcase (tlon-counterpart--repo-structure repo)
+      ('multilingual
+       (car (split-string (file-relative-name file repo) "/" t)))
+      (_ (tlon-repo-lookup :language :dir repo)))))
+
+(defun tlon-counterpart--repo-structure (repo-dir)
+  "Return the structural model of REPO-DIR.
+One of `per-language' (the default — one repo per language) or
+`multilingual' (one repo with a top-level subdirectory per language)."
+  (or (tlon-repo-lookup :structure :dir repo-dir) 'per-language))
+
+(defun tlon-counterpart--content-kind (file)
+  "Return the content kind of FILE for counterpart dispatch.
+One of `article', `tag', `author', `subtitle', or nil if unsupported."
+  (cond
+   ((string-suffix-p ".srt" file) 'subtitle)
+   (t (pcase (ignore-errors (tlon-yaml-get-type file))
+        ("article" 'article)
+        ("tag" 'tag)
+        ("author" 'author)
+        (_ nil)))))
+
+(defun tlon-counterpart--file-key (file)
+  "Return the bibliography key associated with FILE.
+Subtitle (`.srt') files use their filename stem as the key.  Markdown files
+read the YAML `key' field."
+  (cond
+   ((string-suffix-p ".srt" file)
+    (file-name-base file))
+   (t (ignore-errors (tlon-yaml-get-key "key" file)))))
+
+(defun tlon-counterpart--scan-roots (language subtype)
+  "Return directories to scan for LANGUAGE content of SUBTYPE.
+For per-language repos, the scan root is the repo directory.  For multilingual
+repos, it is <repo>/<LANGUAGE> when that subdirectory exists — English is
+considered originals and any other language is a translation."
+  (let (roots)
+    (dolist (spec tlon-repos)
+      (when (eq (plist-get spec :type) 'content)
+        (let* ((name (plist-get spec :name))
+               (dir (ignore-errors (tlon-repo-lookup :dir :name name)))
+               (structure (or (plist-get spec :structure) 'per-language)))
+          (when dir
+            (pcase structure
+              ('per-language
+               (when (and (equal language (plist-get spec :language))
+                          (eq subtype (plist-get spec :subtype)))
+                 (push dir roots)))
+              ('multilingual
+               (when (or (and (eq subtype 'originals) (string= language "en"))
+                         (and (eq subtype 'translations) (not (string= language "en"))))
+                 (let ((sub (file-name-as-directory (file-name-concat dir language))))
+                   (when (file-directory-p sub)
+                     (push sub roots))))))))))
+    (nreverse roots)))
+
+(defun tlon-counterpart--scan-root-extensions-regexp (scan-root)
+  "Return a regexp matching files eligible for counterpart lookup in SCAN-ROOT."
+  (let ((repo (or (tlon-get-repo-from-file scan-root) scan-root)))
+    (tlon-counterpart--extensions-regexp repo)))
+
+(defun tlon-counterpart--extensions-regexp (repo-dir)
+  "Return a regexp matching files in REPO-DIR eligible for counterpart lookup."
+  (concat "\\." (regexp-opt (tlon-counterpart--file-extensions repo-dir)) "\\'"))
+
+(defun tlon-counterpart--file-extensions (repo-dir)
+  "Return the list of filename extensions (without dot) scanned in REPO-DIR."
+  (or (tlon-repo-lookup :file-extensions :dir repo-dir) '("md")))
 
 ;;;;; Translate relative links
 
