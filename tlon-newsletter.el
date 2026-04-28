@@ -60,16 +60,21 @@ from the candidates."
 		  tlon-newsletter-numeros-subdir))))
 
 (defun tlon-newsletter--issue-files (&optional exclude)
-  "Return all newsletter issue files in chronological order.
+  "Return non-empty newsletter issue files in chronological order.
 Issue files follow a YYYY-MM.md naming pattern in
-`tlon-newsletter-numeros-subdir'.  If EXCLUDE is a file path, omit any
-file whose truename matches it."
-  (let* ((files (directory-files tlon-newsletter-numeros-subdir t
-				 "\\`[0-9]\\{4\\}-[0-9]\\{2\\}\\.md\\'"))
-	 (filtered (if (and exclude (file-exists-p exclude))
-		       (cl-remove-if (lambda (f) (file-equal-p f exclude)) files)
-		     files)))
-    (sort filtered #'string<)))
+`tlon-newsletter-numeros-subdir'.  Files whose size is 0 bytes are
+treated as placeholders and skipped.  If EXCLUDE is a file path, omit
+any file whose truename matches it."
+  (let ((files (directory-files tlon-newsletter-numeros-subdir t
+				"\\`[0-9]\\{4\\}-[0-9]\\{2\\}\\.md\\'")))
+    (sort (cl-remove-if
+	   (lambda (f)
+	     (or (zerop (file-attribute-size (file-attributes f)))
+		 (and exclude
+		      (file-exists-p exclude)
+		      (file-equal-p f exclude))))
+	   files)
+	  #'string<)))
 
 ;;;; User options
 
