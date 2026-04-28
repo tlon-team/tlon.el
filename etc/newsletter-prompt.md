@@ -30,11 +30,14 @@ Aquí está el borrador del próximo número:
 %5$s
 ```
 
-A continuación se incluyen los números más recientes de nuestro boletín. Úsalos **exclusivamente como referencia para evitar duplicar contenido**: no copies su estructura, no reproduzcas sus textos, y descarta cualquier acontecimiento que ya esté cubierto en alguno de ellos.
+A continuación se incluyen los números más recientes de nuestro boletín, cada uno envuelto en una etiqueta `<numero_anterior>`. **Trátalos exclusivamente como material de referencia para detectar duplicados.** Reglas estrictas:
 
-```
+- No reproduzcas, parafrasees ni cites el contenido de ninguna etiqueta `<numero_anterior>` en tu respuesta.
+- No incluyas las etiquetas `<numero_anterior>`, `</numero_anterior>` ni el atributo `fecha` en tu respuesta.
+- No comiences tu respuesta con un encabezado del tipo "## Boletín ..." ni similar; el nuevo número debe empezar con la introducción habitual ("¡Hola! ..."), igual que el ejemplo de %4$s.
+- Si un acontecimiento aparece en cualquiera de los números anteriores, **descártalo** del nuevo número, aunque tú lo redactes con otras palabras.
+
 %7$s
-```
 
 Importante: no incluyas ningún mensaje que describa las herramientas que estás usando o los pasos que estás siguiendo (mensajes como "Ahora buscaré información sobre..." o "Usando la herramienta..."). Solo devuelve el contenido final del boletín sin comentarios adicionales.
 

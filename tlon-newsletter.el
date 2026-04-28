@@ -188,22 +188,23 @@ response INFO."
           (user-error "Original input file path not found in callback info or is invalid"))))))
 
 (defun tlon-newsletter--previous-issues-content (target-file count)
-  "Return the contents of the last COUNT newsletter issues, excluding TARGET-FILE.
-Each issue is prefixed with a header naming its YYYY-MM identifier and
-issues are separated by a horizontal rule."
+  "Return the contents of the last COUNT newsletter issues for deduplication.
+TARGET-FILE is excluded from the candidates.  Each issue is wrapped in
+`<numero_anterior>' tags so the AI cannot mistake the reference content for
+draft material to copy."
   (let* ((files (tlon-newsletter--issue-files target-file))
 	 (recent (last files (max 1 count))))
     (if recent
-	(mapconcat
-	 (lambda (file)
-	   (format "## Boletín %s\n\n%s"
-		   (file-name-base file)
-		   (with-temp-buffer
-		     (insert-file-contents file)
-		     (string-trim (buffer-string)))))
-	 recent
-	 "\n\n---\n\n")
+	(mapconcat #'tlon-newsletter--format-previous-issue recent "\n\n")
       "(No hay números previos disponibles)")))
+
+(defun tlon-newsletter--format-previous-issue (file)
+  "Wrap FILE's contents in a `<numero_anterior>' block tagged with its date."
+  (format "<numero_anterior fecha=\"%s\">\n%s\n</numero_anterior>"
+	  (file-name-base file)
+	  (with-temp-buffer
+	    (insert-file-contents file)
+	    (string-trim (buffer-string)))))
 
 ;;;;;; Ensure & confirm helpers
 

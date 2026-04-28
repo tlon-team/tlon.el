@@ -48,7 +48,7 @@ When set, this model overrides the default =gptel= model for newsletter creation
 
 Number of preceding issues to pass to the AI as deduplication context.
 
-The default value is =3=. The contents of the most recent issues (excluding the target file being drafted) are concatenated and embedded in the prompt so the AI can detect items that already appeared and drop them from the new draft.
+The default value is =3=. The contents of the most recent issues (excluding the target file being drafted) are concatenated and embedded in the prompt so the AI can detect items that already appeared and drop them from the new draft. Each issue is wrapped in a =<numero_anterior fecha="YYYY-MM">...</numero_anterior>= XML block so the model treats it as reference material and does not copy its Markdown structure into the generated draft.
 
 * Commands
 :PROPERTIES:
