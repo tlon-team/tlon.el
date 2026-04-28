@@ -72,5 +72,19 @@
   (let ((time (encode-time 0 0 0 1 12 2024)))
     (should (equal '(2025 . 1) (tlon-newsletter--next-year-month time)))))
 
+;;;; tlon-newsletter--today-spanish
+
+(ert-deftest tlon-newsletter-today-spanish-april ()
+  "Format an April date in long Spanish form."
+  (let ((time (encode-time 0 0 0 28 4 2026)))
+    (should (equal "28 de abril de 2026"
+                   (tlon-newsletter--today-spanish time)))))
+
+(ert-deftest tlon-newsletter-today-spanish-january ()
+  "Format a January date in long Spanish form."
+  (let ((time (encode-time 0 0 0 1 1 2025)))
+    (should (equal "1 de enero de 2025"
+                   (tlon-newsletter--today-spanish time)))))
+
 (provide 'tlon-newsletter-test)
 ;;; tlon-newsletter-test.el ends here

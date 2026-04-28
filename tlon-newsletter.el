@@ -48,20 +48,28 @@
   (file-name-concat tlon-package-dir "etc/newsletter-prompt.md")
   "Path to the prompt file used for creating newsletter issues.")
 
-(defun tlon-newsletter--latest-issue-file ()
+(defun tlon-newsletter--latest-issue-file (&optional exclude)
   "Return the path to the most recent newsletter issue file.
-Issue files are expected to follow a YYYY-MM.md naming pattern in
-`tlon-newsletter-numeros-subdir'."
-  (let ((files (directory-files tlon-newsletter-numeros-subdir t
-				"\\`[0-9]\\{4\\}-[0-9]\\{2\\}\\.md\\'")))
+Issue files follow a YYYY-MM.md naming pattern in
+`tlon-newsletter-numeros-subdir'.  If EXCLUDE is a file path, omit it
+from the candidates."
+  (let ((files (tlon-newsletter--issue-files exclude)))
     (if files
-	(car (last (sort files #'string<)))
+	(car (last files))
       (user-error "No newsletter issue files found in %s"
 		  tlon-newsletter-numeros-subdir))))
 
-(defconst tlon-newsletter-sample-issue-file
-  (ignore-errors (tlon-newsletter--latest-issue-file))
-  "File with a sample issue of the newsletter.")
+(defun tlon-newsletter--issue-files (&optional exclude)
+  "Return all newsletter issue files in chronological order.
+Issue files follow a YYYY-MM.md naming pattern in
+`tlon-newsletter-numeros-subdir'.  If EXCLUDE is a file path, omit any
+file whose truename matches it."
+  (let* ((files (directory-files tlon-newsletter-numeros-subdir t
+				 "\\`[0-9]\\{4\\}-[0-9]\\{2\\}\\.md\\'"))
+	 (filtered (if (and exclude (file-exists-p exclude))
+		       (cl-remove-if (lambda (f) (file-equal-p f exclude)) files)
+		     files)))
+    (sort filtered #'string<)))
 
 ;;;; User options
 
@@ -75,6 +83,11 @@ The value is a cons cell whose car is the backend and whose cdr is the model
 itself. See `gptel-extras-ai-models' for the available options. If nil, use the
 default `gptel-model'."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
+  :group 'tlon-newsletter)
+
+(defcustom tlon-newsletter-deduplication-issue-count 3
+  "Number of preceding issues to pass to the AI as deduplication context."
+  :type 'integer
   :group 'tlon-newsletter)
 
 ;;;; Functions
@@ -95,7 +108,6 @@ news. The original input file is then overwritten with this new draft."
       (progn
 	(tlon-newsletter-confirm-when-file-empty content)
 	(tlon-newsletter-ensure-prompt-file-exists)
-	(tlon-newsletter-ensure-sample-issue-file-exists)
 	(tlon-newsletter--process-and-request content input-file-path))
     (user-error "Could not create newsletter issue due to previous errors")))
 
@@ -104,16 +116,28 @@ news. The original input file is then overwritten with this new draft."
   (let* ((raw-prompt (with-temp-buffer
 		       (insert-file-contents tlon-newsletter-prompt-file)
 		       (buffer-string)))
+	 (sample-issue-file (tlon-newsletter--latest-issue-file input-file-path))
 	 (sample-issue-content (with-temp-buffer
-				 (insert-file-contents tlon-newsletter-sample-issue-file)
+				 (insert-file-contents sample-issue-file)
 				 (buffer-string)))
 	 (issue-month (tlon-newsletter-get-issue-month (file-name-base input-file-path)))
 	 (content-year (tlon-newsletter-get-content-year (file-name-base input-file-path)))
 	 (content-month (tlon-newsletter-get-previous-month issue-month))
 	 (content-month-year (format "%s de %s" content-month content-year))
 	 (one-month-ago-timestamp (tlon-newsletter--get-one-month-ago-timestamp))
+	 (today-spanish (tlon-newsletter--today-spanish))
+	 (previous-issues (tlon-newsletter--previous-issues-content
+			   input-file-path
+			   tlon-newsletter-deduplication-issue-count))
 	 (final-prompt (tlon-ai-maybe-edit-prompt
-			(format raw-prompt content-month-year issue-month one-month-ago-timestamp sample-issue-content content))))
+			(format raw-prompt
+				content-month-year
+				issue-month
+				one-month-ago-timestamp
+				sample-issue-content
+				content
+				today-spanish
+				previous-issues))))
     (tlon-make-gptel-request
      final-prompt
      nil
@@ -163,6 +187,24 @@ response INFO."
               (find-file original-file-path)) ; Open the updated file
           (user-error "Original input file path not found in callback info or is invalid"))))))
 
+(defun tlon-newsletter--previous-issues-content (target-file count)
+  "Return the contents of the last COUNT newsletter issues, excluding TARGET-FILE.
+Each issue is prefixed with a header naming its YYYY-MM identifier and
+issues are separated by a horizontal rule."
+  (let* ((files (tlon-newsletter--issue-files target-file))
+	 (recent (last files (max 1 count))))
+    (if recent
+	(mapconcat
+	 (lambda (file)
+	   (format "## Boletín %s\n\n%s"
+		   (file-name-base file)
+		   (with-temp-buffer
+		     (insert-file-contents file)
+		     (string-trim (buffer-string)))))
+	 recent
+	 "\n\n---\n\n")
+      "(No hay números previos disponibles)")))
+
 ;;;;;; Ensure & confirm helpers
 
 (defun tlon-newsletter-ensure-repo-dir-exists ()
@@ -180,11 +222,6 @@ response INFO."
   (unless (file-exists-p tlon-newsletter-prompt-file)
     (user-error "Prompt file not found: %s" tlon-newsletter-prompt-file)))
 
-(defun tlon-newsletter-ensure-sample-issue-file-exists ()
-  "Ensure the sample issue file exists."
-  (unless (file-exists-p tlon-newsletter-sample-issue-file)
-    (user-error "Sample issue file not found: %s" tlon-newsletter-sample-issue-file)))
-
 (defun tlon-newsletter-confirm-when-file-empty (content)
   "Prompt user for confirmation if CONTENT is empty."
   (when (string-blank-p content)
@@ -198,6 +235,17 @@ response INFO."
   (let* ((now (current-time))
          (one-month-ago (time-subtract now (days-to-time 30))))
     (format-time-string "%s" one-month-ago)))
+
+(defun tlon-newsletter--today-spanish (&optional time)
+  "Return TIME (default now) as a long-form Spanish date string.
+Output looks like \"28 de abril de 2026\"."
+  (let* ((dt (decode-time (or time (current-time))))
+         (day (nth 3 dt))
+         (month (nth 4 dt))
+         (year (nth 5 dt))
+         (months '("enero" "febrero" "marzo" "abril" "mayo" "junio"
+                   "julio" "agosto" "septiembre" "octubre" "noviembre" "diciembre")))
+    (format "%d de %s de %d" day (nth (1- month) months) year)))
 
 (defun tlon-newsletter--next-year-month (&optional time)
   "Return the YEAR and MONTH of the next calendar month as a cons cell.

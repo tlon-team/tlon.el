@@ -40,6 +40,16 @@ When set, this model overrides the default =gptel= model for newsletter creation
 (setq tlon-newsletter-model nil) ; Use default gptel model
 #+end_src
 
+** ~tlon-newsletter-deduplication-issue-count~
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-newsletter-deduplication-issue-count
+:END:
+#+vindex: tlon-newsletter-deduplication-issue-count
+
+Number of preceding issues to pass to the AI as deduplication context.
+
+The default value is =3=. The contents of the most recent issues (excluding the target file being drafted) are concatenated and embedded in the prompt so the AI can detect items that already appeared and drop them from the new draft.
+
 * Commands
 :PROPERTIES:
 :CUSTOM_ID: h:commands
@@ -63,12 +73,14 @@ This command automates the drafting of a new newsletter issue. It works as follo
 1. Locates the ="boletin"= repository (as configured in ~tlon-repos~) and targets the next month's issue file (named =YYYY-MM.md=) within the =numeros/= subdirectory. If the file does not exist, it is created.
 2. Reads the content of this file. The file is expected to contain a list of items (URLs or plain text), one per line.
 3. If the file is empty, you are prompted for confirmation before proceeding.
-4. Validates that the prompt file ([[#h:tlon-newsletter-prompt-file][~tlon-newsletter-prompt-file~]]) and sample issue file ([[#h:tlon-newsletter-sample-issue-file][~tlon-newsletter-sample-issue-file~]]) exist.
+4. Validates that the prompt file ([[#h:tlon-newsletter-prompt-file][~tlon-newsletter-prompt-file~]]) exists. The most recent preceding issue is resolved dynamically and used as a formatting sample.
 5. Sends the content to the AI with a prompt that instructs it to:
    - Process each line: if a URL, fetch its content and write a one-paragraph summary in Spanish; if plain text, summarize it directly.
    - Structure the output as a Spanish newsletter in Markdown with sections such as =## Eventos=, =## Anuncios=, =## Articulos=, and =## Oportunidades=.
-   - Use the sample issue for formatting guidance.
-6. The AI has access to DuckDuckGo search and content fetching tools, as well as Slack channel history for the =ae-racionalidad= workspace.
+   - Use the latest preceding issue for formatting guidance.
+   - Exclude events whose date is on or before today's date.
+   - Drop any announcement, event, opportunity, or translation that already appeared in any of the last [[#h:tlon-newsletter-deduplication-issue-count][~tlon-newsletter-deduplication-issue-count~]] issues, which are passed in for deduplication.
+6. The AI has access to Brave search and content fetching tools, as well as Slack channel history for the =ae-racionalidad= workspace.
 7. The resulting draft overwrites the original input file, which is then opened for review.
 
 The model used for the request is controlled by ~tlon-newsletter-model~.
@@ -189,15 +201,7 @@ Path to the =numeros/= subdirectory within the newsletter repository. This is wh
 :END:
 #+vindex: tlon-newsletter-prompt-file
 
-Path to the prompt file used for creating newsletter issues. Located in the =etc/= subdirectory of the =tlon= package directory. This file contains the AI prompt template with format specifiers for the content month, issue month, timestamp, sample issue, and input content.
-
-** ~tlon-newsletter-sample-issue-file~
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-newsletter-sample-issue-file
-:END:
-#+vindex: tlon-newsletter-sample-issue-file
-
-Path to a sample newsletter issue file used as a formatting reference for the AI. Currently points to =2025-08.md= in the =numeros/= subdirectory.
+Path to the prompt file used for creating newsletter issues. Located in the =etc/= subdirectory of the =tlon= package directory. This file contains the AI prompt template with format specifiers for the content month, issue month, Unix timestamp for one month ago, sample issue contents, input content, today's date in Spanish, and the deduplication corpus of preceding issues.
 
 * Indices
 :PROPERTIES:
