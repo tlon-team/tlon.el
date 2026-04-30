@@ -900,9 +900,11 @@ non-nil, run non-interactively on that file without prompting."
            (prompt (format tlon-yaml-suggest-tags-prompt article-content candidates)))
       (message "Requesting tag suggestions for %s …"
                (file-name-nondirectory article-file))
-      (tlon-make-gptel-request prompt nil
-                               (tlon-yaml-suggest-tags-callback article-file title-map)
-                               tlon-yaml-suggest-tags-model t))))
+      (with-temp-buffer
+        (let ((gptel-track-media nil))
+          (tlon-make-gptel-request prompt nil
+                                   (tlon-yaml-suggest-tags-callback article-file title-map)
+                                   tlon-yaml-suggest-tags-model t (current-buffer)))))))
 
 (declare-function tlon-md-read-content "tlon-md")
 (declare-function tlon-md-beginning-of-content "tlon-md")
