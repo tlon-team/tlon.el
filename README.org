@@ -78,6 +78,18 @@ See the individual module documentation for detailed configuration instructions.
 
 The package provides numerous interactive commands. The main point of entry is the main =transient= menu, =tlon-dispatch=.
 
+* Skills
+
+Project-local agent skills for Tlön live under this repository's =.claude/skills/=
+and =.codex/skills/= directories.
+
+** triage-issues
+
+Scans, prioritizes, and batch-resolves open GitHub issues for
+=tlon-team/tlon.el=. It separates read-only triage, local fixes, and externally
+visible closure, and requires explicit authorization before GitHub comments,
+issue closure, or org archiving.
+
 * License
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
