@@ -1047,7 +1047,7 @@ non-nil, exclude the delimiters when returning the region position."
 (defun tlon-get-bare-dir (&optional file in-english)
   "Get the bare directory of FILE.
 A file’s bare directory is its directory minus its repository. For example, the
-bare directory of `~/Dropbox/repos/uqbar-es/autores/' is `autores'.
+bare directory of `~/My Drive/repos/uqbar-es/autores/' is `autores'.
 
 If FILE is nil, return the counterpart repo of the file visited by the current
 buffer. If IN-ENGLISH is non-nil, return the English translation of the bare

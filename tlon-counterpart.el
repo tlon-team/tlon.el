@@ -191,8 +191,8 @@ nil, return the counterpart repo of the file visited by the current buffer."
 (defun tlon-get-counterpart-dir (&optional file target-language-code)
   "Get the counterpart directory of FILE.
 A file's counterpart directory is the directory of that file's counterpart. For
-example, the counterpart directory of `~/Dropbox/repos/uqbar-es/autores/' is
-`~/Dropbox/repos/uqbar-en/authors/'.
+example, the counterpart directory of `~/My Drive/repos/uqbar-es/autores/' is
+`~/My Drive/repos/uqbar-en/authors/'.
 
 If FILE is nil, use the file visited by the current buffer.
 If TARGET-LANGUAGE-CODE is provided, use it to determine the counterpart repo

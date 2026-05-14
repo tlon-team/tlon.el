@@ -204,7 +204,7 @@ The function ~tlon-issue-lookup~ searches the Forge database for the first issue
 In the Tlon content structure, a "bare directory" is the first directory component below the repository root, such as =articulos= or =tags=. These directory names vary by language, and the functions below handle translation between them.
 
 #+findex: tlon-get-bare-dir
-The function ~tlon-get-bare-dir~ returns the bare directory of FILE (or the current buffer's file). For example, for a file at =~/repos/uqbar-es/articulos/my-article.md=, it returns ="articulos"=. If IN-ENGLISH is non-~nil~, it returns the English equivalent (="articles"=).
+The function ~tlon-get-bare-dir~ returns the bare directory of FILE (or the current buffer's file). For example, for a file at =~/My Drive/repos/uqbar-es/articulos/my-article.md=, it returns ="articulos"=. If IN-ENGLISH is non-~nil~, it returns the English equivalent (="articles"=).
 
 #+findex: tlon-get-bare-dir-translation
 The function ~tlon-get-bare-dir-translation~ translates BARE-DIR from SOURCE-LANG to TARGET-LANG using the ~tlon-core-bare-dirs~ translation table.
