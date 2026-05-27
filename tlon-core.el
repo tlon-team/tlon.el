@@ -237,6 +237,7 @@
 	   :subtype translations
 	   :language "sr"
 	   :key "q b"
+	   :url "https://efektivnialtruizam.net"
 	   :help t)
     (:name "uqbar-tr"
 	   :project "babel"
