@@ -91,6 +91,13 @@ derived from FILE."
          (let* ((table (tlon-counterpart--original-table-for-repo r))
                 (hit (and table (gethash orig-key table))))
            (when hit (push hit hits))))
+       ;; Cache miss — invalidate and retry once in case new files were added
+       (when (null hits)
+         (dolist (r roots) (remhash r tlon-counterpart--orig-key->orig-file-cache))
+         (dolist (r roots)
+           (let* ((table (tlon-counterpart--original-table-for-repo r))
+                  (hit (and table (gethash orig-key table))))
+             (when hit (push hit hits)))))
        (tlon-counterpart--resolve-hits
         hits
         (format "No original found for translation key %s" tr-key)
@@ -127,6 +134,13 @@ metadata for entries whose `original_path' equals the basename of FILE."
            (let* ((table (tlon-counterpart--translation-table-for-repo repo))
                   (hit (and table (gethash orig-key table))))
              (when hit (push hit hits))))
+         ;; Cache miss — invalidate and retry once in case new files were added
+         (when (null hits)
+           (dolist (repo roots) (remhash repo tlon-counterpart--orig->trans-cache))
+           (dolist (repo roots)
+             (let* ((table (tlon-counterpart--translation-table-for-repo repo))
+                    (hit (and table (gethash orig-key table))))
+               (when hit (push hit hits)))))
          (tlon-counterpart--resolve-hits
           hits
           (format "No translation found for %s in %s"
