@@ -325,15 +325,64 @@ unlikely to appear in normal text, so it can be safely round-tripped.")
       (replace-regexp-in-string "\n" tlon-deepl-newline-token text 'fixedcase 'literal)
     text))
 
+(defconst tlon-deepl-serbian-cyrillic-to-latin-alist
+  '(;; Digraph letters (must precede single-char entries)
+    ("Љ" . "Lj") ("љ" . "lj")
+    ("Њ" . "Nj") ("њ" . "nj")
+    ("Џ" . "Dž") ("џ" . "dž")
+    ;; Single-char letters
+    ("А" . "A") ("а" . "a")
+    ("Б" . "B") ("б" . "b")
+    ("В" . "V") ("в" . "v")
+    ("Г" . "G") ("г" . "g")
+    ("Д" . "D") ("д" . "d")
+    ("Ђ" . "Đ") ("ђ" . "đ")
+    ("Е" . "E") ("е" . "e")
+    ("Ж" . "Ž") ("ж" . "ž")
+    ("З" . "Z") ("з" . "z")
+    ("И" . "I") ("и" . "i")
+    ("Ј" . "J") ("ј" . "j")
+    ("К" . "K") ("к" . "k")
+    ("Л" . "L") ("л" . "l")
+    ("М" . "M") ("м" . "m")
+    ("Н" . "N") ("н" . "n")
+    ("О" . "O") ("о" . "o")
+    ("П" . "P") ("п" . "p")
+    ("Р" . "R") ("р" . "r")
+    ("С" . "S") ("с" . "s")
+    ("Т" . "T") ("т" . "t")
+    ("Ћ" . "Ć") ("ћ" . "ć")
+    ("У" . "U") ("у" . "u")
+    ("Ф" . "F") ("ф" . "f")
+    ("Х" . "H") ("х" . "h")
+    ("Ц" . "C") ("ц" . "c")
+    ("Ч" . "Č") ("ч" . "č")
+    ("Ш" . "Š") ("ш" . "š"))
+  "Alist mapping Serbian Cyrillic characters to their Latin equivalents.
+Digraph entries (Љ→Lj, Њ→Nj, Џ→Dž) appear first so they are matched
+before the component single characters.")
+
+(defun tlon-deepl--serbian-cyrillic-to-latin (text)
+  "Convert Serbian Cyrillic characters in TEXT to Latin script."
+  (let ((case-fold-search nil)
+        (result text))
+    (dolist (pair tlon-deepl-serbian-cyrillic-to-latin-alist result)
+      (setq result (replace-regexp-in-string
+                    (regexp-quote (car pair)) (cdr pair) result 'fixedcase 'literal)))))
+
 (defun tlon-deepl--translation-text (translation-alist)
   "Extract and post-process the \"text\" field from TRANSLATION-ALIST.
 
-This helper guarantees the newline workaround is applied
-consistently, so callers do not need to invoke
-`tlon-deepl--postprocess-text' directly."
+This helper guarantees the newline workaround and Serbian
+Cyrillic-to-Latin transliteration are applied consistently, so
+callers do not need to invoke them directly."
   (when translation-alist
-    (tlon-deepl--postprocess-text
-     (alist-get "text" translation-alist nil nil #'string=))))
+    (let ((text (tlon-deepl--postprocess-text
+                 (alist-get "text" translation-alist nil nil #'string=))))
+      (when text
+        (if (string= tlon-translate-target-language "sr")
+            (tlon-deepl--serbian-cyrillic-to-latin text)
+          text)))))
 
 (defun tlon-deepl--postprocess-text (text)
   "Replace `tlon-deepl-newline-token' in TEXT with real newlines when needed."

@@ -203,6 +203,10 @@ The format argument is the capitalized target language name.")
 (defvar tlon-translate--active-revision-processes nil
   "List of active processes launched by `tlon-translate' revision commands.")
 
+(defvar tlon-translate--no-glossary-decisions nil
+  "Hash table caching per-pair glossary-less translation decisions during batch runs.
+Keys are \"SRC-DST\" strings, values are `yes' or `no'.")
+
 (defvar tlon-translate--external-abstracts-running nil
   "Non-nil while `tlon-translate--external-abstracts' runs to prevent re-entry.")
 
@@ -509,10 +513,11 @@ the `abstract-translations.json' store for entries cited across
 If LANGS is non-nil, it is a list of language names (e.g., \\='(\"spanish\")) to
 consider for case (II). When nil, prompts the user."
   (interactive)
-  (cl-letf (((symbol-function 'kill-new) (lambda (&rest _args) nil))
-            ((symbol-function 'kill-append) (lambda (&rest _args) nil)))
-    (tlon-translate--internal-abstracts)
-    (tlon-translate--external-abstracts langs)))
+  (let ((tlon-translate--no-glossary-decisions (make-hash-table :test #'equal)))
+    (cl-letf (((symbol-function 'kill-new) (lambda (&rest _args) nil))
+              ((symbol-function 'kill-append) (lambda (&rest _args) nil)))
+      (tlon-translate--internal-abstracts)
+      (tlon-translate--external-abstracts langs))))
 
 ;;;###autoload
 (defun tlon-translate-missing-abstracts-all-languages ()
@@ -520,10 +525,11 @@ consider for case (II). When nil, prompts the user."
 This runs both the internal DB pass and the external JSON-store pass, but
 avoids prompting by supplying `tlon-project-target-languages' as targets."
   (interactive)
-  (cl-letf (((symbol-function 'kill-new) (lambda (&rest _args) nil))
-            ((symbol-function 'kill-append) (lambda (&rest _args) nil)))
-    (tlon-translate--internal-abstracts)
-    (tlon-translate--external-abstracts tlon-project-target-languages)))
+  (let ((tlon-translate--no-glossary-decisions (make-hash-table :test #'equal)))
+    (cl-letf (((symbol-function 'kill-new) (lambda (&rest _args) nil))
+              ((symbol-function 'kill-append) (lambda (&rest _args) nil)))
+      (tlon-translate--internal-abstracts)
+      (tlon-translate--external-abstracts tlon-project-target-languages))))
 
 ;;;###autoload
 (defun tlon-translate-abstract-here ()
@@ -572,9 +578,23 @@ such entry exists, store it in abstract-translations.json."
                               (tlon-translate--db-set-abstract key translated)
                               (tlon-translate--log "Set abstract for %s (from %s)" key translation-of))))
                         no-glossary)))
-                    (_
-                     (tlon-translate--log "Skipping abstract for %s -> %s: no suitable glossary found"
-					  translation-of dst-code))))))
+                    ('prompt
+                     (if (y-or-n-p (format "No %s→%s glossary found. Translate anyway? "
+                                           (upcase src-code) (upcase dst-code)))
+                         (progn
+                           (tlon-translate--log "Translating abstract of %s → setting into %s (no glossary)"
+                                                translation-of key)
+                           (tlon-deepl-translate
+                            (tlon-bib-remove-braces orig-abstract) dst-code src-code
+                            (lambda ()
+                              (let ((translated (tlon-translate--get-deepl-translation-from-buffer)))
+                                (when (and translated (stringp translated)
+                                           (not (string-blank-p (string-trim translated))))
+                                  (tlon-translate--db-set-abstract key translated)
+                                  (tlon-translate--log "Set abstract for %s (from %s)" key translation-of))))
+                            t))
+                       (tlon-translate--log "Skipping abstract for %s -> %s: user declined"
+                                            translation-of dst-code)))))))
           (tlon-translate-abstract-interactive key text source-lang-code))))))
 
 (defun tlon-translate--external-abstracts (&optional langs)
@@ -758,8 +778,7 @@ If the original entry lacks an abstract, log a message and skip."
                           (both-in-project (and (member src-name tlon-project-languages)
                                                 (member dst-name tlon-project-languages))))
                      (cond
-                      ;; Only translate for internal DB abstracts when both languages are project languages,
-                      ;; source is English, DeepL supports glossaries, and an EN→DST glossary exists.
+                      ;; Both languages are project languages and a glossary exists.
                       ((and both-in-project src-en supports glossary-id)
                        (tlon-translate--log "Translating abstract of %s → setting into %s" skey tkey)
                        (tlon-deepl-translate
@@ -775,9 +794,22 @@ If the original entry lacks an abstract, log a message and skip."
                       ((not both-in-project)
                        (tlon-translate--log "Skipping abstract for %s -> %s: non-project language pair" skey dst)
                        (next))
-                      ;; Otherwise, we require a glossary and don't have one.
+                      ;; No glossary available — prompt once per pair.
+                      ((tlon-translate--no-glossary-approved-p src dst)
+                       (tlon-translate--log "Translating abstract of %s → setting into %s (no glossary)" skey tkey)
+                       (tlon-deepl-translate
+                        text dst src
+                        (lambda ()
+                          (let ((translated (tlon-translate--get-deepl-translation-from-buffer)))
+                            (when (and translated (stringp translated) (not (string-blank-p (string-trim translated))))
+                              (tlon-translate--db-set-abstract tkey translated)
+                              (setq changed-p t)
+                              (tlon-translate--log "Set abstract for %s (from %s)" tkey skey)))
+                          (next))
+                        t))
+                      ;; User declined.
                       (t
-                       (tlon-translate--log "Skipping abstract for %s -> %s: no suitable glossary found" skey dst)
+                       (tlon-translate--log "Skipping abstract for %s -> %s: user declined" skey dst)
                        (next)))))))))
         (next)))))
 
@@ -885,9 +917,24 @@ Otherwise, store it in abstract-translations.json."
             (let* ((mode (tlon-translate--deepl-glossary-mode source-lang-code target-lang))
                    (current-db-abs (tlon-bibliography-lookup "=key=" db-trans-key "abstract")))
               (pcase mode
-                ('skip
-                 (message "Skipping %s -> %s: %s-%s glossary missing"
-                          key target-lang (upcase source-lang-code) (upcase target-lang)))
+                ('prompt
+                 (if (y-or-n-p (format "No %s→%s glossary found. Translate anyway? "
+                                       (upcase source-lang-code) (upcase target-lang)))
+                     (when (or (null current-db-abs)
+                               (string-blank-p (string-trim current-db-abs))
+                               (y-or-n-p (format "Translation entry %s already has an abstract. Overwrite? " db-trans-key)))
+                       (message "Initiating translation for %s -> %s into db.bib entry %s (no glossary)"
+                                key target-lang-name db-trans-key)
+                       (tlon-deepl-translate
+                        (tlon-bib-remove-braces text) target-lang source-lang-code
+                        (lambda ()
+                          (let ((translated (tlon-translate--get-deepl-translation-from-buffer)))
+                            (when (and translated (stringp translated)
+                                       (not (string-blank-p (string-trim translated))))
+                              (tlon-translate--db-set-abstract db-trans-key translated)
+                              (message "Set abstract for %s (from %s)" db-trans-key key))))
+                        t))
+                   (message "Skipping %s -> %s: user declined" key target-lang)))
                 (_
                  (when (or (null current-db-abs)
                            (string-blank-p (string-trim current-db-abs))
@@ -902,14 +949,25 @@ Otherwise, store it in abstract-translations.json."
                                    (not (string-blank-p (string-trim translated))))
                           (tlon-translate--db-set-abstract db-trans-key translated)
                           (message "Set abstract for %s (from %s)" db-trans-key key))))
-                    (eq mode 'allow))))))
+                    (tlon-translate--glossary-mode-no-glossary-p mode)))))))
           ;; No DB translation entry → store in JSON as before
           (let* ((existing-translation (tlon-translate--get-existing-abstract-translation key target-lang))
                  (mode (tlon-translate--deepl-glossary-mode source-lang-code target-lang)))
             (pcase mode
-              ('skip
-               (message "Skipping %s -> %s: %s-%s glossary missing"
-                        key target-lang (upcase source-lang-code) (upcase target-lang)))
+              ('prompt
+               (if (y-or-n-p (format "No %s→%s glossary found. Translate anyway? "
+                                     (upcase source-lang-code) (upcase target-lang)))
+                   (if (and existing-translation
+                            (not (y-or-n-p (format "Translation for %s into %s already exists. Retranslate? "
+                                                   key target-lang-name))))
+                       (message "Translation for %s into %s aborted by user." key target-lang-name)
+                     (message "Initiating translation for %s -> %s (JSON, no glossary)"
+                              key target-lang-name)
+                     (tlon-deepl-translate
+                      (tlon-bib-remove-braces text) target-lang source-lang-code
+                      (tlon-translate--json-abstract-write-callback key target-lang)
+                      t))
+                 (message "Skipping %s -> %s: user declined" key target-lang)))
               (_
                (if (and existing-translation
                         (not (y-or-n-p (format "Translation for %s into %s already exists. Retranslate? "
@@ -920,7 +978,7 @@ Otherwise, store it in abstract-translations.json."
                  (tlon-deepl-translate
                   (tlon-bib-remove-braces text) target-lang source-lang-code
                   (tlon-translate--json-abstract-write-callback key target-lang)
-                  (eq mode 'allow)))))))))))
+                  (tlon-translate--glossary-mode-no-glossary-p mode))))))))))
 
 (defvar tlon-project-target-languages)
 (defun tlon-translate-abstract-non-interactive (key text source-lang-code langs)
@@ -943,12 +1001,18 @@ nil, use `tlon-project-target-languages'."
                    (push language initiated-langs)
                    (message "Initiating translation for %s -> %s%s"
                             key target-lang
-                            (if no-glossary " (no glossary required)" ""))
+                            (if no-glossary " (no glossary)" ""))
                    (tlon-deepl-translate (tlon-bib-remove-braces text) target-lang source-lang-code
                                          (tlon-translate--json-abstract-write-callback key target-lang)
                                          no-glossary)))
-                (_
-                 (message "Skipping %s -> %s: no suitable glossary found" key target-lang)))))))
+                ('prompt
+                 (when (tlon-translate--no-glossary-approved-p source-lang-code target-lang)
+                   (push language initiated-langs)
+                   (message "Initiating translation for %s -> %s (no glossary)"
+                            key target-lang)
+                   (tlon-deepl-translate (tlon-bib-remove-braces text) target-lang source-lang-code
+                                         (tlon-translate--json-abstract-write-callback key target-lang)
+                                         t))))))))
       (when initiated-langs
 	(message "Finished initiating translations for abstract of `%s' into: %s"
 		 key (string-join (reverse initiated-langs) ", "))))))
@@ -971,7 +1035,8 @@ The return value is one of the following symbols:
 - `allow': at least one language is outside project languages; translation can
   proceed without requiring a glossary.
 
-- `skip': a glossary would be required but is not available."
+- `prompt': both languages are project languages but no glossary is available;
+  the caller should ask the user whether to translate without a glossary."
   (let* ((glossary-id (tlon-lookup tlon-deepl-glossaries
                                    "glossary_id"
                                    "source_lang" source-lang-code
@@ -983,14 +1048,31 @@ The return value is one of the following symbols:
     (cond
      ((and both-in-project glossary-id) 'require)
      ((not both-in-project) 'allow)
-     (t 'skip))))
+     (t 'prompt))))
 
 (defun tlon-translate--glossary-mode-no-glossary-p (mode)
   "Return non-nil when glossary MODE means no glossary is required.
 MODE is a symbol returned by `tlon-translate--deepl-glossary-mode':
-`require' means a glossary exists (no-glossary nil), `allow' means
-translation can proceed without one (no-glossary t)."
-  (eq mode 'allow))
+`require' means a glossary exists (no-glossary nil), `allow' and
+`prompt' mean translation can proceed without one (no-glossary t)."
+  (memq mode '(allow prompt)))
+
+(defun tlon-translate--no-glossary-approved-p (src dst)
+  "Return non-nil if SRC→DST translation without glossary is approved.
+During batch runs, prompt at most once per pair and cache the answer in
+`tlon-translate--no-glossary-decisions'.  Outside batch context, prompt
+every time."
+  (if (hash-table-p tlon-translate--no-glossary-decisions)
+      (let* ((key (concat src "-" dst))
+             (cached (gethash key tlon-translate--no-glossary-decisions 'unasked)))
+        (if (eq cached 'unasked)
+            (let ((approved (y-or-n-p (format "No %s→%s glossary found. Translate anyway? "
+                                              (upcase src) (upcase dst)))))
+              (puthash key approved tlon-translate--no-glossary-decisions)
+              approved)
+          cached))
+    (y-or-n-p (format "No %s→%s glossary found. Translate anyway? "
+                       (upcase src) (upcase dst)))))
 
 (defun tlon-translate--suppress-file-change-prompt (file thunk)
   "Call THUNK while suppressing file-change prompts, then silently revert FILE.
