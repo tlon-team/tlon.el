@@ -134,6 +134,7 @@ Defaults to the current buffer if no FILE is specified."
       (copy-region-as-kill (point-min) (point-max))))
   (message "Copied the contents of the region to kill ring"))
 
+;;;###autoload
 (defun tlon-copy-dwim ()
   "Copy the contents of the region or buffer to the kill ring."
   (interactive)
