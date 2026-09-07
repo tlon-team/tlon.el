@@ -86,9 +86,10 @@ and =.codex/skills/= directories.
 ** triage-issues
 
 Scans, prioritizes, and batch-resolves open GitHub issues for
-=tlon-team/tlon.el=. It separates read-only triage, local fixes, and externally
-visible closure, and requires explicit authorization before GitHub comments,
-issue closure, or org archiving.
+=tlon-team/tlon.el=. It keeps triage, verified local fixes, GitHub publication
+and closure, and Org archiving separately scoped. It tracks processed issues
+across batches, checks the bot identity and publication results, and archives
+only an unambiguous matching Org heading.
 
 * License
 
