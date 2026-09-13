@@ -436,7 +436,7 @@ The constant ~tlon-project-languages~ holds the list of all languages in the Bab
 The constant ~tlon-project-target-languages~ holds ~tlon-project-languages~ minus ="english"=, representing the languages into which content is translated.
 
 #+vindex: tlon-languages-properties
-The constant ~tlon-languages-properties~ is a comprehensive table of language properties. Each entry is a plist with ~:name~, ~:standard~ (the standardized BibTeX language name), ~:code~ (ISO 639-1), ~:locale~, and optionally ~:iso-639-2~. This table covers over 80 languages and is used by the language selection and validation functions.
+The constant ~tlon-languages-properties~ is a comprehensive table of language properties. Each entry is a plist with ~:name~, ~:standard~ (the standardized BibTeX language name), ~:code~ (ISO 639-1), ~:locale~, and optionally ~:iso-639-2~. Polish includes the ~pol~ ISO 639-2 code used by OCR language selection. This table covers over 80 languages and is used by the language selection and validation functions.
 
 #+vindex: tlon-translation-language
 The variable ~tlon-translation-language~ holds the current target translation language as an ISO 639-1 code. The default is ="es"= (Spanish). It is set by ~tlon-set-translation-language~ ([[info:tlon][tlon]]).
