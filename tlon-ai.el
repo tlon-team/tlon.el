@@ -1085,10 +1085,12 @@ Messages refer to paragraphs with one-based numbering."
 (declare-function tlon-bib--should-dispatch-to-batch-p "tlon-bib")
 (declare-function tlon-batch-set-abstracts "tlon-bib")
 ;;;###autoload
-(defun tlon-get-abstract-with-or-without-ai (&optional interactive-p)
+(defun tlon-get-abstract-with-or-without-ai (&optional interactive-p preserve-existing)
   "Try to get an abstract using non-AI methods; if unsuccessful, use AI.
 Non-AI handling is delegated to `tlon-fetch-and-set-abstract' and AI
 handling to `tlon-get-abstract-with-ai'; see their docstrings.
+PRESERVE-EXISTING keeps existing abstracts without prompting, including a
+field populated before an asynchronous response arrives.
 
 When INTERACTIVE-P is non-nil (which the `interactive' spec sets to t),
 `tlon-ai-batch-fun' is set, and the buffer is a file-visiting
@@ -1098,17 +1100,17 @@ When INTERACTIVE-P is non-nil (which the `interactive' spec sets to t),
   (require 'tlon-bib)
   (if (tlon-bib--should-dispatch-to-batch-p interactive-p)
       (tlon-batch-set-abstracts (buffer-file-name) 'both)
-    (if (tlon-fetch-and-set-abstract)
+    (if (tlon-fetch-and-set-abstract nil preserve-existing)
 	(let ((buf (current-buffer)))
 	  (run-with-idle-timer 0 nil (lambda ()
 				       (when (buffer-live-p buf)
 					 (with-current-buffer buf
 					   (tlon-ai-batch-continue))))))
-      (tlon-get-abstract-with-ai))))
+      (tlon-get-abstract-with-ai nil nil nil preserve-existing))))
 
 (autoload 'tlon-abstract-may-proceed-p "tlon-bib")
 ;;;###autoload
-(defun tlon-get-abstract-with-ai (&optional file type interactive-p)
+(defun tlon-get-abstract-with-ai (&optional file type interactive-p preserve-existing)
   "Return an abstract of TYPE using AI.
 If FILE is non-nil, get an abstract of its contents. Otherwise,
 
@@ -1127,7 +1129,8 @@ If FILE is non-nil, get an abstract of its contents. Otherwise,
 In all the above cases, the AI will first look for an existing abstract and, if
 it finds one, use it. Otherwise it will create an abstract from scratch.
 
-TYPE is either `abstract' or `synopsis'.
+TYPE is either `abstract' or `synopsis'.  PRESERVE-EXISTING keeps an existing
+abstract without prompting, including one added before the response arrives.
 
 When this command is invoked interactively from a BibTeX buffer with
 `tlon-ai-batch-fun' set (INTERACTIVE-P is non-nil, which the
@@ -1138,13 +1141,13 @@ When this command is invoked interactively from a BibTeX buffer with
   (cond
    ((tlon-bib--should-dispatch-to-batch-p interactive-p)
     (tlon-batch-set-abstracts (buffer-file-name) 'ai))
-   ((tlon-abstract-may-proceed-p)
+   ((tlon-abstract-may-proceed-p preserve-existing)
     (if-let ((language (or (tlon-get-language-in-mode)
 			   (unless tlon-ai-batch-fun
 			     (tlon-select-language)))))
-	(tlon-ai-get-abstract-in-language file language type)
+	(tlon-ai-get-abstract-in-language file language type preserve-existing)
       (tlon-ai-detect-language-in-file
-       file (tlon-ai-get-abstract-from-detected-language file))))
+       file (tlon-ai-get-abstract-from-detected-language file preserve-existing))))
    (t
     (when tlon-debug
       (message "`%s' is scheduling `tlon-ai-batch-continue' via timer" "tlon-get-abstract-with-ai"))
@@ -1194,10 +1197,11 @@ described in the `tlon-get-abstract-with-ai' docstring."
   (interactive)
   (tlon-get-abstract-with-ai-in-file "html"))
 
-(defun tlon-ai-get-abstract-in-language (file language &optional type)
+(defun tlon-ai-get-abstract-in-language (file language &optional type preserve-existing callback)
   "Get abstract from FILE in LANGUAGE.
 If TYPE is `synopsis', generate a synopsis. If TYPE is `abstract', nil, or any
-other value, generate an abstract."
+other value, generate an abstract.  PRESERVE-EXISTING keeps existing abstracts.
+CALLBACK, when supplied, retains an earlier request's original target."
   (if-let ((string (tlon-get-string-dwim file))
 	   (lang-2 (tlon-get-language-code-from-name language)))
       (let ((original-buffer (current-buffer))
@@ -1206,20 +1210,32 @@ other value, generate an abstract."
 	 (pcase type
 	   ('synopsis tlon-ai-get-synopsis-prompts)
 	   (_ tlon-ai-get-abstract-prompts))
-	 string lang-2 (tlon-get-abstract-callback key type original-buffer)))
+	 string lang-2 (or callback (tlon-get-abstract-callback
+                                    key type original-buffer preserve-existing))))
     (message "Could not get abstract.")
     (tlon-ai-batch-continue)))
 
-(defun tlon-ai-get-abstract-from-detected-language (file)
+(defun tlon-ai-get-abstract-from-detected-language (file &optional preserve-existing)
   "If RESPONSE is non-nil, get a summary of FILE.
-Otherwise return INFO."
-  (lambda (response info)
+Otherwise return INFO.  Carry PRESERVE-EXISTING and the original target across
+language detection."
+  (let* ((buffer (current-buffer))
+         (key (ignore-errors (tlon-get-key-at-point)))
+         (db (and (eq major-mode 'ebib-entry-mode) ebib--cur-db))
+         (callback (tlon-get-abstract-callback key nil buffer preserve-existing)))
+    (lambda (response info)
     (message "Detecting language...")
     (if (not response)
 	(progn
 	  (tlon-ai-callback-fail info)
 	  (tlon-ai-batch-continue))
-      (tlon-ai-get-abstract-in-language file response))))
+      (with-current-buffer buffer
+        (when (and (not file)
+                   (or (and db (not (eq db ebib--cur-db)))
+                       (and key (not (equal key (tlon-get-key-at-point))))))
+          (user-error "Abstract source changed during language detection"))
+        (tlon-ai-get-abstract-in-language
+         file response nil preserve-existing callback))))))
 
 (defun tlon-ai-get-abstract-common (prompt string language callback)
   "Common function for getting an abstract.
@@ -1232,12 +1248,13 @@ the language of the string, and CALLBACK is the callback function."
 	(message "Getting AI abstract..."))
     (user-error "Could not get prompt for language %s" language)))
 
-(defun tlon-get-abstract-callback (&optional key type buffer)
+(defun tlon-get-abstract-callback (&optional key type buffer preserve-existing)
   "Process the response, taking appropriate action based on major mode.
 KEY is the BibTeX key. If TYPE is `synopsis', copy the response to the kill
 ring. If type is `abstract', nil, or any other value, take the action
 appropriate for an abstract. BUFFER is the buffer where the abstract should be
-inserted; if nil, use the current buffer."
+inserted; if nil, use the current buffer.  PRESERVE-EXISTING is captured by the
+callback so a late response cannot replace an existing abstract."
   (lambda (response info)
     (unwind-protect
 	(tlon-ai-with-valid-response response info
@@ -1252,7 +1269,7 @@ inserted; if nil, use the current buffer."
 		 (when tlon-debug
 		   (message "`tlon-get-abstract-callback' is setting abstract for key `%s' to `%s...'"
 			    key (when response (substring response 0 (min (length response) 100)))))
-		 (tlon-ai-summarize-set-bibtex-abstract response key))))
+		 (tlon-ai-summarize-set-bibtex-abstract response key preserve-existing))))
 	     ;; If no key, handle based on type (likely summarizing region/buffer)
 	     (t
 	      (pcase type
@@ -1418,9 +1435,12 @@ Documentation files are collected from:
 (declare-function ebib-extras-get-file-of-key "ebib-extras")
 (declare-function ebib--get-db-from-filename "ebib-db")
 (declare-function ebib-extras-reload-database-no-confirm "ebib-extras")
-(defun tlon-ai-summarize-set-bibtex-abstract (abstract key)
-  "Set the `abstract' field of entry with KEY entry to ABSTRACT."
-  (let ((bib-file (ebib-extras-get-file-of-key key)))
+(defun tlon-ai-summarize-set-bibtex-abstract (abstract key &optional preserve-existing)
+  "Set the abstract for KEY to ABSTRACT.
+PRESERVE-EXISTING keeps a nonempty field in either the live database or its
+visiting buffer and refuses to discard unrelated database edits."
+  (catch 'tlon-preserved-abstract
+   (let ((bib-file (ebib-extras-get-file-of-key key)))
     (unless bib-file
       (error "Could not find BibTeX file for key %s" key))
     (let ((target-buffer (find-file-noselect bib-file)))
@@ -1429,6 +1449,17 @@ Documentation files are collected from:
 	  (save-excursion
 	    (goto-char (point-min))
 	    (when (bibtex-search-entry key)
+	      (when preserve-existing
+	        (let* ((db (ebib--get-db-from-filename bib-file))
+	               (live (and db (ebib-db-get-field-value "abstract" key db 'noerror)))
+	               (buffer-value (bibtex-extras-get-field "abstract")))
+	          (when (seq-some (lambda (value)
+	                            (and (stringp value)
+	                                 (not (string-empty-p (string-trim value)))))
+	                          (list live buffer-value))
+	            (throw 'tlon-preserved-abstract nil))
+	          (when (or (buffer-modified-p) (and db (ebib-db-modified-p db)))
+	            (user-error "Abstract target has unsaved changes; refusing to overwrite"))))
 	      (shut-up
 		(funcall set-field "abstract" abstract))
 	      (message "Set abstract of `%s' in %s" key (buffer-name))
@@ -1437,7 +1468,7 @@ Documentation files are collected from:
 	      (when-let* ((db (ebib--get-db-from-filename bib-file)))
 		(ebib-extras-reload-database-no-confirm db)))
 	    (unless (bibtex-search-entry key)
-	      (error "Could not find entry for key %s in buffer %s" key (buffer-name)))))))))
+	      (error "Could not find entry for key %s in buffer %s" key (buffer-name))))))))))
 
 ;;;;; Language detection
 

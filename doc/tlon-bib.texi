@@ -1,0 +1,610 @@
+\input texinfo    @c -*- texinfo -*-
+@c %**start of header
+@setfilename tlon-bib.info
+@settitle tlon-bib: Bib@TeX{} related functionality
+@documentencoding UTF-8
+@documentlanguage en
+@c %**end of header
+
+@dircategory Emacs misc features
+@direntry
+* BibTeX Functionality: (tlon-bib). BibTeX related functionality.
+@end direntry
+
+@finalout
+@titlepage
+@title tlon-bib: Bib@TeX{} related functionality
+@author Pablo Stafforini (@email{pablo@@stafforini.com})
+@end titlepage
+
+@contents
+
+@ifnottex
+@node Top
+@top tlon-bib: Bib@TeX{} related functionality
+
+This manual describes the features and customization options for the Emacs Lisp file @samp{tlon-bib.el}.
+
+@end ifnottex
+
+@menu
+* Overview::
+* User options::
+* Commands::
+* Functions::
+* Indices::
+
+@detailmenu
+--- The Detailed Node Listing ---
+
+User options
+
+* Abstract overwrite behavior::
+* AI model for citation replacement::
+* AI model for adding missing citations::
+* Maximum concurrent citation replacements::
+
+Commands
+
+* Abstract management::
+* Entry management::
+* URL management::
+* Translation entry creation::
+* Entry creation from Markdown::
+* Citation conversion and replacement::
+* AI-powered citation tools::
+* Reporting::
+* Transient menu::
+
+Abstract management
+
+* Fetch and set abstract::
+* Batch set abstracts::
+* Translate abstract::
+
+Entry management
+
+* Move entry to fluid::
+* Move all fluid entries to stable::
+* Add database field::
+* Auto-clean entry::
+* Add language identifiers::
+* Swap colon character in title::
+* Unescape characters::
+* Remove URL fields::
+* Create Bib@TeX{} original::
+
+URL management
+
+* Prompt to add missing URLs::
+* Populate URL field::
+* Populate journal title fields::
+
+Translation entry creation
+
+* Create Bib@TeX{} translation::
+* Create translations from directory::
+
+Entry creation from Markdown
+
+* Create entry from Markdown::
+
+Citation conversion and replacement
+
+* Convert links to citations::
+* Convert bibliography to citations::
+* Replace keys with formatted citations::
+* Check Bib@TeX{} keys::
+
+AI-powered citation tools
+
+* Replace citations in file::
+* Replace citations in Org directory::
+* Add missing citations::
+
+Reporting
+
+* Entries report::
+* Excluded keys management::
+* Find entry with missing field::
+
+Functions
+
+* Mode guards::
+* Key retrieval::
+* Bibliography lookup::
+* Abstract translation helpers::
+* Autokey generation::
+* Reporting helpers::
+* Miscellaneous helpers::
+
+Indices
+
+* Function index::
+* Variable index::
+
+@end detailmenu
+@end menu
+
+@node Overview
+@chapter Overview
+
+The @samp{tlon-bib} module provides a comprehensive suite of tools for working with Bib@TeX{} bibliographic data. It covers abstract fetching and management (from CrossRef, Google Books, Zotra, and AI), batch abstract processing, entry movement between fluid and stable Bib@TeX{} files, field manipulation (database tags, language identifiers, URL population, journal title fields), citation key generation, citation conversion and replacement (including AI-powered workflows), abstract translation via DeepL, reporting on entry quality, and entry creation from Markdown YAML front matter.
+
+The module integrates with several external packages including @samp{ebib}, @samp{citar}, @samp{zotra-extras}, @samp{gptel}, and @samp{tlon-ai} to provide a seamless bibliography management experience. Most commands work in both @samp{bibtex-mode} and Ebib modes, dispatching to the appropriate field accessor functions automatically.
+
+You can access all the major commands through the transient menu @code{tlon-bib-menu} (@ref{Transient menu}).
+
+@node User options
+@chapter User options
+
+@menu
+* Abstract overwrite behavior::
+* AI model for citation replacement::
+* AI model for adding missing citations::
+* Maximum concurrent citation replacements::
+@end menu
+
+@node Abstract overwrite behavior
+@section Abstract overwrite behavior
+
+@vindex tlon-abstract-overwrite
+The user option @code{tlon-abstract-overwrite} controls what happens when you fetch an abstract for an entry that already has one. Its default value is @samp{ask}, which prompts you interactively each time. You can set it to @samp{always} to silently overwrite existing abstracts, or to @samp{never} to skip entries that already have an abstract without prompting.
+
+This option affects @code{tlon-fetch-and-set-abstract} (@ref{Fetch and set abstract}) and the batch abstract processing command @code{tlon-batch-set-abstracts} (@ref{Batch set abstracts}).
+
+@node AI model for citation replacement
+@section AI model for citation replacement
+
+@vindex tlon-bib-replace-citations-model
+The user option @code{tlon-bib-replace-citations-model} specifies the AI model used by @code{tlon-bib-replace-citations-in-file} (@ref{Replace citations in file}) to identify and replace bibliographic citations with structured @samp{<Cite>} tags. The value is a cons cell whose car is the backend name (a string) and whose cdr is the model symbol. For example:
+
+@lisp
+(setq tlon-bib-replace-citations-model '("Gemini" . gemini-pro-latest))
+@end lisp
+
+When set to @code{nil}, the default @code{gptel-model} is used. See @code{gptel-extras-ai-models} for available backend and model combinations.
+
+@node AI model for adding missing citations
+@section AI model for adding missing citations
+
+@vindex tlon-bib-add-missing-citations-model
+The user option @code{tlon-bib-add-missing-citations-model} specifies the AI model used by @code{tlon-bib-add-missing-citations} (@ref{Add missing citations}) to locate and add bibliographic entries for citations marked as missing. Its format and semantics are the same as @code{tlon-bib-replace-citations-model} (@ref{AI model for citation replacement}). By default, it inherits the value of @code{tlon-bib-replace-citations-model}.
+
+@node Maximum concurrent citation replacements
+@section Maximum concurrent citation replacements
+
+@vindex tlon-bib-replace-citations-max-concurrent
+The user option @code{tlon-bib-replace-citations-max-concurrent} controls how many files are processed simultaneously when running @code{tlon-bib-replace-citations-in-org-files-in-directory} (@ref{Replace citations in Org directory}). The default is 5. Increase it if your system can handle more parallel AI requests; decrease it if you encounter rate limits or resource constraints.
+
+@node Commands
+@chapter Commands
+
+@menu
+* Abstract management::
+* Entry management::
+* URL management::
+* Translation entry creation::
+* Entry creation from Markdown::
+* Citation conversion and replacement::
+* AI-powered citation tools::
+* Reporting::
+* Transient menu::
+@end menu
+
+@node Abstract management
+@section Abstract management
+
+@menu
+* Fetch and set abstract::
+* Batch set abstracts::
+* Translate abstract::
+@end menu
+
+@node Fetch and set abstract
+@subsection Fetch and set abstract
+
+@findex tlon-fetch-and-set-abstract
+The command @code{tlon-fetch-and-set-abstract} attempts to fetch an abstract for the Bib@TeX{} entry at point and set it in the @samp{abstract} field. It works in both @samp{bibtex-mode} and @samp{ebib-entry-mode}.
+
+The command first checks whether proceeding is allowed based on @code{tlon-abstract-overwrite} (@ref{Abstract overwrite behavior}) and any existing abstract. It then tries three data sources in sequence: CrossRef (using the entry's DOI), Google Books (using its ISBN), and Zotra (using its URL or DOI). If an abstract is found, it is cleaned up (XML/HTML tags and extraneous prefixes are removed, and a trailing period is ensured) before being set. If no abstract is found, a message is displayed.
+
+Programmatic callers may pass @samp{PRESERVE-EXISTING} to skip an existing abstract without prompting. The field is checked again after fetching, so an abstract added while a network request yields is preserved. The original buffer is retained, and a changed entry or Ebib database stops the write. Ordinary interactive overwrite confirmation is requested only once.
+
+When invoked interactively from a Bib@TeX{} buffer with the Summarize @samp{batch} infix (@code{tlon-ai-batch-fun}) set, the command delegates to @code{tlon-batch-set-abstracts} with strategy @samp{non-ai} (@ref{Batch set abstracts}), which runs in the background without widening or saving the current buffer. Outside a Bib@TeX{} buffer, or when the infix is unset, the command still uses the legacy per-entry path driven by @code{tlon-ai-batch-continue}.
+
+@node Batch set abstracts
+@subsection Batch set abstracts
+
+@findex tlon-batch-set-abstracts
+The command @code{tlon-batch-set-abstracts} adds abstracts to entries in a Bib@TeX{} file that lack one. It takes two optional arguments: a @samp{FILE} to process (defaulting to the current Bib@TeX{} buffer, or prompting if none) and a @samp{STRATEGY}, one of the symbols @samp{non-ai}, @samp{ai}, or @samp{both} (the default).
+
+The command returns immediately; all work happens in the background on a hidden copy of the file, so the user's Bib@TeX{} buffer is not widened, point is not moved, and the buffer is not saved in place. Progress is written to the log buffer @samp{*tlon-batch-abstract-log*} (pop it up with @code{tlon-batch-abstract-show-log}) and, for the AI pass, to the progress file defined by @code{tlon-batch-abstract-progress-file}.
+
+The three strategies work as follows:
+
+@itemize
+@item
+@samp{non-ai}: scans the file and tries CrossRef (via DOI), Google Books (via ISBN), and Zotra (via URL) for each entry without an abstract. Runs one entry per idle tick so Emacs stays responsive.
+@item
+@samp{ai}: queues every entry without an abstract that has an associated text file and sends each to the summarization model using the language-specific prompt from @code{tlon-ai-get-abstract-prompts}.
+@item
+@samp{both}: runs the non-AI pass first; any entry for which non-AI sources fail but that has an associated text file is queued for the AI pass.
+@end itemize
+
+If the user's Bib@TeX{} buffer for the target file has unsaved edits, the command errors out. If it is unmodified, it is quietly reverted when the batch completes so the new abstracts become visible.
+
+@findex tlon-batch-abstract-resume
+If the AI pass crashes or Emacs is restarted mid-run, @code{tlon-batch-abstract-resume} picks up from the saved progress file. @code{tlon-batch-abstract-stop} cancels a running batch while preserving the progress file for later resumption.
+
+@vindex tlon-ai-batch-fun
+The Summarize submenu exposes a @samp{batch} infix (see the corresponding section in the manual of @samp{tlon-ai}) whose value is a function symbol. When any of the summarize commands (@code{tlon-fetch-and-set-abstract}, @code{tlon-get-abstract-with-ai}, @code{tlon-get-abstract-with-or-without-ai}) is invoked interactively from a Bib@TeX{} buffer with this infix set, the command delegates to @code{tlon-batch-set-abstracts} with the matching strategy instead of processing only the entry at point. The @samp{s -o} (overwrite) infix still controls collision behaviour; set it to @samp{always} or @samp{never} for unattended runs, since @samp{ask} prompts mid-run.
+
+@node Translate abstract
+@subsection Translate abstract
+
+@findex tlon-translate-abstract
+The command @code{tlon-translate-abstract} translates the abstract of the Bib@TeX{} entry at point from its source language (determined by the @samp{langid} field) to a target language using DeepL@. If no target language is provided, you are prompted to select one. The translation is stored in the per-language JSON file at @samp{babel-refs/json/<code>/abstract-translations.json}. You can optionally supply a variable to accumulate translations in memory rather than writing to disk after each one.
+
+@findex tlon-translate-abstracts
+The function @code{tlon-translate-abstracts} extends this to multiple entries. It iterates through up to 2000 entries in the current Bib@TeX{} buffer, translating each one that does not already have a translation (unless the overwrite argument is set). When doing large batch translations, use the variable argument to avoid repeated file I/O@.
+
+@node Entry management
+@section Entry management
+
+@menu
+* Move entry to fluid::
+* Move all fluid entries to stable::
+* Add database field::
+* Auto-clean entry::
+* Add language identifiers::
+* Swap colon character in title::
+* Unescape characters::
+* Remove URL fields::
+* Create Bib@TeX{} original::
+@end menu
+
+@node Move entry to fluid
+@subsection Move entry to fluid
+
+@findex tlon-move-entry-to-fluid
+The command @code{tlon-move-entry-to-fluid} moves the Bib@TeX{} entry at point (or a specified key) from its current file to the fluid Bib@TeX{} file (@code{tlon-file-fluid}). After moving, it adds the @samp{database} field set to ``Tlon'' and copies the citation key to the kill ring for convenient pasting.
+
+@node Move all fluid entries to stable
+@subsection Move all fluid entries to stable
+
+@findex tlon-move-all-fluid-entries-to-stable
+The command @code{tlon-move-all-fluid-entries-to-stable} transfers all entries from @samp{fluid.bib} to @samp{stable.bib} in a single operation. It requires both files to be saved before proceeding. After the move, @samp{fluid.bib} is emptied. You will typically want to commit these changes to version control afterward.
+
+@node Add database field
+@subsection Add database field
+
+@findex tlon-add-database-field
+The command @code{tlon-add-database-field} iterates over every entry in a specified Bib@TeX{} file and adds or updates the @samp{database} field to ``Tlon''. This is useful for tagging entries that belong to the Tlon bibliography.
+
+@findex tlon-auto-add-database-field
+The function @code{tlon-auto-add-database-field} is intended for use in @samp{after-save-hook}. Whenever the fluid Bib@TeX{} file is saved, it automatically runs @code{tlon-add-database-field} on that file.
+
+@node Auto-clean entry
+@subsection Auto-clean entry
+
+@findex tlon-auto-clean-entry
+The command @code{tlon-auto-clean-entry} is a hook function for @samp{after-save-hook} in Bib@TeX{} mode. On each save, it removes trailing spaces in fields, escapes special characters (@samp{$}, @samp{%}, @samp{#}, @samp{&}), and runs @code{bibtex-clean-entry} if point is at the start of an entry. It skips cleaning on the upstream database file (@code{tlon-file-db-upstream}).
+
+@node Add language identifiers
+@subsection Add language identifiers
+
+@findex tlon-add-lang-id-to-entries
+The command @code{tlon-add-lang-id-to-entries} iterates through entries in the current Bib@TeX{} buffer. For each entry missing a @samp{langid} field, it prompts you to select a language using @code{tlon-select-language} and sets the field accordingly.
+
+@node Swap colon character in title
+@subsection Swap colon character in title
+
+@findex tlon-bib-swap-colon-in-title
+The command @code{tlon-bib-swap-colon-in-title} toggles between the standard colon character (@samp{:}) and the Unicode modified letter colon (@samp{꞉}, U+A789) in the @samp{title} field of a Bib@TeX{} entry. This is useful because Bib@TeX{} treats the colon as a separator between title and subtitle, so the modified letter colon can be used to avoid unintended splitting. The command prompts for a Bib@TeX{} key, jumps to the entry, performs the swap, and saves the file.
+
+@node Unescape characters
+@subsection Unescape characters
+
+@findex tlon-bib-unescape-escaped-characters
+The command @code{tlon-bib-unescape-escaped-characters} reverses the escaping performed by @code{bibtex-extras-escape-special-characters}. For each character in @code{bibtex-extras-escaped-characters}, it replaces the backslash-escaped form (e.g., @samp{\$}) with the literal character (e.g., @samp{$}). It operates on a specified file or the current buffer, and reports the number of replacements made.
+
+@node Remove URL fields
+@subsection Remove URL fields
+
+@findex tlon-bib-remove-url-fields-with-doi
+The command @code{tlon-bib-remove-url-fields-with-doi} removes the @samp{url} field from every entry in the current Bib@TeX{} buffer that also has a @samp{doi} field. This is useful for cleaning up redundant URL fields when a DOI is available. With a prefix argument, the buffer is saved after modification.
+
+@findex tlon-bib-remove-url-fields-with-isbn
+The command @code{tlon-bib-remove-url-fields-with-isbn} does the same but for entries that have an @samp{isbn} field instead of a DOI@.
+
+@node Create Bib@TeX{} original
+@subsection Create Bib@TeX{} original
+
+@findex tlon-create-bibtex-original
+The command @code{tlon-create-bibtex-original} adds a new original Bib@TeX{} entry to the fluid file by calling @code{zotra-extras-add-entry}.
+
+@node URL management
+@section URL management
+
+@menu
+* Prompt to add missing URLs::
+* Populate URL field::
+* Populate journal title fields::
+@end menu
+
+@node Prompt to add missing URLs
+@subsection Prompt to add missing URLs
+
+@findex tlon-prompt-to-add-missing-urls
+The command @code{tlon-prompt-to-add-missing-urls} scans the current Markdown buffer for URLs that are not present in the Tlon bibliography. For each missing URL, it highlights it and prompts you to decide whether to add it. The URLs you approve are saved to a file for subsequent import via @code{zotra-extras-add-multiple-urls}.
+
+@node Populate URL field
+@subsection Populate URL field
+
+@findex tlon-bib-populate-url-field
+The command @code{tlon-bib-populate-url-field} constructs and sets the @samp{url} field for the Bib@TeX{} entry at point. The URL is built from three components: the base URL for the entry's language from the ``uqbar'' subproject, the articles path for that language, and a slugified version of the title. If the entry already has a @samp{url} field, you are prompted before overwriting.
+
+@findex tlon-bib-populate-url-fields-in-language
+The command @code{tlon-bib-populate-url-fields-in-language} extends this to all entries in the language of the entry at point. It collects all article files from the corresponding site directory, reads their Bib@TeX{} keys from YAML front matter, and populates the @samp{url} field for each matching entry.
+
+@node Populate journal title fields
+@subsection Populate journal title fields
+
+@findex tlon-bib-populate-journaltitle-fields-in-language
+The command @code{tlon-bib-populate-journaltitle-fields-in-language} sets the @samp{journaltitle} field for all Bib@TeX{} entries in the language of the entry at point. The journal title value is computed once by looking up the site's homepage title for the appropriate language. Existing values trigger a confirmation prompt before overwriting.
+
+@node Translation entry creation
+@section Translation entry creation
+
+@menu
+* Create Bib@TeX{} translation::
+* Create translations from directory::
+@end menu
+
+@node Create Bib@TeX{} translation
+@subsection Create Bib@TeX{} translation
+
+@findex tlon-create-bibtex-translation
+The command @code{tlon-create-bibtex-translation} creates a new Bib@TeX{} entry representing a translation of the entry at point. It works in @samp{bibtex-mode}, @samp{ebib-entry-mode}, and @samp{ebib-index-mode}.
+
+The command prompts for a target language (or accepts a two-letter code programmatically). It then translates the title and abstract via DeepL, generates a new key by appending the capitalized language code to the original key, and populates fields including @samp{langid}, @samp{title}, @samp{author}, @samp{journaltitle}, @samp{translation} (the original key), @samp{abstract}, and @samp{date}. In Ebib, it switches to the translations database (database 3) and creates the entry there. The @samp{url} field is then populated via @code{tlon-bib-populate-url-field} (@ref{Populate URL field}).
+
+@node Create translations from directory
+@subsection Create translations from directory
+
+@findex tlon-bib-create-translations-from-dir
+The command @code{tlon-bib-create-translations-from-dir} iterates over all Markdown files in a directory (defaulting to the current directory). For each file, it reads the YAML @samp{original_key} and @samp{title}, jumps to the corresponding Bib@TeX{} entry, calls @code{tlon-create-bibtex-translation}, overrides the new entry's @samp{title} with the YAML title (if present), and regenerates the @samp{url} field based on the updated title.
+
+@node Entry creation from Markdown
+@section Entry creation from Markdown
+
+@menu
+* Create entry from Markdown::
+@end menu
+
+@node Create entry from Markdown
+@subsection Create entry from Markdown
+
+@findex tlon-bib-create-entry-from-markdown
+The command @code{tlon-bib-create-entry-from-markdown} creates a Bib@TeX{} entry in the database file (@samp{db.bib}) from the YAML front matter of the current Markdown buffer. It populates the @samp{title}, @samp{author} (from @samp{authors}, reversed to ``Last, First'' format), @samp{translator} (from @samp{translators}), @samp{langid} (from the repository's language), @samp{date}, and @samp{translation} (from @samp{original_key}). The Bib@TeX{} key is constructed by appending the capitalized two-letter language code to the @samp{original_key}. After insertion, the @samp{url} field is populated via @code{tlon-bib-populate-url-field} (@ref{Populate URL field}).
+
+@findex tlon-bib-create-entries-in-dir
+The command @code{tlon-bib-create-entries-in-dir} applies @code{tlon-bib-create-entry-from-markdown} to every Markdown file in a directory. It continues on errors and reports a summary of created, skipped, and failed entries.
+
+@node Citation conversion and replacement
+@section Citation conversion and replacement
+
+@menu
+* Convert links to citations::
+* Convert bibliography to citations::
+* Replace keys with formatted citations::
+* Check Bib@TeX{} keys::
+@end menu
+
+@node Convert links to citations
+@subsection Convert links to citations
+
+@findex tlon-convert-links-to-cite
+The command @code{tlon-convert-links-to-cite} iterates through all Markdown links in the current buffer. When a link's URL matches the @samp{url} field of an entry in the Tlon bibliography, it prompts you to convert the link to a @samp{<Cite>} tag using the corresponding Bib@TeX{} key.
+
+@node Convert bibliography to citations
+@subsection Convert bibliography to citations
+
+@findex tlon-convert-bibliography-to-cite
+The command @code{tlon-convert-bibliography-to-cite} converts plain-text bibliography entries (in the ``Author, Title (Year)'' format) to @samp{<Cite>} tags. It looks up the Bib@TeX{} key based on the title. This command should be run with the buffer narrowed to the bibliography section, as it assumes one work per line and does not handle locators.
+
+@node Replace keys with formatted citations
+@subsection Replace keys with formatted citations
+
+@findex tlon-bib-replace-keys-with-citations
+The command @code{tlon-bib-replace-keys-with-citations} replaces all @samp{<Cite>} tags in a file (or the current buffer) with formatted citations fetched from the Tlon API@. The citation style (``short'' or ``long'') is determined by the @samp{length} attribute in each @samp{<Cite>} tag. When the optional audio argument is non-nil, the corresponding audio citation styles are used instead.
+
+@findex tlon-bib-replace-keys-with-citations-in-dir
+The command @code{tlon-bib-replace-keys-with-citations-in-dir} applies this recursively to all Markdown files in the current directory.
+
+@node Check Bib@TeX{} keys
+@subsection Check Bib@TeX{} keys
+
+@findex tlon-bib-check-bibkeys
+The command @code{tlon-bib-check-bibkeys} validates all Bib@TeX{} keys inside @samp{<Cite>} tags in the current buffer, a specified file, or an active region. A key is valid if it exists in the bibliography (as determined by @code{tlon-bibliography-lookup}). The command reports any invalid keys found.
+
+@node AI-powered citation tools
+@section AI-powered citation tools
+
+@menu
+* Replace citations in file::
+* Replace citations in Org directory::
+* Add missing citations::
+@end menu
+
+@node Replace citations in file
+@subsection Replace citations in file
+
+@findex tlon-bib-replace-citations-in-file
+The command @code{tlon-bib-replace-citations-in-file} uses an AI agent to identify and replace all bibliographic citations in a file with structured @samp{<Cite>} tags. The agent is provided with tools to search the bibliography, fetch web content, perform web searches, and edit the file. Citations that cannot be found are enclosed in @samp{@{!} and @samp{!@}} markers for later processing.
+
+When called from Dired with marked files, it processes all marked files. When called with an active region, it processes the current file. Otherwise, it prompts for a file. Files are processed in batches of @code{tlon-bib-replace-citations-max-concurrent} (@ref{Maximum concurrent citation replacements}).
+
+The AI model used is controlled by @code{tlon-bib-replace-citations-model} (@ref{AI model for citation replacement}).
+
+@node Replace citations in Org directory
+@subsection Replace citations in Org directory
+
+@findex tlon-bib-replace-citations-in-org-files-in-directory
+The command @code{tlon-bib-replace-citations-in-org-files-in-directory} runs @code{tlon-bib-replace-citations-in-file} on every @samp{.org} file in a specified directory (non-recursively). Files are processed in batches; the next batch starts only after all files in the current batch have finished.
+
+@node Add missing citations
+@subsection Add missing citations
+
+@findex tlon-bib-add-missing-citations
+The command @code{tlon-bib-add-missing-citations} instructs an AI agent to process a file or region and find all citations marked as missing (enclosed in @samp{@{!} and @samp{!@}}). For each, the agent uses search tools to find an identifier (URL, DOI, or ISBN), adds a corresponding entry to the fluid bibliography file via the @samp{add_bib_entry} tool, and replaces the marked citation with a proper @samp{<Cite>} tag.
+
+The AI model used is controlled by @code{tlon-bib-add-missing-citations-model} (@ref{AI model for adding missing citations}).
+
+@node Reporting
+@section Reporting
+
+@menu
+* Entries report::
+* Excluded keys management::
+* Find entry with missing field::
+@end menu
+
+@node Entries report
+@subsection Entries report
+
+@findex tlon-bib-entries-report
+The command @code{tlon-bib-entries-report} generates a report buffer listing Bib@TeX{} entries in the current buffer that have problems with their abstracts. It categorizes entries into four groups: those with no abstract, those with abstracts shorter than @code{tlon-min-abstract-length} words, those with abstracts longer than @code{tlon-max-abstract-length} words, and those with abstracts of fewer than 10 words. Entries in @code{tlon-bib-excluded-keys} (@ref{Excluded keys management}), entries with a @samp{crossref} field, and translation entries (those with a @samp{translation} field) are filtered out.
+
+@node Excluded keys management
+@subsection Excluded keys management
+
+@findex tlon-bib-add-to-excluded-keys
+The command @code{tlon-bib-add-to-excluded-keys} adds one or more Bib@TeX{} keys (as a space-separated string) to the @code{tlon-bib-excluded-keys} list and persists them to @code{tlon-bib-excluded-keys-file}. These keys are excluded from the entries report (@ref{Entries report}).
+
+@node Find entry with missing field
+@subsection Find entry with missing field
+
+@findex tlon-bib-find-next-entry-with-missing-field
+The command @code{tlon-bib-find-next-entry-with-missing-field} moves point to the next Bib@TeX{} entry in the buffer that is missing a specified field. It prompts for the field name with completion from @code{bibtex-extras-biblatex-fields} and skips entries that have a @samp{crossref} field.
+
+@node Transient menu
+@section Transient menu
+
+@findex tlon-bib-menu
+The command @code{tlon-bib-menu} activates a transient menu providing quick access to the commands in this module. It is organized into three columns:
+
+@itemize
+@item
+@strong{Markdown}: URL management (@samp{m f}, @samp{m z}), citation conversion (@samp{m b}, @samp{m l}), key checking (@samp{m c}), AI citation replacement (@samp{m r}, @samp{m R}, @samp{m a}), and model selection (@samp{m -r}, @samp{m -a}).
+@item
+@strong{Ebib}: abstract fetching (@samp{e a}), translation entry creation (@samp{e c}), URL population (@samp{e u}, @samp{e U}), and journal title population (@samp{e J}).
+@item
+@strong{Bib@TeX{}}: reporting (@samp{b g}, @samp{b x}), entry movement (@samp{b t}, @samp{b s}), URL field removal (@samp{b d}, @samp{b i}), and colon swapping (@samp{b :}).
+@end itemize
+
+@node Functions
+@chapter Functions
+
+@menu
+* Mode guards::
+* Key retrieval::
+* Bibliography lookup::
+* Abstract translation helpers::
+* Autokey generation::
+* Reporting helpers::
+* Miscellaneous helpers::
+@end menu
+
+@node Mode guards
+@section Mode guards
+
+@findex tlon-ensure-bib
+The function @code{tlon-ensure-bib} signals a @samp{user-error} unless the current buffer is in @samp{bibtex-mode}, @samp{ebib-entry-mode}, or @samp{ebib-index-mode}. Use it at the start of commands that require a Bib@TeX{}-related context.
+
+@findex tlon-ensure-bibtex
+The function @code{tlon-ensure-bibtex} is a stricter variant that signals an error unless the buffer is specifically in @samp{bibtex-mode}.
+
+@node Key retrieval
+@section Key retrieval
+
+@findex tlon-get-key-at-point
+The function @code{tlon-get-key-at-point} returns the Bib@TeX{} key at point, dispatching to the appropriate backend function depending on whether you are in Ebib or @samp{bibtex-mode}.
+
+@node Bibliography lookup
+@section Bibliography lookup
+
+@findex tlon-bibliography-lookup
+The function @code{tlon-bibliography-lookup} searches the cached Tlon bibliography (via @samp{citar-cache--bibliographies}) for an entry where a specified field matches a given value. It can optionally perform substring matching and return a different field from the matching entry. This is the central lookup mechanism used by many commands in this module.
+
+@findex tlon-get-field-in-bibliography
+The function @code{tlon-get-field-in-bibliography} returns a list of all values for a specified field across all entries in the cached bibliography. It signals an error if no bibliographies are cached.
+
+@findex tlon-bib-get-keys-in-file
+The function @code{tlon-bib-get-keys-in-file} returns a list of all Bib@TeX{} keys in a specified file by accessing the citar cache. It ensures the file is cached if not already present.
+
+@node Abstract translation helpers
+@section Abstract translation helpers
+
+@findex tlon-read-abstract-translations
+The function @code{tlon-read-abstract-translations} reads and parses the per-language JSON abstract translations file for a given language code or name, returning an alist of @samp{(KEY . TEXT)} pairs.
+
+@findex tlon-write-abstract-translations
+The function @code{tlon-write-abstract-translations} writes an alist of @samp{(KEY . TEXT)} pairs to the per-language JSON file. It creates the directory if needed.
+
+@findex tlon-add-abstract-translation
+The function @code{tlon-add-abstract-translation} adds or updates a translation for a given key in the per-language store. When a variable is provided instead of a language, the alist is updated in memory rather than written to disk.
+
+@findex tlon-get-abstract-translation
+The function @code{tlon-get-abstract-translation} retrieves the translated abstract for a specific Bib@TeX{} key and language code from the per-language JSON file.
+
+@node Autokey generation
+@section Autokey generation
+
+@findex tlon-generate-autokey
+The function @code{tlon-generate-autokey} generates a Bib@TeX{} citation key from author, year, and title strings. It respects the standard Bib@TeX{} autokey settings (separators, name count, year length, title word count) and optionally applies @code{bibtex-autokey-before-presentation-function}.
+
+@node Reporting helpers
+@section Reporting helpers
+
+@findex tlon-bib-load-excluded-keys
+The function @code{tlon-bib-load-excluded-keys} loads the excluded keys list from @code{tlon-bib-excluded-keys-file} into @code{tlon-bib-excluded-keys}.
+
+@findex tlon-bib-save-excluded-keys
+The function @code{tlon-bib-save-excluded-keys} persists the current @code{tlon-bib-excluded-keys} list back to its file.
+
+@node Miscellaneous helpers
+@section Miscellaneous helpers
+
+@findex tlon-abstract-cleanup
+The function @code{tlon-abstract-cleanup} cleans a raw abstract string by removing XML/HTML tags, @LaTeX{} formatting artifacts, and extraneous leading words like ``summary'' or ``abstract''. It also ensures the string ends with a period.
+
+@findex tlon-bib-remove-braces
+The function @code{tlon-bib-remove-braces} strips curly braces from a string, which is useful before sending Bib@TeX{} text to external services like DeepL@.
+
+@findex tlon-fetch-url-from-doi
+The function @code{tlon-fetch-url-from-doi} resolves a DOI to its final redirect URL using @samp{curl}.
+
+@findex tlon-bib-add-multiple-urls-from-file
+The function @code{tlon-bib-add-multiple-urls-from-file} reads a file containing URLs (one per line), filters out those already in the bibliography, and calls @code{zotra-extras-add-multiple-urls} to add the rest to the fluid file.
+
+@node Indices
+@chapter Indices
+
+@menu
+* Function index::
+* Variable index::
+@end menu
+
+@node Function index
+@section Function index
+
+@printindex fn
+
+@node Variable index
+@section Variable index
+
+@printindex vr
+
+@bye

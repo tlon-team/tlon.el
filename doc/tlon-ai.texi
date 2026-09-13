@@ -293,6 +293,8 @@ The command @code{tlon-ai-proofread-reference-article} sends the current buffer'
 @findex tlon-get-abstract-with-or-without-ai
 The command @code{tlon-get-abstract-with-or-without-ai} is the primary entry point for obtaining an abstract. It first attempts non-AI extraction via @code{tlon-fetch-and-set-abstract} (e.g. scraping publisher metadata). If that fails, it falls back to AI generation via @code{tlon-get-abstract-with-ai}.
 
+Programmatic callers may pass @samp{PRESERVE-EXISTING} to keep existing abstracts without an overwrite prompt. The policy follows AI and language-detection callbacks and checks both the live Ebib database and the visiting Bib@TeX{} buffer before writing a delayed response. Unrelated unsaved changes stop that write rather than being discarded. A changed source selection during language detection also stops processing. Interactive calls retain the configured overwrite behavior.
+
 @findex tlon-get-abstract-with-ai
 The command @code{tlon-get-abstract-with-ai} generates an abstract (100--250 words) using the AI@. It determines the source text from context: the region, the current buffer, or the HTML/PDF file linked in the Bib@TeX{} entry at point. The AI first checks whether the text already contains an abstract; if so, it extracts and returns it. Otherwise it creates one from scratch, ending with the phrase ``AI-generated abstract.'' The result is set as the @samp{abstract} field of the Bib@TeX{} entry, or copied to the kill ring if no Bib@TeX{} context is available. The model can be customized via @code{tlon-ai-summarization-model} (@ref{Task-specific models, , task-specific models}).
 
