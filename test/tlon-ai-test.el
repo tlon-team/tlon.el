@@ -13,6 +13,144 @@
 
 ;;;; tlon-ai-maybe-edit-prompt
 
+(defmacro tlon-test-with-abstract-target (&rest body)
+  "Run BODY with two databases containing the same key and a captured target."
+  (declare (indent 0))
+  `(let* ((db (ebib-db-new-database))
+          (other (ebib-db-new-database))
+          (ebib--databases (list db other))
+          (ebib--cur-db db)
+          (key "Same2026Key")
+          (file (make-temp-file "tlon-target-" nil ".bib"))
+          events target)
+     (unwind-protect
+         (progn
+           (ebib-db-set-filename file db)
+           (ebib-db-set-entry key (copy-tree '(("=type=" . "article") ("doi" . "10.1/target"))) db)
+           (ebib-db-set-entry key (copy-tree '(("=type=" . "article") ("abstract" . "Other database"))) other)
+           (setq target (list :key key :db db :entry (ebib-db-get-entry key db)
+                              :file "/tmp/captured-source.pdf" :language "english"
+                              :callback (lambda (status &optional error)
+                                          (push (list status error) events))))
+           ,@body)
+       (when-let ((buffer (find-buffer-visiting file)))
+         (with-current-buffer buffer (set-buffer-modified-p nil))
+         (kill-buffer buffer))
+       (delete-file file))))
+
+(ert-deftest tlon-ai-target-fetch-survives-database-switch ()
+  "A yielding metadata fetch writes only the captured same-key entry."
+  (tlon-test-with-abstract-target
+    (cl-letf (((symbol-function 'tlon-fetch-abstract-from-crossref)
+               (lambda (_doi) (setq ebib--cur-db other) "Fetched abstract"))
+              ((symbol-function 'y-or-n-p) (lambda (&rest _) (ert-fail "Prompt"))))
+      (with-temp-buffer (tlon-get-abstract-with-or-without-ai nil t target))
+      (should (equal (ebib-db-get-field-value "abstract" key db) "Fetched abstract."))
+      (should (equal (ebib-db-get-field-value "abstract" key other) "Other database"))
+      (should (eq (caar events) 'complete))
+      (should (= (length events) 1)))))
+
+(ert-deftest tlon-ai-target-ai-captures-source-and-preserves-late-abstract ()
+  "A delayed AI response retains its target and finishes only once."
+  (dolist (late '(nil "Added while waiting"))
+    (tlon-test-with-abstract-target
+      (let (callback source)
+        (cl-letf (((symbol-function 'tlon-fetch-abstract-from-crossref) #'ignore)
+                  ((symbol-function 'tlon-fetch-abstract-from-google-books) #'ignore)
+                  ((symbol-function 'tlon-fetch-abstract-with-zotra) #'ignore)
+                  ((symbol-function 'tlon-get-string-dwim)
+                   (lambda (file) (setq source file) "Captured text"))
+                  ((symbol-function 'tlon-ai-get-abstract-common)
+                   (lambda (_prompt _text _language cb) (setq callback cb)))
+                  ((symbol-function 'read-string) (lambda (&rest _) (ert-fail "Prompt"))))
+          (with-temp-buffer (tlon-get-abstract-with-or-without-ai nil t target))
+          (should (equal source "/tmp/captured-source.pdf"))
+          (setq ebib--cur-db other)
+          (when late (ebib-db-set-field-value "abstract" late key db 'overwrite))
+          (with-temp-buffer (funcall callback "AI abstract" nil))
+          (funcall callback "Duplicate delivery" nil)
+          (should (equal (ebib-db-get-field-value "abstract" key db) (or late "AI abstract")))
+          (should (equal (ebib-db-get-field-value "abstract" key other) "Other database"))
+          (should (eq (caar events) (if late 'preserved 'complete)))
+          (should (= (length events) 1)))))))
+
+(ert-deftest tlon-ai-target-rejects-replaced-entry-and-failed-response ()
+  "A delayed response never writes a replacement entry or reports twice."
+  (dolist (failure '(replaced no-response dirty-buffer dirty-db buffer-abstract))
+    (tlon-test-with-abstract-target
+      (let (callback)
+        (cl-letf (((symbol-function 'tlon-fetch-abstract-from-crossref) #'ignore)
+                  ((symbol-function 'tlon-fetch-abstract-from-google-books) #'ignore)
+                  ((symbol-function 'tlon-fetch-abstract-with-zotra) #'ignore)
+                  ((symbol-function 'tlon-get-string-dwim) (lambda (_) "Source"))
+                  ((symbol-function 'tlon-ai-get-abstract-common)
+                   (lambda (_prompt _text _language cb) (setq callback cb))))
+          (tlon-get-abstract-with-or-without-ai nil t target)
+          (pcase failure
+            ('replaced (ebib-db-set-entry key '(("=type=" . "article")) db 'overwrite))
+            ('dirty-db (ebib-db-set-modified t db))
+            ('dirty-buffer (with-current-buffer (find-file-noselect file)
+                             (insert "@article{Same2026Key, title={Unsaved}}")))
+            ('buffer-abstract (with-current-buffer (find-file-noselect file)
+                                (insert "@article{Same2026Key, abstract={User abstract}}"))))
+          (funcall callback (unless (eq failure 'no-response) "Late AI") nil)
+          (funcall callback "Repeated AI" nil)
+          (should-not (ebib-db-get-field-value "abstract" key db 'noerror))
+          (should (eq (caar events) (if (eq failure 'buffer-abstract) 'preserved 'failed)))
+          (should (= (length events) 1)))))))
+
+(ert-deftest tlon-ai-target-missing-local-key-preserves-database-abstract ()
+  "A stale visiting buffer must not hide an abstract in the target database."
+  (tlon-test-with-abstract-target
+    (ebib-db-set-field-value "abstract" "Unsaved database abstract" key db 'overwrite)
+    (ebib-db-set-modified t db)
+    (with-current-buffer (find-file-noselect file) (insert "@article{DifferentKey, title={Stale}}"))
+    (cl-letf (((symbol-function 'tlon-bib--fetch-abstract)
+               (lambda (&rest _) (ert-fail "Existing abstract was ignored"))))
+      (tlon-get-abstract-with-or-without-ai nil t target))
+    (should (eq (caar events) 'preserved))
+    (should (= (length events) 1))
+    (should (ebib-db-modified-p db))))
+
+(ert-deftest tlon-ai-target-missing-source-or-prompt-finishes-failed ()
+  "Unavailable text or a missing language prompt must not leave work pending."
+  (dolist (text '(nil "Source text"))
+    (tlon-test-with-abstract-target
+      (let ((tlon-ai-get-abstract-prompts nil))
+        (cl-letf (((symbol-function 'tlon-bib--fetch-abstract) #'ignore)
+                  ((symbol-function 'tlon-get-string-dwim) (lambda (_) text))
+                  ((symbol-function 'tlon-make-gptel-request)
+                   (lambda (&rest _) (ert-fail "Missing prompt sent a request"))))
+          (tlon-get-abstract-with-or-without-ai nil t target))
+        (should (eq (caar events) 'failed))
+        (should (= (length events) 1))))))
+
+(ert-deftest tlon-ai-target-isolates-ambient-context-during-request-copy ()
+  "A captured source excludes ambient context without altering the user's context."
+  (tlon-test-with-abstract-target
+    (with-temp-buffer
+      (setq-local gptel-context '(("unrelated-user-document")))
+      (let ((original-context gptel-context)
+            (tlon-ai-summarization-model '(nil . test-model))
+            copied-context copied-use-context sent-prompt callback)
+        (cl-letf (((symbol-function 'tlon-bib--fetch-abstract) #'ignore)
+                  ((symbol-function 'tlon-get-string-dwim) (lambda (_) "CAPTURED SOURCE"))
+                  ((symbol-function 'tlon--resolve-backend+model) #'identity)
+                  ((symbol-function 'y-or-n-p) (lambda (&rest _) (ert-fail "Prompt")))
+                  ((symbol-function 'gptel-request)
+                   (lambda (prompt &rest args)
+                     (setq sent-prompt prompt callback (plist-get args :callback))
+                     (gptel--with-buffer-copy (plist-get args :buffer) nil nil
+                       (setq copied-context gptel-context copied-use-context gptel-use-context)
+                       (kill-buffer (current-buffer))))))
+          (tlon-get-abstract-with-or-without-ai nil t target))
+        (should (string-match-p "CAPTURED SOURCE" sent-prompt))
+        (should-not copied-context)
+        (should-not copied-use-context)
+        (should (eq gptel-context original-context))
+        (funcall callback "Target abstract" nil)
+        (should (eq (caar events) 'complete))))))
+
 (ert-deftest tlon-ai-abstract-no-translator-reaches-ai ()
   "An unsupported metadata page permits the intended AI abstract step."
   (with-temp-buffer

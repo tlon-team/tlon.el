@@ -307,10 +307,7 @@ INTERACTIVE-P must be non-nil for dispatch to be considered."
 	  (let ((key (tlon-get-key-at-point))
                 (buffer (current-buffer))
                 (db (and (eq major-mode 'ebib-entry-mode) ebib--cur-db)))
-	    (if-let ((value (or
-			     (tlon-fetch-abstract-from-crossref doi)
-			     (tlon-fetch-abstract-from-google-books isbn)
-			     (tlon-fetch-abstract-with-zotra url doi))))
+	    (if-let ((value (tlon-bib--fetch-abstract doi isbn url)))
 		(progn
 		  (with-current-buffer buffer
                     (when (or (and db (not (eq db ebib--cur-db)))
@@ -330,6 +327,12 @@ INTERACTIVE-P must be non-nil for dispatch to be considered."
 				       (with-current-buffer buf
 					 (tlon-ai-batch-continue))))))
       found)))
+
+(defun tlon-bib--fetch-abstract (doi isbn url)
+  "Fetch an abstract using the DOI, ISBN or URL, in the standard order."
+  (or (tlon-fetch-abstract-from-crossref doi)
+      (tlon-fetch-abstract-from-google-books isbn)
+      (tlon-fetch-abstract-with-zotra url doi)))
 
 (defvar tlon-ai-batch-fun)
 (autoload 'zotra-extras-fetch-field "zotra-extras")

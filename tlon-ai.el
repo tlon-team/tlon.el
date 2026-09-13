@@ -1079,18 +1079,23 @@ Messages refer to paragraphs with one-based numbering."
 ;;;;; Summarization
 
 (declare-function tlon-fetch-and-set-abstract "tlon-bib")
+(declare-function tlon-bib--fetch-abstract "tlon-bib")
 (declare-function tlon-bib--get-field-fn "tlon-bib")
 (declare-function tlon-bib--set-field-fn "tlon-bib")
 (declare-function tlon-get-key-at-point "tlon-bib")
 (declare-function tlon-bib--should-dispatch-to-batch-p "tlon-bib")
 (declare-function tlon-batch-set-abstracts "tlon-bib")
 ;;;###autoload
-(defun tlon-get-abstract-with-or-without-ai (&optional interactive-p preserve-existing)
+(defun tlon-get-abstract-with-or-without-ai (&optional interactive-p preserve-existing target)
   "Try to get an abstract using non-AI methods; if unsuccessful, use AI.
 Non-AI handling is delegated to `tlon-fetch-and-set-abstract' and AI
 handling to `tlon-get-abstract-with-ai'; see their docstrings.
 PRESERVE-EXISTING keeps existing abstracts without prompting, including a
 field populated before an asynchronous response arrives.
+TARGET, when non-nil, is an explicit asynchronous operation plist containing
+:key, :db, :entry, :file, :language and :callback.  Its callback receives
+STATUS and optional ERROR, with STATUS `complete', `preserved' or `failed'.
+The operation updates only the captured database; its caller owns saving it.
 
 When INTERACTIVE-P is non-nil (which the `interactive' spec sets to t),
 `tlon-ai-batch-fun' is set, and the buffer is a file-visiting
@@ -1098,15 +1103,103 @@ When INTERACTIVE-P is non-nil (which the `interactive' spec sets to t),
 (background, strategy `both') instead of processing the entry at point."
   (interactive (list t))
   (require 'tlon-bib)
-  (if (tlon-bib--should-dispatch-to-batch-p interactive-p)
-      (tlon-batch-set-abstracts (buffer-file-name) 'both)
-    (if (tlon-fetch-and-set-abstract nil preserve-existing)
-	(let ((buf (current-buffer)))
-	  (run-with-idle-timer 0 nil (lambda ()
-				       (when (buffer-live-p buf)
-					 (with-current-buffer buf
-					   (tlon-ai-batch-continue))))))
-      (tlon-get-abstract-with-ai nil nil nil preserve-existing))))
+  (if target
+      (tlon-ai--get-abstract-for-target target)
+    (if (tlon-bib--should-dispatch-to-batch-p interactive-p)
+        (tlon-batch-set-abstracts (buffer-file-name) 'both)
+      (if (tlon-fetch-and-set-abstract nil preserve-existing)
+          (let ((buf (current-buffer)))
+            (run-with-idle-timer 0 nil (lambda ()
+                                        (when (buffer-live-p buf)
+                                          (with-current-buffer buf
+                                            (tlon-ai-batch-continue))))))
+        (tlon-get-abstract-with-ai nil nil nil preserve-existing)))))
+
+(defun tlon-ai--get-abstract-for-target (target)
+  "Fetch an abstract for captured TARGET without consulting the selection."
+  (let ((target (copy-sequence target))
+        finished)
+    (cl-labels
+        ((finish (status &optional error)
+           (unless finished
+             (setq finished t)
+             (funcall (plist-get target :callback) status error)))
+         (store (abstract)
+           (unless finished
+             (finish (tlon-ai--set-target-abstract target abstract))))
+         (failed (err)
+           (if finished
+               (signal (car err) (cdr err))
+             (finish 'failed (format "Abstract request failed (%s)" (car err))))))
+      (condition-case err
+          (if (tlon-ai--target-existing-abstract target)
+              (finish 'preserved)
+            (let* ((key (plist-get target :key))
+                   (db (plist-get target :db))
+                   (get-field (lambda (field)
+                                (ebib-unbrace (ebib-db-get-field-value
+                                               field key db 'noerror))))
+                   (value (tlon-bib--fetch-abstract
+                           (funcall get-field "doi") (funcall get-field "isbn")
+                           (funcall get-field "url"))))
+              (if value
+                  (store (tlon-abstract-cleanup value))
+                (let ((text (tlon-get-string-dwim (plist-get target :file)))
+                      (language (tlon-get-language-code-from-name (plist-get target :language)))
+                      (tlon-ai-edit-prompt nil)
+                      (gptel-context nil)
+                      (gptel-use-context nil))
+                  (unless (and text language)
+                    (user-error "Abstract operation lacks source text or language"))
+                  (tlon-ai-get-abstract-common
+                   tlon-ai-get-abstract-prompts text language
+                   (lambda (response _info)
+                     (unless finished
+                       (condition-case err
+                           (if (and (stringp response)
+                                    (not (string-empty-p (string-trim response))))
+                               (store response)
+                             (finish 'failed "Abstract request returned no text"))
+                         (error (failed err))))))))))
+        (error (failed err))))))
+
+(defun tlon-ai--check-abstract-target (target)
+  "Require the original entry object and loaded database of TARGET."
+  (unless (and (plist-get target :entry)
+               (memq (plist-get target :db) ebib--databases)
+               (eq (plist-get target :entry)
+                   (ebib-db-get-entry (plist-get target :key)
+                                      (plist-get target :db) 'noerror)))
+    (user-error "Abstract target entry was removed or replaced")))
+
+(defun tlon-ai--target-existing-abstract (target)
+  "Return a nonempty abstract already present for TARGET, if any."
+  (tlon-ai--check-abstract-target target)
+  (let* ((key (plist-get target :key))
+         (db (plist-get target :db))
+         (value (ebib-unbrace (ebib-db-get-field-value "abstract" key db 'noerror)))
+         (buffer (find-buffer-visiting (ebib-db-get-filename db))))
+    (when buffer
+      (with-current-buffer buffer
+        (save-excursion
+          (goto-char (point-min))
+          (when (bibtex-search-entry key)
+            (let ((buffer-value (bibtex-extras-get-field "abstract")))
+              (when (and buffer-value (not (string-empty-p (string-trim buffer-value))))
+                (setq value buffer-value)))))))
+    (and value (not (string-empty-p (string-trim value))) value)))
+
+(defun tlon-ai--set-target-abstract (target abstract)
+  "Set ABSTRACT on TARGET, preserving a field populated during the request."
+  (if (tlon-ai--target-existing-abstract target)
+      'preserved
+    (let* ((db (plist-get target :db))
+           (buffer (find-buffer-visiting (ebib-db-get-filename db))))
+      (when (or (ebib-db-modified-p db) (and buffer (buffer-modified-p buffer)))
+        (user-error "Abstract target has unsaved changes"))
+      (ebib-db-set-field-value "abstract" abstract (plist-get target :key) db 'overwrite)
+      (ebib-db-set-modified t db)
+      'complete)))
 
 (autoload 'tlon-abstract-may-proceed-p "tlon-bib")
 ;;;###autoload
