@@ -1451,7 +1451,8 @@ visiting buffer and refuses to discard unrelated database edits."
 	    (when (bibtex-search-entry key)
 	      (when preserve-existing
 	        (let* ((db (ebib--get-db-from-filename bib-file))
-	               (live (and db (ebib-db-get-field-value "abstract" key db 'noerror)))
+	               (live (and db (ebib-unbrace
+                                      (ebib-db-get-field-value "abstract" key db 'noerror))))
 	               (buffer-value (bibtex-extras-get-field "abstract")))
 	          (when (seq-some (lambda (value)
 	                            (and (stringp value)
