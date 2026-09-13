@@ -12,6 +12,8 @@
 
 This manual describes the features and customization options for the Emacs Lisp file =tlon-ai.el=.
 
+The abstract commands load their bibliography helpers when invoked, including when called from Ebib before =tlon-bib= has been loaded.
+
 * Overview
 :PROPERTIES:
 :CUSTOM_ID: h:overview

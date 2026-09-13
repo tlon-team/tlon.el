@@ -28,5 +28,21 @@
   (let ((result (tlon-ai-callback-return nil '(:status "error"))))
     (should (stringp result))))
 
+(ert-deftest tlon-ai-abstract-entrypoints-load-bibliography-dependency ()
+  "Abstract commands load bibliography helpers before calling them."
+  (dolist (command '(tlon-get-abstract-with-or-without-ai
+                     tlon-get-abstract-with-ai))
+    (let ((original-require (symbol-function 'require)))
+      (cl-letf (((symbol-function 'tlon-bib--should-dispatch-to-batch-p)
+                 (lambda (&rest _) (ert-fail "Dependency was not required first")))
+                ((symbol-function 'require)
+                 (lambda (feature &rest args)
+                   (prog1 (apply original-require feature args)
+                     (when (eq feature 'tlon-bib)
+                       (should (featurep 'tlon-bib))
+                       ;; Stop before any network request or bibliography write.
+                       (throw 'dependency-loaded t))))))
+        (should (catch 'dependency-loaded (funcall command) nil))))))
+
 (provide 'tlon-ai-test)
 ;;; tlon-ai-test.el ends here

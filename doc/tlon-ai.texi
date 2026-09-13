@@ -1,0 +1,539 @@
+\input texinfo    @c -*- texinfo -*-
+@c %**start of header
+@setfilename tlon-ai.info
+@settitle tlon-ai: AI functionality for Tlon
+@documentencoding UTF-8
+@documentlanguage en
+@c %**end of header
+
+@dircategory Emacs misc features
+@direntry
+* AI functionality: (tlon-ai). AI functionality for Tlon.
+@end direntry
+
+@finalout
+@titlepage
+@title tlon-ai: AI functionality for Tlon
+@author Pablo Stafforini (@email{pablo@@stafforini.com})
+@end titlepage
+
+@contents
+
+@ifnottex
+@node Top
+@top tlon-ai: AI functionality for Tlon
+
+This manual describes the features and customization options for the Emacs Lisp file @samp{tlon-ai.el}.
+
+The abstract commands load their bibliography helpers when invoked, including when called from Ebib before @samp{tlon-bib} has been loaded.
+
+@end ifnottex
+
+@menu
+* Overview::
+* User options::
+* Commands::
+* Functions::
+* Indices::
+
+@detailmenu
+--- The Detailed Node Listing ---
+
+User options
+
+* General options::
+* Task-specific models::
+
+General options
+
+* Batch processing function::
+* Editing prompts before sending::
+* Automatic proofreading of reference articles::
+
+Commands
+
+* Translation::
+* Rewriting::
+* Reference articles::
+* Summarization::
+* Formatting and repair::
+* Language detection::
+* Phonetic transcription::
+* Audio transcription::
+* Mathematical expressions::
+* Commit analysis::
+* Cross-repository propagation::
+* Documentation-based help::
+* Transient menu::
+
+Translation
+
+* Generating translation variants::
+
+Rewriting
+
+* Generating rewrite variants::
+
+Reference articles
+
+* Creating a reference article::
+* Proofreading a reference article::
+
+Summarization
+
+* Generating abstracts::
+* Generating meta descriptions::
+* Generating titles::
+
+Formatting and repair
+
+* Fixing Markdown formatting::
+
+Language detection
+
+* Setting Bib@TeX{} language::
+* Setting file language for spell-checking::
+
+Phonetic transcription
+
+* Transcribing text phonetically::
+
+Audio transcription
+
+* Transcribing audio files::
+
+Mathematical expressions
+
+* Converting and translating math::
+
+Commit analysis
+
+* Summarizing commit diffs::
+
+Cross-repository propagation
+
+* Propagating changes across repositories::
+
+Documentation-based help
+
+* Asking for help::
+
+Functions
+
+* Sending requests to the AI::
+* Callback utilities::
+* Retrieving text content::
+* Translation helpers::
+
+Indices
+
+* Function index::
+* Variable index::
+
+@end detailmenu
+@end menu
+
+@node Overview
+@chapter Overview
+
+The @samp{tlon-ai} module integrates AI capabilities into the Tlon editorial workflow. It leverages the @samp{gptel} package to communicate with various large language model backends (OpenAI, Gemini, and others) for tasks that span the full content lifecycle: summarization and abstract generation, translation, reference article creation and proofreading, Markdown formatting restoration, phonetic transcription, mathematical expression handling, meta description and title generation, language detection, commit diff summarization, and cross-repository change propagation.
+
+A key design principle is that each task can use a dedicated AI model, letting you pair computationally demanding tasks (such as book-length summarization) with large-context models and more routine tasks with faster, cheaper alternatives. The module also supports batch processing of Bib@TeX{} entries and offers a comprehensive transient menu (@ref{Transient menu, , transient menu}) for quick access to all operations.
+
+@node User options
+@chapter User options
+
+@menu
+* General options::
+* Task-specific models::
+@end menu
+
+@node General options
+@section General options
+
+@menu
+* Batch processing function::
+* Editing prompts before sending::
+* Automatic proofreading of reference articles::
+@end menu
+
+@node Batch processing function
+@subsection Batch processing function
+
+@vindex tlon-ai-batch-fun
+The user option @code{tlon-ai-batch-fun} specifies which function to call when processing Bib@TeX{} entries in batch mode. You can set it interactively from the transient menu (@ref{Transient menu, , transient menu}) via the @samp{s -b} infix. Set it to @samp{nil} to disable batch processing.
+
+Typical values include @code{tlon-get-abstract-with-or-without-ai}, @code{tlon-get-abstract-with-ai}, @code{tlon-fetch-and-set-abstract}, and @code{tlon-ai-set-language-bibtex}. The default value is @samp{nil}.
+
+When @code{tlon-ai-batch-fun} is set to one of the three abstract-related commands and the command is invoked interactively from a Bib@TeX{} buffer, it delegates to @code{tlon-batch-set-abstracts} (see the @samp{tlon-bib} manual, @ref{h:batch-set-abstracts,Batch set abstracts,,tlon-bib,}) with the matching strategy (@samp{non-ai}, @samp{ai}, or @samp{both}). The batch runs in the background on a hidden copy of the file, so the current Emacs session is not interrupted: the buffer is not widened, point does not jump, and progress is written to @samp{*tlon-batch-abstract-log*} instead of the echo area.
+
+For the legacy function @code{tlon-ai-set-language-bibtex}, the older per-entry iteration driven by @code{tlon-ai-batch-continue} continues to apply.
+
+Because the overwrite infix (@samp{s -o}, @code{tlon-abstract-overwrite}) still controls collisions and its @samp{ask} value prompts mid-run, set it to @samp{always} or @samp{never} when you want an unattended batch.
+
+@node Editing prompts before sending
+@subsection Editing prompts before sending
+
+@vindex tlon-ai-edit-prompt
+When the user option @code{tlon-ai-edit-prompt} is non-nil, every AI prompt is presented in the minibuffer for editing before it is sent to the model. This is useful for one-off adjustments---for example, adding clarifying context or constraining the output format---without modifying the underlying prompt constants. The default value is @samp{nil}.
+
+@node Automatic proofreading of reference articles
+@subsection Automatic proofreading of reference articles
+
+@vindex tlon-ai-auto-proofread
+When the user option @code{tlon-ai-auto-proofread} is non-nil, @code{tlon-ai-create-reference-article} automatically triggers @code{tlon-ai-proofread-reference-article} after the article has been generated. If @samp{nil} (the default), you are prompted interactively whether to proofread.
+
+@node Task-specific models
+@section Task-specific models
+
+Each of the following user options overrides the default @samp{gptel} model for a specific task. Every option takes a cons cell of the form @samp{(BACKEND . MODEL)}, where @samp{BACKEND} is a string naming a registered @samp{gptel} backend (e.g. @samp{"Gemini"}, @samp{"ChatGPT"}) and @samp{MODEL} is a symbol identifying the model (e.g. @samp{gemini-flash-latest}, @samp{gpt-4.5-preview}). Consult @code{gptel-extras-ai-models} for the full list of available backends and models. When an option is @samp{nil}, the buffer-local or global @code{gptel-model} is used instead.
+
+@vindex tlon-ai-summarization-model
+The user option @code{tlon-ai-summarization-model} controls which model generates abstracts, synopses, and meta descriptions. Because some works exceed 100,000 tokens, you should choose a model with a context window of at least one million tokens. The default is @samp{("Gemini" . gemini-flash-latest)}.
+
+@vindex tlon-ai-markdown-fix-model
+The user option @code{tlon-ai-markdown-fix-model} controls which model restores Markdown formatting lost during translation (@ref{Fixing Markdown formatting, , fixing Markdown formatting}). The default is @samp{("Gemini" . gemini-flash-latest)}.
+
+@vindex tlon-ai-create-reference-article-model
+The user option @code{tlon-ai-create-reference-article-model} controls which model drafts reference articles (@ref{Creating a reference article, , creating reference articles}). The default is @samp{nil} (use the global model).
+
+@vindex tlon-ai-proofread-reference-article-model
+The user option @code{tlon-ai-proofread-reference-article-model} controls which model proofreads reference articles (@ref{Proofreading a reference article, , proofreading reference articles}). Proofreading benefits from a model with strong factual reasoning. The default is @samp{("ChatGPT" . gpt-4.5-preview)}.
+
+@vindex tlon-ai-summarize-commit-diffs-model
+The user option @code{tlon-ai-summarize-commit-diffs-model} controls which model summarizes commit diffs (@ref{Summarizing commit diffs, , summarizing commit diffs}). The default is @samp{("Gemini" . gemini-pro-latest)}.
+
+@vindex tlon-ai-help-model
+The user option @code{tlon-ai-help-model} controls which model answers documentation-based help queries (@ref{Asking for help, , asking for help}). The default is @samp{("Gemini" . gemini-flash-latest)}.
+
+@vindex tlon-ai-translation-model
+The user option @code{tlon-ai-translation-model} controls which model performs AI-powered translation when the translate engine is set to @samp{ai}. The default is @samp{nil} (use the global model).
+
+@node Commands
+@chapter Commands
+
+@menu
+* Translation::
+* Rewriting::
+* Reference articles::
+* Summarization::
+* Formatting and repair::
+* Language detection::
+* Phonetic transcription::
+* Audio transcription::
+* Mathematical expressions::
+* Commit analysis::
+* Cross-repository propagation::
+* Documentation-based help::
+* Transient menu::
+@end menu
+
+@node Translation
+@section Translation
+
+@menu
+* Generating translation variants::
+@end menu
+
+@node Generating translation variants
+@subsection Generating translation variants
+
+@findex tlon-ai-translate
+When you need to choose the best phrasing for a translated passage, the command @code{tlon-ai-translate} generates ten alternative Spanish translations of the text you provide. It prompts for the source text interactively, sends it to the AI along with the prompt in @code{tlon-ai-translate-variants-prompt}, and presents the alternatives in the minibuffer for selection. The chosen translation is copied to the kill ring.
+
+@node Rewriting
+@section Rewriting
+
+@menu
+* Generating rewrite variants::
+@end menu
+
+@node Generating rewrite variants
+@subsection Generating rewrite variants
+
+@findex tlon-ai-rewrite
+The command @code{tlon-ai-rewrite} works similarly to @code{tlon-ai-translate} but operates on existing Spanish text. If a region is active, the region text is used; otherwise you are prompted for input. The AI produces ten variant rewrites, and the one you select is copied to the kill ring.
+
+@node Reference articles
+@section Reference articles
+
+@menu
+* Creating a reference article::
+* Proofreading a reference article::
+@end menu
+
+@node Creating a reference article
+@subsection Creating a reference article
+
+@findex tlon-ai-create-reference-article
+The command @code{tlon-ai-create-reference-article} generates an encyclopedia-style article for the Tlon effective altruism encyclopedia. It reads the @samp{title} from the YAML front matter of the current buffer, determines the article language, and constructs a prompt from @code{tlon-ai-write-reference-article-prompt}.
+
+Before sending the request, the command collects source material. It scans the ``Further reading'' section for @samp{<Cite>} tags. For each citation, if the tag contains a @samp{locator} attribute (e.g. a chapter number), you are prompted to select the PDF that covers that specific section; otherwise, the full PDF linked in the Bib@TeX{} entry is used. All PDFs are converted to text and added to the @samp{gptel} context. A language-specific glossary is also attached when translating from English.
+
+The generated article is placed in a new Markdown buffer. You are then offered the option to proofread it immediately (@ref{Proofreading a reference article, , proofreading}). The model can be customized via @code{tlon-ai-create-reference-article-model} (@ref{Task-specific models, , task-specific models}).
+
+@node Proofreading a reference article
+@subsection Proofreading a reference article
+
+@findex tlon-ai-proofread-reference-article
+The command @code{tlon-ai-proofread-reference-article} sends the current buffer's content to the AI for expert proofreading, focusing on factual errors, calculation mistakes, and other substantive issues. The language-appropriate prompt is drawn from @code{tlon-ai-proofread-reference-article-prompt}. The proofread version or commentary appears in a new buffer. The model can be customized via @code{tlon-ai-proofread-reference-article-model} (@ref{Task-specific models, , task-specific models}).
+
+@node Summarization
+@section Summarization
+
+@menu
+* Generating abstracts::
+* Generating meta descriptions::
+* Generating titles::
+@end menu
+
+@node Generating abstracts
+@subsection Generating abstracts
+
+@findex tlon-get-abstract-with-or-without-ai
+The command @code{tlon-get-abstract-with-or-without-ai} is the primary entry point for obtaining an abstract. It first attempts non-AI extraction via @code{tlon-fetch-and-set-abstract} (e.g. scraping publisher metadata). If that fails, it falls back to AI generation via @code{tlon-get-abstract-with-ai}.
+
+@findex tlon-get-abstract-with-ai
+The command @code{tlon-get-abstract-with-ai} generates an abstract (100--250 words) using the AI@. It determines the source text from context: the region, the current buffer, or the HTML/PDF file linked in the Bib@TeX{} entry at point. The AI first checks whether the text already contains an abstract; if so, it extracts and returns it. Otherwise it creates one from scratch, ending with the phrase ``AI-generated abstract.'' The result is set as the @samp{abstract} field of the Bib@TeX{} entry, or copied to the kill ring if no Bib@TeX{} context is available. The model can be customized via @code{tlon-ai-summarization-model} (@ref{Task-specific models, , task-specific models}).
+
+@findex tlon-shorten-abstract-with-ai
+The command @code{tlon-shorten-abstract-with-ai} takes the existing @samp{abstract} field of the Bib@TeX{} entry at point and asks the AI to shorten it to the maximum length specified in @code{tlon-max-abstract-length}. The shortened abstract replaces the existing one.
+
+@findex tlon-get-synopsis-with-ai
+The command @code{tlon-get-synopsis-with-ai} generates a detailed synopsis (1000--2000 words) of the same source material that @code{tlon-get-abstract-with-ai} would use. The result is copied to the kill ring rather than inserted into a Bib@TeX{} field.
+
+@findex tlon-get-abstract-with-ai-from-pdf
+@findex tlon-get-abstract-with-ai-from-html
+The commands @code{tlon-get-abstract-with-ai-from-pdf} and @code{tlon-get-abstract-with-ai-from-html} are convenience wrappers that call @code{tlon-get-abstract-with-ai} on the PDF or HTML file, respectively, associated with the Bib@TeX{} entry at point.
+
+@node Generating meta descriptions
+@subsection Generating meta descriptions
+
+@findex tlon-ai-create-meta-description
+The command @code{tlon-ai-create-meta-description} generates an SEO-optimized meta description (up to 160 characters) for the Markdown article in the current buffer and inserts it as the @samp{meta} field in the YAML front matter. The language is determined from the file or by prompting you. The model can be customized via @code{tlon-ai-summarization-model}.
+
+@findex tlon-ai-create-meta-descriptions-in-directory
+The command @code{tlon-ai-create-meta-descriptions-in-directory} iterates over all Markdown files in a directory, generating meta descriptions for those that do not already have a @samp{meta} field. Files whose language cannot be determined are skipped.
+
+@node Generating titles
+@subsection Generating titles
+
+@findex tlon-ai-create-title
+The command @code{tlon-ai-create-title} generates an SEO-optimized title (50--60 characters) for the article in the current buffer and inserts it as the @samp{title} field in the YAML front matter.
+
+@node Formatting and repair
+@section Formatting and repair
+
+@menu
+* Fixing Markdown formatting::
+@end menu
+
+@node Fixing Markdown formatting
+@subsection Fixing Markdown formatting
+
+@findex tlon-ai-fix-markdown-formatting
+When Markdown formatting (links, emphasis, HTML elements, SSML tags) is lost or altered during translation, the command @code{tlon-ai-fix-markdown-formatting} restores it by comparing the translated file paragraph by paragraph with its original counterpart. The counterpart is identified via @code{tlon-get-counterpart}.
+
+Paragraphs are processed concurrently (up to three at a time) with automatic retry and exponential backoff. If any paragraph permanently fails after three attempts, the entire process aborts with diagnostic information. On success, the reconstructed file is saved as @samp{[filename]--fixed.md} and you are offered an @samp{ediff} session to review the changes. The model can be customized via @code{tlon-ai-markdown-fix-model} (@ref{Task-specific models, , task-specific models}).
+
+@node Language detection
+@section Language detection
+
+@menu
+* Setting Bib@TeX{} language::
+* Setting file language for spell-checking::
+@end menu
+
+@node Setting Bib@TeX{} language
+@subsection Setting Bib@TeX{} language
+
+@findex tlon-ai-set-language-bibtex
+The command @code{tlon-ai-set-language-bibtex} detects the language of the Bib@TeX{} entry at point using AI and sets the @samp{langid} field accordingly. If a @samp{langid} field already exists and the detected language matches, no change is made. If they conflict, you are prompted to choose. If no @samp{langid} field exists, the detected value is added directly. The detected language is validated and standardized before being written.
+
+@node Setting file language for spell-checking
+@subsection Setting file language for spell-checking
+
+@findex tlon-ai-set-language-in-file
+The command @code{tlon-ai-set-language-in-file} detects the language of the current buffer or file using AI and configures the Jinx spell-checker to use that language.
+
+@node Phonetic transcription
+@section Phonetic transcription
+
+@menu
+* Transcribing text phonetically::
+@end menu
+
+@node Transcribing text phonetically
+@subsection Transcribing text phonetically
+
+@findex tlon-ai-phonetically-transcribe
+The command @code{tlon-ai-phonetically-transcribe} generates an International Phonetic Alphabet (IPA) transcription of the text you provide. It defaults to the active region or word at point and determines the language from the file or by prompting you. The transcription is copied to the kill ring.
+
+@findex tlon-phonetically-transcribe-in-buffer
+The command @code{tlon-phonetically-transcribe-in-buffer} processes every line in the current buffer, appending a comma-separated IPA transcription to each line.
+
+@node Audio transcription
+@section Audio transcription
+
+@menu
+* Transcribing audio files::
+@end menu
+
+@node Transcribing audio files
+@subsection Transcribing audio files
+
+@findex tlon-transcribe-audio
+The command @code{tlon-transcribe-audio} transcribes and diarizes an audio file using @samp{whisperx} locally.  It prompts for the audio file and a language code (e.g. @samp{en}, @samp{es}).  When called interactively, the transcript is displayed in a dedicated buffer.  When called programmatically with a callback, the callback receives the path to the transcript file on success or @samp{nil} on failure.
+
+@node Mathematical expressions
+@section Mathematical expressions
+
+@menu
+* Converting and translating math::
+@end menu
+
+@node Converting and translating math
+@subsection Converting and translating math
+
+@findex tlon-ai-convert-math
+The command @code{tlon-ai-convert-math} converts a natural-language or plain-text mathematical expression into @LaTeX{}. If point is on a @samp{Math} tag, the @LaTeX{} result is inserted as the second value of the @samp{alt} attribute. Otherwise, the result is copied to the kill ring.
+
+@findex tlon-ai-translate-math
+The command @code{tlon-ai-translate-math} converts a @LaTeX{} expression into a natural-language description suitable for alt text (e.g. ``one half times two to the fifth power equals sixteen''). If point is on a @samp{Math} tag, the natural-language result is inserted as the first value of the @samp{alt} attribute. Otherwise, the result is copied to the kill ring.
+
+@node Commit analysis
+@section Commit analysis
+
+@menu
+* Summarizing commit diffs::
+@end menu
+
+@node Summarizing commit diffs
+@subsection Summarizing commit diffs
+
+@findex tlon-ai-summarize-commit-diffs
+The command @code{tlon-ai-summarize-commit-diffs} summarizes the diffs of commits selected in a @samp{magit-log-mode} buffer. Select a region covering the commits of interest, then invoke the command. The AI produces an Org-formatted summary organized by package or feature, designed for developers who need to quickly assess breaking changes and new functionality. The summary appears in a @samp{*Commit Summary*} buffer. With a prefix argument, diffstats are included in the prompt. The model can be customized via @code{tlon-ai-summarize-commit-diffs-model} (@ref{Task-specific models, , task-specific models}).
+
+@node Cross-repository propagation
+@section Cross-repository propagation
+
+@menu
+* Propagating changes across repositories::
+@end menu
+
+@node Propagating changes across repositories
+@subsection Propagating changes across repositories
+
+@findex tlon-ai-propagate-changes
+The command @code{tlon-ai-propagate-changes} automatically applies changes from a commit in the current repository to corresponding files in all other Uqbar content repositories (both originals and translations). If invoked from @samp{magit-status-mode} with point on a commit, that commit is used; otherwise, the latest commit is used.
+
+For each modified file in the source commit, the command retrieves the diff and locates the corresponding file in each target repository via metadata lookups (@samp{original_path}). It then asks the AI to apply the semantic equivalent of the changes to the target file's content. The AI response overwrites the target file and is automatically committed with a message referencing the source commit.
+
+The command requires a clean working tree (no uncommitted changes) and relies on consistent metadata across repositories.
+
+@node Documentation-based help
+@section Documentation-based help
+
+@menu
+* Asking for help::
+@end menu
+
+@node Asking for help
+@subsection Asking for help
+
+@findex tlon-ai-ask-for-help
+The command @code{tlon-ai-ask-for-help} lets you ask a free-form question about the Tlon ecosystem. It collects documentation files---@samp{.org} files from the @samp{doc/} directories of the @samp{tlon} and @samp{extras} repositories, readme files from Tlon-related repos, and the user's @samp{config.org}---and adds them to the @samp{gptel} context. Your question, together with this context, is sent to the model specified by @code{tlon-ai-help-model}. The answer appears in a new @samp{gptel-mode} buffer. You are then prompted to clear the context; if you have follow-up questions, you can decline and clear manually later with @code{gptel-context-remove-all}.
+
+@node Transient menu
+@section Transient menu
+
+@findex tlon-ai-menu
+The command @code{tlon-ai-menu} opens a comprehensive transient menu that exposes all AI operations and their associated options. The menu is organized into three columns:
+
+@itemize
+@item
+@strong{Summarize}: abstract generation (with and without AI), synopsis, meta description, and batch/overwrite options.
+@item
+@strong{Math / Reference articles / Propagation}: math conversion and translation, reference article creation and proofreading, commit diff summarization, and change propagation.
+@item
+@strong{Misc / Options / Models}: Bib@TeX{} language detection, Markdown fix, phonetic transcription, rewriting, translation, title generation, the edit-prompt toggle, debug toggle, and per-task model selection.
+@end itemize
+
+The ``Models'' section allows you to interactively select models for each task from all registered @samp{gptel} backends.
+
+@node Functions
+@chapter Functions
+
+@menu
+* Sending requests to the AI::
+* Callback utilities::
+* Retrieving text content::
+* Translation helpers::
+@end menu
+
+@node Sending requests to the AI
+@section Sending requests to the AI
+
+@findex tlon-make-gptel-request
+The function @code{tlon-make-gptel-request} is the central dispatch point for all AI requests in the module. It accepts a prompt string, optional printf arguments, a callback, a full model specification (as a @samp{(BACKEND . MODEL)} cons cell), and optional parameters for tools, MCP servers, and request buffers. It pins the selected backend and model buffer-locally so that follow-up tool calls reuse the same provider. All other commands in this module delegate to this function.
+
+@node Callback utilities
+@section Callback utilities
+
+@findex tlon-ai-callback-return
+@findex tlon-ai-callback-copy
+@findex tlon-ai-callback-save
+@findex tlon-ai-callback-insert
+@findex tlon-ai-callback-fail
+The module provides a family of generic callback functions for common response-handling patterns:
+
+@itemize
+@item
+@code{tlon-ai-callback-return} returns the response string.
+@item
+@code{tlon-ai-callback-copy} copies the response to the kill ring and messages it.
+@item
+@code{tlon-ai-callback-save} saves the response to a file.
+@item
+@code{tlon-ai-callback-insert} inserts the response at the position where the request was sent.
+@item
+@code{tlon-ai-callback-fail} displays an error message extracted from the response info.
+@end itemize
+
+@node Retrieving text content
+@section Retrieving text content
+
+@findex tlon-get-string-dwim
+The function @code{tlon-get-string-dwim} (``Do What I Mean'') returns text content from the most appropriate source. If a region is active, it returns the region text. In @samp{bibtex-mode} or @samp{ebib-entry-mode}, it returns the contents of the HTML or PDF file linked in the Bib@TeX{} entry. In @samp{pdf-view-mode} or @samp{eww-mode}, it returns the current document's contents. In @samp{markdown-mode}, it returns the substantive content (excluding metadata). Otherwise, it returns the full buffer contents. Many AI commands use this function to determine what to send to the model.
+
+@findex tlon-get-file-as-string
+The function @code{tlon-get-file-as-string} reads a file into a string, handling PDF-to-Markdown conversion and HTML-to-text rendering via @samp{eww} transparently.
+
+@node Translation helpers
+@section Translation helpers
+
+@findex tlon-ai-translate-text
+The function @code{tlon-ai-translate-text} translates a text string from one language to another, attaching a glossary when translating from English. It manages its own temporary request buffer and cleans up glossary files after the callback completes.
+
+@findex tlon-ai-request-wrapper
+The function @code{tlon-ai-request-wrapper} provides the integration point for the @samp{tlon-translate} machinery, dispatching AI-backed translation requests with automatic glossary handling and buffer management.
+
+@node Indices
+@chapter Indices
+
+@menu
+* Function index::
+* Variable index::
+@end menu
+
+@node Function index
+@section Function index
+
+@printindex fn
+
+@node Variable index
+@section Variable index
+
+@printindex vr
+
+@bye

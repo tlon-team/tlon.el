@@ -1095,6 +1095,7 @@ When INTERACTIVE-P is non-nil (which the `interactive' spec sets to t),
 `bibtex-mode' buffer, dispatch to `tlon-batch-set-abstracts'
 (background, strategy `both') instead of processing the entry at point."
   (interactive (list t))
+  (require 'tlon-bib)
   (if (tlon-bib--should-dispatch-to-batch-p interactive-p)
       (tlon-batch-set-abstracts (buffer-file-name) 'both)
     (if (tlon-fetch-and-set-abstract)
@@ -1133,6 +1134,7 @@ When this command is invoked interactively from a BibTeX buffer with
 `interactive' spec sets to t), dispatch to `tlon-batch-set-abstracts'
 (background, strategy `ai') instead of processing the entry at point."
   (interactive (list nil nil t))
+  (require 'tlon-bib)
   (cond
    ((tlon-bib--should-dispatch-to-batch-p interactive-p)
     (tlon-batch-set-abstracts (buffer-file-name) 'ai))
