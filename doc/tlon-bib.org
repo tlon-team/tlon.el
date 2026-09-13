@@ -90,6 +90,8 @@ The command first checks whether proceeding is allowed based on ~tlon-abstract-o
 
 Programmatic callers may pass =PRESERVE-EXISTING= to skip an existing abstract without prompting. The field is checked again after fetching, so an abstract added while a network request yields is preserved. The original buffer is retained, and a changed entry or Ebib database stops the write. Ordinary interactive overwrite confirmation is requested only once.
 
+If Zotra reports that no translator returned metadata, the command reports that result and continues to the next source. The combined non-AI/AI command can then use its existing AI summarization step. Other Zotra errors, including authentication, network and programming failures, remain errors in both single-entry and batch calls. DOI-only entries also reach Zotra when CrossRef returns no abstract.
+
 When invoked interactively from a BibTeX buffer with the Summarize =batch= infix (~tlon-ai-batch-fun~) set, the command delegates to ~tlon-batch-set-abstracts~ with strategy =non-ai= ([[#h:batch-set-abstracts][Batch set abstracts]]), which runs in the background without widening or saving the current buffer. Outside a BibTeX buffer, or when the infix is unset, the command still uses the legacy per-entry path driven by ~tlon-ai-batch-continue~.
 
 *** Batch set abstracts

@@ -310,7 +310,7 @@ INTERACTIVE-P must be non-nil for dispatch to be considered."
 	    (if-let ((value (or
 			     (tlon-fetch-abstract-from-crossref doi)
 			     (tlon-fetch-abstract-from-google-books isbn)
-			     (tlon-fetch-abstract-with-zotra url url))))
+			     (tlon-fetch-abstract-with-zotra url doi))))
 		(progn
 		  (with-current-buffer buffer
                     (when (or (and db (not (eq db ebib--cur-db)))
@@ -335,7 +335,8 @@ INTERACTIVE-P must be non-nil for dispatch to be considered."
 (autoload 'zotra-extras-fetch-field "zotra-extras")
 (defun tlon-fetch-abstract-with-zotra (url doi)
   "Return the abstract of the work with URL or DOI.
-Give up after five seconds."
+Give up after five seconds per request.  An unsupported translator returns
+nil; other errors remain visible."
   (when-let ((id (or url doi)))
     (message "Trying to find abstract for %s with zotra..." id)
     (let* ((doi (when doi (tlon-fetch-url-from-doi doi))))
@@ -345,11 +346,20 @@ Give up after five seconds."
 		    (when (and field
 			       (not (string-match-p "\\.pdf$" field)))
 		      (when-let ((abstract
-				  (shut-up (zotra-extras-fetch-field
-					    "abstract" field (when tlon-ai-batch-fun 'no-error) 5))))
+				  (tlon-bib--zotra-abstract field)))
 			(throw 'found abstract)))))))
 	  abstract
 	(progn (message "No abstract found.") nil)))))
+
+(defun tlon-bib--zotra-abstract (url)
+  "Fetch an abstract from URL, treating an unsupported translator as absent."
+  (condition-case err
+      (shut-up (zotra-extras-fetch-field "abstract" url nil 5))
+    (user-error
+     (if (equal (cadr err)
+                "JSON parse error: No items returned from any translator")
+         (progn (message "No Zotra translator returned metadata for %s" url) nil)
+       (signal (car err) (cdr err))))))
 
 ;; TODO: submit as pull request to `doi-utils'?
 ;; `doi-utils-get-redirect' doesn't work

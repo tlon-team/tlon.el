@@ -13,6 +13,58 @@
 
 ;;;; tlon-ai-maybe-edit-prompt
 
+(ert-deftest tlon-ai-abstract-no-translator-reaches-ai ()
+  "An unsupported metadata page permits the intended AI abstract step."
+  (with-temp-buffer
+    (bibtex-mode)
+    (insert "@book{Test2026Book,\n title = {Book},\n url = {https://example.org/book},\n}\n")
+    (goto-char (point-min))
+    (let ((tlon-ai-batch-fun nil)
+          generated)
+      (cl-letf (((symbol-function 'tlon-fetch-abstract-from-crossref) #'ignore)
+                ((symbol-function 'tlon-fetch-abstract-from-google-books) #'ignore)
+                ((symbol-function 'tlon-fetch-url-from-doi) #'ignore)
+                ((symbol-function 'zotra-extras-fetch-field)
+                 (lambda (&rest _)
+                   (user-error "JSON parse error: No items returned from any translator")))
+                ((symbol-function 'tlon-get-abstract-with-ai)
+                 (lambda (&rest _) (setq generated t)))
+                ((symbol-function 'y-or-n-p)
+                 (lambda (&rest _) (ert-fail "Unexpected prompt"))))
+        (tlon-get-abstract-with-or-without-ai nil t)
+        (should generated)))))
+
+(ert-deftest tlon-ai-abstract-zotra-receives-doi ()
+  "A DOI-only entry reaches Zotra using its DOI rather than a missing URL."
+  (with-temp-buffer
+    (bibtex-mode)
+    (insert "@book{Test2026Book,\n title = {Book},\n doi = {10.1234/book},\n}\n")
+    (goto-char (point-min))
+    (let ((tlon-ai-batch-fun nil)
+          requested-doi)
+      (cl-letf (((symbol-function 'tlon-fetch-abstract-from-crossref) #'ignore)
+                ((symbol-function 'tlon-fetch-abstract-from-google-books) #'ignore)
+                ((symbol-function 'tlon-fetch-url-from-doi)
+                 (lambda (doi) (setq requested-doi doi) "https://example.org/book"))
+                ((symbol-function 'zotra-extras-fetch-field)
+                 (lambda (&rest _) "Found abstract")))
+        (should (tlon-fetch-and-set-abstract nil t))
+        (should (equal requested-doi "10.1234/book"))
+        (should (equal (bibtex-extras-get-field "abstract") "Found abstract."))))))
+
+(ert-deftest tlon-ai-abstract-zotra-preserves-unrelated-errors ()
+  "The no-translator case must not hide authentication or programming errors."
+  (dolist (batch '(nil tlon-fetch-and-set-abstract))
+    (let ((tlon-ai-batch-fun batch))
+      (dolist (failure '((user-error "JSON parse error: Unauthorized")
+                         (user-error "Request timed out")
+                         (wrong-type-argument stringp nil)))
+        (cl-letf (((symbol-function 'zotra-extras-fetch-field)
+                   (lambda (_field _url ignore-errors &rest _)
+                     (unless ignore-errors (signal (car failure) (cdr failure))))))
+          (should-error (tlon-fetch-abstract-with-zotra "https://example.org/book" nil)
+                        :type (car failure)))))))
+
 (ert-deftest tlon-ai-maybe-edit-prompt-passthrough ()
   "With editing disabled, return prompt as-is."
   (let ((tlon-ai-edit-prompt nil))
