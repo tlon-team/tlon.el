@@ -1197,7 +1197,7 @@ When INTERACTIVE-P is non-nil (which the `interactive' spec sets to t),
            (buffer (find-buffer-visiting (ebib-db-get-filename db))))
       (when (or (ebib-db-modified-p db) (and buffer (buffer-modified-p buffer)))
         (user-error "Abstract target has unsaved changes"))
-      (ebib-db-set-field-value "abstract" abstract (plist-get target :key) db 'overwrite)
+      (ebib-set-field-value "abstract" abstract (plist-get target :key) db 'overwrite)
       (ebib-db-set-modified t db)
       'complete)))
 

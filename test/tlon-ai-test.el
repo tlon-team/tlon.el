@@ -45,10 +45,32 @@
                (lambda (_doi) (setq ebib--cur-db other) "Fetched abstract"))
               ((symbol-function 'y-or-n-p) (lambda (&rest _) (ert-fail "Prompt"))))
       (with-temp-buffer (tlon-get-abstract-with-or-without-ai nil t target))
-      (should (equal (ebib-db-get-field-value "abstract" key db) "Fetched abstract."))
+      (should (equal (ebib-unbrace (ebib-db-get-field-value "abstract" key db)) "Fetched abstract."))
       (should (equal (ebib-db-get-field-value "abstract" key other) "Other database"))
       (should (eq (caar events) 'complete))
       (should (= (length events) 1)))))
+
+(ert-deftest tlon-ai-target-abstract-round-trips-through-bibtex-file ()
+  "A comma-containing abstract survives Ebib serialization and BibTeX parsing."
+  (tlon-test-with-abstract-target
+    (let ((abstract "Choice {A}, choice B."))
+      (ebib-set-field-value "doi" "10.1/target" key db 'overwrite)
+      (cl-letf (((symbol-function 'tlon-fetch-abstract-from-crossref)
+                 (lambda (_) abstract)))
+        (tlon-get-abstract-with-or-without-ai nil t target))
+      (should (eq (caar events) 'complete))
+      (ebib-db-set-backup nil db)
+      (with-temp-buffer
+        (let ((ebib--cur-db db)
+              (ebib--buffer-alist (list (cons 'index (current-buffer)))))
+          (ebib--save-database db)))
+      (with-temp-buffer
+        (insert-file-contents file)
+        (should (re-search-forward "abstract = {Choice {A}, choice B[.]}" nil t))
+        (bibtex-mode)
+        (goto-char (point-min))
+        (should (bibtex-search-entry key))
+        (should (equal (cdr (assoc "abstract" (bibtex-parse-entry t))) abstract))))))
 
 (ert-deftest tlon-ai-target-ai-captures-source-and-preserves-late-abstract ()
   "A delayed AI response retains its target and finishes only once."
@@ -69,7 +91,7 @@
           (when late (ebib-db-set-field-value "abstract" late key db 'overwrite))
           (with-temp-buffer (funcall callback "AI abstract" nil))
           (funcall callback "Duplicate delivery" nil)
-          (should (equal (ebib-db-get-field-value "abstract" key db) (or late "AI abstract")))
+          (should (equal (ebib-unbrace (ebib-db-get-field-value "abstract" key db)) (or late "AI abstract")))
           (should (equal (ebib-db-get-field-value "abstract" key other) "Other database"))
           (should (eq (caar events) (if late 'preserved 'complete)))
           (should (= (length events) 1)))))))
