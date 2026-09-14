@@ -61,7 +61,7 @@ Get this from the Google Cloud Console. This key is used for read-only API opera
 
 OAuth 2.0 client ID for YouTube API authentication.
 
-The default value is retrieved from =auth-source-pass= using the shared Tlon email. The type is a string or =nil=.
+The default value is =nil=. When =nil=, the value is retrieved from =auth-source-pass= using the shared Tlon email the first time a command needs it, not when the package is loaded. The type is a string or =nil=.
 
 This must be a *Desktop app* client ID from the Google Cloud Console. Web application client IDs will not work with the =oauth2-auto= authorization flow. See [[#h:authentication-setup][authentication setup]] for details.
 
@@ -73,7 +73,7 @@ This must be a *Desktop app* client ID from the Google Cloud Console. Web applic
 
 OAuth 2.0 client secret for YouTube API authentication.
 
-The default value is retrieved from =auth-source-pass= using the shared Tlon email. The type is a string or =nil=.
+The default value is =nil=. When =nil=, the value is retrieved from =auth-source-pass= using the shared Tlon email the first time a command needs it, not when the package is loaded. The type is a string or =nil=.
 
 Must correspond to the same Desktop app client as ~tlon-youtube-client-id~.
 

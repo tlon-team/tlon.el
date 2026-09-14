@@ -99,18 +99,18 @@ Get this from the Google Cloud Console."
                  (string :tag "API Key"))
   :group 'tlon-youtube)
 
-(defcustom tlon-youtube-client-id
-  (auth-source-pass-get "desktop-client-id" (concat "tlon/core/console.cloud.google.com/" tlon-email-shared))
+(defcustom tlon-youtube-client-id nil
   "OAuth 2.0 client ID for YouTube API authentication.
-Get this from the Google Cloud Console."
+Get this from the Google Cloud Console.  When nil, the value is looked up in
+the password store on first use; see `tlon-youtube-get-client-id'."
   :type '(choice (const :tag "Not set" nil)
                  (string :tag "Client ID"))
   :group 'tlon-youtube)
 
-(defcustom tlon-youtube-client-secret
-  (auth-source-pass-get "desktop-client-secret" (concat "tlon/core/console.cloud.google.com/" tlon-email-shared))
+(defcustom tlon-youtube-client-secret nil
   "OAuth 2.0 client secret for YouTube API authentication.
-Get this from the Google Cloud Console."
+Get this from the Google Cloud Console.  When nil, the value is looked up in
+the password store on first use; see `tlon-youtube-get-client-secret'."
   :type '(choice (const :tag "Not set" nil)
                  (string :tag "Client Secret"))
   :group 'tlon-youtube)
@@ -339,8 +339,7 @@ Check that API credentials are configured, prompt for video file, title,
 description, privacy setting, and optional playlist, and validate that the
 video file exists.  Return a plist with keys `:video-file', `:title',
 `:description', `:privacy', and `:playlist-id'."
-  (unless (and tlon-youtube-client-id tlon-youtube-client-secret)
-    (user-error "YouTube API credentials not configured. Set `tlon-youtube-client-id` and `tlon-youtube-client-secret`"))
+  (tlon-youtube--ensure-credentials)
   (let* ((video-file (read-file-name "Select video file: " paths-dir-downloads nil t nil
                                      (lambda (name) (string-match-p "\\.mp4\\'" name))))
          (title (read-string "Video title: "))
@@ -530,8 +529,7 @@ exact curl command to run for the video upload step."
   "Upload a thumbnail to an existing YouTube video.
 Prompts for thumbnail file and video ID."
   (interactive)
-  (unless (and tlon-youtube-client-id tlon-youtube-client-secret)
-    (user-error "YouTube API credentials not configured"))
+  (tlon-youtube--ensure-credentials)
   (let* ((thumbnail-file (read-file-name "Select thumbnail file: " paths-dir-downloads nil t nil
                                          (lambda (name) (string-match-p "\\.\\(png\\|jpg\\|jpeg\\)\\'" name))))
          (video-id (read-string "YouTube video ID: ")))
@@ -544,8 +542,7 @@ Prompts for thumbnail file and video ID."
   "Add an existing YouTube video to a playlist.
 Prompts for video ID and playlist selection."
   (interactive)
-  (unless (and tlon-youtube-client-id tlon-youtube-client-secret)
-    (user-error "YouTube API credentials not configured"))
+  (tlon-youtube--ensure-credentials)
   (let* ((video-id (read-string "YouTube video ID: "))
          (playlist-choices (mapcar #'car tlon-youtube-playlists))
          (playlist-choice (completing-read "Select playlist: " playlist-choices nil t))
@@ -608,33 +605,50 @@ Prompts for video ID and playlist selection."
   "Force re-authorization for YouTube API access.
 This is useful if the stored tokens are invalid or have been revoked."
   (interactive)
-  (unless (and tlon-youtube-client-id tlon-youtube-client-secret)
-    (user-error "YouTube API credentials not configured"))
+  (tlon-youtube--ensure-credentials)
   (message "Starting authorization process... Please check your browser.")
   (oauth2-auto-poll-promise (oauth2-auto-force-reauth tlon-email-shared 'tlon-youtube))
   (message "Authorization process completed."))
 
 (defun tlon-youtube--get-access-token ()
   "Get a valid OAuth 2.0 access token for YouTube API using oauth2-auto."
-  (unless (and tlon-youtube-client-id tlon-youtube-client-secret)
-    (user-error "YouTube API credentials not configured"))
+  (tlon-youtube--ensure-credentials)
   (oauth2-auto-access-token-sync tlon-email-shared 'tlon-youtube))
 
-(defun tlon-youtube--oauth2-auto-setup ()
-  "Setup OAuth2 authentication for YouTube using oauth2-auto."
-  (add-to-list
-   'oauth2-auto-additional-providers-alist
-   `(tlon-youtube
-     (authorize_url . "https://accounts.google.com/o/oauth2/v2/auth")
-     (token_url . "https://oauth2.googleapis.com/token")
-     (scope . "https://www.googleapis.com/auth/youtube")
-     (client_id . ,tlon-youtube-client-id)
-     (client_secret . ,tlon-youtube-client-secret))))
+(defun tlon-youtube--ensure-credentials ()
+  "Ensure the OAuth credentials are available and registered with oauth2-auto.
+Signal a `user-error' when either credential is missing."
+  (unless (and (tlon-youtube-get-client-id) (tlon-youtube-get-client-secret))
+    (user-error "YouTube API credentials not configured; set `tlon-youtube-client-id' and `tlon-youtube-client-secret'"))
+  (tlon-youtube--oauth2-auto-setup))
 
-(if (and tlon-youtube-client-id tlon-youtube-client-secret)
-    (tlon-youtube--oauth2-auto-setup)
-  (unless noninteractive
-    (warn "tlon-youtube: must set `tlon-youtube-client-id' and `tlon-youtube-client-secret'.")))
+(defun tlon-youtube-get-client-id ()
+  "Return the OAuth 2.0 client ID.
+Use `tlon-youtube-client-id' when non-nil; otherwise look the value up in the
+password store and store it there."
+  (or tlon-youtube-client-id
+      (setq tlon-youtube-client-id (tlon-youtube--auth-source-get "desktop-client-id"))))
+
+(defun tlon-youtube-get-client-secret ()
+  "Return the OAuth 2.0 client secret.
+Use `tlon-youtube-client-secret' when non-nil; otherwise look the value up in
+the password store and store it there."
+  (or tlon-youtube-client-secret
+      (setq tlon-youtube-client-secret (tlon-youtube--auth-source-get "desktop-client-secret"))))
+
+(defun tlon-youtube--auth-source-get (field)
+  "Return FIELD from the shared Google Cloud Console entry in the password store."
+  (auth-source-pass-get field (concat "tlon/core/console.cloud.google.com/" tlon-email-shared)))
+
+(defun tlon-youtube--oauth2-auto-setup ()
+  "Register the YouTube provider with oauth2-auto.
+Replace any previous registration so that updated credentials take effect."
+  (setf (alist-get 'tlon-youtube oauth2-auto-additional-providers-alist)
+	`((authorize_url . "https://accounts.google.com/o/oauth2/v2/auth")
+	  (token_url . "https://oauth2.googleapis.com/token")
+	  (scope . "https://www.googleapis.com/auth/youtube")
+	  (client_id . ,(tlon-youtube-get-client-id))
+	  (client_secret . ,(tlon-youtube-get-client-secret)))))
 
 ;;;;; Menu
 
