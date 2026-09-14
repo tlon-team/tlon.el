@@ -1,3 +1,6 @@
+## agent session logs (local-only)
+/logs/
+
 ## aider
 .aider*
 !.aider.conf.yml
