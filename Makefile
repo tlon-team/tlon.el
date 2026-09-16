@@ -13,7 +13,7 @@ TEST_FILES := $(wildcard test/*-test.el)
 # Minimal load-path for CI (no elpaca).  Uses transient from MELPA
 # installed into DEPS_DIR, plus stubs for other external packages.
 DEPS_DIR ?= .deps
-CI_LOAD_PATH := -L . -L test -L $(DEPS_DIR)
+CI_LOAD_PATH := -L . -L test -L $(DEPS_DIR) -L $(DEPS_DIR)/bibtex-extras
 
 .PHONY: test test-ci deps test-core test-yaml test-url test-cleanup test-counterpart test-dispatch
 
@@ -24,7 +24,8 @@ test:
 	  $(foreach f,$(TEST_FILES),-l $(f)) \
 	  -f ert-run-tests-batch-and-exit
 
-## Install CI dependencies (transient from MELPA).
+## Install CI dependencies: transient, ebib and el-patch from MELPA, plus
+## bibtex-extras from the public dotfiles release the tests were written against.
 deps:
 	mkdir -p $(DEPS_DIR)
 	$(EMACS) -Q --batch \
@@ -33,7 +34,11 @@ deps:
 	  --eval "(add-to-list 'package-archives '(\"melpa\" . \"https://melpa.org/packages/\") t)" \
 	  --eval "(package-initialize)" \
 	  --eval "(package-refresh-contents)" \
-	  --eval "(unless (package-installed-p 'transient) (package-install 'transient))"
+	  --eval "(dolist (pkg '(transient ebib el-patch)) (unless (package-installed-p pkg) (package-install pkg)))"
+	mkdir -p $(DEPS_DIR)/bibtex-extras
+	curl --fail --silent --show-error --location \
+	  --output $(DEPS_DIR)/bibtex-extras/bibtex-extras.el \
+	  https://raw.githubusercontent.com/benthamite/dotfiles/9.0.1/emacs/extras/bibtex-extras.el
 
 ## Run the full test suite in CI (with stubs).
 test-ci: deps

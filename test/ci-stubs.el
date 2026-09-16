@@ -37,8 +37,15 @@
 (defvar gptel-default-mode 'org-mode)
 (defvar gptel-expert-commands nil)
 (defvar gptel--known-backends nil)
+(defvar gptel-context nil)
+(defvar gptel-use-context nil)
+(defvar gptel-prompt-transform-functions nil)
 (defun gptel-request (&rest _) nil)
 (defun gptel-make-openai (&rest _) nil)
+(defmacro gptel--with-buffer-copy (_buffer _start _end &rest body)
+  "Run BODY in a scratch buffer standing in for gptel's request copy."
+  (declare (indent 3))
+  `(with-temp-buffer ,@body))
 (provide 'gptel)
 (provide 'gptel-extras)
 
@@ -51,10 +58,7 @@
 (provide 'citar)
 (provide 'citar-cache)
 
-;;;; ebib (bibliography manager)
-
-(defvar ebib--databases nil)
-(provide 'ebib)
+;;;; ebib and bibtex-extras are installed by `make deps', not stubbed.
 
 ;;;; org-element-ast (Emacs 30+ only; Emacs 29 has these in org-element)
 
@@ -105,12 +109,36 @@
 
 (provide 'simple-extras)
 (provide 'files-extras)
-(provide 'bibtex-extras)
 (provide 'vc-extras)
 (provide 'reverso)
 (provide 'read-aloud)
 (defvar oauth2-auto-additional-providers-alist nil)
 (provide 'oauth2-auto)
+;; `bibtex-set-field' lives in org-ref's doi-utils, which CI does not install.
+;; This mirrors that definition so the bibliography tests exercise real
+;; BibTeX buffers.
+(require 'bibtex)
+(defun bibtex-set-field (field value &optional nodelim)
+  "Set FIELD to VALUE in the current BibTeX entry, creating it if needed.
+NODELIM is passed to `bibtex-make-field'."
+  (bibtex-beginning-of-entry)
+  (let ((found (bibtex-search-forward-field field t)))
+    (if found
+        (progn
+          (goto-char (car (cdr found)))
+          (when value
+            (bibtex-kill-field)
+            (bibtex-make-field field nil nil nodelim)
+            (backward-char)
+            (insert value)))
+      (bibtex-beginning-of-entry)
+      (forward-line)
+      (beginning-of-line)
+      (bibtex-next-field nil)
+      (forward-char)
+      (bibtex-make-field field nil nil nodelim)
+      (backward-char)
+      (insert value))))
 (provide 'doi-utils)
 (provide 'threads)
 
