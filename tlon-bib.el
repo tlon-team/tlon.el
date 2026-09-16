@@ -355,14 +355,15 @@ nil; other errors remain visible."
 	(progn (message "No abstract found.") nil)))))
 
 (defun tlon-bib--zotra-abstract (url)
-  "Fetch an abstract from URL, treating an unsupported translator as absent."
+  "Fetch an abstract from URL, treating a failed Zotra lookup as absent.
+Zotra is one source in a chain that ends with an AI-generated abstract, so a
+translator that returns nothing, a server error or a timeout must not abort
+the chain.  Report the failure and return nil."
   (condition-case err
       (shut-up (zotra-extras-fetch-field "abstract" url nil 5))
-    (user-error
-     (if (equal (cadr err)
-                "JSON parse error: No items returned from any translator")
-         (progn (message "No Zotra translator returned metadata for %s" url) nil)
-       (signal (car err) (cdr err))))))
+    (error
+     (message "Zotra returned no abstract for %s: %s" url (error-message-string err))
+     nil)))
 
 ;; TODO: submit as pull request to `doi-utils'?
 ;; `doi-utils-get-redirect' doesn't work

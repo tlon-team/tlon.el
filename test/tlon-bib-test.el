@@ -8,6 +8,7 @@
 ;;; Code:
 
 (require 'ert)
+(require 'cl-lib)
 (require 'tlon-bib)
 
 ;;;; tlon-abstract-cleanup
@@ -240,3 +241,24 @@
 
 (provide 'tlon-bib-test)
 ;;; tlon-bib-test.el ends here
+
+;;;; tlon-bib--zotra-abstract
+
+(ert-deftest tlon-bib--zotra-abstract-treats-server-error-as-absent ()
+  "A Zotra server error yields nil so the abstract chain can continue."
+  (cl-letf (((symbol-function 'zotra-extras-fetch-field)
+             (lambda (&rest _) (user-error "JSON parse error: Internal Server Error"))))
+    (should-not (tlon-bib--zotra-abstract "https://philpapers.org/rec/EXAMPLE"))))
+
+(ert-deftest tlon-bib--zotra-abstract-treats-timeout-as-absent ()
+  "A non-user error from the Zotra request also yields nil."
+  (cl-letf (((symbol-function 'zotra-extras-fetch-field)
+             (lambda (&rest _) (error "Zotra request timed out"))))
+    (should-not (tlon-bib--zotra-abstract "https://example.org/paper"))))
+
+(ert-deftest tlon-bib--zotra-abstract-returns-found-abstract ()
+  "A successful Zotra lookup returns its abstract unchanged."
+  (cl-letf (((symbol-function 'zotra-extras-fetch-field)
+             (lambda (&rest _) "Found abstract")))
+    (should (equal "Found abstract"
+                   (tlon-bib--zotra-abstract "https://example.org/paper")))))

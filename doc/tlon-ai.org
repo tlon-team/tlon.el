@@ -160,7 +160,7 @@ The command ~tlon-ai-proofread-reference-article~ sends the current buffer's con
 :END:
 
 #+findex: tlon-get-abstract-with-or-without-ai
-The command ~tlon-get-abstract-with-or-without-ai~ is the primary entry point for obtaining an abstract. It first attempts non-AI extraction via ~tlon-fetch-and-set-abstract~ (e.g. scraping publisher metadata). If that fails, it falls back to AI generation via ~tlon-get-abstract-with-ai~.
+The command ~tlon-get-abstract-with-or-without-ai~ is the primary entry point for obtaining an abstract. It first attempts non-AI extraction via ~tlon-fetch-and-set-abstract~ (e.g. scraping publisher metadata). If that fails, it falls back to AI generation via ~tlon-get-abstract-with-ai~. AI prompts exist for a fixed set of languages; when the work's language has no prompt (for example Latin), the English prompt is used and a message says so, rather than failing the operation. When the operation does fail, the reported error includes the underlying message.
 
 Programmatic callers may pass =PRESERVE-EXISTING= to keep existing abstracts without an overwrite prompt. The policy follows AI and language-detection callbacks and checks both the live Ebib database and the visiting BibTeX buffer before writing a delayed response. Unrelated unsaved changes stop that write rather than being discarded. A changed source selection during language detection also stops processing. Empty braced or quoted fields count as missing abstracts. Interactive calls retain the configured overwrite behavior.
 
