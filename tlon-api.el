@@ -264,24 +264,53 @@ If citation is not found, return nil."
     (format string-formatter key type)))
 
 (defun tlon-api-get-citation-json (url)
-  "Return the JSON response from URL."
-  (let* ((command (format "curl -sS -X GET %s -H 'accept: application/json'" (shell-quote-argument url)))
-         (output (shell-command-to-string command)))
-    (if (string-match "could not resolve host" output)
-        (user-error "Failed to get citation from URL '%s'. Curl error: could not resolve host. Is your local environment set up correctly?" url)
-      (let ((trimmed-output (string-trim output))) ; Trim whitespace for checks
-        (unless (or (string-prefix-p "{" trimmed-output)
-                    (string-prefix-p "[" trimmed-output))
-          (user-error "API response from URL '%s' does not look like JSON. Received (first 200 chars): %s"
-                      url (substring-no-properties trimmed-output 0 (min 200 (length trimmed-output)))))
-        (condition-case err
-            (with-temp-buffer
-              (insert output) ; Insert original output, not trimmed
-              (goto-char (point-min))
-              (json-read))
-          (json-readtable-error
-           (user-error "JSON parsing failed for URL '%s'. Original error: %s. Received (first 200 chars): %s"
-                       url err (substring-no-properties output 0 (min 200 (length output))))))))))
+  "Return the parsed JSON response from URL.
+Run `curl' directly rather than through a shell, so that shell startup output
+cannot leak into the response.  Signal a `user-error' when `curl' fails or when
+the response does not look like JSON."
+  (pcase-let* ((`(,exit-code ,output ,stderr) (tlon-api-curl-json url))
+	       (case-fold-search t))
+    (when (string-match-p "could not resolve host" stderr)
+      (user-error "Failed to get citation from URL '%s'. Curl error: could not resolve host. Is your local environment set up correctly?" url))
+    (unless (eql exit-code 0)
+      (user-error "Failed to get citation from URL '%s'.  Curl exited with status %s: %s"
+		  url exit-code (tlon-api-excerpt (string-trim stderr))))
+    (let ((trimmed-output (string-trim output)))
+      (unless (or (string-prefix-p "{" trimmed-output)
+		  (string-prefix-p "[" trimmed-output))
+	(user-error "API response from URL '%s' does not look like JSON. Received (first 200 chars): %s"
+		    url (tlon-api-excerpt trimmed-output))))
+    (condition-case err
+	(with-temp-buffer
+	  (insert output)
+	  (goto-char (point-min))
+	  (json-read))
+      (json-readtable-error
+       (user-error "JSON parsing failed for URL '%s'. Original error: %s. Received (first 200 chars): %s"
+		   url err (tlon-api-excerpt output))))))
+
+(defun tlon-api-curl-json (url)
+  "Request URL with `curl' and return a list (EXIT-CODE STDOUT STDERR).
+EXIT-CODE is the process exit status, or a string describing the signal that
+terminated `curl'.  STDOUT and STDERR are captured separately, so diagnostics
+never mix with the response body."
+  (let ((stderr-file (make-temp-file "tlon-api-curl-stderr")))
+    (unwind-protect
+	(with-temp-buffer
+	  (let ((exit-code (call-process "curl" nil (list (current-buffer) stderr-file) nil
+					 "-sS" "-X" "GET" url "-H" "accept: application/json")))
+	    (list exit-code (buffer-string) (tlon-api-file-string stderr-file))))
+      (delete-file stderr-file))))
+
+(defun tlon-api-file-string (file)
+  "Return the contents of FILE as a string."
+  (with-temp-buffer
+    (insert-file-contents file)
+    (buffer-string)))
+
+(defun tlon-api-excerpt (string)
+  "Return the first 200 characters of STRING."
+  (substring-no-properties string 0 (min 200 (length string))))
 
 ;;;;; File uploading
 

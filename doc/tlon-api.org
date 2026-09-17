@@ -184,7 +184,7 @@ The function ~tlon-api-get-citation~ retrieves a formatted citation for a BibTeX
 The function ~tlon-api-get-citation-url~ constructs the API URL for a citation request based on the BibTeX key and the CSL style (which determines the =text= or =audio= endpoint).
 
 #+findex: tlon-api-get-citation-json
-The function ~tlon-api-get-citation-json~ fetches and parses the JSON response from a citation URL using =curl=. It includes error handling for host resolution failures and malformed responses.
+The function ~tlon-api-get-citation-json~ fetches and parses the JSON response from a citation URL using =curl=. It runs =curl= directly rather than through a shell, and captures its standard output and standard error separately, so shell startup messages cannot corrupt the response. It signals a =user-error= for host resolution failures, for any non-zero =curl= exit status (reporting the status and the error output), and for malformed responses.
 
 * Indices
 :PROPERTIES:
