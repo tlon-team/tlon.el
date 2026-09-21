@@ -173,6 +173,79 @@
         (funcall callback "Target abstract" nil)
         (should (eq (caar events) 'complete))))))
 
+(ert-deftest tlon-ai-abstract-rejects-blank-source-before-editing-or-request ()
+  "Missing text and PDF page separators never reach prompt editing or AI."
+  (let ((edits 0)
+        (requests 0))
+    (cl-letf (((symbol-function 'tlon-ai-maybe-edit-prompt)
+               (lambda (prompt) (cl-incf edits) prompt))
+              ((symbol-function 'tlon-make-gptel-request)
+               (lambda (&rest _) (cl-incf requests))))
+      (dolist (source '(nil "" " \t\n\r\f\v" "\f\f\f" "\u0085\u00a0\u1680\u2003\u2028\u2029\u202f\u3000"))
+        (should-error (tlon-ai-get-abstract-common
+                       tlon-ai-get-abstract-prompts source "en" #'ignore)
+                      :type 'user-error))
+      (should (zerop edits))
+      (should (zerop requests)))))
+
+(ert-deftest tlon-ai-target-blank-source-finishes-without-writing-or-request ()
+  "Unreadable captured sources finish once without an invented abstract."
+  (dolist (source '(nil "" " \t\n\r\f\v" "\f\f\f"))
+    (tlon-test-with-abstract-target
+      (let ((requests 0))
+        (cl-letf (((symbol-function 'tlon-bib--fetch-abstract) #'ignore)
+                  ((symbol-function 'tlon-get-string-dwim) (lambda (_) source))
+                  ((symbol-function 'tlon-make-gptel-request)
+                   (lambda (&rest _) (cl-incf requests))))
+          (tlon-get-abstract-with-or-without-ai nil t target))
+        (should (equal (mapcar #'car events) '(failed)))
+        (should (zerop requests))
+        (should-not (ebib-db-get-field-value "abstract" key db 'noerror))
+        (should-not (ebib-db-modified-p db))))))
+
+(ert-deftest tlon-ai-abstract-keeps-nonempty-unicode-source ()
+  "The blank-source guard sends real Unicode content without altering it."
+  (let ((tlon-ai-edit-prompt nil)
+        (prompt '((:language "en" :prompt "Summarize: %s")))
+        (callback #'ignore)
+        requests)
+    (cl-letf (((symbol-function 'tlon-make-gptel-request)
+               (lambda (&rest arguments) (push arguments requests))))
+      (dolist (source '("é" "中文" "العربية" "\f  Observación ∑ \n\f"))
+        (tlon-ai-get-abstract-common prompt source "en" callback)
+        (should (equal (pop requests)
+                       (list "Summarize: %s" source callback
+                             tlon-ai-summarization-model)))))))
+
+(ert-deftest tlon-ai-explicit-source-file-overrides-ambient-region-and-eww ()
+  "An explicit source cannot be replaced by the current region or web page."
+  (let ((file (make-temp-file "tlon-explicit-source-" nil ".txt"
+                              "Explicit document α")))
+    (unwind-protect
+        (dolist (context '(eww region))
+          (with-temp-buffer
+            (insert "Unrelated ambient text")
+            (when (eq context 'eww) (eww-mode))
+            (when (eq context 'region)
+              (setq-local transient-mark-mode t)
+              (set-mark (point-min))
+              (setq mark-active t)
+              (should (region-active-p)))
+            (should (equal (tlon-get-string-dwim file)
+                           "Explicit document α"))))
+      (delete-file file))))
+
+(ert-deftest tlon-ai-implicit-source-keeps-region-and-buffer-behavior ()
+  "Without an explicit file, region and whole-buffer sources remain available."
+  (with-temp-buffer
+    (insert "Whole buffer α")
+    (should (equal (tlon-get-string-dwim) "Whole buffer α"))
+    (setq-local transient-mark-mode t)
+    (set-mark (- (point-max) 1))
+    (setq mark-active t)
+    (should (region-active-p))
+    (should (equal (tlon-get-string-dwim) "α"))))
+
 (ert-deftest tlon-ai-abstract-no-translator-reaches-ai ()
   "An unsupported metadata page permits the intended AI abstract step."
   (with-temp-buffer

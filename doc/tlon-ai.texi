@@ -302,6 +302,8 @@ The command @code{tlon-get-abstract-with-ai} generates an abstract (100--250 wor
 
 The shared, language-specific instructions in @code{tlon-ai-how-to-write-abstract-prompt} ask the model to respect the source's genre and scope. Research abstracts describe arguments, methods and findings present in the source; summaries of diaries, notebooks, memoirs, correspondence and collections describe their experiences, subjects and range of material. The instructions retain attribution and uncertainty and prohibit unsupported generalizations or content imported from other works. The AI-generated attribution remains part of every generated abstract.
 
+AI abstract and synopsis requests require non-whitespace source text. Missing text or a PDF extraction containing only page separators stops before prompt editing or any AI request. An image-only PDF needs OCR before these commands can summarize it; no replacement abstract is generated from an empty extraction. Existing abstracts are still preserved when requested.
+
 @findex tlon-shorten-abstract-with-ai
 The command @code{tlon-shorten-abstract-with-ai} takes the existing @samp{abstract} field of the Bib@TeX{} entry at point and asks the AI to shorten it to the maximum length specified in @code{tlon-max-abstract-length}. The shortened abstract replaces the existing one.
 
@@ -510,7 +512,7 @@ The module provides a family of generic callback functions for common response-h
 @section Retrieving text content
 
 @findex tlon-get-string-dwim
-The function @code{tlon-get-string-dwim} (``Do What I Mean'') returns text content from the most appropriate source. If a region is active, it returns the region text. In @samp{bibtex-mode} or @samp{ebib-entry-mode}, it returns the contents of the HTML or PDF file linked in the Bib@TeX{} entry. In @samp{pdf-view-mode} or @samp{eww-mode}, it returns the current document's contents. In @samp{markdown-mode}, it returns the substantive content (excluding metadata). Otherwise, it returns the full buffer contents. Many AI commands use this function to determine what to send to the model.
+The function @code{tlon-get-string-dwim} (``Do What I Mean'') returns text content from the most appropriate source. An explicit @samp{FILE} argument always selects that file, even when an unrelated region is active or the current buffer is in @samp{eww-mode}. Without @samp{FILE}, an active region supplies the text. In @samp{bibtex-mode} or @samp{ebib-entry-mode}, it returns the contents of the HTML or PDF file linked in the Bib@TeX{} entry. In @samp{pdf-view-mode} or @samp{eww-mode}, it returns the current document's contents. In @samp{markdown-mode}, it returns the substantive content (excluding metadata). Otherwise, it returns the full buffer contents. Many AI commands use this function to determine what to send to the model.
 
 @findex tlon-get-file-as-string
 The function @code{tlon-get-file-as-string} reads a file into a string, handling PDF-to-Markdown conversion and HTML-to-text rendering via @samp{eww} transparently.

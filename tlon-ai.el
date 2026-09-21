@@ -556,8 +556,7 @@ Stop when there are no more entries."
 (autoload 'tlon-md-read-content "tlon-md")
 (defun tlon-get-string-dwim (&optional file)
   "Return FILE, region or buffer as string, depending on major mode.
-If FILE is non-nil, return it as a string or, if in `markdown-mode', return a
-substring of its substantive contents, excluding metadata and local variables.
+If FILE is non-nil, read its contents without consulting the current buffer.
 Otherwise,
 
 - If the region is active, return its contents.
@@ -572,8 +571,11 @@ or PDF file associated with the current BibTeX entry, if either is found.
 - If in `markdown-mode', return the substantive contents of the current buffer.
 
 - Otherwise, return the contents of the current buffer."
-  (if (region-active-p)
-      (buffer-substring-no-properties (region-beginning) (region-end))
+  (cond
+   (file (tlon-get-file-as-string file))
+   ((region-active-p)
+    (buffer-substring-no-properties (region-beginning) (region-end)))
+   (t
     (if (eq major-mode 'eww-mode)
 	(let ((temp-file (make-temp-file "tlon-eww-" nil ".html"))
 	      (content (buffer-string)))
@@ -593,7 +595,7 @@ or PDF file associated with the current BibTeX entry, if either is found.
 	      ((derived-mode-p 'markdown-mode)
 	       (tlon-md-read-content file))
 	      (t
-	       (buffer-substring-no-properties (point-min) (point-max))))))))
+	       (buffer-substring-no-properties (point-min) (point-max)))))))))
 
 (declare-function pdf-tools-extras-convert-pdf "pdf-tools-extras")
 (defun tlon-get-file-as-string (file)
@@ -1333,7 +1335,12 @@ language detection."
 (defun tlon-ai-get-abstract-common (prompt string language callback)
   "Common function for getting an abstract.
 PROMPT is the prompt to use, STRING is the string to summarize, LANGUAGE is
-the language of the string, and CALLBACK is the callback function."
+the language of the string, and CALLBACK is the callback function.
+Signal a user error before editing PROMPT or requesting AI when STRING
+contains no non-whitespace text."
+  (unless (and (stringp string)
+               (string-match-p "[^[:space:]\n\r\f\v\u0085\u1680\u2028\u2029]" string))
+    (user-error "Cannot generate an abstract without readable source text"))
   (if-let ((prompt (tlon-ai-maybe-edit-prompt
 		   (tlon-lookup prompt :prompt :language language))))
       (progn
