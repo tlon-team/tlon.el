@@ -1120,6 +1120,7 @@ When INTERACTIVE-P is non-nil (which the `interactive' spec sets to t),
 (defun tlon-ai--get-abstract-for-target (target)
   "Fetch an abstract for captured TARGET without consulting the selection."
   (let ((target (copy-sequence target))
+        (stage "target validation")
         finished)
     (cl-labels
         ((finish (status &optional error)
@@ -1128,14 +1129,16 @@ When INTERACTIVE-P is non-nil (which the `interactive' spec sets to t),
              (funcall (plist-get target :callback) status error)))
          (store (abstract)
            (unless finished
+             (setq stage "result storage")
              (finish (tlon-ai--set-target-abstract target abstract))))
          (failed (err)
            (if finished
                (signal (car err) (cdr err))
-             (finish 'failed (format "Abstract request failed (%s)" (car err))))))
+             (finish 'failed (format "Abstract %s failed (%s)" stage (car err))))))
       (condition-case err
           (if (tlon-ai--target-existing-abstract target)
               (finish 'preserved)
+            (setq stage "metadata lookup")
             (let* ((key (plist-get target :key))
                    (db (plist-get target :db))
                    (get-field (lambda (field)
@@ -1146,6 +1149,7 @@ When INTERACTIVE-P is non-nil (which the `interactive' spec sets to t),
                            (funcall get-field "url"))))
               (if value
                   (store (tlon-abstract-cleanup value))
+                (setq stage "source extraction")
                 (let ((text (tlon-get-string-dwim (plist-get target :file)))
                       (language (tlon-get-language-code-from-name (plist-get target :language)))
                       (tlon-ai-edit-prompt nil)
@@ -1153,6 +1157,7 @@ When INTERACTIVE-P is non-nil (which the `interactive' spec sets to t),
                       (gptel-use-context nil))
                   (unless (and text language)
                     (user-error "Abstract operation lacks source text or language"))
+                  (setq stage "AI request")
                   (tlon-ai-get-abstract-common
                    tlon-ai-get-abstract-prompts text language
                    (lambda (response _info)

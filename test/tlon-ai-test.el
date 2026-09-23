@@ -147,6 +147,57 @@
         (should (eq (caar events) 'failed))
         (should (= (length events) 1))))))
 
+(ert-deftest tlon-ai-target-errors-report-stage-without-provider-data ()
+  "Captured failures identify their stage without exposing provider error data."
+  (dolist (stage '("target validation" "metadata lookup" "source extraction"
+                   "AI request" "result storage"))
+    (tlon-test-with-abstract-target
+      (let ((secret "https://example.org/?token=PRIVATE-PROVIDER-TOKEN")
+            (condition (if (equal stage "AI request") 'error 'user-error)))
+        (cl-letf (((symbol-function 'tlon-ai--target-existing-abstract)
+                   (lambda (_target)
+                     (when (equal stage "target validation")
+                       (signal condition (list secret)))))
+                  ((symbol-function 'tlon-bib--fetch-abstract)
+                   (lambda (&rest _)
+                     (when (equal stage "metadata lookup")
+                       (signal condition (list secret)))))
+                  ((symbol-function 'tlon-get-string-dwim)
+                   (lambda (_file)
+                     (when (equal stage "source extraction")
+                       (signal condition (list secret)))
+                     "Verified source"))
+                  ((symbol-function 'tlon-ai-get-abstract-common)
+                   (lambda (_prompt _text _language callback)
+                     (when (equal stage "AI request")
+                       (signal condition (list secret)))
+                     (funcall callback "Generated abstract" nil)))
+                  ((symbol-function 'tlon-ai--set-target-abstract)
+                   (lambda (_target _abstract) (signal condition (list secret)))))
+          (tlon-get-abstract-with-or-without-ai nil t target))
+        (should (equal events
+                       (list (list 'failed
+                                   (format "Abstract %s failed (%s)" stage condition)))))
+        (should-not (string-match-p "PRIVATE-PROVIDER-TOKEN" (cadar events)))
+        (should-not (ebib-db-get-field-value "abstract" key db 'noerror))))))
+
+(ert-deftest tlon-ai-target-delayed-storage-error-keeps-stage-and-finishes-once ()
+  "A delayed failure keeps its own stage and never exposes provider text."
+  (tlon-test-with-abstract-target
+    (let (callback)
+      (cl-letf (((symbol-function 'tlon-bib--fetch-abstract) #'ignore)
+                ((symbol-function 'tlon-get-string-dwim) (lambda (_) "Verified source"))
+                ((symbol-function 'tlon-ai-get-abstract-common)
+                 (lambda (_prompt _text _language cb) (setq callback cb))))
+        (tlon-get-abstract-with-or-without-ai nil t target))
+      (should-not events)
+      (ebib-db-set-modified t db)
+      (funcall callback "Generated abstract" nil)
+      (funcall callback "Duplicate response" nil)
+      (should (equal events '((failed "Abstract result storage failed (user-error)"))))
+      (should-not (ebib-db-get-field-value "abstract" key db 'noerror))
+      (should (ebib-db-modified-p db)))))
+
 (ert-deftest tlon-ai-target-isolates-ambient-context-during-request-copy ()
   "A captured source excludes ambient context without altering the user's context."
   (tlon-test-with-abstract-target
