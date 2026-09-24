@@ -200,8 +200,11 @@ The format argument is the capitalized target language name.")
 (defvar tlon-translate-text nil
   "The text to be translated in the current API request.")
 
-(defvar tlon-translate--active-revision-processes nil
-  "List of active processes launched by `tlon-translate' revision commands.")
+(defvar tlon-translate--active-revision-buffers nil
+  "List of request buffers for active `tlon-translate' revision commands.
+Each element is the buffer passed as `:buffer' to `gptel-request'; aborting
+that request requires calling `gptel-abort' on the buffer, because
+`gptel-request' returns a `gptel-fsm' struct rather than a process.")
 
 (defvar tlon-translate--no-glossary-decisions nil
   "Hash table caching per-pair glossary-less translation decisions during batch runs.
@@ -369,28 +372,36 @@ slugified version of the original basename."
 	 (ext  (file-name-extension source-file t)))
     (concat slug ext)))
 
-(defun tlon-translate--do-translate (source-file target-file target-lang-code &optional after-fn)
-  "Translate SOURCE-FILE to TARGET-FILE into TARGET-LANG-CODE.
-If AFTER-FN is non-nil, call it after writing TARGET-FILE."
-  (let* ((source-lang-code (tlon-repo-lookup :language :dir (tlon-get-repo-from-file source-file)))
-         (text (with-temp-buffer
-                 (insert-file-contents source-file)
-                 (buffer-string))))
+(defun tlon-translate--request-translation (source-file target-lang-code source-lang-code callback)
+  "Translate SOURCE-FILE from SOURCE-LANG-CODE into TARGET-LANG-CODE.
+CALLBACK is called with the translated text as its sole argument. The
+engine-specific pre- and post-processing of the text, such as the newline
+workaround of `tlon-deepl-newline-token', is handled by the engine."
+  (let ((text (with-temp-buffer
+                (insert-file-contents source-file)
+                (buffer-string))))
     (pcase tlon-translate-engine
       ('deepl
        (tlon-deepl-translate
         text target-lang-code source-lang-code
         (lambda ()
-          (tlon-translate--write-and-finalize
-           (tlon-translate--get-deepl-translation-from-buffer)
-           source-file target-file after-fn))))
+          (funcall callback (tlon-translate--get-deepl-translation-from-buffer)))))
       ('ai
        (tlon-ai-translate-text
 	text target-lang-code source-lang-code
 	(lambda (response info)
           (tlon-ai-with-valid-response response info
-            (tlon-translate--write-and-finalize response source-file target-file after-fn)))))
+            (funcall callback response)))))
       (_ (user-error "Unsupported translation engine: %s" tlon-translate-engine)))))
+
+(defun tlon-translate--do-translate (source-file target-file target-lang-code &optional after-fn)
+  "Translate SOURCE-FILE to TARGET-FILE into TARGET-LANG-CODE.
+If AFTER-FN is non-nil, call it after writing TARGET-FILE."
+  (let ((source-lang-code (tlon-repo-lookup :language :dir (tlon-get-repo-from-file source-file))))
+    (tlon-translate--request-translation
+     source-file target-lang-code source-lang-code
+     (lambda (content)
+       (tlon-translate--write-and-finalize content source-file target-file after-fn)))))
 
 (defun tlon-translate--write-and-finalize (content source-file target-file after-fn)
   "Write CONTENT to TARGET-FILE and finalize translation of SOURCE-FILE.
@@ -478,6 +489,84 @@ Invalidate the counterpart cache for the target repo first, so that
           (make-directory img-dir t))
         (dolist (file files)
           (copy-file file (tlon-get-image-counterpart file lang)))))))
+
+;;;;;; file (plain)
+
+;;;###autoload
+(defun tlon-translate-file-plainly (&optional file source-lang target-lang target-file)
+  "Translate FILE from SOURCE-LANG into TARGET-LANG, saving it as TARGET-FILE.
+Unlike `tlon-translate-file', this command performs no Babel-specific
+processing: it does not consult the bibliography, does not look for a
+counterpart, and does not touch the YAML metadata of the translation. It
+translates the contents of FILE and writes them to TARGET-FILE, and nothing
+else. It can therefore be used with files outside the Babel repos.
+
+If FILE is nil, use the file visited by the current buffer, prompting for one if
+the current buffer is not visiting a file. If SOURCE-LANG or TARGET-LANG are
+nil, prompt for them. If TARGET-FILE is nil, prompt for it, defaulting to FILE’s
+own directory and base name with TARGET-LANG appended: e.g. `foo.md' translated
+into `es' defaults to `foo-es.md'."
+  (interactive)
+  (let* ((file (or file
+		   (buffer-file-name)
+		   (read-file-name "Translate file: " nil nil t)))
+	 (source-lang (or source-lang
+			  (tlon-select-language 'code 'babel "Source language: " 'require-match)))
+	 (target-lang (or target-lang
+			  (tlon-select-language
+			   'code 'babel "Target language: " 'require-match nil nil
+			   (list (tlon-lookup tlon-languages-properties :standard :code source-lang)))))
+	 (target-file (or target-file
+			  (tlon-translate--read-plain-target-file file target-lang))))
+    (tlon-translate--maybe-save-source-buffer file)
+    (when (and (file-exists-p target-file)
+	       (not (y-or-n-p (format "Overwrite %s?" target-file))))
+      (user-error "Aborted"))
+    (tlon-translate--request-translation
+     file target-lang source-lang
+     (lambda (content)
+       (tlon-translate--write-plain-translation content file target-file)))))
+
+(defun tlon-translate--plain-default-target-file (source-file target-lang-code)
+  "Return the default path for the SOURCE-FILE translation into TARGET-LANG-CODE.
+The path has SOURCE-FILE’s own directory and base name, with TARGET-LANG-CODE
+appended to the base name: e.g. `foo.md' translated into `es' yields
+`foo-es.md'."
+  (let ((expanded (expand-file-name source-file)))
+    (file-name-concat (file-name-directory expanded)
+		      (concat (file-name-base expanded)
+			      "-" target-lang-code
+			      (file-name-extension expanded t)))))
+
+(defun tlon-translate--read-plain-target-file (source-file target-lang-code)
+  "Prompt for the file in which to save the SOURCE-FILE translation.
+TARGET-LANG-CODE is the language into which SOURCE-FILE is translated; it
+determines the default file name, as per
+`tlon-translate--plain-default-target-file'."
+  (let ((default (tlon-translate--plain-default-target-file source-file target-lang-code)))
+    (read-file-name "Save translation to: "
+		    (file-name-directory default)
+		    default nil
+		    (file-name-nondirectory default))))
+
+(defun tlon-translate--maybe-save-source-buffer (file)
+  "Offer to save the buffer visiting FILE when it has unsaved changes.
+The translation reads FILE from disk, so unsaved changes would otherwise be
+absent from it."
+  (when-let* ((buffer (find-buffer-visiting file)))
+    (when (and (buffer-modified-p buffer)
+	       (y-or-n-p (format "Save %s before translating it?"
+				 (file-name-nondirectory file))))
+      (with-current-buffer buffer (save-buffer)))))
+
+(defun tlon-translate--write-plain-translation (content source-file target-file)
+  "Write CONTENT, the translation of SOURCE-FILE, to TARGET-FILE and visit it."
+  (unless (and (stringp content) (> (length (string-trim content)) 0))
+    (user-error "Translation of `%s' returned no content" source-file))
+  (with-temp-file target-file
+    (insert content))
+  (message "Translated %s to %s" source-file target-file)
+  (find-file target-file))
 
 ;;;;;; abstract
 
@@ -1238,16 +1327,18 @@ paragraphs."
 		   (tlon-make-gptel-request
 		    prompt nil
 		    (tlon-translate--gptel-callback-global-review
-		     translation-file)
+		     translation-file req-buf)
 		    model 'skip-context-check req-buf nil))
-	     (push proc tlon-translate--active-revision-processes)
+	     (push req-buf tlon-translate--active-revision-buffers)
 	     proc)))
       (tlon-translate--ensure-filtered-glossary
        src-code lang-code original-file
        (lambda (filtered-path) (do-start filtered-path))))))
 
-(defun tlon-translate--gptel-callback-global-review (translation-file)
-  "Return a gptel callback that applies global review results to TRANSLATION-FILE."
+(defun tlon-translate--gptel-callback-global-review (translation-file req-buf)
+  "Return a gptel callback that applies global review results to TRANSLATION-FILE.
+REQ-BUF is the request buffer tracked in
+`tlon-translate--active-revision-buffers'."
   (lambda (response info)
     (unwind-protect
 	(cond
@@ -1286,10 +1377,8 @@ paragraphs."
 		   (format "Global review of %s (AI)"
 			   (tlon-get-key-from-file translation-file))
 		   translation-file)))))))
-      (setq tlon-translate--active-revision-processes
-	    (cl-remove-if-not (lambda (p)
-				(and (processp p) (process-live-p p)))
-			      tlon-translate--active-revision-processes)))))
+      (setq tlon-translate--active-revision-buffers
+	    (delq req-buf tlon-translate--active-revision-buffers)))))
 
 (defun tlon-translate--read-paragraph-range ()
   "Prompt for a paragraph range and return it as a cons (START . END).
@@ -1322,30 +1411,30 @@ are 1-based. Return nil to indicate the whole file."
 (defun tlon-translate-revise-abort ()
   "Abort all ongoing `tlon-translate' revision requests.
 
-Any live asynchronous processes started by `tlon-translate-revise-*'
-commands are killed.  If there are no such processes, do nothing."
+Each tracked request is cancelled via `gptel-abort' on its request buffer,
+which is how gptel expects underlying HTTP processes to be stopped."
   (interactive)
-  ;; Filter out any nil placeholders and compute the total number of
-  ;; tracked requests before attempting to abort them.  Relying solely
-  ;; on `process-live-p' can mis-report when the underlying object is
-  ;; not an Emacs process, so we base the user message on the number of
-  ;; tracked requests instead.
-  (let* ((tracked (delq nil (copy-sequence tlon-translate--active-revision-processes)))
-         (total   (length tracked)))
-    (dolist (proc tracked)
-      (when (and (processp proc) (process-live-p proc))
-        (delete-process proc)))
-    (setq tlon-translate--active-revision-processes nil)
-    (tlon-translate--log (if (> total 0)
+  (let* ((tracked (delq nil (copy-sequence tlon-translate--active-revision-buffers)))
+         (aborted 0))
+    (dolist (buf tracked)
+      (when (buffer-live-p buf)
+        (condition-case err
+            (progn (gptel-abort buf) (cl-incf aborted))
+          (error
+           (tlon-translate--log "Failed to abort request in %S: %s"
+                                (buffer-name buf) (error-message-string err))))))
+    (setq tlon-translate--active-revision-buffers nil)
+    (tlon-translate--log (if (> aborted 0)
                              "Aborted %d tlon-translate revision request%s."
                            "No tlon-translate revision requests in progress.")
-                         total (if (= total 1) "" "s"))))
+                         aborted (if (= aborted 1) "" "s"))))
 
 (defvar tlon-translate-revert-without-query-original
   revert-without-query
   "Original value of `revert-without-query'.")
 
 (declare-function gptel-context-add-file "gptel-context")
+(declare-function gptel-abort "gptel-request")
 (defun tlon-translate--revise-common (type)
   "Common function for revising a translation of TYPE.
 TYPE can be `errors' or `flow'."
@@ -1583,11 +1672,14 @@ function to call after the revision is complete."
          (chunk-desc (if single-p
 			 (format "%d" (1+ start))
 		       (format "%d–%d" (1+ start) end)))
+         (req-buf (get-buffer-create (format "*tlon-revise:%s:%s*"
+                                             (file-name-nondirectory translation-file)
+                                             chunk-desc)))
          (proc nil)
          (wrapped-after-fn
           (lambda ()
-            (setq tlon-translate--active-revision-processes
-                  (delq proc tlon-translate--active-revision-processes))
+            (setq tlon-translate--active-revision-buffers
+                  (delq req-buf tlon-translate--active-revision-buffers))
             (if restrict
                 (let ((rstart (or (car restrict) 1))
                       (rend   (or (cdr restrict)
@@ -1601,7 +1693,7 @@ function to call after the revision is complete."
                                    chunk-desc
                                    (tlon-get-number-of-paragraphs-in-file translation-file)
                                    (file-name-nondirectory translation-file)))
-            (when (null tlon-translate--active-revision-processes)
+            (when (null tlon-translate--active-revision-buffers)
               (setq revert-without-query tlon-translate-revert-without-query-original))
             (when (functionp after-fn)
               (funcall after-fn)))))
@@ -1625,20 +1717,17 @@ function to call after the revision is complete."
 		    (lambda ()
 		      (when (equal revert-without-query '(".*"))
 			(setq revert-without-query tlon-translate-revert-without-query-original))))
-    (let* ((req-buf (get-buffer-create (format "*tlon-revise:%s:%s*"
-                                               (file-name-nondirectory translation-file)
-                                               chunk-desc))))
-      (with-current-buffer req-buf
-        (setq-local gptel-include-reasoning nil)
-        (when glossary-file
-          (gptel-context-add-file glossary-file)))
-      (setq proc
-            (tlon-make-gptel-request
-             prompt nil
-             (tlon-translate--gptel-callback-apply-paragraphs
-	      translation-file start end trans-chunk type wrapped-after-fn)
-             model 'skip-context-check req-buf nil)))
-    (push proc tlon-translate--active-revision-processes)
+    (with-current-buffer req-buf
+      (setq-local gptel-include-reasoning nil)
+      (when glossary-file
+        (gptel-context-add-file glossary-file)))
+    (setq proc
+          (tlon-make-gptel-request
+           prompt nil
+           (tlon-translate--gptel-callback-apply-paragraphs
+	    translation-file start end trans-chunk type wrapped-after-fn)
+           model 'skip-context-check req-buf nil))
+    (push req-buf tlon-translate--active-revision-buffers)
     proc))
 
 (declare-function magit-stage-files "magit-apply")
@@ -1837,6 +1926,7 @@ If nil, use the default model."
   [["Translate"
     ("t t" "Translate text" tlon-translate-text)
     ("t f" "Translate file" tlon-translate-file)
+    ("t F" "Translate file plainly" tlon-translate-file-plainly)
     ("t a" "Translate current abstract" tlon-translate-abstract-here)
     ("t m" "Translate missing abstracts" tlon-translate-missing-abstracts)
     ("t M" "Translate all missing abstracts" tlon-translate-missing-abstracts-all-languages)
