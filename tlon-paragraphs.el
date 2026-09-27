@@ -137,12 +137,25 @@ respectively. If WITH-HEADER is non-nil, include a header."
         (tlon-paragraphs--format-pair pair))
       (buffer-string))))
 
+(declare-function tlon-get-counterpart "tlon-counterpart")
 ;;;###autoload
 (defun tlon-display-corresponding-paragraphs (pairs-or-fn)
   "Display PAIRS-OR-FN of corresponding paragraphs in parallel.
 PAIRS-OR-FN can be either the output of `tlon-get-corresponding-paragraphs'
 or the function itself."
-  (interactive (list #'tlon-get-corresponding-paragraphs))
+  (interactive
+   (list (let* ((file (or (buffer-file-name)
+			  (read-file-name "File: " nil nil t)))
+		(counterpart
+		 (condition-case err
+		     (tlon-get-counterpart file)
+		   (user-error
+		    (read-file-name
+		     (format "Compare `%s' with (%s): "
+			     (file-name-nondirectory file)
+			     (error-message-string err))
+		     nil nil t)))))
+	   (lambda () (tlon-get-corresponding-paragraphs file counterpart)))))
   (condition-case _err
       (let* ((pairs (if (functionp pairs-or-fn)
                         (funcall pairs-or-fn)
@@ -157,7 +170,6 @@ or the function itself."
     (user-error
      (display-buffer (get-buffer "/Paragraph Pairs/")))))
 
-(declare-function tlon-get-counterpart "tlon-counterpart")
 (defun tlon-get-corresponding-paragraphs (&optional translation original)
   "Return pairs of paragraphs between TRANSLATION and its ORIGINAL.
 Signals an error if files have different number of paragraphs, and displays the
