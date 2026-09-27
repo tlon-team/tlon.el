@@ -156,7 +156,7 @@ or the function itself."
 			     (error-message-string err))
 		     nil nil t)))))
 	   (lambda () (tlon-get-corresponding-paragraphs file counterpart)))))
-  (condition-case _err
+  (condition-case err
       (let* ((pairs (if (functionp pairs-or-fn)
                         (funcall pairs-or-fn)
                       pairs-or-fn))
@@ -167,8 +167,12 @@ or the function itself."
             (tlon-paragraphs--format-pair pair))
           (goto-char (point-min)))
 	(display-buffer buf))
+    ;; A paragraph-count mismatch has already populated the buffer with the
+    ;; comparison; show it. Any other `user-error' must surface its own message.
     (user-error
-     (display-buffer (get-buffer "/Paragraph Pairs/")))))
+     (if-let ((buf (get-buffer "/Paragraph Pairs/")))
+	 (display-buffer buf)
+       (signal (car err) (cdr err))))))
 
 (defun tlon-get-corresponding-paragraphs (&optional translation original)
   "Return pairs of paragraphs between TRANSLATION and its ORIGINAL.
