@@ -155,14 +155,15 @@ If POP-TO-BUFFER is non-nil, display the response in a buffer."
     (when pop-to-buffer
       (pop-to-buffer (current-buffer)))))
 
+(autoload 'auth-source-extras-op-get "auth-source-extras")
 (defun tlon-api-get-credentials ()
   "Return a list of credentials for `uqbar' API requests."
   (let* ((username (tlon-user-lookup :github :name user-full-name))
 	 (inhibit-message t)
-	 (password (auth-source-pass-get 'secret
-					 (concat "tlon/babel/altruismoeficaz.net/" username))))
+	 (password (auth-source-extras-op-get
+		    (concat "altruismoeficaz.net/" username) "password" 'tlon)))
     (unless password
-      (user-error "No password found for user `%s' in auth-source-pass" username))
+      (user-error "No password found for user `%s' in the Tlön Automation vault" username))
     (concat "username=" (url-hexify-string username)
             "&password=" (url-hexify-string password))))
 

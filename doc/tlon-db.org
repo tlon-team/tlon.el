@@ -236,7 +236,7 @@ The sync log buffer (=*Db Sync Log*=) records timestamps, created/modified/delet
 :END:
 
 #+findex: tlon-db-authenticate
-The command ~tlon-db-authenticate~ performs authentication against the EA International API using credentials fetched via =auth-source=. It stores the obtained access token in ~tlon-db-auth-token~ and sets its expiry time (30 minutes). On failure, it signals an error and displays the server response. Most commands that require authentication call ~tlon-db-ensure-auth~ internally, so you rarely need to invoke this manually.
+The command ~tlon-db-authenticate~ performs authentication against the EA International API using a password read from the =ea.international/USERNAME= item of the Tlön 1Password Automation vault. It stores the obtained access token in ~tlon-db-auth-token~ and sets its expiry time (30 minutes). On failure, it signals an error and displays the server response. Most commands that require authentication call ~tlon-db-ensure-auth~ internally, so you rarely need to invoke this manually.
 
 ** Transient menu
 :PROPERTIES:

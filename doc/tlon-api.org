@@ -145,7 +145,7 @@ The command ~tlon-api-menu~ opens a transient menu that provides quick access to
 The function ~tlon-api-get-token~ retrieves an authentication token for a given site URL. It posts credentials to the =/api/auth/login= endpoint and passes the resulting =access_token= to the provided callback.
 
 #+findex: tlon-api-get-credentials
-The function ~tlon-api-get-credentials~ constructs the URL-encoded credential string for API authentication. The username is derived from ~user-full-name~ via ~tlon-user-lookup~, and the password is fetched from =auth-source-pass= using a key of the form =tlon/babel/altruismoeficaz.net/USERNAME=.
+The function ~tlon-api-get-credentials~ constructs the URL-encoded credential string for API authentication. The username is derived from ~user-full-name~ via ~tlon-user-lookup~, and the password is read from the =password= field of the =altruismoeficaz.net/USERNAME= item of the Tlön 1Password Automation vault.
 
 ** Route handling
 :PROPERTIES:

@@ -2617,12 +2617,13 @@ Returns a list of paths to new temporary files with silence appended."
 
 ;;;;;; TTS engines
 
+(autoload 'auth-source-extras-op-get "auth-source-extras")
 (defun tlon-tts-get-or-set-api-key (var auth-field auth-domain)
   "Get or set the API key stored in symbol VAR.
-Look up AUTH-FIELD in auth-source-pass under AUTH-DOMAIN
-with `tlon-email-shared'."
+Look up AUTH-FIELD of the item titled AUTH-DOMAIN in the Tlön 1Password
+Automation vault."
   (or (symbol-value var)
-      (set var (auth-source-pass-get auth-field (concat auth-domain tlon-email-shared)))))
+      (set var (auth-source-extras-op-get auth-domain auth-field 'tlon))))
 
 ;;;;;;; Microsoft Azure
 
@@ -2655,7 +2656,7 @@ CHUNK-INDEX is ignored for Microsoft Azure but included for API consistency."
 
 (defun tlon-tts-microsoft-azure-get-or-set-key ()
   "Get or set the Microsoft Azure key."
-  (tlon-tts-get-or-set-api-key 'tlon-microsoft-azure-key "tts1" "tlon/core/azure.com/"))
+  (tlon-tts-get-or-set-api-key 'tlon-microsoft-azure-key "tts1" "azure.com"))
 
 ;;;;;;; Google Cloud
 
@@ -2753,7 +2754,7 @@ CHUNK-INDEX is ignored for OpenAI but included for API consistency."
 
 (defun tlon-tts-openai-get-or-set-key ()
   "Get or set the OpenAI API key."
-  (tlon-tts-get-or-set-api-key 'tlon-openai-key "gptel" "tlon/core/openai.com/"))
+  (tlon-tts-get-or-set-api-key 'tlon-openai-key "gptel" "openai.com"))
 
 ;;;;;;; ElevenLabs
 
@@ -2895,7 +2896,7 @@ Each locator is an alist with string keys \"pronunciation_dictionary_id\" and
 
 (defun tlon-tts-elevenlabs-get-or-set-key ()
   "Get or set the ElevenLabs API key."
-  (tlon-tts-get-or-set-api-key 'tlon-elevenlabs-key "key" "tlon/core/elevenlabs.io/"))
+  (tlon-tts-get-or-set-api-key 'tlon-elevenlabs-key "key" "elevenlabs.io"))
 
 ;;;;; Metadata
 

@@ -89,7 +89,9 @@ Scans, prioritizes, and batch-resolves open GitHub issues for
 =tlon-team/tlon.el=. It keeps triage, verified local fixes, GitHub publication
 and closure, and Org archiving separately scoped. It tracks processed issues
 across batches, checks the bot identity and publication results, and archives
-only an unambiguous matching Org heading.
+only an unambiguous matching Org heading. It reads the =tlon-ai= bot token
+from the =tlon-ai-github-token= item of the personal 1Password Automation
+vault.
 
 * License
 

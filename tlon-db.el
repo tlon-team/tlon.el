@@ -116,11 +116,13 @@ timer so the new value takes effect immediately."
 (defvar tlon-db-api-password nil
   "Cached API password.  Use `tlon-db-get-api-password' to access.")
 
+(autoload 'auth-source-extras-op-get "auth-source-extras")
 (defun tlon-db-get-api-password ()
   "Return the API password, initializing lazily if needed."
   (or tlon-db-api-password
       (setq tlon-db-api-password
-	    (auth-source-pass-get 'secret (concat "tlon/core/ea.international/" (tlon-db-get-api-username))))))
+	    (auth-source-extras-op-get
+	     (concat "ea.international/" (tlon-db-get-api-username)) "password" 'tlon))))
 
 ;;;;; External Special Variables (from url.el)
 

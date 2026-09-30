@@ -28,6 +28,8 @@
 (require 'tlon-core)
 (require 'auth-source)
 
+(autoload 'auth-source-extras-op-get "auth-source-extras")
+
 ;;;; User options
 
 (defgroup tlon-whisperx nil
@@ -112,8 +114,8 @@ called with “--min_speakers SPEAKERS --max_speakers SPEAKERS”; if nil or 0 t
 tool auto-detects speakers.  HF-TOKEN and CALLBACK behave as before."
   (let* ((language (or language "es"))
          (hf-token (or hf-token
-                       (auth-source-pass-get "whisperX"
-                                             (concat "chrome/huggingface.co/" (getenv "PERSONAL_EMAIL")))))
+                       (auth-source-extras-op-get
+                        (concat "huggingface.co/" (getenv "PERSONAL_EMAIL")) "whisperX")))
          (speaker-flags
           (when (and speakers (> speakers 0))
             (list "--min_speakers" (number-to-string speakers)

@@ -102,7 +102,8 @@ Get this from the Google Cloud Console."
 (defcustom tlon-youtube-client-id nil
   "OAuth 2.0 client ID for YouTube API authentication.
 Get this from the Google Cloud Console.  When nil, the value is looked up in
-the password store on first use; see `tlon-youtube-get-client-id'."
+the Tlön 1Password Automation vault on first use; see
+`tlon-youtube-get-client-id'."
   :type '(choice (const :tag "Not set" nil)
                  (string :tag "Client ID"))
   :group 'tlon-youtube)
@@ -110,7 +111,8 @@ the password store on first use; see `tlon-youtube-get-client-id'."
 (defcustom tlon-youtube-client-secret nil
   "OAuth 2.0 client secret for YouTube API authentication.
 Get this from the Google Cloud Console.  When nil, the value is looked up in
-the password store on first use; see `tlon-youtube-get-client-secret'."
+the Tlön 1Password Automation vault on first use; see
+`tlon-youtube-get-client-secret'."
   :type '(choice (const :tag "Not set" nil)
                  (string :tag "Client Secret"))
   :group 'tlon-youtube)
@@ -625,20 +627,22 @@ Signal a `user-error' when either credential is missing."
 (defun tlon-youtube-get-client-id ()
   "Return the OAuth 2.0 client ID.
 Use `tlon-youtube-client-id' when non-nil; otherwise look the value up in the
-password store and store it there."
+Tlön 1Password Automation vault and store it there."
   (or tlon-youtube-client-id
       (setq tlon-youtube-client-id (tlon-youtube--auth-source-get "desktop-client-id"))))
 
 (defun tlon-youtube-get-client-secret ()
   "Return the OAuth 2.0 client secret.
 Use `tlon-youtube-client-secret' when non-nil; otherwise look the value up in
-the password store and store it there."
+the Tlön 1Password Automation vault and store it there."
   (or tlon-youtube-client-secret
       (setq tlon-youtube-client-secret (tlon-youtube--auth-source-get "desktop-client-secret"))))
 
+(autoload 'auth-source-extras-op-get "auth-source-extras")
 (defun tlon-youtube--auth-source-get (field)
-  "Return FIELD from the shared Google Cloud Console entry in the password store."
-  (auth-source-pass-get field (concat "tlon/core/console.cloud.google.com/" tlon-email-shared)))
+  "Return FIELD of the shared Google Cloud Console item in the Tlön vault."
+  (auth-source-extras-op-get (concat "console.cloud.google.com/" tlon-email-shared)
+                             field 'tlon))
 
 (defun tlon-youtube--oauth2-auto-setup ()
   "Register the YouTube provider with oauth2-auto.

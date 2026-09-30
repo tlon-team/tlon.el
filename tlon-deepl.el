@@ -66,11 +66,12 @@ See <https://developers.deepl.com/docs/api-reference/translate#request-body-desc
   "The DeepL API key.
 Lazily initialized; use `tlon-deepl-get-key' to access.")
 
+(autoload 'auth-source-extras-op-get "auth-source-extras")
 (defun tlon-deepl-get-key ()
   "Return the DeepL API key, initializing it lazily if needed."
   (or tlon-deepl-key
       (setq tlon-deepl-key
-	    (auth-source-pass-get "key" (concat "tlon/babel/deepl.com/" (getenv "WORK_EMAIL"))))))
+	    (auth-source-extras-op-get "deepl.com" "key" 'tlon))))
 
 (defconst tlon-deepl-url-prefix
   "https://api.deepl.com/v2/"

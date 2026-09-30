@@ -155,7 +155,7 @@ Get this from the Google Cloud Console. This key is used for read-only API opera
 
 OAuth 2.0 client ID for YouTube API authentication.
 
-The default value is @samp{nil}. When @samp{nil}, the value is retrieved from @samp{auth-source-pass} using the shared Tlon email the first time a command needs it, not when the package is loaded. The type is a string or @samp{nil}.
+The default value is @samp{nil}. When @samp{nil}, the value is read from the @samp{console.cloud.google.com/EMAIL} item of the Tlön 1Password Automation vault, where EMAIL is the shared Tlon email, the first time a command needs it, not when the package is loaded. The type is a string or @samp{nil}.
 
 This must be a @strong{Desktop app} client ID from the Google Cloud Console. Web application client IDs will not work with the @samp{oauth2-auto} authorization flow. See @ref{Authentication setup, , authentication setup} for details.
 
@@ -166,7 +166,7 @@ This must be a @strong{Desktop app} client ID from the Google Cloud Console. Web
 
 OAuth 2.0 client secret for YouTube API authentication.
 
-The default value is @samp{nil}. When @samp{nil}, the value is retrieved from @samp{auth-source-pass} using the shared Tlon email the first time a command needs it, not when the package is loaded. The type is a string or @samp{nil}.
+The default value is @samp{nil}. When @samp{nil}, the value is read from the @samp{console.cloud.google.com/EMAIL} item of the Tlön 1Password Automation vault, where EMAIL is the shared Tlon email, the first time a command needs it, not when the package is loaded. The type is a string or @samp{nil}.
 
 Must correspond to the same Desktop app client as @code{tlon-youtube-client-id}.
 

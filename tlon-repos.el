@@ -270,30 +270,35 @@ If REPOS is nil, search in all tracked repos."
 
 ;;;;; git-crypt
 
-(autoload 'password-store-list "password-store")
+(defconst tlon-git-crypt-key-prefix "git-crypt/"
+  "Title prefix of the git-crypt key documents in the Tlön Automation vault.")
+
+(declare-function auth-source-extras--op-document-titles "auth-source-extras")
 (defun tlon--get-git-crypt-repos ()
   "Return a list of Tlön repo names that use git-crypt.
-This list is derived from entries stored under \"tlon/core/git-crypt/\" in the
-password store."
-  (let* ((base-path "tlon/core/git-crypt/")
-         (base-path-len (length base-path))
-         (entries (password-store-list base-path)))
-    (mapcar (lambda (entry)
-              (substring entry base-path-len))
-            entries)))
+This list is derived from the Document items titled \"git-crypt/REPO\" in the
+Tlön 1Password Automation vault."
+  (require 'auth-source-extras)
+  (let ((prefix-len (length tlon-git-crypt-key-prefix)))
+    (mapcar (lambda (title)
+              (substring title prefix-len))
+            (seq-filter (lambda (title)
+                          (string-prefix-p tlon-git-crypt-key-prefix title))
+                        (auth-source-extras--op-document-titles 'tlon)))))
 
-(autoload 'pass-extras-git-crypt-unlock "pass-extras")
+(autoload 'auth-source-extras-git-crypt-unlock "auth-source-extras")
 (defun tlon-git-crypt-unlock ()
   "Unlock a Tlön repository using `git-crypt'.
-Prompts the user to select a repository from the list derived from entries under
-\"tlon/core/git-crypt/\" in the password store."
+Prompts the user to select a repository from the list derived from the
+\"git-crypt/REPO\" key documents in the Tlön 1Password Automation vault."
   (interactive)
   (if-let* ((repo-names (tlon--get-git-crypt-repos))
             (repo-name (completing-read "Repo: " repo-names nil t))
-            (repo-dir (file-name-concat paths-dir-tlon-repos repo-name))
-            (entry (concat "tlon/core/git-crypt/" repo-name)))
-      (pass-extras-git-crypt-unlock repo-dir entry)
-    (user-error "Repo for the selected git-crypt entry not found")))
+            (repo-dir (file-name-as-directory
+                       (file-name-concat paths-dir-tlon-repos repo-name)))
+            (key (concat tlon-git-crypt-key-prefix repo-name)))
+      (auth-source-extras-git-crypt-unlock repo-dir key 'tlon)
+    (user-error "Repo for the selected git-crypt key not found")))
 
 ;;;;; issues-to-repos
 

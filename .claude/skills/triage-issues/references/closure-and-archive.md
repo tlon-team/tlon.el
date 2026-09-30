@@ -6,11 +6,11 @@ triage nor a local fix is permission to publish or remove a task from active not
 ## GitHub identity and credentials
 
 Read the checkout's `CLAUDE.md` and the governing secrets policy before handling
-credentials. The project documents `pass env/tlon-ai-github-token`; use the
-configured non-printing secret workflow, not a presumed ambient
-`TLON_AI_GITHUB_TOKEN`. Preserve an existing canonical Tlon entry under `tlon/`
-rather than duplicating it under `env/`. Do not migrate or rotate credentials
-as part of issue triage.
+credentials. The project documents the `tlon-ai-github-token` item of the
+personal 1Password Automation vault, read with a captured `op-automations
+@personal read`; use that non-printing workflow, not a presumed ambient
+`TLON_AI_GITHUB_TOKEN`. Do not migrate or rotate credentials as part of issue
+triage.
 
 Use the `tlon-ai` account for AI-authored comments and closure. Explicitly supply
 the selected credential as `GH_TOKEN` for every operation in that sequence.

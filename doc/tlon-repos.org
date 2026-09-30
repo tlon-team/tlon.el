@@ -17,7 +17,7 @@ This manual describes the features and customization options for the Emacs Lisp 
 :CUSTOM_ID: h:overview
 :END:
 
-The =tlon-repos= module provides functions for managing Tlon's Git repositories. It integrates with =vc=, =vc-extras=, =forge=, =forge-extras=, and =pass-extras= to offer commands for creating, cloning, deleting, tracking, searching, and interacting with repositories, both locally and on GitHub under the =tlon-team= organization.
+The =tlon-repos= module provides functions for managing Tlon's Git repositories. It integrates with =vc=, =vc-extras=, =forge=, =forge-extras=, and =auth-source-extras= to offer commands for creating, cloning, deleting, tracking, searching, and interacting with repositories, both locally and on GitHub under the =tlon-team= organization.
 
 The module also provides a custom Forge dispatch menu that overrides the default =forge-dispatch=, adding Tlon-specific search capabilities alongside standard Forge operations.
 
@@ -81,7 +81,7 @@ This module does not define ~defcustom~ user options. It defines a customization
 :END:
 
 #+findex: tlon-git-crypt-unlock
-- ~tlon-git-crypt-unlock~ :: Unlock a Tlon repository using =git-crypt=. Prompts you to select a repository from the list derived from entries under =tlon/core/git-crypt/= in the password store. Delegates to ~pass-extras-git-crypt-unlock~.
+- ~tlon-git-crypt-unlock~ :: Unlock a Tlon repository using =git-crypt=. Prompts you to select a repository from the list derived from the =git-crypt/REPO= key documents in the Tlön 1Password Automation vault. Delegates to ~auth-source-extras-git-crypt-unlock~.
 
 ** Issues-to-projects configuration
 :PROPERTIES:
@@ -149,7 +149,7 @@ This module does not define ~defcustom~ user options. It defines a customization
 :END:
 
 #+findex: tlon--get-git-crypt-repos
-- ~tlon--get-git-crypt-repos~ :: Return a list of Tlon repository names that use =git-crypt=. The list is derived from entries stored under =tlon/core/git-crypt/= in the password store.
+- ~tlon--get-git-crypt-repos~ :: Return a list of Tlon repository names that use =git-crypt=. The list is derived from the Document items titled =git-crypt/REPO= in the Tlön 1Password Automation vault.
 
 * Indices
 :PROPERTIES:

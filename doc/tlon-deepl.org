@@ -17,7 +17,7 @@ This manual describes the features and customization options for the Emacs Lisp 
 :CUSTOM_ID: h:overview
 :END:
 
-This module provides functions for interacting with the DeepL API, enabling text translation and management of DeepL glossaries. It relies on an API key stored securely via =auth-source= (using the entry =tlon/babel/deepl.com/[WORK_EMAIL]=).
+This module provides functions for interacting with the DeepL API, enabling text translation and management of DeepL glossaries. It reads its API key from the =deepl.com= item of the Tlön 1Password Automation vault.
 
 Key capabilities:
 
@@ -163,7 +163,7 @@ Refresh supported glossary language pairs from DeepL and update the local caches
 :END:
 #+findex: tlon-deepl-get-key
 
-Return the DeepL API key, initializing it lazily if needed. The key is retrieved from =auth-source= using the entry =tlon/babel/deepl.com/[WORK_EMAIL]=.
+Return the DeepL API key, initializing it lazily if needed. The key is read from the =key= field of the =deepl.com= item of the Tlön 1Password Automation vault.
 
 ** ~tlon-deepl-print-translation~
 :PROPERTIES:

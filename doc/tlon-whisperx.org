@@ -50,7 +50,7 @@ External tools required: =whisperx= (must be on your =PATH=).
 :END:
 #+findex: tlon-whisperx-diarize
 
-~tlon-whisperx-diarize~ runs WhisperX with diarization enabled on an audio file.  You pass the path to the audio file and, optionally, the language (defaults to ="es"=), the number of speakers (when a positive integer, the tool is constrained to exactly that many speakers; when nil or 0 it auto-detects), a Hugging Face token (defaults to looking up the token from =auth-source-pass=), and a callback.  The function builds the =whisperx= command with =--diarize=, =--language=, =--hf_token=, =--compute_type float32=, and =--output_dir .=, plus optional =--min_speakers= and =--max_speakers= flags.  The callback signature is the same as for ~tlon-whisperx-transcribe~.
+~tlon-whisperx-diarize~ runs WhisperX with diarization enabled on an audio file.  You pass the path to the audio file and, optionally, the language (defaults to ="es"=), the number of speakers (when a positive integer, the tool is constrained to exactly that many speakers; when nil or 0 it auto-detects), a Hugging Face token (defaults to the =whisperX= field of the =huggingface.co/EMAIL= item of the personal 1Password Automation vault, where EMAIL is the value of =PERSONAL_EMAIL=), and a callback.  The function builds the =whisperx= command with =--diarize=, =--language=, =--hf_token=, =--compute_type float32=, and =--output_dir .=, plus optional =--min_speakers= and =--max_speakers= flags.  The callback signature is the same as for ~tlon-whisperx-transcribe~.
 
 * Indices
 :PROPERTIES:
