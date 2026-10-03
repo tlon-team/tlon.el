@@ -515,5 +515,27 @@
           (should-error (funcall callback "English" nil) :type 'user-error)
           (should-not continued))))))
 
+
+;;;; tlon-ai--abstract-prompt-for-language
+
+(ert-deftest tlon-ai--abstract-prompt-for-language-uses-matching-prompt ()
+  "A language with its own prompt gets that prompt."
+  (let ((prompts '((:prompt "English %s" :language "en")
+                   (:prompt "Español %s" :language "es"))))
+    (should (equal "Español %s"
+                   (tlon-ai--abstract-prompt-for-language prompts "es")))))
+
+(ert-deftest tlon-ai--abstract-prompt-for-language-falls-back-to-english ()
+  "A language without a prompt falls back to the English prompt."
+  (let ((prompts '((:prompt "English %s" :language "en")
+                   (:prompt "Español %s" :language "es"))))
+    (should (equal "English %s"
+                   (tlon-ai--abstract-prompt-for-language prompts "la")))))
+
+(ert-deftest tlon-ai--abstract-prompt-for-language-nil-without-english ()
+  "Without an English prompt there is nothing to fall back to."
+  (should-not (tlon-ai--abstract-prompt-for-language
+               '((:prompt "Español %s" :language "es")) "la")))
+
 (provide 'tlon-ai-test)
 ;;; tlon-ai-test.el ends here

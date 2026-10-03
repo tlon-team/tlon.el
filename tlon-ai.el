@@ -1347,11 +1347,21 @@ contains no non-whitespace text."
                (string-match-p "[^[:space:]\n\r\f\v\u0085\u1680\u2028\u2029]" string))
     (user-error "Cannot generate an abstract without readable source text"))
   (if-let ((prompt (tlon-ai-maybe-edit-prompt
-		   (tlon-lookup prompt :prompt :language language))))
+		   (tlon-ai--abstract-prompt-for-language prompt language))))
       (progn
 	(tlon-make-gptel-request prompt string callback tlon-ai-summarization-model)
 	(message "Getting AI abstract..."))
     (user-error "Could not get prompt for language %s" language)))
+
+(defun tlon-ai--abstract-prompt-for-language (prompts language)
+  "Return the prompt in PROMPTS for LANGUAGE, or the English prompt.
+PROMPTS is a list of prompt plists with `:prompt' and `:language' keys.  When
+no prompt exists for LANGUAGE, the abstract is requested in English and a
+message says so."
+  (or (tlon-lookup prompts :prompt :language language)
+      (when-let ((english (tlon-lookup prompts :prompt :language "en")))
+	(message "No abstract prompt for language %s; requesting an English abstract" language)
+	english)))
 
 (defun tlon-get-abstract-callback (&optional key type buffer preserve-existing)
   "Process the response, taking appropriate action based on major mode.
