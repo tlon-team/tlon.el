@@ -1342,6 +1342,10 @@ REQ-BUF is the request buffer tracked in
   (lambda (response info)
     (unwind-protect
 	(cond
+	 ;; Aborted via `gptel-abort', which calls us with RESPONSE `abort'
+	 ((eq response 'abort)
+	  (tlon-translate--log "Global review of %s aborted."
+			       (file-name-nondirectory translation-file)))
 	 ((or (not response)
 	      (plist-get info :error)
 	      (let ((st (plist-get info :status)))
@@ -1645,7 +1649,9 @@ This catches stubborn leftovers left behind by `clone-indirect-buffer'."
   "Send an AI revision request for a single paragraph RANGE.
 RANGE is a cons cell (START . END) specifying the paragraph range to revise.
 CTX is a `tlon-translate--revision-context' struct.  AFTER-FN is an optional
-function to call after the revision is complete."
+function to call after the revision is complete.  It is not called when the
+request was aborted, so that `tlon-translate-revise-abort' also stops any
+remaining batches."
   (let* ((translation-file (tlon-translate--revision-context-translation-file ctx))
          (original-file    (tlon-translate--revision-context-original-file ctx))
          (type             (tlon-translate--revision-context-type ctx))
@@ -1677,25 +1683,32 @@ function to call after the revision is complete."
                                              chunk-desc)))
          (proc nil)
          (wrapped-after-fn
-          (lambda ()
+          (lambda (aborted)
             (setq tlon-translate--active-revision-buffers
                   (delq req-buf tlon-translate--active-revision-buffers))
-            (if restrict
+            (cond
+             (aborted
+              (tlon-translate--log "Aborted processing of %s %s of %s"
+                                   (if single-p "paragraph" "paragraphs")
+                                   chunk-desc
+                                   (file-name-nondirectory translation-file)))
+             (restrict
                 (let ((rstart (or (car restrict) 1))
                       (rend   (or (cdr restrict)
                                   (tlon-get-number-of-paragraphs-in-file translation-file))))
                   (tlon-translate--log "Finished processing %s %s (range %d–%d) of %s"
                                        (if single-p "paragraph" "paragraphs")
                                        chunk-desc rstart rend
-                                       (file-name-nondirectory translation-file)))
+                                       (file-name-nondirectory translation-file))))
+             (t
               (tlon-translate--log "Finished processing %s %s (out of %d) of %s"
                                    (if single-p "paragraph" "paragraphs")
                                    chunk-desc
                                    (tlon-get-number-of-paragraphs-in-file translation-file)
-                                   (file-name-nondirectory translation-file)))
+                                   (file-name-nondirectory translation-file))))
             (when (null tlon-translate--active-revision-buffers)
               (setq revert-without-query tlon-translate-revert-without-query-original))
-            (when (functionp after-fn)
+            (when (and (functionp after-fn) (not aborted))
               (funcall after-fn)))))
     ;; Clean up the transient indirect buffers created for COMPARISON.
     (tlon-translate--kill-indirect-buffers-of-file translation-file)
@@ -1736,11 +1749,14 @@ function to call after the revision is complete."
 START and END are zero-based paragraph indices delimiting the chunk being
 revised. ORIGINALS is the list of original translation paragraphs for this
 chunk. TYPE is the revision type symbol (`errors' or `flow'). AFTER-FN is called
-once when processing the response is finished (success or failure)."
+once when processing the response is finished (success, failure or abort), with
+a non-nil argument if the request was aborted."
   (let ((expected-count (- end start)))
     (lambda (response info)
       (unwind-protect
           (cond
+           ;; Aborted via `gptel-abort', which calls us with RESPONSE `abort'
+           ((eq response 'abort))
            ;; Error path
            ((or (not response)
                 (plist-get info :error)
@@ -1780,7 +1796,7 @@ once when processing the response is finished (success or failure)."
                              (tlon-get-key-from-file translation-file))
                      translation-file)))))))
         (when (functionp after-fn)
-          (funcall after-fn))))))
+          (funcall after-fn (eq response 'abort)))))))
 
 (defun tlon-translate--split-response-into-paragraphs (text expected-count)
   "Split TEXT into paragraphs, trimming and removing code fences.
