@@ -74,10 +74,14 @@ Markdown alt into the alt attribute. If nil, we omit the alt attribute."
   "Generic endpoint for the invertornot.com API.")
 
 (defconst tlon-imagemagick-reduce-brightness
-  "magick %1$s -modulate %3$s %2$s"
+  "magick %1$s -define modulate:colorspace=HSB -modulate %3$s %2$s"
   "Command to reduce the brightness of an image using `imagemagic'.
 The first placeholder is the input image, the second placeholder is the
-output image, and the third placeholder is the brightness percentage.")
+output image, and the third placeholder is the brightness percentage.
+The modulation is done in HSB, which scales all channels alike: in the
+default HSL, near-white pixels with a faint tint (JPEG noise, off-white
+backgrounds) have high saturation, and lowering their lightness turns
+them into vivid colour fringes.")
 
 (defconst tlon-imagemagick-invert-colors
   "magick %s -channel RGB -negate %s"
