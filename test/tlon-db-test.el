@@ -125,6 +125,30 @@
   (should (equal "@article{key}\n\n"
                  (tlon-db--normalize-entry-text "@article{key}\n\n\n\n"))))
 
+;;;; tlon-db--replace-entry-locally
+
+(ert-deftest tlon-db-replace-entry-locally-read-only-buffer ()
+  "Update both files when the db buffer is read-only, keeping that state.
+Ebib leaves the buffers of its loaded databases read-only."
+  (let* ((old "@article{key,\n\ttitle = {Old}\n}\n")
+         (new "@article{key,\n\ttitle = {New}\n}\n")
+         (tlon-file-db (make-temp-file "tlon-test-db-" nil ".bib" old))
+         (tlon-file-db-upstream (make-temp-file "tlon-test-up-" nil ".bib" old))
+         (buf (find-file-noselect tlon-file-db)))
+    (unwind-protect
+        (progn
+          (with-current-buffer buf (read-only-mode 1))
+          (tlon-db--replace-entry-locally "key" new)
+          (dolist (file (list tlon-file-db tlon-file-db-upstream))
+            (with-temp-buffer
+              (insert-file-contents file)
+              (should (string-match-p "title = {New}" (buffer-string)))
+              (should-not (string-match-p "title = {Old}" (buffer-string)))))
+          (should (buffer-local-value 'buffer-read-only buf)))
+      (dolist (file (list tlon-file-db tlon-file-db-upstream))
+        (when-let ((b (get-file-buffer file))) (kill-buffer b))
+        (delete-file file)))))
+
 ;;;; tlon-db--get-key-from-bibtex-line
 
 (ert-deftest tlon-db-get-key-from-bibtex-line-article ()

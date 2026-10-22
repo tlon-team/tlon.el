@@ -407,24 +407,31 @@ Return the modified entry string."
       entry)))
 
 (defun tlon-db--replace-entry-locally (key entry)
-  "Replace KEY with ENTRY text in both local databases."
+  "Replace KEY with ENTRY text in both local databases.
+Write even when a buffer is read-only, which is how `ebib' leaves the
+buffers of its loaded databases when `ebib-use-read-only-buffer' is
+non-nil; the buffer's read-only state is left unchanged."
   (let ((coding-system-for-write 'utf-8-with-signature))
     (dolist (file (list tlon-file-db tlon-file-db-upstream))
       (with-current-buffer (find-file-noselect file)
-        (bibtex-mode)
-        (goto-char (point-min))
-        (if (bibtex-search-entry key)
-            ;; shadow kill-ring so bibtex-kill-entry doesn't clobber the user's clipboard
-            (progn (let ((kill-ring kill-ring)
-                         (kill-ring-yank-pointer kill-ring-yank-pointer))
-                     (bibtex-kill-entry))
-                   (insert (tlon-db--normalize-entry-text entry)))
-          (tlon-db--insert-entry-with-newlines (tlon-db--normalize-entry-text entry)))
-        (let ((before-save-hook nil)
-              (after-save-hook nil)
-              (write-contents-functions nil))
-          (save-buffer))
-        (revert-buffer nil 'no-confirm)))))
+        (let ((read-only buffer-read-only)
+              (inhibit-read-only t))
+          (bibtex-mode)
+          (goto-char (point-min))
+          (if (bibtex-search-entry key)
+              ;; shadow kill-ring so bibtex-kill-entry doesn't clobber the user's clipboard
+              (progn (let ((kill-ring kill-ring)
+                           (kill-ring-yank-pointer kill-ring-yank-pointer))
+                       (bibtex-kill-entry))
+                     (insert (tlon-db--normalize-entry-text entry)))
+            (tlon-db--insert-entry-with-newlines (tlon-db--normalize-entry-text entry)))
+          (let ((before-save-hook nil)
+                (after-save-hook nil)
+                (write-contents-functions nil))
+            (save-buffer))
+          (revert-buffer nil 'no-confirm)
+          ;; `revert-buffer' recomputes the read-only state; restore it.
+          (setq buffer-read-only read-only))))))
 
 (defun tlon-db--normalize-entry-text (entry)
   "Return ENTRY ensuring it ends with exactly one blank line."
