@@ -452,6 +452,17 @@ file name.")
 (defvar tlon-tts-voice-id)
 (defvar tlon-tts-locale)
 
+;; These variables are set as file-local variables in the staging buffer and
+;; read back with `hack-local-variables', which drops (or queries about) any
+;; variable not marked as safe.
+(put 'tlon-tts-staging-buffer-p 'safe-local-variable #'booleanp)
+(dolist (var '(tlon-tts-source tlon-tts-language tlon-tts-engine tlon-tts-voice))
+  (put var 'safe-local-variable #'stringp))
+(put 'tlon-tts-locale 'safe-local-variable #'string-or-null-p)
+(put 'tlon-tts-audio 'safe-local-variable
+     (lambda (value)
+       (and (consp value) (stringp (car value)) (stringp (cdr value)))))
+
 (defconst tlon-tts-local-variables-section-start
   "^<!-- Local Variables: -->"
   "Pattern to match the beginning of the local variables section.")
