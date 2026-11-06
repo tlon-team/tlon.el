@@ -213,10 +213,10 @@ BACKGROUND defaults to \"white\" if nil."
 (defun tlon-images-process-image (source target command message-fmt)
   "Utility to process an image from SOURCE to TARGET with COMMAND.
 Display MESSAGE-FMT with the name of the source image."
-  (let* ((output (shell-command-to-string command))
-	 (white (tlon-images-get-themed-file-name source 'light)))
-    (copy-file source white t)
-    (tlon-images-maybe-open-after-processing white target)
+  ;; Only the dark variant is written: the site shows SOURCE itself in light
+  ;; mode, so a `-light' copy of it would just be a duplicate file.
+  (let ((output (shell-command-to-string command)))
+    (tlon-images-maybe-open-after-processing source target)
     (tlon-images-handle-output output (format message-fmt source))))
 
 (defun tlon-images-handle-output (output message)
@@ -298,7 +298,13 @@ The images are opened conditional on the value of
           (when (search-forward-regexp "^$" nil t)
             (delete-region (point-min) (point))
             (forward-char)
-            (setq json-response (tlon-read-json))))
+            ;; invertornot.com answers with an array of results, one per
+            ;; image; `tlon-read-json' starts at the first `{' and would
+            ;; return only the first object, so read the body as is.
+            (setq json-response (let ((json-object-type 'alist)
+                                      (json-array-type 'list)
+                                      (json-key-type 'string))
+                                  (json-read)))))
       (kill-buffer))
     json-response))
 
